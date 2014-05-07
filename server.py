@@ -1,9 +1,8 @@
 import os
+import json
 from flask import Flask, request, send_from_directory, render_template
 
-session = []
-
-
+changes = []
 
 #Profile listing
 app = Flask(__name__, template_folder="templates/")
@@ -21,7 +20,7 @@ def profiles(profile_id):
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
   print(request.data)
-  session.append(data)
+  changes.insert(0, json.loads(request.data))
   return "{\"status\": \"ok\"}"
 
 #Static files
@@ -37,6 +36,16 @@ def css_files(js):
 @app.route("/", methods=["GET"])
 def index():
   return render_template('index.html')
+
+@app.route("/new_profile", methods=["GET"])
+def new_profile():
+  return render_template('new_profile.html')
+
+#profile builder methods
+
+@app.route("/session_changes", methods=["GET"])
+def session_changes():
+  return json.dumps(changes)
 
 if __name__ == "__main__":
       app.run(port=8181)
