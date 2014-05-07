@@ -1,5 +1,40 @@
 #include <gio/gio.h>
 #include <json-glib/json-glib.h>
+#include <libsoup/soup.h>
+
+static void
+request_ready (GObject *session,
+               GAsyncResult *res,
+               gpointer user_data)
+{
+  g_warning ("READY");
+}
+
+static void
+send_change (JsonNode *root)
+{
+  gsize          len;
+  gchar         *data;
+  JsonGenerator *gen = json_generator_new ();
+  SoupSession   *ses = soup_session_new ();
+  SoupMessage   *msg = soup_message_new ("POST", "http://localhost:8181/submit_change");
+
+  json_generator_set_root (gen, root);
+  data = json_generator_to_data (gen, &len);
+
+  soup_message_set_request (msg,
+                            "application/json",
+                            SOUP_MEMORY_TAKE,
+                            data,
+                            len);
+
+  soup_session_send_async (ses, msg, NULL, request_ready, NULL);
+
+  g_object_unref (msg);
+
+/* FIXME: Leaking here, for some reason unreffing this kicks a segfault
+  g_object_unref (gen); */
+}
 
 static void
 changed_cb (GSettings *settings, gchar *key, gpointer user_data)
@@ -8,16 +43,11 @@ changed_cb (GSettings *settings, gchar *key, gpointer user_data)
   JsonNode      *value_node = NULL;
   JsonArray     *array     = NULL;
   gchar         *schema_id = NULL;
-  JsonGenerator *gen       = NULL;
-  gsize          len;
-  gchar         *data;
-
 
   GVariant *value = g_settings_get_value (settings, key);
   g_object_get (settings, "schema-id", &schema_id, NULL);
 
   value_node = json_gvariant_serialize (value);
-  gen =  json_generator_new ();
 
   array = json_array_new ();
   root  = json_node_new (JSON_NODE_ARRAY);
@@ -28,11 +58,8 @@ changed_cb (GSettings *settings, gchar *key, gpointer user_data)
   json_array_add_element (array, value_node);
   json_node_init_array (root, array);
 
-  json_generator_set_root (gen, root);
-  data = json_generator_to_data (gen, &len);
-
   /* TODO: Feed this to some local web service */
-  g_warning (data);
+  send_change (root);
 
   g_variant_unref (value);
 
@@ -41,10 +68,6 @@ changed_cb (GSettings *settings, gchar *key, gpointer user_data)
   json_node_free (value_node);
 
   g_free (schema_id);
-  g_free (data);
-
-/* FIXME: Leaking here, for some reason unreffing this kicks a segfault
-  g_object_unref (gen); */
   return;
 }
 
