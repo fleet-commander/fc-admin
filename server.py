@@ -1,9 +1,12 @@
 import os
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, render_template
 
 session = []
 
-app = Flask(__name__)
+
+
+#Profile listing
+app = Flask(__name__, template_folder="templates/")
 @app.route("/profiles/", methods=["GET"])
 def profile_index():
   return send_from_directory(os.path.join(os.getcwd(), "profiles"), "index.json")
@@ -13,12 +16,15 @@ def profiles(profile_id):
   print (os.path.join(os.getcwd(), "profiles"), profile_id)
   return send_from_directory(os.path.join(os.getcwd(), "profiles"), profile_id)
 
+
+#Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
   print(request.data)
   session.append(data)
   return "{\"status\": \"ok\"}"
 
+#Static files
 @app.route("/js/<path:js>", methods=["GET"])
 def js_files(js):
   return send_from_directory(os.path.join(os.getcwd(), "js"), js)
@@ -27,9 +33,10 @@ def js_files(js):
 def css_files(js):
   return send_from_directory(os.path.join(os.getcwd(), "css"), js)
 
+#View methods
 @app.route("/", methods=["GET"])
 def index():
-  return "Index"
+  return render_template('index.html')
 
 if __name__ == "__main__":
       app.run(port=8181)

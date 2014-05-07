@@ -1,1 +1,5 @@
-["foo.json", "bar.json"]
+[
+  {"url": "foo.json",
+   "displayName": "Foo"},
+  {"url": "bar.json",
+   "displayName": "Bar"}]
