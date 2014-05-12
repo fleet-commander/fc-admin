@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Fleet Commander GSettings Logger
+Icon=preferences-desktop-screensaver
+Exec=fc-gsettings-logger
+OnlyShowIn=GNOME;
+NoDisplay=true
+X-GNOME-Autostart-Phase=Application
+X-GNOME-Autostart-Notify=true
