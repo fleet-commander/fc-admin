@@ -1,0 +1,15 @@
+{
+    "uid": "50M35TUP1DU1D",
+    "etag": "06/06/06 06:06:06 HEL+0",
+    "name": "Simple",
+    "description": "Simple profile for client testing",
+    "settings": {
+        "org.gnome.gsettings": [
+            {
+                "key": "/org/gnome/desktop/background/show-desktop-icons",
+                "schema": "org.gnome.desktop.background",
+                "value": true
+            }
+        ]
+    }
+}

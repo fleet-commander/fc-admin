@@ -1,5 +1,4 @@
 [
-  {"url": "foo.json",
-   "displayName": "Foo"},
-  {"url": "bar.json",
-   "displayName": "Bar"}]
+  {"url": "simple.json",
+   "displayName": "Simple"}
+]
