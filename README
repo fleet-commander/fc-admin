@@ -1,0 +1,27 @@
+DISCLAIMER
+This project is still in early development so a lot of things are not as well integrated as we want to. Some of these steps
+are hacky and are just temporary.
+
+SUMMARY
+The web interface provides a user session running under a special user where the sysadmin can change settings
+and then the sysadmin can select changes from the log that she/he wants included in the profile. Afterwards
+he can deploy the profile in the system.
+
+SETUP
+You must create a system user called fc-user with display name "Fleet Commander"
+
+This user will be used to create the "dumb" session that the sysadmin will see in the browser.
+
+BUILD AND INSTALL THE GSETTINGS LOGGER
+fc-gsettings-logger is the service that logs the gsettings changes and submits them to the central web service
+
+to build it enter into the logger/ directory type "make" and "make install", note that you need the development
+files for gio, libsoup and json-glib.
+
+Note that to "make install" you need privileges to write into fc-user's home directory.
+
+RUNNING
+You need to run spice_session.py as root (as it needs to be able to run stuff as fc-user)
+And you need to run server.py
+
+Then go to http://localhost:8181 and you're ready to go
