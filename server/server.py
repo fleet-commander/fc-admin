@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from flask import Flask, request, send_from_directory, render_template
 
 changes = []
@@ -14,7 +15,6 @@ def profile_index():
 def profiles(profile_id):
   print (os.path.join(os.getcwd(), "profiles"), profile_id)
   return send_from_directory(os.path.join(os.getcwd(), "profiles"), profile_id)
-
 
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
@@ -42,10 +42,19 @@ def new_profile():
   return render_template('new_profile.html')
 
 #profile builder methods
-
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
   return json.dumps(changes)
+
+@app.route("/session_start", methods=["GET"])
+def session_start():
+  req = requests.get("http://localhost:8182/start_session")
+  return req.content, req.status_code
+
+@app.route("/session_stop", methods=["GET"])
+def session_stop():
+  req = requests.get("http://localhost:8182/stop_session")
+  return req.content, req.status_code
 
 if __name__ == "__main__":
       app.run(port=8181)
