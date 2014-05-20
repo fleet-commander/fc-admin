@@ -19,7 +19,7 @@ def profiles(profile_id):
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
-  print(request.data)
+  global changes
   changes.insert(0, json.loads(request.data))
   return "{\"status\": \"ok\"}"
 
@@ -44,6 +44,7 @@ def new_profile():
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
+  global changes
   return json.dumps(changes)
 
 @app.route("/session_start", methods=["GET"])
@@ -53,6 +54,8 @@ def session_start():
 
 @app.route("/session_stop", methods=["GET"])
 def session_stop():
+  global changes
+  changes = []
   req = requests.get("http://localhost:8182/stop_session")
   return req.content, req.status_code
 

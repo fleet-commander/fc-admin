@@ -8,6 +8,10 @@ function updateEventList () {
   });
 }
 
+function closeSession () {
+  $.getJSON("/session_stop", function (data) {return;});
+}
+
 $(document).ready (function () {
   window.setInterval (updateEventList, 1000);
 
