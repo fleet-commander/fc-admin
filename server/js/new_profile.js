@@ -10,4 +10,8 @@ function updateEventList () {
 
 $(document).ready (function () {
   window.setInterval (updateEventList, 1000);
+
+  $.getJSON("/session_start", function (data) {
+    console.log(data.status);
+  });
 });
