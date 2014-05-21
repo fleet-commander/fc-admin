@@ -42,7 +42,7 @@ class SpiceSessionManager:
     self.xspice = None
     self.gnome_session = None
     self.gsettings_logger = None
-    self.websockify
+    self.websockify = None
 
 app = Flask(__name__)
 
