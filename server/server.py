@@ -33,6 +33,10 @@ def js_files(js):
 def css_files(js):
   return send_from_directory(os.path.join(os.getcwd(), "css"), js)
 
+@app.route("/img/<path:img>", methods=["GEt"])
+def img_files(img):
+  return send_from_directory(os.path.join(os.getcwd(), "img"), img)
+
 #View methods
 @app.route("/", methods=["GET"])
 def index():
