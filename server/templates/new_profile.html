@@ -34,13 +34,17 @@
   </head>
   <body>
   <div class="top-bar"></div>
-  <input type="button" onclick="closeSession()" value="Close session"/>
+  <input id="close-session"   type="button" onclick="closeSession()"   value="Close session"/>
+  <input id="review-changes"  type="button" onclick="reviewChanges()"  value="Review changes"/>
+  <input id="show-session"    type="button" onclick="showSession()"    value="Show session"/>
+  <input id="create-profile"  type="button" onclick="createProfile()"  value="Create profile"/>
   <div id="spice-area">
     <div id="spice-screen"></div>
   </div>
   <div id="event-logs">
     <ul id="event-list">
     </ul>
+    <input class="hidden" id="create-profile" onclick="createProfile()" type="button" value="Next"/>
   </div>
   </body>
 </html>

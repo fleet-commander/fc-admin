@@ -21,6 +21,10 @@
    border-bottom: 1px black;
 }
 
+.hidden {
+  display: none;
+}
+
 body {
   background: #eaeaea;
   padding: 0px;
