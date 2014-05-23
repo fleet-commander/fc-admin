@@ -67,10 +67,10 @@ def stop_session():
   global has_session
   global spice
 
+  spice.stop()
+
   if not has_session:
     return '{"status": "already_stopped"}', 403
-
-  spice.stop()
 
   has_session = False
   return '{"status": "stopped"}', 200

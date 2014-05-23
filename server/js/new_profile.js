@@ -12,6 +12,7 @@ function updateEventList () {
 
 function closeSession () {
   $.getJSON("/session_stop", function (data) {return;});
+  sc.stop();
 }
 
 function startSpice () {

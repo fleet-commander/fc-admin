@@ -14,14 +14,12 @@ def profile_index():
 
 @app.route("/profiles/<path:profile_id>", methods=["GET"])
 def profiles(profile_id):
-  print (os.path.join(os.getcwd(), "profiles"), profile_id)
   return send_from_directory(os.path.join(os.getcwd(), "profiles"), profile_id)
 
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
-  global changes
-  changes.insert(0, json.loads(request.data))
+  changes.insert(0, request.json)
   return "{\"status\": \"ok\"}"
 
 #Static files
@@ -49,20 +47,20 @@ def new_profile():
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
-  global changes
   return json.dumps(changes)
 
 @app.route("/session_start", methods=["GET"])
 def session_start():
+  global changes
+  changes = []
   req = requests.get("http://localhost:8182/start_session")
   return req.content, req.status_code
 
 @app.route("/session_stop", methods=["GET"])
 def session_stop():
-  global changes
-  changes = []
+  profile = list(changes)
   req = requests.get("http://localhost:8182/stop_session")
   return req.content, req.status_code
 
 if __name__ == "__main__":
-      app.run(port=8181)
+      app.run(port=8181, debug=True)
