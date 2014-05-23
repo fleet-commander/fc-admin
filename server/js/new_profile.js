@@ -1,21 +1,23 @@
 var sc;
 var updater;
+var changes;
+var submit=false;
 
 function updateEventList () {
   $.getJSON ("/session_changes", function (data) {
     $("#event-list").html("");
+    changes = data;
     $.each (data, function (i, item) {
       var row = item.join (" ");
       var id = data.length - 1 - i;
-      var input = '<input type="checkbox" class="hidden" data-id="' + id + '"/>'
+      var input = '<input type="checkbox" class="''" data-id="' + id + '"/>'
       $("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
+      if (submit)
+      {
+        $("input[data-id]").show();
+      }
     });
   });
-}
-
-function closeSession () {
-  $.getJSON("/session_stop", function (data) {return;});
-  sc.stop();
 }
 
 function startSpice () {
@@ -24,6 +26,24 @@ function startSpice () {
   }
   catch (e) {
   }
+  submit=false;
+  updater = window.setInterval (updateEventList, 1000);
+}
+
+function closeSession () {
+  $.getJSON("/session_stop", function (data) {return;});
+  sc.stop();
+}
+
+function restartSession() {
+  closeSession();
+  showSession();
+  $('input[type="button"]').show();
+  $("input.hidden").css("display", "none");
+
+  $.getJSON("/session_start", function (data) {
+    window.setTimeout(startSpice, 1000);
+  });
 }
 
 function reviewChanges() {
@@ -37,20 +57,26 @@ function showSession() {
 }
 
 function createProfile() {
+  submit = true;
   closeSession();
   $('input[type="button"]').hide();
   $("input.hidden").css("display", "inline");
   window.clearInterval(updater);
   window.setTimeout(function () {
-    $("input.hidden").css("display", "inline");
     reviewChanges();
   },
-    1000);
+   1000);
+}
+
+function deployProfile() {
+  var sel = [];
+  $.each($('input[data-id]:checked'), function (i,e) {
+    sel.push(changes.length - 1 - $(this).attr('data-id'));
+  });
+  console.log(sel);
 }
 
 $(document).ready (function () {
-  updater = window.setInterval (updateEventList, 1000);
-
   $.getJSON("/session_start", function (data) {
     window.setTimeout(startSpice, 1000);
   });

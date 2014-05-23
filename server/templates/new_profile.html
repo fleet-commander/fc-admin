@@ -34,6 +34,7 @@
   </head>
   <body>
   <div class="top-bar"></div>
+  <input id="restart-session" type="button" onclick="restartSession()" value="Restart session"/>
   <input id="close-session"   type="button" onclick="closeSession()"   value="Close session"/>
   <input id="review-changes"  type="button" onclick="reviewChanges()"  value="Review changes"/>
   <input id="show-session"    type="button" onclick="showSession()"    value="Show session"/>
@@ -44,7 +45,8 @@
   <div id="event-logs">
     <ul id="event-list">
     </ul>
-    <input class="hidden" id="create-profile" onclick="createProfile()" type="button" value="Next"/>
+    <input class="hidden" id="restart-profile" onclick="restartSession()" type="button" value="Start again"/>
+    <input class="hidden" id="create-profile"  onclick="deployProfile()" type="button" value="Next"/>
   </div>
   </body>
 </html>
