@@ -1,4 +1,4 @@
-var sc;
+var sc=null;
 var updater;
 var changes;
 var submit=false;
@@ -10,7 +10,7 @@ function updateEventList () {
     $.each (data, function (i, item) {
       var row = item.join (" ");
       var id = data.length - 1 - i;
-      var input = '<input type="checkbox" class="''" data-id="' + id + '"/>'
+      var input = '<input type="checkbox" data-id="' + id + '"/>';
       $("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
       if (submit)
       {
@@ -25,6 +25,7 @@ function startSpice () {
     sc = new SpiceMainConn({uri: "ws://localhost:8281/", screen_id: "spice-screen", password: "", onerror: function (e) {return;}});
   }
   catch (e) {
+    sc = null;
   }
   submit=false;
   updater = window.setInterval (updateEventList, 1000);
@@ -32,7 +33,8 @@ function startSpice () {
 
 function closeSession () {
   $.getJSON("/session_stop", function (data) {return;});
-  sc.stop();
+  if (sc != null)
+    sc.stop();
 }
 
 function restartSession() {
