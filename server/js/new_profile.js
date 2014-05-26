@@ -10,13 +10,12 @@ function updateEventList () {
     $.each (data, function (i, item) {
       var row = item.join (" ");
       var id = data.length - 1 - i;
-      var input = '<input type="checkbox" data-id="' + id + '"/>';
+      var input = '<input type="checkbox" class="change-checkbox" data-id="' + id + '"/>';
       $("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
-      if (submit)
-      {
-        $("input[data-id]").show();
-      }
     });
+    if (submit) {
+      $(".change-checkbox").show();
+    }
   });
 }
 
@@ -33,15 +32,18 @@ function startSpice () {
 
 function closeSession () {
   $.getJSON("/session_stop", function (data) {return;});
+  window.clearInterval(updater);
   if (sc != null)
     sc.stop();
 }
 
 function restartSession() {
+  submit = false;
   closeSession();
   showSession();
   $('input[type="button"]').show();
-  $("input.hidden").css("display", "none");
+  $(".hidden").hide();
+  $('.change-checkbox').hide();
 
   $.getJSON("/session_start", function (data) {
     window.setTimeout(startSpice, 1000);
@@ -60,14 +62,12 @@ function showSession() {
 
 function createProfile() {
   submit = true;
-  closeSession();
   $('input[type="button"]').hide();
-  $("input.hidden").css("display", "inline");
-  window.clearInterval(updater);
-  window.setTimeout(function () {
-    reviewChanges();
-  },
-   1000);
+  $(".change-checkbox").show();
+
+  window.setTimeout(function () {reviewChanges();}, 1000);
+
+  closeSession();
 }
 
 function deployProfile() {

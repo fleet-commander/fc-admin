@@ -25,6 +25,10 @@
   display: none;
 }
 
+.change-checkbox {
+  display: none;
+}
+
 body {
   background: #eaeaea;
   padding: 0px;
