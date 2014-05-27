@@ -63,6 +63,7 @@ function showSession() {
 function createProfile() {
   submit = true;
   $('input[type="button"]').hide();
+  $("#restart-profile, #submit-profile").show();
   $(".change-checkbox").show();
 
   window.setTimeout(function () {reviewChanges();}, 1000);
@@ -75,7 +76,19 @@ function deployProfile() {
   $.each($('input[data-id]:checked'), function (i,e) {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
-  console.log(sel);
+
+  $.ajax({
+    url: "/session_select",
+    type: "POST",
+    data: {"sel": sel},
+    dataType: "json",
+    success: function (data) {
+      if (data.status == "ok")
+        window.location = "/deploy/" + data.uuid;
+      else
+        console.log("there was an error sending the change selection");
+    }
+  });
 }
 
 $(document).ready (function () {

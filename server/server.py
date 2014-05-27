@@ -2,9 +2,12 @@
 import os
 import json
 import requests
+import uuid
 from flask import Flask, request, send_from_directory, render_template
 
 changes = []
+
+deploys = {}
 
 #Profile listing
 app = Flask(__name__, template_folder="templates/")
@@ -44,6 +47,10 @@ def index():
 def new_profile():
   return render_template('new_profile.html')
 
+@app.route("/deploy/<uid>", methods["GET"])
+def new_profile(uid):
+  return render_template('deploy.html')
+
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
@@ -61,6 +68,22 @@ def session_stop():
   profile = list(changes)
   req = requests.get("http://localhost:8182/stop_session")
   return req.content, req.status_code
+
+@app.route("/session_select", methods=["POST"])
+def session_select():
+  data = dict(request.form)
+  sel = []
+  if not "sel[]" in data:
+    return '{"status": "bad_form_data"}'
+  print (changes)
+  for change in data["sel[]"]:
+    if int(change) > len(changes) - 1:
+      return '{"status": "wrong_index"}'
+    sel.append(changes[int(change)])
+
+  uid = str(uuid.uuid1().int)
+  deploys[uid] = sel
+  return '{"status": "ok", "uuid" "%s"}' % uid
 
 if __name__ == "__main__":
       app.run(port=8181, debug=True)
