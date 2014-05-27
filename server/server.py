@@ -3,7 +3,7 @@ import os
 import json
 import requests
 import uuid
-from flask import Flask, request, send_from_directory, render_template
+from flask import Flask, request, send_from_directory, render_template, jsonify
 
 changes = []
 
@@ -18,6 +18,11 @@ def profile_index():
 @app.route("/profiles/<path:profile_id>", methods=["GET"])
 def profiles(profile_id):
   return send_from_directory(os.path.join(os.getcwd(), "profiles"), profile_id)
+
+@app.route("/getent", methods=['GET'])
+def getent():
+  #TODO: Use the python getent module to get actual users and groups
+  return json.dumps({"users": ["aruiz", "mbarnes"],"groups": ["wheel", "admin", "aruiz", "mbarnes"]})
 
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
@@ -47,8 +52,8 @@ def index():
 def new_profile():
   return render_template('new_profile.html')
 
-@app.route("/deploy/<uid>", methods["GET"])
-def new_profile(uid):
+@app.route("/deploy/<uid>", methods=["GET"])
+def deploy(uid):
   return render_template('deploy.html')
 
 #profile builder methods
@@ -83,7 +88,7 @@ def session_select():
 
   uid = str(uuid.uuid1().int)
   deploys[uid] = sel
-  return '{"status": "ok", "uuid" "%s"}' % uid
+  return json.dumps({"status": "ok", "uuid": uid})
 
 if __name__ == "__main__":
       app.run(port=8181, debug=True)

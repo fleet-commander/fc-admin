@@ -77,18 +77,11 @@ function deployProfile() {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
 
-  $.ajax({
-    url: "/session_select",
-    type: "POST",
-    data: {"sel": sel},
-    dataType: "json",
-    success: function (data) {
-      if (data.status == "ok")
-        window.location = "/deploy/" + data.uuid;
-      else
-        console.log("there was an error sending the change selection");
-    }
-  });
+  $.post("/session_select", {"sel": sel}, function (data) {
+      if (data.status == "ok") {
+        location.pathname = "/deploy/" + data.uuid;
+      }
+  }, "json");
 }
 
 $(document).ready (function () {
