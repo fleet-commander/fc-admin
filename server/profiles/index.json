@@ -1,4 +1,1 @@
-[
-  {"url": "simple.json",
-   "displayName": "Simple"}
-]
+[{"displayName": "Simple", "url": "simple.json"}, {"displayName": "foo", "url": "65689435663875296450255812282870221340.json"}]

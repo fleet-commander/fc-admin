@@ -24,11 +24,45 @@ def getent():
   #TODO: Use the python getent module to get actual users and groups
   return json.dumps({"users": ["aruiz", "mbarnes"],"groups": ["wheel", "admin", "aruiz", "mbarnes"]})
 
+@app.route("/profile_save/<id>", methods=["POST"])
+def profile_save(id):
+  if id not in deploys:
+    return '{"status": "nonexistinguid"}'
+
+  cset = deploys[id]
+  form = dict(request.form)
+
+  profile = {}
+  gsettings = []
+
+  for change in cset:
+    chg_entry = {}
+    schema, key, sig, val = tuple(change)
+    chg_entry["key"] = key
+    chg_entry["schema"] = schema
+    chg_entry["value"] = val
+    gsettings.append(chg_entry)
+
+  profile["uid"] = id
+  profile["name"] = form["profile-name"][0]
+  profile["description"] = form["profile-desc"][0]
+  profile["settings"] = {"org.gnome.gsettings": gsettings}
+
+  filename = id+".json"
+  index = json.loads(open('profiles/index.json').read())
+  index.append({"url": filename, "displayName": form["profile-name"][0]})
+  deploys.pop(id)
+
+  open('profiles/' + filename, 'w+').write(json.dumps(profile))
+  open('profiles/index.json', 'w+').write(json.dumps(index))
+
+  return '{"status": "ok"}'
+
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
   changes.insert(0, request.json)
-  return "{\"status\": \"ok\"}"
+  return '{"status": "ok"}'
 
 #Static files
 @app.route("/js/<path:js>", methods=["GET"])

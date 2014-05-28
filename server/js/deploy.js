@@ -11,6 +11,13 @@ function populateUsersGroups(users, groups) {
   });
 }
 
+function profileSave() {
+  $.post("/profile_save/" + uid, $('form').serialize(), function (data) {
+    //location.pathname = "/";
+    console.log(data);
+  });
+}
+
 $(document).ready (function () {
   var path = location.pathname.split("/");
   uid = path[path.length - 1];

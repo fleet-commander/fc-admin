@@ -12,7 +12,7 @@
   <div class="top-bar"></div>
   <h1>Deploy profile</h1>
   <div id="summary"></div>
-  <form>
+  <form id="profile-data">
     Name: <input type="text" name="profile-name"/><br/>
     Description: <input type="text" name="profile-desc"/>
     <h2>Applies to:</h2>
@@ -20,6 +20,7 @@
     <select id="profile-users" name="profile-users"></select>
     <h3>Groups</h3>
     <select id="profile-groups" name="profile-groups"></select>
+    <input type="button" value="Discard"/><input onclick="profileSave()" type="button" value="Save"/>
   </form>
   </body>
 </html>
