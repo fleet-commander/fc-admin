@@ -13,8 +13,13 @@ function populateUsersGroups(users, groups) {
 
 function profileSave() {
   $.post("/profile_save/" + uid, $('form').serialize(), function (data) {
-    //location.pathname = "/";
-    console.log(data);
+    location.pathname = "/";
+  });
+}
+
+function profileDiscard() {
+  $.get("/profile_discard/"+uid, function (data) {
+    location.pathname = "/";
   });
 }
 

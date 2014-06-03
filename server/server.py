@@ -38,7 +38,7 @@ def profile_save(id):
   for change in cset:
     chg_entry = {}
     schema, key, sig, val = tuple(change)
-    chg_entry["key"] = key
+    chg_entry["key"] = "/" + schema.replace(".","/") + "/" + key
     chg_entry["schema"] = schema
     chg_entry["value"] = val
     gsettings.append(chg_entry)
@@ -47,6 +47,7 @@ def profile_save(id):
   profile["name"] = form["profile-name"][0]
   profile["description"] = form["profile-desc"][0]
   profile["settings"] = {"org.gnome.gsettings": gsettings}
+  profile["etag"] = "placeholder"
 
   filename = id+".json"
   index = json.loads(open('profiles/index.json').read())
@@ -56,6 +57,12 @@ def profile_save(id):
   open('profiles/' + filename, 'w+').write(json.dumps(profile))
   open('profiles/index.json', 'w+').write(json.dumps(index))
 
+  return '{"status": "ok"}'
+
+@app.route("/profile_discard/<id>", methods=["GET"])
+def profile_discard(id):
+  if id in deploys:
+    deploys.pop(id)
   return '{"status": "ok"}'
 
 #Add a configuration change to a session
@@ -68,6 +75,7 @@ def submit_change():
 @app.route("/js/<path:js>", methods=["GET"])
 def js_files(js):
   return send_from_directory(os.path.join(os.getcwd(), "js"), js)
+
 
 @app.route("/css/<path:js>", methods=["GET"])
 def css_files(js):
@@ -125,4 +133,4 @@ def session_select():
   return json.dumps({"status": "ok", "uuid": uid})
 
 if __name__ == "__main__":
-      app.run(port=8181, debug=True)
+      app.run(host="0.0.0.0", port=8181, debug=True)

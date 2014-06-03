@@ -31,10 +31,12 @@ function startSpice () {
 }
 
 function closeSession () {
-  $.getJSON("/session_stop", function (data) {return;});
   window.clearInterval(updater);
+
   if (sc != null)
     sc.stop();
+
+  $.getJSON("/session_stop", function (data) {return;});
 }
 
 function restartSession() {
@@ -76,7 +78,6 @@ function deployProfile() {
   $.each($('input[data-id]:checked'), function (i,e) {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
-
   $.post("/session_select", {"sel": sel}, function (data) {
       if (data.status == "ok") {
         location.pathname = "/deploy/" + data.uuid;
@@ -86,7 +87,7 @@ function deployProfile() {
 
 $(document).ready (function () {
   $.getJSON("/session_start", function (data) {
-    window.setTimeout(startSpice, 1000);
+    window.setTimeout(restartSession, 1000);
   });
 
   $("#event-logs").hide();
