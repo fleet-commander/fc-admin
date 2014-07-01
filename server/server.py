@@ -54,6 +54,14 @@ def profile_save(id):
   profile = {}
   gsettings = []
 
+  # List all keys of the form 'user-NAME', then trim off 'user-'.
+  users = filter(lambda x: x.startswith('user-'), form.keys())
+  users = list(map(lambda x: x[5:], users))
+
+  # Same as above, but for 'group-NAME' keys.
+  groups = filter(lambda x: x.startswith('group-'), form.keys())
+  groups = list(map(lambda x: x[6:], groups))
+
   for change in cset:
     chg_entry = {}
     schema, key, sig, val = tuple(change)
@@ -66,6 +74,7 @@ def profile_save(id):
   profile["name"] = form["profile-name"][0]
   profile["description"] = form["profile-desc"][0]
   profile["settings"] = {"org.gnome.gsettings": gsettings}
+  profile["applies-to"] = {"users": users, "groups": groups}
   profile["etag"] = "placeholder"
 
   filename = id+".json"

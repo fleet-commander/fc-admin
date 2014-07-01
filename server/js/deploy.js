@@ -22,11 +22,11 @@ var uid = "";
 function populateUsersGroups(users, groups) {
   $.each(users, function (i,e) {
     console.log("bar");
-    $("#profile-users").html($("#profile-users").html() + '<option value="' + e +'">' + e + '</value>');
+    $("#profile-users").html($("#profile-users").html() + '<input type="checkbox" name="user-' + e + '">' + e + '</input>');
   });
   $.each(groups, function(i,e) {
     console.log("foo");
-    $("#profile-groups").html($("#profile-groups").html() + '<option value="' + e +'">' + e + '</value>');
+    $("#profile-groups").html($("#profile-groups").html() + '<input type="checkbox" name="group-' + e + '">' + e + '</input>');
   });
 }
 
