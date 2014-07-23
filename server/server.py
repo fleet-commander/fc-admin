@@ -63,12 +63,7 @@ def profile_save(id):
   groups = list(map(lambda x: x[6:], groups))
 
   for change in cset:
-    chg_entry = {}
-    schema, key, sig, val = tuple(change)
-    chg_entry["key"] = key
-    chg_entry["schema"] = schema
-    chg_entry["value"] = val
-    gsettings.append(chg_entry)
+    gsettings.append(change)
 
   profile["uid"] = id
   profile["name"] = form["profile-name"][0]
@@ -129,7 +124,8 @@ def deploy(uid):
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
-  return json.dumps(changes)
+  data = list(map(lambda x: [x['key'], x['value']], changes))
+  return json.dumps(data)
 
 @app.route("/session_start", methods=["GET"])
 def session_start():

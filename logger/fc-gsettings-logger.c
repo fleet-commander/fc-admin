@@ -115,28 +115,28 @@ post_change_entry_cb (GObject *source_object,
 }
 
 static void
-post_change_entry (const gchar *schema_id,
-                   const gchar *abs_key,
+post_change_entry (const gchar *abs_key,
+                   const gchar *schema_id,
                    GVariant *value)
 {
 	JsonNode *root;
-	JsonArray *array;
+	JsonNode *node;
+	JsonObject *object;
 	JsonGenerator *generator;
 	SoupMessage *message;
 	gchar *data;
 	gsize data_length;
-	const gchar *type_string;
 
-	type_string = g_variant_get_type_string (value);
+	object = json_object_new ();
+	json_object_set_string_member (object, "key", abs_key);
+	json_object_set_string_member (object, "schema", schema_id);
 
-	array = json_array_new ();
-	json_array_add_string_element (array, schema_id);
-	json_array_add_string_element (array, abs_key);
-	json_array_add_string_element (array, type_string);
-	json_array_add_element (array, json_gvariant_serialize (value));
+	/* JsonObject takes ownership of JsonNode. */
+	node = json_gvariant_serialize (value);
+	json_object_set_member (object, "value", node);
 
-	root = json_node_new (JSON_NODE_ARRAY);
-	json_node_init_array (root, array);
+	root = json_node_new (JSON_NODE_OBJECT);
+	json_node_init_object (root, object);
 
 	generator = json_generator_new ();
 	json_generator_set_root (generator, root);
@@ -155,7 +155,7 @@ post_change_entry (const gchar *schema_id,
 	g_object_unref (message);
 
 	json_node_free (root);
-	json_array_unref (array);
+	json_object_unref (object);
 }
 
 static void
@@ -175,7 +175,7 @@ settings_changed_cb (GSettings *settings,
 
 	abs_key = g_build_path ("/", path, key, NULL);
 
-	post_change_entry (schema_id, abs_key, value);
+	post_change_entry (abs_key, schema_id, value);
 
 	g_free (abs_key);
 	g_free (schema_id);
