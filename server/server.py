@@ -24,7 +24,7 @@ import requests
 import uuid
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
-changes = []
+changes = {}
 
 deploys = {}
 
@@ -91,7 +91,7 @@ def profile_discard(id):
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
-  changes.insert(0, request.json)
+  changes[request.json["key"]] = request.json
   return '{"status": "ok"}'
 
 #Static files
@@ -124,19 +124,20 @@ def deploy(uid):
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
-  data = list(map(lambda x: [x['key'], x['value']], changes))
+  data = []
+  for key, change in sorted(changes.items()):
+    data.append([key, change["value"]])
   return json.dumps(data)
 
 @app.route("/session_start", methods=["GET"])
 def session_start():
   global changes
-  changes = []
+  changes = {}
   req = requests.get("http://localhost:8182/start_session")
   return req.content, req.status_code
 
 @app.route("/session_stop", methods=["GET"])
 def session_stop():
-  profile = list(changes)
   req = requests.get("http://localhost:8182/stop_session")
   return req.content, req.status_code
 
@@ -147,10 +148,12 @@ def session_select():
   if not "sel[]" in data:
     return '{"status": "bad_form_data"}'
   print (changes)
+  sorted_keys = sorted(changes.keys())
   for change in data["sel[]"]:
     if int(change) > len(changes) - 1:
       return '{"status": "wrong_index"}'
-    sel.append(changes[int(change)])
+    key = sorted_keys[int(change)]
+    sel.append(changes[key])
 
   uid = str(uuid.uuid1().int)
   deploys[uid] = sel
