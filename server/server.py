@@ -65,7 +65,7 @@ def profile_save(id):
   for change in cset:
     chg_entry = {}
     schema, key, sig, val = tuple(change)
-    chg_entry["key"] = "/" + schema.replace(".","/") + "/" + key
+    chg_entry["key"] = key
     chg_entry["schema"] = schema
     chg_entry["value"] = val
     gsettings.append(chg_entry)

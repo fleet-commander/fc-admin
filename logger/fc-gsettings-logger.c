@@ -116,7 +116,7 @@ post_change_entry_cb (GObject *source_object,
 
 static void
 post_change_entry (const gchar *schema_id,
-                   const gchar *key,
+                   const gchar *abs_key,
                    GVariant *value)
 {
 	JsonNode *root;
@@ -131,7 +131,7 @@ post_change_entry (const gchar *schema_id,
 
 	array = json_array_new ();
 	json_array_add_string_element (array, schema_id);
-	json_array_add_string_element (array, key);
+	json_array_add_string_element (array, abs_key);
 	json_array_add_string_element (array, type_string);
 	json_array_add_element (array, json_gvariant_serialize (value));
 
@@ -164,6 +164,7 @@ settings_changed_cb (GSettings *settings,
 {
 	GVariant *value;
 	gchar *schema_id;
+	gchar *abs_key;
 	gchar *path;
 
 	value = g_settings_get_value (settings, key);
@@ -172,8 +173,11 @@ settings_changed_cb (GSettings *settings,
 
 	g_debug ("GSettings::changed('%s', '%s') at %s", schema_id, key, path);
 
-	post_change_entry (schema_id, key, value);
+	abs_key = g_build_path ("/", path, key, NULL);
 
+	post_change_entry (schema_id, abs_key, value);
+
+	g_free (abs_key);
 	g_free (schema_id);
 	g_free (path);
 
