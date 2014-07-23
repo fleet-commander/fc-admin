@@ -143,6 +143,8 @@ post_change_entry (const gchar *schema_id,
 	data = json_generator_to_data (generator, &data_length);
 	g_object_unref (generator);
 
+	g_debug ("POST %s\n%s", POST_URL, data);
+
 	message = soup_message_new (SOUP_METHOD_POST, POST_URL);
 	soup_message_set_request (
 		message, "application/json",
