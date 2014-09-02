@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Fleet Commander GSettings Logger
+Name=Fleet Commander Session Logger
 Icon=preferences-desktop-screensaver
-Exec=fc-gsettings-logger
+Exec=fcmdr-logger.py
 OnlyShowIn=GNOME;
 NoDisplay=true
 X-GNOME-Autostart-Phase=Application

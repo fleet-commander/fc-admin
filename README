@@ -12,8 +12,8 @@ You must create a system user called fc-user with display name "Fleet Commander"
 
 This user will be used to create the "dumb" session that the sysadmin will see in the browser.
 
-BUILD AND INSTALL THE GSETTINGS LOGGER
-fc-gsettings-logger is the service that logs the gsettings changes and submits them to the central web service
+BUILD AND INSTALL THE SESSION LOGGER
+fcmdr-logger.py is the service that logs session changes and submits them to the central web service
 
 to build it enter into the logger/ directory type "make" and "make install", note that you need the development
 files for gio, libsoup and json-glib.

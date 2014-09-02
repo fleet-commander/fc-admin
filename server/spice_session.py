@@ -29,17 +29,17 @@ from flask import Flask
 class SpiceSessionManager:
   XSPICE = 'Xspice :10 --disable-ticketing --port 8280'
   GNOME_SESSION = 'DISPLAY=:10 gnome-session'
-  GSETTINGS_LOGGER = 'DISPLAY=:10 fc-gsettings-logger'
+  FCMDR_LOGGER = 'DISPLAY=:10 fcmdr-logger.py'
   WEBSOCKIFY = 'websockify localhost:8281 localhost:8280'
 
   def __init__(self):
     self.xspice = None
     self.gnome_session = None
-    self.gsettings_logger = None
+    self.fcmdr_logger = None
     self.websockify = None
 
   def start(self):
-    if self.xspice or self.gnome_session or self.gsettings_logger or self.websockify:
+    if self.xspice or self.gnome_session or self.fcmdr_logger or self.websockify:
       return False
 
     DNULL = open('/dev/null', 'w')
@@ -49,7 +49,7 @@ class SpiceSessionManager:
     time.sleep(1)
 
     self.gnome_session    = subprocess.Popen(template % self.GNOME_SESSION,    shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
-    self.gsettings_logger = subprocess.Popen(template % self.GSETTINGS_LOGGER, shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
+    self.fcmdr_logger = subprocess.Popen(template % self.FCMDR_LOGGER, shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
     self.websockify       = subprocess.Popen(template % self.WEBSOCKIFY,       shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
     return True
 
@@ -60,7 +60,7 @@ class SpiceSessionManager:
 
     self.xspice = None
     self.gnome_session = None
-    self.gsettings_logger = None
+    self.fcmdr_logger = None
     self.websockify = None
 
 app = Flask(__name__)
