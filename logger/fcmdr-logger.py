@@ -26,6 +26,8 @@ from http.client import HTTPConnection
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_HTTP_SERVER = 'localhost:8181'
+
 class GSettingsLogger(object):
     '''Logs all GSettings changes.
 
@@ -67,10 +69,9 @@ class GSettingsLogger(object):
     OBJECT_PATH = '/ca/desrt/dconf/Writer/user'
     INTERFACE_NAME = 'ca.desrt.dconf.Writer'
 
-    SUBMIT_HOST = 'localhost'
-    SUBMIT_PORT = 8181
+    def __init__(self, connection):
+        self.connection = connection
 
-    def __init__(self):
         # path_to_known_settings : { 'path': Settings }
         #
         # This is for Settings objects with fixed-path schemas
@@ -94,8 +95,6 @@ class GSettingsLogger(object):
         self.relocatable_schemas = []
 
         self.dconf_subscription_id = 0
-
-        self.connection = HTTPConnection(self.SUBMIT_HOST, self.SUBMIT_PORT)
 
         schema_source = Gio.SettingsSchemaSource.get_default()
 
@@ -282,10 +281,16 @@ if __name__ == '__main__':
         '--debug', action='store_const', dest='loglevel',
         const=logging.DEBUG, default=logging.WARNING,
         help='print debugging information')
+    parser.add_argument(
+        '--server', action='store', metavar='HOST[:PORT]',
+        default=DEFAULT_HTTP_SERVER,
+        help='HTTP server address (default: %s)' % DEFAULT_HTTP_SERVER)
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)
+    connection = HTTPConnection(args.server)
 
-    gsettings_logger = GSettingsLogger()
+    gsettings_logger = GSettingsLogger(connection)
+
     GLib.MainLoop().run()
 
