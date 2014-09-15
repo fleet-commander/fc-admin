@@ -24,9 +24,37 @@ import requests
 import uuid
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
-changes = {}
-
 deploys = {}
+
+collectors_by_name = {}
+
+class GSettingsCollector(object):
+
+  def __init__(self):
+    self.changes = {}
+    self.selection = []
+
+  def remember_selected(self, selected_indices):
+    self.selection = []
+    sorted_keys = sorted(self.changes.keys())
+    for index in selected_indices:
+      if index < len(sorted_keys):
+        key = sorted_keys[index]
+        change = self.changes[key]
+        self.selection.append(change)
+
+  def handle_change(self, request):
+    self.changes[request.json['key']] = request.json
+
+  def dump_changes(self):
+    data = []
+    for key, change in sorted(self.changes.items()):
+      data.append([key, change['value']])
+    return json.dumps(data)
+
+  def get_settings(self):
+    return self.selection
+
 
 #Profile listing
 app = Flask(__name__, template_folder="templates/")
@@ -48,11 +76,10 @@ def profile_save(id):
   if id not in deploys:
     return '{"status": "nonexistinguid"}'
 
-  cset = deploys[id]
   form = dict(request.form)
 
   profile = {}
-  gsettings = []
+  settings = {}
 
   # List all keys of the form 'user-NAME', then trim off 'user-'.
   users = filter(lambda x: x.startswith('user-'), form.keys())
@@ -62,20 +89,20 @@ def profile_save(id):
   groups = filter(lambda x: x.startswith('group-'), form.keys())
   groups = list(map(lambda x: x[6:], groups))
 
-  for change in cset:
-    gsettings.append(change)
+  for name, collector in deploys[id].items():
+    settings[name] = collector.get_settings()
 
   profile["uid"] = id
   profile["name"] = form["profile-name"][0]
   profile["description"] = form["profile-desc"][0]
-  profile["settings"] = {"org.gnome.gsettings": gsettings}
+  profile["settings"] = settings
   profile["applies-to"] = {"users": users, "groups": groups}
   profile["etag"] = "placeholder"
 
   filename = id+".json"
   index = json.loads(open('profiles/index.json').read())
   index.append({"url": filename, "displayName": form["profile-name"][0]})
-  deploys.pop(id)
+  del deploys[id]
 
   open('profiles/' + filename, 'w+').write(json.dumps(profile))
   open('profiles/index.json', 'w+').write(json.dumps(index))
@@ -85,13 +112,14 @@ def profile_save(id):
 @app.route("/profile_discard/<id>", methods=["GET"])
 def profile_discard(id):
   if id in deploys:
-    deploys.pop(id)
+    del deploys[id]
   return '{"status": "ok"}'
 
 #Add a configuration change to a session
 @app.route("/submit_change", methods=["POST"])
 def submit_change():
-  changes[request.json["key"]] = request.json
+  collector = collectors_by_name['org.gnome.gsettings']
+  collector.handle_change(request)
   return '{"status": "ok"}'
 
 #Static files
@@ -124,15 +152,13 @@ def deploy(uid):
 #profile builder methods
 @app.route("/session_changes", methods=["GET"])
 def session_changes():
-  data = []
-  for key, change in sorted(changes.items()):
-    data.append([key, change["value"]])
-  return json.dumps(data)
+  collector = collectors_by_name['org.gnome.gsettings']
+  return collector.dump_changes()
 
 @app.route("/session_start", methods=["GET"])
 def session_start():
-  global changes
-  changes = {}
+  collectors_by_name.clear()
+  collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
   req = requests.get("http://localhost:8182/start_session")
   return req.content, req.status_code
 
@@ -147,16 +173,14 @@ def session_select():
   sel = []
   if not "sel[]" in data:
     return '{"status": "bad_form_data"}'
-  print (changes)
-  sorted_keys = sorted(changes.keys())
-  for change in data["sel[]"]:
-    if int(change) > len(changes) - 1:
-      return '{"status": "wrong_index"}'
-    key = sorted_keys[int(change)]
-    sel.append(changes[key])
+  selected_indices = [int(x) for x in data['sel[]']]
+  collector = collectors_by_name['org.gnome.gsettings']
+  collector.remember_selected(selected_indices)
 
   uid = str(uuid.uuid1().int)
-  deploys[uid] = sel
+  deploys[uid] = dict(collectors_by_name)
+  collectors_by_name.clear()
+
   return json.dumps({"status": "ok", "uuid": uid})
 
 if __name__ == "__main__":
