@@ -148,8 +148,9 @@ class GSettingsLogger(object):
         generator.set_root(root)
         data, length = generator.to_data()
 
+        path = '/submit_change/org.gnome.gsettings'
         headers = {'Content-type': 'application/json'}
-        self.connection.request('POST', '/submit_change', data, headers)
+        self.connection.request('POST', path, data, headers)
         response = self.connection.getresponse()
 
     def __new_settings_for_schema(self, schema, path):

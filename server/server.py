@@ -116,11 +116,13 @@ def profile_discard(id):
   return '{"status": "ok"}'
 
 #Add a configuration change to a session
-@app.route("/submit_change", methods=["POST"])
-def submit_change():
-  collector = collectors_by_name['org.gnome.gsettings']
-  collector.handle_change(request)
-  return '{"status": "ok"}'
+@app.route("/submit_change/<name>", methods=["POST"])
+def submit_change(name):
+  if name in collectors_by_name:
+    collectors_by_name[name].handle_change(request)
+    return '{"status": "ok"}'
+  else:
+    return '{"status": 400}' # 400: Bad request
 
 #Static files
 @app.route("/js/<path:js>", methods=["GET"])
