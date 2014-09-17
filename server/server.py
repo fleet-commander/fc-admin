@@ -28,6 +28,18 @@ deploys = {}
 
 collectors_by_name = {}
 
+class GoaCollector(object):
+
+  def __init__(self):
+    self.json = {}
+
+  def handle_change(self, request):
+    self.json = dict(request.json)
+
+  def get_settings(self):
+    return self.json
+
+
 class GSettingsCollector(object):
 
   def __init__(self):
@@ -54,6 +66,7 @@ class GSettingsCollector(object):
 
   def get_settings(self):
     return self.selection
+
 
 
 #Profile listing
@@ -161,6 +174,7 @@ def session_changes():
 def session_start():
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
+  collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
   req = requests.get("http://localhost:8182/start_session")
   return req.content, req.status_code
 

@@ -18,15 +18,93 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Matthew Barnes <mbarnes@redhat.com>
 
+# XXX May want to eventually break this into one logger class per
+#     file so it's more manageable, but we're not quite there yet.
+
+import json
 import logging
+import os.path
 
 from argparse import ArgumentParser
 from gi.repository import GLib, Gio, Json
+from configparser import ConfigParser
 from http.client import HTTPConnection
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_HTTP_SERVER = 'localhost:8181'
+
+class GoaLogger(object):
+    '''Logs changes to GNOME Online Accounts.'''
+
+    def __init__(self, connection):
+        self.connection = connection
+
+        user_config_dir = GLib.get_user_config_dir()
+        self.path = os.path.join(user_config_dir, 'goa-1.0', 'accounts.conf')
+
+        # Abbreviated path for debug messages.
+        self.debug_path = os.path.relpath(self.path, user_config_dir)
+
+        self.monitor = Gio.File.new_for_path(self.path). \
+                       monitor_file(Gio.FileMonitorFlags.NONE, None)
+        self.monitor.connect('changed', self.__file_changed_cb)
+
+        if os.path.exists(self.path):
+            self.update()
+
+    def __file_changed_cb(self, monitor, this_file, other_file, event_type):
+        logger.debug(
+            'GFileMonitor::changed("%s", %s)',
+            self.debug_path, event_type.value_nick)
+
+        if event_type in (Gio.FileMonitorEvent.CHANGED,
+                          Gio.FileMonitorEvent.CREATED,
+                          Gio.FileMonitorEvent.DELETED):
+            self.update()
+
+    def update(self):
+        config = ConfigParser()
+
+        # For DELETED events, this just skips the deleted file
+        # resulting in an empty dataset, which is what we want.
+        config.read(self.path)
+
+        # Filter out temporary accounts (e.g. kerberos) and user-controlled
+        # options (CalendarEnabled, ContactsEnabled, DocumentsEnabled, etc).
+        for section in config.sections():
+            if config[section].getboolean('istemporary'):
+                del config[section]
+            else:
+                for option in config[section]:
+                    if option.endswith('enabled'):
+                        del config[section][option]
+
+        # Substitute occurrences of the account user name and real name
+        # with ${username} and ${realname} variables.  The user name is
+        # derived from particular account options.
+        for section in config.sections():
+            section_proxy = config[section]
+
+            if 'name' in section_proxy:
+                section_proxy['name'] = '${realname}'
+
+            username = section_proxy.get('identity')
+            if username:
+                if '@' in username:
+                    username = username.split('@')[0]
+                for key, value in section_proxy.items():
+                    new_value = value.replace(username, '${username}')
+                    section_proxy[key] = new_value
+
+        # Convert to JSON format.
+        data = json.dumps({s: dict(config.items(s)) for s in config.sections()})
+
+        path = '/submit_change/org.gnome.online-accounts'
+        headers = {'Content-type': 'application/json'}
+        self.connection.request('POST', path, data, headers)
+        response = self.connection.getresponse()
+
 
 class GSettingsLogger(object):
     '''Logs all GSettings changes.
@@ -292,6 +370,7 @@ if __name__ == '__main__':
     connection = HTTPConnection(args.server)
 
     gsettings_logger = GSettingsLogger(connection)
+    goa_logger = GoaLogger(connection)
 
     GLib.MainLoop().run()
 
