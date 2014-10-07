@@ -80,6 +80,18 @@ class GoaLogger(object):
                     if option.endswith('enabled'):
                         del config[section][option]
 
+        # Modify the remaining account IDs so they don't conflict with
+        # user-created accounts on client machines.
+        for section in config.sections():
+            # Section name is 'Account account_TIMESTAMP_COUNT'.
+            # Replace it with 'fcmdr_account_TIMESTAMP_COUNT'.
+            new_section = 'fcmdr_' + section.split()[-1]
+            config.add_section(new_section)
+            new_section_proxy = config[new_section]
+            for k, v in config.items(section):
+                new_section_proxy[k] = v
+            del config[section]
+
         # Substitute occurrences of the account user name and real name
         # with ${username} and ${realname} variables.  The user name is
         # derived from particular account options.
