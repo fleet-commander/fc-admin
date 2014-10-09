@@ -66,6 +66,9 @@ class GoaLogger(object):
     def update(self):
         config = ConfigParser()
 
+        # Preserve "CamelCase" in option names.
+        config.optionxform = str
+
         # For DELETED events, this just skips the deleted file
         # resulting in an empty dataset, which is what we want.
         config.read(self.path)
