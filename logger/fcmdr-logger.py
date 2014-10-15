@@ -35,7 +35,14 @@ logger = logging.getLogger(__name__)
 DEFAULT_HTTP_SERVER = 'localhost:8181'
 
 class GoaLogger(object):
-    '''Logs changes to GNOME Online Accounts.'''
+    '''Logs changes to GNOME Online Accounts.
+
+    This is a simple logger class that monitors the "accounts.conf" key
+    file for updates from the GNOME Online Accounts daemon (goa-daemon).
+
+    When an update occurs, this class parses and filters the file contents,
+    converts the key file syntax to a JSON object (group names become member
+    names, with a few tweaks), and submits the update to the HTTP server.'''
 
     def __init__(self, connection):
         self.connection = connection
@@ -153,7 +160,7 @@ class GSettingsLogger(object):
 
     As the changed key set for that path expands from further notifications,
     we reexamine the candidate schemas for that path and eliminate those that
-    no longer satisfy the (expanded) changed key set.  When only on candidate
+    no longer satisfy the (expanded) changed key set.  When only one candidate
     remains, we can conclude with certainty which relocatable schema is in use
     at that path.
     '''
