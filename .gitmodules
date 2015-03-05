@@ -1,3 +1,0 @@
-[submodule "server/js/spice-html5"]
-	path = server/js/spice-html5
-	url = git://anongit.freedesktop.org/spice/spice-html5
