@@ -1,29 +1,17 @@
 <html>
   <head>
-    <script src="js/spice-html5/spicearraybuffer.js"></script>
-    <script src="js/spice-html5/enums.js"></script>
-    <script src="js/spice-html5/atKeynames.js"></script>
-    <script src="js/spice-html5/utils.js"></script>
-    <script src="js/spice-html5/png.js"></script>
-    <script src="js/spice-html5/lz.js"></script>
-    <script src="js/spice-html5/quic.js"></script>
-    <script src="js/spice-html5/bitmap.js"></script>
-    <script src="js/spice-html5/spicedataview.js"></script>
-    <script src="js/spice-html5/spicetype.js"></script>
-    <script src="js/spice-html5/spicemsg.js"></script>
-    <script src="js/spice-html5/wire.js"></script>
-    <script src="js/spice-html5/spiceconn.js"></script>
-    <script src="js/spice-html5/display.js"></script>
-    <script src="js/spice-html5/main.js"></script>
-    <script src="js/spice-html5/inputs.js"></script>
-    <script src="js/spice-html5/simulatecursor.js"></script>
-    <script src="js/spice-html5/cursor.js"></script>
-    <script src="js/spice-html5/thirdparty/jsbn.js"></script>
-    <script src="js/spice-html5/thirdparty/rsa.js"></script>
-    <script src="js/spice-html5/thirdparty/prng4.js"></script>
-    <script src="js/spice-html5/thirdparty/rng.js"></script>
-    <script src="js/spice-html5/thirdparty/sha1.js"></script>
-    <script src="js/spice-html5/ticket.js"></script>
+    <script src="/js/noVNC/include/util.js"></script>
+    <script src="/js/noVNC/include/webutil.js"></script>
+    <script src="/js/noVNC/include/base64.js"></script>
+    <script src="/js/noVNC/include/websock.js"></script>
+    <script src="/js/noVNC/include/des.js"></script>
+    <script src="/js/noVNC/include/keysymdef.js"></script>
+    <script src="/js/noVNC/include/keyboard.js"></script>
+    <script src="/js/noVNC/include/input.js"></script>
+    <script src="/js/noVNC/include/display.js"></script>
+    <script src="/js/noVNC/include/jsunzip.js"></script>
+    <script src="/js/noVNC/include/keysym.js"></script>
+    <script src="/js/noVNC/include/rfb.js"></script>
     <script src="/js/jquery-1.11.1.min.js"></script>
     <script src="/js/new_profile.js"></script>
     
@@ -39,8 +27,9 @@
   <input id="review-changes"  type="button" onclick="reviewChanges()"  value="Review changes"/>
   <input id="show-session"    type="button" onclick="showSession()"    value="Show session"/>
   <input id="create-profile"  type="button" onclick="createProfile()"  value="Create profile"/>
-  <div id="spice-area">
-    <div id="spice-screen"></div>
+  <div id="vnc-area">
+    <canvas id="vnc-canvas">
+    </canvas>
   </div>
   <div id="event-logs">
     <ul id="event-list">

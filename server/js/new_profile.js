@@ -17,7 +17,6 @@
  * Author: Alberto Ruiz <aruiz@redhat.com>
  */
 
-var sc=null;
 var updater;
 var changes;
 var submit=false;
@@ -38,22 +37,13 @@ function updateEventList () {
   });
 }
 
-function startSpice () {
-  try {
-    sc = new SpiceMainConn({uri: "ws://localhost:8281/", screen_id: "spice-screen", password: "", onerror: function (e) {return;}});
-  }
-  catch (e) {
-    sc = null;
-  }
-  submit=false;
+function startVNC () {
   updater = window.setInterval (updateEventList, 1000);
 }
 
 function closeSession () {
   window.clearInterval(updater);
 
-  if (sc != null)
-    sc.stop();
 
   $.getJSON("/session_stop", function (data) {return;});
 }
@@ -105,6 +95,9 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
+  var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
+  vbc_rfb.connect('localhost', '8989', '', 'websockify');
+
   $.getJSON("/session_start", function (data) {
     window.setTimeout(restartSession, 1000);
   });

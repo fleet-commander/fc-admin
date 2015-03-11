@@ -1,0 +1,3 @@
+[submodule "server/js/noVNC"]
+	path = server/js/noVNC
+	url = https://github.com/kanaka/noVNC.git

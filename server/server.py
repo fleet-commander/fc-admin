@@ -143,9 +143,9 @@ def js_files(js):
   return send_from_directory(os.path.join(os.getcwd(), "js"), js)
 
 
-@app.route("/css/<path:js>", methods=["GET"])
-def css_files(js):
-  return send_from_directory(os.path.join(os.getcwd(), "css"), js)
+@app.route("/css/<path:css>", methods=["GET"])
+def css_files(css):
+  return send_from_directory(os.path.join(os.getcwd(), "css"), css)
 
 @app.route("/img/<path:img>", methods=["GEt"])
 def img_files(img):
