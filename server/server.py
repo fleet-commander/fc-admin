@@ -67,8 +67,6 @@ class GSettingsCollector(object):
   def get_settings(self):
     return self.selection
 
-
-
 #Profile listing
 app = Flask(__name__, template_folder="templates/")
 @app.route("/profiles/", methods=["GET"])
@@ -120,6 +118,20 @@ def profile_save(id):
   open('profiles/' + filename, 'w+').write(json.dumps(profile))
   open('profiles/index.json', 'w+').write(json.dumps(index))
 
+  return '{"status": "ok"}'
+
+@app.route("/profile/delete/<url>", methods=["GET"])
+def profile_delete(url):
+  try:
+    os.remove(os.path.join(os.getcwd(), "profiles", uid + ".json"))
+  except:
+    pass
+  index = json.loads(open('profiles/index.json').read())
+  for profile in index:
+    if (profile["url"] == url):
+      index.remove(profile)
+
+  open('profiles/index.json', 'w+').write(json.dumps(index))
   return '{"status": "ok"}'
 
 @app.route("/profile_discard/<id>", methods=["GET"])

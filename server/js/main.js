@@ -17,11 +17,34 @@
  * Author: Alberto Ruiz <aruiz@redhat.com>
  */
 
-$(document).ready (function () {
+function populate_profile_list() {
   $.ajaxSetup({cache: false});
   $.getJSON ("/profiles/", function (data) {
+    $("#profile-list").html ("");
     $.each (data, function (i, val) {
-      $("#profile-list").html ($("#profile-list").html() + "<li>" + val.displayName + "</li>");
+      console.log(val.url);
+      var li = $('<li></li>', { text: val.displayName });
+      $('<input>', {
+        value: 'Remove',
+        type:  'button',
+        on: {
+          click: function() {
+            remove_profile(val);
+          }
+        }
+      }).appendTo(li);
+      li.appendTo($("#profile-list"));
     });
   });
-});
+}
+
+
+function remove_profile(profile) {
+  if (confirm('Are you sure you want to delete ' + profile.displayName)) {
+    $.getJSON ("/profile/delete/" + profile.url, function (data) {
+      populate_profile_list();
+    });
+  }
+}
+
+$(document).ready (populate_profile_list);
