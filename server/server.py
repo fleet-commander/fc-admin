@@ -134,7 +134,7 @@ def profile_delete(url):
   open('profiles/index.json', 'w+').write(json.dumps(index))
   return '{"status": "ok"}'
 
-@app.route("/profile_discard/<id>", methods=["GET"])
+@app.route("/profile/discard/<id>", methods=["GET"])
 def profile_discard(id):
   if id in deploys:
     del deploys[id]

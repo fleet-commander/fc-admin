@@ -37,7 +37,7 @@ function profileSave() {
 }
 
 function profileDiscard() {
-  $.get("/profile_discard/"+uid, function (data) {
+  $.get("/profile/discard/"+uid, function (data) {
     location.pathname = "/";
   });
 }
