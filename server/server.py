@@ -182,7 +182,7 @@ def session_changes():
   collector = collectors_by_name['org.gnome.gsettings']
   return collector.dump_changes()
 
-@app.route("/session_start", methods=["GET"])
+@app.route("/session/start", methods=["GET"])
 def session_start():
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
@@ -190,12 +190,12 @@ def session_start():
   req = requests.get("http://localhost:8182/start_session")
   return req.content, req.status_code
 
-@app.route("/session_stop", methods=["GET"])
+@app.route("/session/stop", methods=["GET"])
 def session_stop():
   req = requests.get("http://localhost:8182/stop_session")
   return req.content, req.status_code
 
-@app.route("/session_select", methods=["POST"])
+@app.route("/session/select", methods=["POST"])
 def session_select():
   data = dict(request.form)
   sel = []
