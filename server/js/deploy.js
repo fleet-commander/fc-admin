@@ -31,7 +31,7 @@ function populateUsersGroups(users, groups) {
 }
 
 function profileSave() {
-  $.post("/profile_save/" + uid, $('form').serialize(), function (data) {
+  $.post("/profile/save/" + uid, $('form').serialize(), function (data) {
     location.pathname = "/";
   });
 }

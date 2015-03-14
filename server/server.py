@@ -82,7 +82,7 @@ def getent():
   #TODO: Use the python getent module to get actual users and groups
   return json.dumps({"users": ["aruiz", "mbarnes"],"groups": ["wheel", "admin", "aruiz", "mbarnes"]})
 
-@app.route("/profile_save/<id>", methods=["POST"])
+@app.route("/profile/save/<id>", methods=["POST"])
 def profile_save(id):
   if id not in deploys:
     return '{"status": "nonexistinguid"}'
