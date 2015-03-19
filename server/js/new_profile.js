@@ -45,7 +45,7 @@ function closeSession () {
   window.clearInterval(updater);
 
 
-  $.getJSON("/session_stop", function (data) {return;});
+  $.getJSON("/session/stop", function (data) {return;});
 }
 
 function restartSession() {
@@ -56,7 +56,7 @@ function restartSession() {
   $(".hidden").hide();
   $('.change-checkbox').hide();
 
-  $.getJSON("/session_start", function (data) {
+  $.getJSON("/session/start", function (data) {
     window.setTimeout(startSpice, 1000);
   });
 }
@@ -87,7 +87,7 @@ function deployProfile() {
   $.each($('input[data-id]:checked'), function (i,e) {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
-  $.post("/session_select", {"sel": sel}, function (data) {
+  $.post("/session/select", {"sel": sel}, function (data) {
       if (data.status == "ok") {
         location.pathname = "/deploy/" + data.uuid;
       }
@@ -98,7 +98,7 @@ $(document).ready (function () {
   var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
   vbc_rfb.connect('localhost', '8989', '', 'websockify');
 
-  $.getJSON("/session_start", function (data) {
+  $.getJSON("/session/start", function (data) {
     window.setTimeout(restartSession, 1000);
   });
 
