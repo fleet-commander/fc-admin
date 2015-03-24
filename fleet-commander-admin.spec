@@ -1,19 +1,25 @@
-Name:           fleet-commander-logger
+Name:           fleet-commander-admin
 Version:        0.1
 Release:        1%{?dist}
-Summary:        Logs configuration changes in a session
-
+Summary:        Admin interface for Fleet Commander
 BuildArch: noarch
 
 License: LGPL-2.1+
-URL: https://github.com/fleet-commander
-Source0: %{name}-%{version}.tar.gz
+URL: https://github.com/fleet-commander/fc-admin
+Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.gz
 
 Requires: python3-gobject
 Requires: json-glib
 
 %description
+Admin interface for Fleet Commander
+
+
+%package -n fleet-commander-logger
+Summary:        Logs configuration changes in a session
+%description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions 
+
 
 %prep
 %setup -q
@@ -30,7 +36,7 @@ install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_sysconfdir}/x
 %clean
 rm -rf %{buildroot}
 
-%files
+%files -n fleet-commander-logger
 %{_libexecdir}
 %{_sysconfdir}/xdg/autostart
 %{_libexecdir}/fleet-commander-logger
