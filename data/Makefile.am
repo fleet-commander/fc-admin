@@ -1,5 +1,5 @@
-EXTRA_DIST = fcmdr-logger.desktop.in
+EXTRA_DIST = fleet-commander-logger.desktop.in
 
-fcmdr_logger_desktopdir = $(sysconfdir)/xdg/autostart
-fcmdr_logger_desktop_in_files = fcmdr-logger.desktop.in
-fcmdr_logger_desktop_DATA = fcmdr-logger.desktop
+fleet_commander_logger_desktopdir = ${sysconfdir}/xdg/autostart
+fleet_commander_logger_desktop_in_files = fleet-commander-logger.desktop.in
+fleet_commander_logger_desktop_DATA = fleet-commander-logger.desktop

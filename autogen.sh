@@ -2,3 +2,4 @@
 aclocal \
 && automake --gnu -a -c \
 && autoconf
+./configure $@

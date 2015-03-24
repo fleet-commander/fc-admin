@@ -1,1 +1,1 @@
-SUBDIRS = data
+SUBDIRS = data tools
