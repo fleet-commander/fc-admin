@@ -10,8 +10,13 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 # libexecdir expansion for .desktop file
 privlibexecdir='${libexecdir}'
+xdgconfigdir='${sysconfdir}'/xdg
 AC_SUBST(privlibexecdir)
+AC_SUBST(xdgconfigdir)
+AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
+
+#TODO: Make xdgconfigdir parametric
 
 ################
 # Dependencies #
