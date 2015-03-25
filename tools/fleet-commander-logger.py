@@ -24,15 +24,19 @@
 import json
 import logging
 import os.path
+import sys
+import configparser
+
 
 from argparse import ArgumentParser
+
 from gi.repository import GLib, Gio, Json
-from configparser import ConfigParser
 from http.client import HTTPConnection
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_HTTP_SERVER = 'localhost:8181'
+DEFAULT_HTTP_HOST = 'localhost'
+DEFAULT_HTTP_PORT = '8181'
 
 class GoaLogger(object):
     '''Logs changes to GNOME Online Accounts.
@@ -71,7 +75,7 @@ class GoaLogger(object):
             self.update()
 
     def update(self):
-        config = ConfigParser()
+        config = configparser.ConfigParser()
 
         # Preserve "CamelCase" in option names.
         config.optionxform = str
@@ -375,20 +379,54 @@ class GSettingsLogger(object):
             connection.signal_unsubscribe(self.dconf_subscription_id)
             self.dconf_subscription_id = 0
 
-if __name__ == '__main__':
+def parse_config(config_file):
+    arg = {"host": None, "port": None}
+    config = configparser.ConfigParser()
 
+    try:
+        config.read(config_file)
+        config["logger"]
+    except FileNotFoundError:
+        logging.error('Could not find configuration file %s' % config_file)
+    except configparser.ParsingError:
+        logging.error('There was an error parsing %s' % config_file)
+    except KeyError:
+        logging.error('Configuration file %s has no "logger" section' % config_file)
+    except:
+        logging.error('There was an error reading %s' % config_file)
+    finally:
+        sys.exit(1)
+
+    arg['host'] = config['logger'].get('host')
+    arg['port'] = config['logger'].get('port')
+
+if __name__ == '__main__':
     parser = ArgumentParser(description='Log session changes')
     parser.add_argument(
         '--debug', action='store_const', dest='loglevel',
         const=logging.DEBUG, default=logging.WARNING,
         help='print debugging information')
     parser.add_argument(
-        '--server', action='store', metavar='HOST[:PORT]',
-        default=DEFAULT_HTTP_SERVER,
-        help='HTTP server address (default: %s)' % DEFAULT_HTTP_SERVER)
+        '--host', action='store', metavar='HOST', default=DEFAULT_HTTP_HOST,
+        help='HTTP server host (default: %s)' % DEFAULT_HTTP_HOST)
+    parser.add_argument(
+        '--port', action='store', metavar='HOST', default=DEFAULT_HTTP_PORT,
+        help='HTTP server port (default: %s)' % DEFAULT_HTTP_PORT)
+    parser.add_argument(
+        '--configuration', action='store', metavar='CONFIGFILE', default=None,
+        help='Provide a configuration file path for the logger (overrides --port and --host)')
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)
+
+    if args.configuration:
+      conf = parse_config(args.configuration)
+      if conf.host:
+        args.host = conf.host
+      if conf.port:
+        args.port = conf.port
+
+    server = "%s:%s" % (args.host, args.port)
     connection = HTTPConnection(args.server)
 
     gsettings_logger = GSettingsLogger(connection)
