@@ -26,24 +26,27 @@ Logs changes for Fleet Commander virtual sessions
 %build
 %configure
 make
+
+%pre -n fleet-commander-logger
+getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander/.config/autostart -s /sbin/nologin -c "Fleet Commander" fleet-commander
+exit 0
+
 %install
 install -m 755 -d %{buildroot}/%{_libexecdir}
 install -m 755 tools/fleet-commander-logger.py %{buildroot}/%{_libexecdir}/fleet-commander-logger
 
-install -m 755 -d %{buildroot}/%{_sysconfdir}/xdg/autostart
-install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
+install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
+install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 
 %clean
 rm -rf %{buildroot}
 
 %files -n fleet-commander-logger
-%{_libexecdir}
-%{_sysconfdir}/xdg/autostart
-%{_libexecdir}/fleet-commander-logger
-%{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
+%attr(755, root, root) %{_libexecdir}
+%attr(755, root, root) %{_libexecdir}/fleet-commander-logger
 
-%doc
+%attr(755, root, root) %{_localstatedir}/lib
+%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart
+%attr(644, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Fri Mar 20 2015 Alberto Ruiz <aruiz@redhat.com>
-- Initial package
