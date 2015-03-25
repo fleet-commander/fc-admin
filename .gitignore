@@ -14,3 +14,4 @@ configure
 data/fleet-commander-logger.desktop
 install-sh
 missing
+fleet-commander*.tar.[gx]z
