@@ -1,0 +1,16 @@
+Makefile
+Makefile.in
+*/Makefile
+*/Makefile.in
+.*.swp
+*/.*.swp
+INSTALL
+aclocal.m4
+admin/demoscripts/
+autom4te.cache/
+config.log
+config.status
+configure
+data/fleet-commander-logger.desktop
+install-sh
+missing
