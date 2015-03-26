@@ -28,7 +28,7 @@ Logs changes for Fleet Commander virtual sessions
 make
 
 %pre -n fleet-commander-logger
-getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander/.config/autostart -s /sbin/nologin -c "Fleet Commander" fleet-commander
+getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /sbin/nologin -c "Fleet Commander" fleet-commander
 exit 0
 
 %install
@@ -46,6 +46,8 @@ rm -rf %{buildroot}
 %attr(755, root, root) %{_libexecdir}/fleet-commander-logger
 
 %attr(755, root, root) %{_localstatedir}/lib
+%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
+%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config
 %attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart
 %attr(644, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 
