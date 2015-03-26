@@ -36,19 +36,28 @@ install -m 755 -d %{buildroot}/%{_libexecdir}
 install -m 755 tools/fleet-commander-logger.py %{buildroot}/%{_libexecdir}/fleet-commander-logger
 
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
-install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
+install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+
+install -m 755 -d %{buildroot}/%{_sysconfdir}/xdg
+install -m 644 data/fleet-commander-logger.conf %{buildroot}/%{_sysconfdir}/xdg/fleet-commander-logger.conf
+
 
 %clean
 rm -rf %{buildroot}
 
 %files -n fleet-commander-logger
-%attr(755, root, root) %{_libexecdir}
-%attr(755, root, root) %{_libexecdir}/fleet-commander-logger
-
-%attr(755, root, root) %{_localstatedir}/lib
-%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
-%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config
-%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart
-%attr(644, fleet-commander, users) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+%defattr(755, root, root) 
+%{_libexecdir}
+%{_libexecdir}/fleet-commander-logger
+%{_sysconfdir}/xdg
+%{_localstatedir}/lib
+%defattr(755, fleet-commander, users) 
+%{_localstatedir}/lib/fleet-commander
+%{_localstatedir}/lib/fleet-commander/.config
+%{_localstatedir}/lib/fleet-commander/.config/autostart
+%attr(644, -, -) %{_localstatedir}/lib/fleet-commander/.bashrc
+%attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-logger.conf
+%attr(644, -, -) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 
 %changelog
