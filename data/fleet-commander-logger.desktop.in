@@ -5,5 +5,5 @@ Icon=preferences-desktop-screensaver
 Exec=@PRIVLIBEXECDIR@/fleet-commander-logger --configuration @XDGCONFIGDIR@/fleet-commander-logger.conf
 OnlyShowIn=GNOME;
 NoDisplay=true
-X-GNOME-Autostart-Phase=Initialization
+X-GNOME-Autostart-Phase=Applications
 X-GNOME-Autostart-Notify=true
