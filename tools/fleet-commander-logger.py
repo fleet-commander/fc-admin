@@ -58,7 +58,6 @@ class ConnectionManager(object):
             #TODO: collect response code
         except:
             self._log_web_error()
-        finally:
             if self.source == None:
                 self.source = GLib.timeout_add(5000, self.timeout)
             self.queue.append((namespace, data))
@@ -418,7 +417,7 @@ class GSettingsLogger(object):
             self.dconf_subscription_id = 0
 
 def parse_config(config_file):
-    arg = {"host": None, "port": None}
+    arg = {'host': None, 'port': None}
     config = configparser.ConfigParser()
 
     try:
@@ -426,17 +425,20 @@ def parse_config(config_file):
         config["logger"]
     except FileNotFoundError:
         logging.error('Could not find configuration file %s' % config_file)
+        sys.exit(1)
     except configparser.ParsingError:
         logging.error('There was an error parsing %s' % config_file)
+        sys.exit(1)
     except KeyError:
         logging.error('Configuration file %s has no "logger" section' % config_file)
+        sys.exit(1)
     except:
-        logging.error('There was an error reading %s' % config_file)
-    finally:
+        logging.error('There was an unknown error parsing %s' % config_file)
         sys.exit(1)
 
-    arg['host'] = config['logger'].get('host')
-    arg['port'] = config['logger'].get('port')
+    arg['host'] = config['logger'].get('admin_server_host')
+    arg['port'] = config['logger'].get('admin_server_port')
+    return arg
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Log session changes')
@@ -459,10 +461,10 @@ if __name__ == '__main__':
 
     if args.configuration:
       conf = parse_config(args.configuration)
-      if conf.host:
-        args.host = conf.host
-      if conf.port:
-        args.port = conf.port
+      if conf['host']:
+        args.host = conf['host']
+      if conf['port']:
+        args.port = conf['port']
 
     connection = ConnectionManager(args.host, args.port)
 
