@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# vi:ts=4 sw=4 sts=4
 
 # Copyright (C) 2014 Red Hat, Inc.
 #
@@ -37,6 +38,50 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HTTP_HOST = 'localhost'
 DEFAULT_HTTP_PORT = '8181'
+CHANGE_SUBMIT_PATH = '/submit_change/'
+
+class ConnectionManager(object):
+    '''Manages HTTP connections so that Loggers don't have to
+       it also queues commands in case the HTTP server goes away.'''
+    headers = {'Content-type': 'application/json'}
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.queue = []
+        self.source = None
+
+    def submit_change(self, namespace, data):
+        try:
+            conn = HTTPConnection("%s:%s" % (self.host, self.port))
+            conn.request('POST', CHANGE_SUBMIT_PATH+namespace, data, self.headers)
+            resp = conn.getresponse()
+            #TODO: collect response code
+        except:
+            self._log_web_error()
+        finally:
+            if self.source == None:
+                self.source = GLib.timeout_add(5000, self.timeout)
+            self.queue.append((namespace, data))
+
+    def timeout(self):
+        try:
+            conn = HTTPConnection("%s:%s" % (self.host, self.port))
+            while self.queue:
+                ns, data = self.queue[0]
+                conn.request('POST', CHANGE_SUBMIT_PATH+ns, data, self.headers)
+                conn.getresponse()
+                #TODO: collect response code
+                self.queue.pop(0)
+        except:
+            #Try again later
+            self._log_web_error()
+            return True
+
+        self.source = None
+        return False
+
+    def _log_web_error(self):
+         logger.error("Could not connect to web service %s:%s" % (self.host, self.port))
 
 class GoaLogger(object):
     '''Logs changes to GNOME Online Accounts.
@@ -126,11 +171,7 @@ class GoaLogger(object):
         # Convert to JSON format.
         data = json.dumps({s: dict(config.items(s)) for s in config.sections()})
 
-        path = '/submit_change/org.gnome.online-accounts'
-        headers = {'Content-type': 'application/json'}
-        self.connection.request('POST', path, data, headers)
-        response = self.connection.getresponse()
-
+        self.connection.submit_change('org.gnome.online-accounts', data)
 
 class GSettingsLogger(object):
     '''Logs all GSettings changes.
@@ -252,10 +293,7 @@ class GSettingsLogger(object):
         generator.set_root(root)
         data, length = generator.to_data()
 
-        path = '/submit_change/org.gnome.gsettings'
-        headers = {'Content-type': 'application/json'}
-        self.connection.request('POST', path, data, headers)
-        response = self.connection.getresponse()
+        self.connection.submit_change('org.gnome.gsettings', data)
 
     def __new_settings_for_schema(self, schema, path):
         settings = Gio.Settings.new_full(schema, None, path)
@@ -426,8 +464,7 @@ if __name__ == '__main__':
       if conf.port:
         args.port = conf.port
 
-    server = "%s:%s" % (args.host, args.port)
-    connection = HTTPConnection(args.server)
+    connection = ConnectionManager(args.host, args.port)
 
     gsettings_logger = GSettingsLogger(connection)
     goa_logger = GoaLogger(connection)
