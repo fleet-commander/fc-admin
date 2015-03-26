@@ -8,28 +8,21 @@ License: LGPL-2.1+
 URL: https://github.com/fleet-commander/fc-admin
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.gz
 
-Requires: python3-gobject
-Requires: json-glib
-
 %description
 Admin interface for Fleet Commander
 
-
 %package -n fleet-commander-logger
 Summary:        Logs configuration changes in a session
+Requires: python3-gobject
+Requires: json-glib
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions 
-
 
 %prep
 %setup -q
 %build
 %configure
 make
-
-%pre -n fleet-commander-logger
-getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /sbin/nologin -c "Fleet Commander" fleet-commander
-exit 0
 
 %install
 install -m 755 -d %{buildroot}/%{_libexecdir}
@@ -42,9 +35,12 @@ install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir
 install -m 755 -d %{buildroot}/%{_sysconfdir}/xdg
 install -m 644 data/fleet-commander-logger.conf %{buildroot}/%{_sysconfdir}/xdg/fleet-commander-logger.conf
 
-
 %clean
 rm -rf %{buildroot}
+
+%pre -n fleet-commander-logger
+getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /sbin/nologin -c "Fleet Commander" fleet-commander
+exit 0
 
 %files -n fleet-commander-logger
 %defattr(755, root, root) 
