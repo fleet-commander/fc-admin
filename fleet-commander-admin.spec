@@ -25,15 +25,13 @@ Logs changes for Fleet Commander virtual sessions
 make
 
 %install
+%make_install
+
 install -m 755 -d %{buildroot}/%{_libexecdir}
 install -m 755 tools/fleet-commander-logger.py %{buildroot}/%{_libexecdir}/fleet-commander-logger
-
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
-ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
-
-install -m 755 -d %{buildroot}/%{_sysconfdir}/xdg
-install -m 644 data/fleet-commander-logger.conf %{buildroot}/%{_sysconfdir}/xdg/fleet-commander-logger.conf
+ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 
 %clean
 rm -rf %{buildroot}
