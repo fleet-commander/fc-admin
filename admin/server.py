@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-#
+# vi:ts=2 sw=2 sts=2
+
 # Copyright (C) 2014 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or
