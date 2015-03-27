@@ -1,0 +1,2 @@
+[admin]
+static_profiles_dir = @PROFILESDIR@
