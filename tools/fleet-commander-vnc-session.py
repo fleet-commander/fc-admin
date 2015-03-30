@@ -26,42 +26,23 @@ import uuid
 
 from flask import Flask
 
-class SpiceSessionManager:
-  XSPICE = 'Xspice :10 --disable-ticketing --port 8280'
-  GNOME_SESSION = 'DISPLAY=:10 gnome-session'
-  FCMDR_LOGGER = 'DISPLAY=:10 fcmdr-logger.py'
-  WEBSOCKIFY = 'websockify localhost:8281 localhost:8280'
+class VncSessionManager:
+  #GNOME_SESSION = 'DISPLAY=:10 gnome-session'
 
   def __init__(self):
-    self.xspice = None
     self.gnome_session = None
-    self.fcmdr_logger = None
-    self.websockify = None
 
   def start(self):
-    if self.xspice or self.gnome_session or self.fcmdr_logger or self.websockify:
+    if self.gnome_sessiony:
       return False
 
-    DNULL = open('/dev/null', 'w')
-    template = "su -c \"%s\" - fc-user"
-    self.xspice = subprocess.Popen(template % self.XSPICE, shell=True, stdout=DNULL, stderr=DNULL, stdin=DNULL)
-    
-    time.sleep(1)
-
-    self.gnome_session    = subprocess.Popen(template % self.GNOME_SESSION,    shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
-    self.fcmdr_logger = subprocess.Popen(template % self.FCMDR_LOGGER, shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
-    self.websockify       = subprocess.Popen(template % self.WEBSOCKIFY,       shell=True, stdin=DNULL, stdout=DNULL, stderr=DNULL)
+    #DNULL = open('/dev/null', 'w')
+    #self.xspice = subprocess.Popen(template % self.XSPICE, shell=True, stdout=DNULL, stderr=DNULL, stdin=DNULL)
     return True
 
   def stop(self):
-    #NOITE: This is a brute force approach to kill all fc-user processes
-    subprocess.call ('pkill -u fc-user', shell=True)
-    subprocess.call ('pkill -f "Xorg -config spiceqxl.xorg.conf -noreset :10"', shell=True)
-
-    self.xspice = None
-    self.gnome_session = None
-    self.fcmdr_logger = None
-    self.websockify = None
+    #NOTE: This is a brute force approach to kill all fc-user processes
+    #subprocess.call ('pkill -u fc-user', shell=True)
 
 app = Flask(__name__)
 
