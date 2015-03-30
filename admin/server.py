@@ -23,6 +23,12 @@ import os
 import json
 import requests
 import uuid
+import logging
+import sys
+
+from argparse import ArgumentParser
+import configparser
+
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
 deploys = {}
@@ -212,5 +218,51 @@ def session_select():
 
   return json.dumps({"status": "ok", "uuid": uid})
 
+def parse_config(config_file):
+  args = {
+      'host': 'localhost',
+      'port': 8181,
+      'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
+  }
+
+  if not config_file:
+    return args
+
+  config = configparser.ConfigParser()
+  try:
+    config.read(config_file)
+    config["admin"]
+  except FileNotFoundError:
+    logging.warning('Could not find configuration file %s' % config_file)
+  except configparser.ParsingError:
+    logging.error('There was an error parsing %s' % config_file)
+    sys.exit(1)
+  except KeyError:
+    logging.error('Configuration file %s has no "admin" section' % config_file)
+    sys.exit(1)
+  except:
+    logging.error('There was an unknown error parsing %s' % config_file)
+    sys.exit(1)
+
+  args['host'] = config['admin'].get('host', args['host'])
+  args['port'] = config['admin'].get('port', args['port'])
+  args['profiles_dir'] = config['admin'].get('static_profiles_dir', args['profiles_dir'])
+
+  try:
+    args['port'] = int(args['port'])
+  except ValueError:
+    logging.error("Error reading configuration at %s: 'port' option must be an integer value")
+    sys.exit(1)
+
+  return args
+
 if __name__ == "__main__":
-      app.run(host="0.0.0.0", port=8181, debug=True)
+  parser = ArgumentParser(description='Admin interface server')
+  parser.add_argument(
+    '--configuration', action='store', metavar='CONFIGFILE', default=None,
+    help='Provide a configuration file path for the web service')
+
+  args = parser.parse_args()
+  config = parse_config(args.configuration)
+
+  app.run(host=config['host'], port=config['port'], debug=True)
