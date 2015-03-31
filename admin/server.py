@@ -25,15 +25,52 @@ import requests
 import uuid
 import logging
 import sys
+import subprocess
 
 from argparse import ArgumentParser
-import configparser
+
+#compat between Pyhon 2 and 3
+try:
+  from configparser import ConfigParser
+except ImportError:
+  from ConfigParser import ConfigParser
 
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
 deploys = {}
 
 collectors_by_name = {}
+
+class VncWebsocketManager(object):
+  _COMMAND_TEMPLATE = "websockify %s:%d %s:%d"
+
+  def __init__(self, **kwargs):
+    ''' Construction arguments:
+      listen_host: host to listen for WS connections
+      listen_port: port to listen for WS connections
+      target_host: native socket host connection
+      target_port: native socket port connection
+    '''
+    self.listen_host = kwargs.get('listen_host', 'localhost')
+    self.listen_port = kwargs.get('listen_port', 8989)
+    self.target_host = kwargs.get('target_host', 'localhost')
+    self.target_port = kwargs.get('target_port', 5900)
+    self.websockify = None
+    self.DNULL = open('/dev/null', 'w')
+
+  def start(self):
+    if self.websockify:
+      return
+
+    command = self._COMMAND_TEMPLATE % (self.listen_host, self.listen_port,
+                                        self.target_host, self.target_port)
+
+    self.websockify = subprocess.Popen(command, shell=True,
+                                       stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
+
+  def stop(self):
+    self.websockify.kill()
+    self.websockify = None
 
 class GoaCollector(object):
 
@@ -228,7 +265,7 @@ def parse_config(config_file):
   if not config_file:
     return args
 
-  config = configparser.ConfigParser()
+  config = ConfigParser()
   try:
     config.read(config_file)
     config["admin"]
