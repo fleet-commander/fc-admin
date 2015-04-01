@@ -8,19 +8,22 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 
-# libexecdir expansion for .desktop file
-privlibexecdir='${libexecdir}'
-xdgconfigdir='${sysconfdir}'/xdg
-profilesdir='${localstatedir}'/fleet-commander-admin
 
-AC_SUBST(privlibexecdir)
-AC_SUBST(xdgconfigdir)
-AC_SUBST(profilesdir)
-AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
-AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
-AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
+AC_PATH_PROG([XVNC],[Xvnc])
+AC_PATH_PROG([XRANDR], [xrandr])
+AC_PATH_PROG([GNOME_SESSION], [gnome-session])
+if test x$XVNC = x ; then
+  AC_MSG_ERROR([Could not find Xvnc])
+fi
+if test x$XRANDR = x ; then
+  AC_MSG_ERROR([Could not find xrandr])
+fi
+if test x$GNOME_SESSION = x ; then
+  AC_MSG_ERROR([Could not find gnome-session])
+fi
 
-#TODO: Make xdgconfigdir parametric
+PKG_CHECK_MODULES(SYSTEMD, [systemd])
+SYSTEMUNITDIR=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
 
 ################
 # Dependencies #
@@ -31,10 +34,34 @@ AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AM_PATH_PYTHON(3.0,, [:])
 AC_PYTHON_MODULE([gi], [mandatory])
 
+# libexecdir expansion for .desktop file
+# TODO: Make xdgconfigdir parametric
+privlibexecdir='${libexecdir}'
+xdgconfigdir='${sysconfdir}'/xdg
+profilesdir='${localstatedir}'/fleet-commander-admin
+AC_SUBST(privlibexecdir)
+AC_SUBST(xdgconfigdir)
+AC_SUBST(profilesdir)
+
+AC_SUBST(XVNC)
+AC_SUBST(XRANDR)
+AC_SUBST(GNOME_SESSION)
+
+AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
+AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
+AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
+
+AS_AC_EXPAND(XVNC,"$XVNC")
+AS_AC_EXPAND(XRANDR,"$XRANDR")
+AS_AC_EXPAND(GNOME_SESSION,"$GNOME_SESSION")
+
+AC_SUBST(SYSTEMUNITDIR)
+
 AC_OUTPUT([
 Makefile
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
+data/fleet-commander-vnc-session.service
 data/Makefile
 tools/Makefile
 ])
