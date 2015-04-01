@@ -9,7 +9,7 @@ fleet_commander_admin_config_DATA = $(fleet_commander_admin_config_in_files:.con
 
 fleet_commander_vnc_session_servicedir = $(systemdsystemunitdir)
 fleet_commander_vnc_session_service_in_files = fleet-commander-vnc-session.service.in
-fleet_commander_vnc_session_service_DATA = $(fleet_commander_vnc_session_service_in_files:.session.in=.session)
+fleet_commander_vnc_session_service_DATA = $(fleet_commander_vnc_session_service_in_files:.service.in=.service)
 
 fleet_commander_logger_configdir = ${sysconfdir}/xdg/
 fleet_commander_logger_config_DATA = fleet-commander-logger.conf
