@@ -3,18 +3,12 @@ Description=Fleet Commander VNC Session
 After=systemd-user-sessions.service getty@tty1.service plymouth-quit.service
 
 [Service]
-User=fleet-commander
-Environment=DISPLAY=:35
-ExecStart=@XVNC@ :35 -SecurityTypes None
-ExecStartPost=DISPLAY=:35 @XRANDR@ --output VNC-0 --mode 1024x768
-ExecStartPost=@XRANDR@ --output VNC-0 --mode 1024x768
+ExecStart=@RUNUSER@ -l fleet-commander -c "@PRIVLIBEXECDIR@/fleet-commander-xvnc.sh"
+ExecStartPost=@RUNUSER@ -l fleet-commander -c "@PRIVLIBEXECDIR@/fleet-commander-xinitrc.sh"
 
-#NOTE: Use classic mode on EL?
-ExecStartPost=@GNOME_SESSION@
-
-ExecStopPost=pkill -u fleet-commander
-ExecStopPost=pkill -9 -u fleet-commander
-ExecStopPost=rm -rf ~fleet-commander/.config/dconf/
+ExecStopPost=-@PKILL@ -u fleet-commander
+ExecStopPost=-@PKILL@ -9 -u fleet-commander
+ExecStopPost=-@RM@ -rf ~fleet-commander/.config/dconf/
 
 #TODO: Use an overlayfs mount for the home directory
 
