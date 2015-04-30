@@ -8,20 +8,23 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 
+AC_PATH_PROG([XVNC], [Xvnc])
+AC_PATH_PROG([PKILL], [pkill])
+AC_PATH_PROG([RM], [rm])
+AC_PATH_PROG([RUNUSER], [runuser])
 
-AC_PATH_PROG([XVNC],[Xvnc])
-AC_PATH_PROG([XRANDR], [xrandr])
-AC_PATH_PROG([GNOME_SESSION], [gnome-session])
 if test x$XVNC = x ; then
   AC_MSG_ERROR([Could not find Xvnc])
 fi
-if test x$XRANDR = x ; then
-  AC_MSG_ERROR([Could not find xrandr])
+if test x$PKILL = x ; then
+  AC_MSG_ERROR([Could not find pkill])
 fi
-if test x$GNOME_SESSION = x ; then
-  AC_MSG_ERROR([Could not find gnome-session])
+if test x$RM = x ; then
+  AC_MSG_ERROR([Could not find rm])
 fi
-
+if test x$RUNUSER = x ; then
+  AC_MSG_ERROR([Could not find runuser])
+fi
 
 PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([systemdsystemunitdir],
@@ -63,7 +66,9 @@ AC_SUBST(profilesdir)
 
 AC_SUBST(XVNC)
 AC_SUBST(XRANDR)
-AC_SUBST(GNOME_SESSION)
+AC_SUBST(SLEEP)
+AC_SUBST(PKILL)
+AC_SUBST(RM)
 
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
@@ -71,7 +76,9 @@ AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 
 AS_AC_EXPAND(XVNC,"$XVNC")
 AS_AC_EXPAND(XRANDR,"$XRANDR")
-AS_AC_EXPAND(GNOME_SESSION,"$GNOME_SESSION")
+AS_AC_EXPAND(SLEEP,"$SLEEP")
+AS_AC_EXPAND(PKILL,"$PKILL")
+AS_AC_EXPAND(RM,"$RM")
 
 AC_SUBST(SYSTEMUNITDIR)
 
