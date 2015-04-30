@@ -43,21 +43,18 @@ class VncSessionManager:
   def stop(self):
     #NOTE: This is a brute force approach to kill all fc-user processes
     #subprocess.call ('pkill -u fc-user', shell=True)
+    pass
 
 app = Flask(__name__)
 
 has_session = False
-spice = SpiceSessionManager()
 
 @app.route("/start_session", methods=["GET"])
 def new_session():
   global has_session
-  global spice
 
   if has_session:
     return '{"status": "already_started"}', 403
-
-  spice.start()
 
   has_session = True
   return '{"status": "ok"}', 200
@@ -65,9 +62,6 @@ def new_session():
 @app.route("/stop_session")
 def stop_session():
   global has_session
-  global spice
-
-  spice.stop()
 
   if not has_session:
     return '{"status": "already_stopped"}', 403
