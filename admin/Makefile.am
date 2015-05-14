@@ -1,5 +1,5 @@
 fc_admin_pydir = ${libexecdir}
-fc_admin_py_SCRIPTS = fc-admin.py
+fc_admin_py_SCRIPTS = fleet-commander-admin.py
 
 fc_jsdir   = @FCDATADIR@/js
 fc_js_DATA = \
