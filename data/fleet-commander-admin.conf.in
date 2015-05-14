@@ -1,2 +1,3 @@
 [admin]
-static_profiles_dir = @PROFILESDIR@
+data_dir     = @FCDATADIR@
+profiles_dir = @PROFILESDIR@

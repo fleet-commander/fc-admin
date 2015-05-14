@@ -60,9 +60,12 @@ AC_PYTHON_MODULE([gi], [mandatory])
 privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
 profilesdir='${localstatedir}'/fleet-commander-admin
+fcdatadir='${datarootdir}'/fleet-commander-admin
+
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
 AC_SUBST(profilesdir)
+AC_SUBST(fcdatadir)
 
 AC_SUBST(XVNC)
 AC_SUBST(XRANDR)
@@ -73,6 +76,7 @@ AC_SUBST(RM)
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
+AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
 
 AS_AC_EXPAND(XVNC,"$XVNC")
 AS_AC_EXPAND(XRANDR,"$XRANDR")
@@ -89,4 +93,5 @@ data/fleet-commander-admin.conf
 data/fleet-commander-vnc-session.service
 data/Makefile
 tools/Makefile
+admin/Makefile
 ])
