@@ -43,12 +43,39 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/aut
 install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 
+install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
+
 %clean
 rm -rf %{buildroot}
+
+%pre
+getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
 
 %pre -n fleet-commander-logger
 getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /bin/bash -c "Fleet Commander" fleet-commander
 exit 0
+
+
+%files
+%defattr(755, root, root)
+%{_datadir}
+%{_datadir}/fleet-commander-admin
+%{_datadir}/fleet-commander-admin/js
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/js/*js
+%{_datadir}/fleet-commander-admin/js/noVNC/include
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/js/noVNC/include/*js
+%{_datadir}/fleet-commander-admin/css
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/css/*.css
+%{_datadir}/fleet-commander-admin/templates
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/templates/*.html
+
+%{_libexecdir}
+%{_libexecdir}/fleet-commander-admin.py
+
+%{_localstatedir}
+%{_localstatedir}/lib
+%attr(-, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
+
 
 %files -n fleet-commander-logger
 %defattr(755, root, root) 
