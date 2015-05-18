@@ -112,7 +112,7 @@ class GSettingsCollector(object):
     return self.selection
 
 #Profile listing
-app = Flask(__name__, template_folder="templates/")
+app = Flask(__name__)
 @app.route("/profiles/", methods=["GET"])
 def profile_index():
   return send_from_directory(app.custom_args['profiles_dir'], "index.json")
@@ -294,6 +294,7 @@ def parse_config(config_file):
   args['host'] = config['admin'].get('host', args['host'])
   args['port'] = config['admin'].get('port', args['port'])
   args['profiles_dir'] = config['admin'].get('profiles_dir', args['profiles_dir'])
+  args['data_dir'] = config['admin'].get('data_dir', args['data_dir'])
 
   try:
     args['port'] = int(args['port'])
@@ -311,4 +312,6 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
   app.custom_args = parse_config(args.configuration)
+  app.template_folder = os.path.join(app.custom_args['data_dir'], 'templates')
+  print(app.template_folder)
   app.run(host=app.custom_args['host'], port=app.custom_args['port'], debug=True)
