@@ -1,0 +1,10 @@
+[Unit]
+Description=Fleet Commander Administration Interface
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+User=fleet-commander-admin
+ExecStart=@PRIVLIBEXECDIR@/fleet-commander-admin.py
+
+StandardOutput=syslog
+StandardError=inherit

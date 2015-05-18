@@ -90,6 +90,7 @@ AC_OUTPUT([
 Makefile
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
+data/fleet-commander-admin.service
 data/fleet-commander-vnc-session.service
 data/Makefile
 tools/Makefile
