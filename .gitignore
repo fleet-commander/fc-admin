@@ -4,7 +4,7 @@ Makefile.in
 */Makefile.in
 .*.swp
 */.*.swp
-data/fleet-commander-vnc-session.service
+data/*.service
 INSTALL
 aclocal.m4
 admin/demoscripts/
