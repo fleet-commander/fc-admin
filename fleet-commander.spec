@@ -2,6 +2,9 @@ Name:           fleet-commander
 Version:        0.1
 Release:        1%{?dist}
 Summary:        Fleet Commander
+
+BuildRequires:  tigervnc-server-minimal
+
 BuildArch: noarch
 
 License: LGPL-2.1+
