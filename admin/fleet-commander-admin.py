@@ -115,6 +115,7 @@ class GSettingsCollector(object):
 app = Flask(__name__)
 @app.route("/profiles/", methods=["GET"])
 def profile_index():
+  check_for_profile_index()
   return send_from_directory(app.custom_args['profiles_dir'], "index.json")
 
 @app.route("/profiles/<path:profile_id>", methods=["GET"])
@@ -152,7 +153,7 @@ def profile_save(id):
   profile["applies-to"] = {"users": users, "groups": groups}
   profile["etag"] = "placeholder"
 
-  filename = id+".json"
+  check_for_profile_index()
   index = json.loads(open(INDEX_FILE).read())
   index.append({"url": filename, "displayName": form["profile-name"][0]})
   del deploys[id]
@@ -262,6 +263,16 @@ def session_select():
   collectors_by_name.clear()
 
   return json.dumps({"status": "ok", "uuid": uid})
+
+def check_for_profile_index():
+  INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], "index.json")
+  if os.path.isfile(INDEX_FILE):
+    return
+
+  try:
+    open(INDEX_FILE, 'w+').write(json.dumps([]))
+  except OSError:
+    logging.error('There was an error attempting to write on %s' % INDEX_FILE)
 
 def parse_config(config_file):
   #TODO: Safest default for the paths?
