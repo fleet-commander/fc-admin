@@ -49,7 +49,7 @@ app = Flask(__name__)
 
 has_session = False
 
-@app.route("/start_session", methods=["GET"])
+@app.route("/session/start", methods=["GET"])
 def new_session():
   global has_session
 
@@ -59,7 +59,7 @@ def new_session():
   has_session = True
   return '{"status": "ok"}', 200
 
-@app.route("/stop_session")
+@app.route("/session/stop")
 def stop_session():
   global has_session
 

@@ -165,7 +165,7 @@ def profile_save(id):
 
 @app.route("/profile/add", methods=["GET"])
 def new_profile():
-  return render_template('new_profile.html')
+  return render_template('new_profile.html'):w
 
 @app.route("/profile/delete/<uid>", methods=["GET"])
 def profile_delete(uid):
@@ -243,12 +243,12 @@ def session_start():
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
   collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
-  req = requests.get("http://localhost:8182/start_session")
+  req = requests.get("http://localhost:8182/session/start")
   return req.content, req.status_code
 
 @app.route("/session/stop", methods=["GET"])
 def session_stop():
-  req = requests.get("http://localhost:8182/stop_session")
+  req = requests.get("http://localhost:8182/session/stop")
   return req.content, req.status_code
 
 @app.route("/session/select", methods=["POST"])
