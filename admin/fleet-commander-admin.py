@@ -324,5 +324,4 @@ if __name__ == "__main__":
   args = parser.parse_args()
   app.custom_args = parse_config(args.configuration)
   app.template_folder = os.path.join(app.custom_args['data_dir'], 'templates')
-  print(app.template_folder)
   app.run(host=app.custom_args['host'], port=app.custom_args['port'], debug=True)
