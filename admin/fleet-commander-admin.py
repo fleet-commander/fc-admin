@@ -207,14 +207,17 @@ def submit_change(name):
 def js_files(js):
   return send_from_directory(os.path.join(app.custom_args['data_dir'], "js"), js)
 
-
 @app.route("/css/<path:css>", methods=["GET"])
 def css_files(css):
   return send_from_directory(os.path.join(app.custom_args['data_dir'], "css"), css)
 
-@app.route("/img/<path:img>", methods=["GEt"])
+@app.route("/img/<path:img>", methods=["GET"])
 def img_files(img):
   return send_from_directory(os.path.join(app.custom_args['data_dir'], "img"), img)
+
+@app.route("/fonts/<path:font>", methods=["GET"])
+def font_files(font):
+  return send_from_directory(os.path.join(app.custom_args['data_dir'], "fonts"), font)
 
 #View methods
 @app.route("/", methods=["GET"])
