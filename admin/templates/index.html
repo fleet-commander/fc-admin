@@ -1,17 +1,48 @@
 <html>
   <head>
     <script src="/js/jquery-1.11.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/patternfly.min.js"></script>
+
+
     <script src="/js/main.js"></script>
 
-    <link href='http://fonts.googleapis.com/css?family=Cantarell:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <!--link href='http://fonts.googleapis.com/css?family=Cantarell:400,700,400italic,700italic' rel='stylesheet' type='text/css'-->
+    <link rel="stylesheet" type="text/css" href="/css/patternfly.min.css"/>
     <link rel="stylesheet" type="text/css" href="/css/main.css"/>
 
     <title>Fleet Commander</title>
   </head>
   <body>
-  <div class="top-bar"></div>
-  <h1>Profile list</h1>
+    <nav id="topnav" class="navbar navbar-default navbar-pf" role="navigation">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Fleet Commander</a>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="panel panel-default" style="margin-top: 20px;">
+        <div class="panel-heading">
+          <span>Profiles</span>
+          <a href="/new_profile">
+            <button class="btn btn-primary pull-right" type="button">Add Profile</button>
+          </a>
+        </div>
+
+        <table class="table">
+          <thead>
+              <tr>
+                <td>Name</td><td>Description</td><td>Target OS</td><td>Applies to</td>
+              </tr>
+            </thead>
+            <tbody id="profile-list">
+            </tbody>
+          </table>
+      </div>
+    </div>
+
+  <!--h1>Profile list</h1>
   <a href="/new_profile"><input type="button" value="New profile"/></a>
-  <ul id="profile-list"></ul>
+  <ul id="profile-list"></ul-->
   </body>
 </html>

@@ -22,9 +22,13 @@ function populate_profile_list() {
   $.getJSON ("/profiles/", function (data) {
     $("#profile-list").html ("");
     $.each (data, function (i, val) {
-      console.log(val.url);
-      var li = $('<li></li>', { text: val.displayName });
-      $('<input>', {
+      var tr = $('<tr ></tr>');
+      $('<td></td>', { text: val.displayName }).appendTo(tr);
+      $('<td></td>').appendTo(tr); // description
+      $('<td></td>').appendTo(tr); // os
+      $('<td></td>').appendTo(tr); // applies to
+
+      /*$('<input>', {
         value: 'Remove',
         type:  'button',
         on: {
@@ -32,8 +36,9 @@ function populate_profile_list() {
             remove_profile(val);
           }
         }
-      }).appendTo(li);
-      li.appendTo($("#profile-list"));
+      }).appendTo(tr);*/
+
+      tr.appendTo($("#profile-list"));
     });
   });
 }

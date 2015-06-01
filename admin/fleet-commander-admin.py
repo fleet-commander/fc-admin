@@ -163,6 +163,10 @@ def profile_save(id):
 
   return '{"status": "ok"}'
 
+@app.route("/profile/add", methods=["GET"])
+def new_profile():
+  return render_template('new_profile.html')
+
 @app.route("/profile/delete/<uid>", methods=["GET"])
 def profile_delete(uid):
   INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
@@ -223,10 +227,6 @@ def font_files(font):
 @app.route("/", methods=["GET"])
 def index():
   return render_template('index.html')
-
-@app.route("/new_profile", methods=["GET"])
-def new_profile():
-  return render_template('new_profile.html')
 
 @app.route("/deploy/<uid>", methods=["GET"])
 def deploy(uid):
