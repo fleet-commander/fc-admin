@@ -20,8 +20,20 @@ fc_novnc_DATA = \
 		js/noVNC/include/keysym.js \
 		js/noVNC/include/rfb.js
 
+fc_fontdir = @FCDATADIR@/fonts
+fc_font_DATA = \
+	$(wildcard fonts/*.ttf) \
+	$(wildcard fonts/*.eot) \
+	$(wildcard fonts/*.svg) \
+	$(wildcard fonts/*.woff)
+
 fc_imgdir = @FCDATADIR@/img
-fc_img_DATA = $(wildcard img/*.png)
+fc_img_DATA = \
+	      $(wildcard img/*.png) \
+	      $(wildcard img/*.img) \
+     	      $(wildcard img/*.gif) \
+      	      $(wildcard img/*.ico) \
+     	      $(wildcard img/*.svg)
 
 fc_tmpldir = @FCDATADIR@/templates
 fc_tmpl_DATA = $(wildcard templates/*.html)
