@@ -25,7 +25,8 @@ fc_font_DATA = \
 	$(wildcard fonts/*.ttf) \
 	$(wildcard fonts/*.eot) \
 	$(wildcard fonts/*.svg) \
-	$(wildcard fonts/*.woff)
+	$(wildcard fonts/*.woff) \
+	$(wildcard fonts/*.woff2)
 
 fc_imgdir = @FCDATADIR@/img
 fc_img_DATA = \
