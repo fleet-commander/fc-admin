@@ -33,21 +33,22 @@ class VncSessionManager:
     self.gnome_session = None
 
   def start(self):
-    if self.gnome_sessiony:
+    if self.gnome_session:
       return False
 
-    #DNULL = open('/dev/null', 'w')
-    #self.xspice = subprocess.Popen(template % self.XSPICE, shell=True, stdout=DNULL, stderr=DNULL, stdin=DNULL)
+
     return True
 
   def stop(self):
-    #NOTE: This is a brute force approach to kill all fc-user processes
-    #subprocess.call ('pkill -u fc-user', shell=True)
     pass
 
 app = Flask(__name__)
 
 has_session = False
+
+@app.route("/vnc/port", methods=["GET"])
+def vnc_address():
+    return
 
 @app.route("/session/start", methods=["GET"])
 def new_session():
