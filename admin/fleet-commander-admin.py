@@ -165,7 +165,7 @@ def profile_save(id):
 
 @app.route("/profile/add", methods=["GET"])
 def new_profile():
-  return render_template('new_profile.html'):w
+  return render_template('new_profile.html')
 
 @app.route("/profile/delete/<uid>", methods=["GET"])
 def profile_delete(uid):
