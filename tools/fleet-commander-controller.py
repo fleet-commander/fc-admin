@@ -17,7 +17,6 @@
 # License along with this program; if not, see <http://www.gnu.org/licenses/>.
 #
 # Author: Alberto Ruiz <aruiz@redhat.com>
-#
 
 import subprocess
 import os
@@ -26,6 +25,7 @@ import signal
 import uuid
 import logging
 import sys
+import subprocess
 
 from argparse import ArgumentParser
 #compat between Pyhon 2 and 3
@@ -36,34 +36,41 @@ except ImportError:
 
 from flask import Flask
 
-app = Flask(__name__)
-has_session = False
-
 class VncSessionManager:
+  service = "fleet-commander-vnc-session.service"
   def __init__(self):
-    self.gnome_session = None
+    pass
 
   def start(self):
-    if self.gnome_session:
+    ret = subprocess.Popen("systemctl start %s" % self.service, shell=True).wait()
+    
+    if ret != 0:
       return False
-
-    #TODO: Start systemd vnc service
     return True
 
   def stop(self):
-    #TODO: Stop systemd vnc service
-    pass
+    ret = subprocess.Popen("systemctl stop %s" % self.service, shell=True)
+
+
+app = Flask(__name__)
+vnc = VncSessionManager()
+has_session = False
+STDPORT = 5935
 
 @app.route("/vnc/port", methods=["GET"])
 def vnc_address():
-    return
+  return '{"port": %d}' % STDPORT, 200
 
 @app.route("/session/start", methods=["GET"])
 def new_session():
   global has_session
+  global vnc
 
   if has_session:
     return '{"status": "already_started"}', 403
+
+  if not vnc.start():
+    return '{"status": "there was a problem starting the VNC session, check the journal"}', 403
 
   has_session = True
   return '{"status": "ok"}', 200
@@ -71,9 +78,12 @@ def new_session():
 @app.route("/session/stop")
 def stop_session():
   global has_session
+  global vnc
 
   if not has_session:
     return '{"status": "already_stopped"}', 403
+
+  vnc.stop()
 
   has_session = False
   return '{"status": "stopped"}', 200
