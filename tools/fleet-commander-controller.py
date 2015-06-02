@@ -24,13 +24,15 @@ import os
 import time
 import signal
 import uuid
+import logging
+import sys
 
 from argparse import ArgumentParser
 #compat between Pyhon 2 and 3
 try:
-  from configparser import ConfigParser
+  from configparser import ConfigParser, ParsingError
 except ImportError:
-  from ConfigParser import ConfigParser
+  from ConfigParser import ConfigParser, ParsingError
 
 from flask import Flask
 
@@ -86,14 +88,15 @@ def parse_config(config_file):
   if not config_file:
     return args
 
+  if not os.path.exists(config_file):
+    logging.warning('Could not find configuration file %s' % config_file)
+    sys.exit(1)
+
   config = ConfigParser()
   try:
     config.read(config_file)
-    config[SECTION_NAME]
-  except FileNotFoundError:
-    logging.warning('Could not find configuration file %s' % config_file)
-    return args
-  except configparser.ParsingError:
+    config[SECTION_NAME]  
+  except ParsingError:
     logging.error('There was an error parsing %s' % config_file)
     sys.exit(1)
   except KeyError:
@@ -121,4 +124,5 @@ if __name__ == '__main__':
     help='Provide a configuration file path for the web service')
 
   args = parser.parse_args()
-  app.run(host=args['host'], port=args['port'])
+  conf = parse_config(args.configuration)
+  app.run(host=conf['host'], port=conf['port'], debug=True)
