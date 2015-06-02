@@ -88,11 +88,12 @@ AC_SUBST(SYSTEMUNITDIR)
 
 AC_OUTPUT([
 Makefile
+data/Makefile
+tools/Makefile
+admin/Makefile
+data/fleet-commander-controller.service
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin.service
 data/fleet-commander-vnc-session.service
-data/Makefile
-tools/Makefile
-admin/Makefile
 ])
