@@ -3,7 +3,10 @@ Version:        0.1
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
+BuildRequires:  python3-gobject
 BuildRequires:  tigervnc-server-minimal
+BuildRequires:  dconf
+BuildRequires:  systemd
 
 BuildArch: noarch
 
@@ -21,6 +24,8 @@ Summary: Fleet Commander web interface
 Requires: python3
 Requires: python3-flask
 Requires: systemd
+Requires(preun): systemd
+
 
 %description -n fleet-commander-admin
 Fleet Commander web interface to create and deploy profiles
@@ -28,10 +33,11 @@ Fleet Commander web interface to create and deploy profiles
 %package -n fleet-commander-vnc-session
 Summary: VNC logger session service for Fleet Commander
 Requires: fleet-commander-logger
-Requires: systemd
 Requires: xorg-x11-server-utils
 Requires: gnome-session
 Requires: tigervnc-server
+Requires: systemd
+Requires(preun): systemd
 
 %description -n fleet-commander-vnc-session
 Starts a GNOME session inside an Xvnc server with a special user to be accessed by the Fleet Commander admin UI
@@ -67,12 +73,21 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -r -g users 
 getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /bin/bash -c "Fleet Commander" fleet-commander
 exit 0
 
+%preun -n fleet-commander-vnc-session
+%systemd_preun fleet-commander-vnc-session.service
+%systemd_preun fleet-commander-controller.service
+
+%preun -n fleet-commander-admin
+%systemd_preun fleet-commander-admin.service
 
 %files -n fleet-commander-admin
 %defattr(644, root, root)
 %{_datadir}/fleet-commander-admin/js/*js
 %{_datadir}/fleet-commander-admin/js/noVNC/include/*js
 %{_datadir}/fleet-commander-admin/img/*.png
+%{_datadir}/fleet-commander-admin/img/*.svg
+%{_datadir}/fleet-commander-admin/img/*.ico
+%{_datadir}/fleet-commander-admin/img/*.gif
 %{_datadir}/fleet-commander-admin/css/*.css
 %{_datadir}/fleet-commander-admin/templates/*.html
 %attr(755, -, -) %{_libexecdir}/fleet-commander-admin.py
@@ -99,6 +114,12 @@ exit 0
 %defattr(755, root, root)
 %{_libexecdir}/fleet-commander-xvnc.sh
 %{_libexecdir}/fleet-commander-xinitrc.sh
+%{_libexecdir}/fleet-commander-controller.py
+
+%exclude %{_libexecdir}/fleet-commander-controller.pyc
+%exclude %{_libexecdir}/fleet-commander-controller.pyo
 
 %attr(644, root, root) %{systemd_dir}/fleet-commander-vnc-session.service
+%attr(644, root, root) %{systemd_dir}/fleet-commander-controller.service
+
 %changelog
