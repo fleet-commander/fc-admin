@@ -13,9 +13,9 @@ fleet_commander_vnc_session_servicedir = $(systemdsystemunitdir)
 fleet_commander_vnc_session_service_in_files = fleet-commander-vnc-session.service.in
 fleet_commander_vnc_session_service_DATA = fleet-commander-vnc-session.service
 
-fleet_commander_vnc_session_servicedir = $(systemdsystemunitdir)
-fleet_commander_vnc_session_service_in_files = fleet-commander-vnc-session.service.in
-fleet_commander_vnc_session_service_DATA = fleet-commander-vnc-session.service
+fleet_commander_controller_servicedir = $(systemdsystemunitdir)
+fleet_commander_controller_service_in_files = fleet-commander-controller.service.in
+fleet_commander_controller_service_DATA = fleet-commander-controller.service
 
 fleet_commander_admin_servicedir = $(systemdsystemunitdir)
 fleet_commander_admin_service_in_files = fleet-commander-admin.service.in
