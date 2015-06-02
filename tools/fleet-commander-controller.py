@@ -25,6 +25,13 @@ import time
 import signal
 import uuid
 
+from argparse import ArgumentParser
+#compat between Pyhon 2 and 3
+try:
+  from configparser import ConfigParser
+except ImportError:
+  from ConfigParser import ConfigParser
+
 from flask import Flask
 
 app = Flask(__name__)
