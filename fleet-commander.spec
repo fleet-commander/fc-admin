@@ -121,5 +121,6 @@ exit 0
 
 %attr(644, root, root) %{systemd_dir}/fleet-commander-vnc-session.service
 %attr(644, root, root) %{systemd_dir}/fleet-commander-controller.service
+%attr(644, root, root) %{_sysconfdir}/xdg/fleet-commander-controller.conf
 
 %changelog

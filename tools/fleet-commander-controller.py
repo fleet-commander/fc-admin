@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-#
+# vi:ts=2 sw=2 sts=2
+
 # Copyright (C) 2014 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or
@@ -26,9 +27,10 @@ import uuid
 
 from flask import Flask
 
-class VncSessionManager:
-  #GNOME_SESSION = 'DISPLAY=:10 gnome-session'
+app = Flask(__name__)
+has_session = False
 
+class VncSessionManager:
   def __init__(self):
     self.gnome_session = None
 
@@ -36,15 +38,12 @@ class VncSessionManager:
     if self.gnome_session:
       return False
 
-
+    #TODO: Start systemd vnc service
     return True
 
   def stop(self):
+    #TODO: Stop systemd vnc service
     pass
-
-app = Flask(__name__)
-
-has_session = False
 
 @app.route("/vnc/port", methods=["GET"])
 def vnc_address():
@@ -70,5 +69,49 @@ def stop_session():
   has_session = False
   return '{"status": "stopped"}', 200
 
-if __name__ == '__main__':  
-  app.run(host='localhost', port=8182, debug=True)
+def parse_config(config_file):
+  SECTION_NAME = 'controller'
+  args = {
+      'host': '0.0.0.0',
+      'port': 8182
+  }
+
+  if not config_file:
+    return args
+
+  config = ConfigParser()
+  try:
+    config.read(config_file)
+    config[SECTION_NAME]
+  except FileNotFoundError:
+    logging.warning('Could not find configuration file %s' % config_file)
+    return args
+  except configparser.ParsingError:
+    logging.error('There was an error parsing %s' % config_file)
+    sys.exit(1)
+  except KeyError:
+    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
+    return args
+  except:
+    logging.error('There was an unknown error parsing %s' % config_file)
+    sys.exit(1)
+
+  args['host'] = config[SECTION_NAME].get('host', args['host'])
+  args['port'] = config[SECTION_NAME].get('port', args['port'])
+
+  try:
+    args['port'] = int(args['port'])
+  except ValueError:
+    logging.error("Error reading configuration at %s: 'port' option must be an integer value")
+    sys.exit(1)
+
+  return args
+
+if __name__ == '__main__':
+  parser = ArgumentParser(description='Admin interface server')
+  parser.add_argument(
+    '--configuration', action='store', metavar='CONFIGFILE', default=None,
+    help='Provide a configuration file path for the web service')
+
+  args = parser.parse_args()
+  app.run(host=args['host'], port=args['port'])
