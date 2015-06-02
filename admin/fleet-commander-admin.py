@@ -279,6 +279,7 @@ def check_for_profile_index():
 
 def parse_config(config_file):
   #TODO: Safest default for the paths?
+  SECTION_NAME = 'admin'
   args = {
       'host': 'localhost',
       'port': 8181,
@@ -292,23 +293,23 @@ def parse_config(config_file):
   config = ConfigParser()
   try:
     config.read(config_file)
-    config["admin"]
+    config[SECTION_NAME]
   except FileNotFoundError:
     logging.warning('Could not find configuration file %s' % config_file)
   except configparser.ParsingError:
     logging.error('There was an error parsing %s' % config_file)
     sys.exit(1)
   except KeyError:
-    logging.error('Configuration file %s has no "admin" section' % config_file)
-    sys.exit(1)
+    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
+    return args
   except:
     logging.error('There was an unknown error parsing %s' % config_file)
     sys.exit(1)
 
-  args['host'] = config['admin'].get('host', args['host'])
-  args['port'] = config['admin'].get('port', args['port'])
-  args['profiles_dir'] = config['admin'].get('profiles_dir', args['profiles_dir'])
-  args['data_dir'] = config['admin'].get('data_dir', args['data_dir'])
+  args['host'] = config[SECTION_NAME].get('host', args['host'])
+  args['port'] = config[SECTION_NAME].get('port', args['port'])
+  args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
+  args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
 
   try:
     args['port'] = int(args['port'])
