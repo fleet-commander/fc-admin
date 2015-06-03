@@ -37,10 +37,6 @@ except ImportError:
 
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
-deploys = {}
-collectors_by_name = {}
-global_config = {}
-
 class VncWebsocketManager(object):
   _COMMAND_TEMPLATE = "websockify %s:%d %s:%d"
 
@@ -69,8 +65,9 @@ class VncWebsocketManager(object):
                                        stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
 
   def stop(self):
-    self.websockify.kill()
-    self.websockify = None
+    if self.websockify:
+      self.websockify.kill()
+      self.websockify = None
 
 class GoaCollector(object):
 
@@ -111,8 +108,13 @@ class GSettingsCollector(object):
   def get_settings(self):
     return self.selection
 
-#Profile listing
+##############################################################
 app = Flask(__name__)
+VNC_WSOCKET = VncWebsocketManager()
+deploys = {}
+collectors_by_name = {}
+global_config = {}
+
 @app.route("/profiles/", methods=["GET"])
 def profile_index():
   check_for_profile_index()
@@ -163,7 +165,7 @@ def profile_save(id):
 
   return '{"status": "ok"}'
 
-@app.route("/profiles/add", methods=["POST"])
+@app.route("/profiles/add", methods=["GET"])
 def new_profile():
   return render_template('profile_add.html')
 
@@ -240,16 +242,23 @@ def session_changes():
 
 @app.route("/session/start", methods=["POST"])
 def session_start():
+  global VNC_WSOCKET
   data = dict(request.form)
   req = None
 
   if 'host' not in data:
-    return '{"status": "no host was specified in POST request"}'
+    return '{"status": "no host was specified in POST request"}', 403
 
   try:
+    print(data['host'])
     req = requests.get("http://%s:8182/session/start" % data['host'])
   except requests.exceptions.ConnectionError:
     return '{"status": "could not connect to host"}', 403
+
+  VNC_WSOCKET.stop()
+  VNC_WSOCKET.target_host = data['host']
+  VNC_WSOCKET.target_port = 5935
+  VNC_WSOCKET.start()
 
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
@@ -259,6 +268,8 @@ def session_start():
 
 @app.route("/session/stop", methods=["GET"])
 def session_stop():
+  VNC_WSOCKET.stop()
+
   try:
     req = requests.get("http://localhost:8182/session/stop")
   except requests.exceptions.ConnectionError:
@@ -332,10 +343,6 @@ def parse_config(config_file):
     sys.exit(1)
 
   return args
-
-
-VNC_WSOCKET = VncWebsocketManager()
-
 
 if __name__ == "__main__":
   parser = ArgumentParser(description='Admin interface server')

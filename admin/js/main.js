@@ -61,9 +61,10 @@ function profile_confirmation () {
       return;
     }
 
+    $('#host-group').removeClass('has-error');
+    $('#add-profile-modal').modal('hide');
     sessionStorage.setItem("fc.session.host", $('#host').val());
-
-    $('#add-profile-form').submit();
+    location.href = "/profiles/add"
   });
 }
 

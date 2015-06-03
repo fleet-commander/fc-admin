@@ -60,9 +60,23 @@ function restartSession() {
     url:    '/session/start',
     data:   { host: sessionStorage.getItem("fc.session.host")},
     complete: function (xhr, statusText) {
-      //TODO: react to {}
+      if (xhr.status == 200) {
+        var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
+        vbc_rfb.connect(location.host,
+                        '8989',
+                        '',
+                        'websockify');
+        //TODO: React to VNC connection problems
+        return;
+      }
+
+      if (xhr.status == 403) {
+        alert(xhr.responseJSON.status);
+      }
+
+      //Unknown error
     },
-    dataType: "ajax"
+    dataType: "json"
   });
 }
 
@@ -100,9 +114,6 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
-  //var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
-  //vbc_rfb.connect('localhost', '8935', '', 'websockify');
-  
   restartSession();
   $("#event-logs").hide();
 });
