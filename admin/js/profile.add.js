@@ -44,7 +44,7 @@ function startVNC () {
 function closeSession () {
   window.clearInterval(updater);
 
-  $.getJSON("/session/stop", function (data) {return;});
+  $.post("/session/stop", { host: sessionStorage.getItem("fc.session.host") });
 }
 
 function restartSession() {
@@ -62,7 +62,7 @@ function restartSession() {
     complete: function (xhr, statusText) {
       if (xhr.status == 200) {
         var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
-        vbc_rfb.connect(location.host,
+        vbc_rfb.connect(location.hostname,
                         '8989',
                         '',
                         'websockify');

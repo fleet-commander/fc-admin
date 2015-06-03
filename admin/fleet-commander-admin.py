@@ -250,9 +250,9 @@ def session_start():
     return '{"status": "no host was specified in POST request"}', 403
 
   try:
-    print(data['host'])
-    req = requests.get("http://%s:8182/session/start" % data['host'])
+    req = requests.get("http://%s:8182/session/start" % data['host'][0])
   except requests.exceptions.ConnectionError:
+    print("faff")
     return '{"status": "could not connect to host"}', 403
 
   VNC_WSOCKET.stop()
@@ -266,12 +266,16 @@ def session_start():
 
   return req.content, req.status_code
 
-@app.route("/session/stop", methods=["GET"])
+@app.route("/session/stop", methods=["POST"])
 def session_stop():
+  global VNC_WSOCKET
+  data = dict(request.form)
+  req = None
+
   VNC_WSOCKET.stop()
 
   try:
-    req = requests.get("http://localhost:8182/session/stop")
+    req = requests.get("http://%s:8182/session/stop" % data['host'][0])
   except requests.exceptions.ConnectionError:
     return '{"status": "could not connect to host"}', 403
 
