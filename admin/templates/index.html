@@ -3,11 +3,8 @@
     <script src="/js/jquery-1.11.1.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/patternfly.min.js"></script>
-
-
     <script src="/js/main.js"></script>
 
-    <!--link href='http://fonts.googleapis.com/css?family=Cantarell:400,700,400italic,700italic' rel='stylesheet' type='text/css'-->
     <link rel="stylesheet" type="text/css" href="/css/patternfly.min.css"/>
     <link rel="stylesheet" type="text/css" href="/css/main.css"/>
 
@@ -20,13 +17,36 @@
       </div>
     </nav>
 
+    <div id="add-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="add-profile-form" method="POST" action="/profiles/add">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">New Profile</h4>
+            </div>
+
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="host">Fleet Commander virtual environment host</label>
+                <input id="host" name="host" placeholder="Enter hostname or IP address" type="hostname" class="form-control"></input>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <input id='add-profile-confirm' type="submit" class="btn btn-primary" value="Add Profile"/>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <div class="container-fluid">
       <div class="panel panel-default" style="margin-top: 20px;">
         <div class="panel-heading">
           <span>Profiles</span>
-          <a href="/new_profile">
-            <button class="btn btn-primary pull-right" type="button">Add Profile</button>
-          </a>
+          <button id="add-profile" class="btn btn-primary pull-right" type="button">Add Profile</button>
         </div>
 
         <table class="table">
@@ -40,9 +60,5 @@
           </table>
       </div>
     </div>
-
-  <!--h1>Profile list</h1>
-  <a href="/new_profile"><input type="button" value="New profile"/></a>
-  <ul id="profile-list"></ul-->
   </body>
 </html>

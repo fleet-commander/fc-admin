@@ -43,13 +43,19 @@ function populate_profile_list() {
   });
 }
 
-
 function remove_profile(profile) {
   if (confirm('Are you sure you want to delete ' + profile.displayName)) {
-    $.getJSON ("/profile/delete/" + profile.url, function (data) {
+    $.getJSON ('/profile/delete/' + profile.url, function (data) {
       populate_profile_list();
     });
   }
 }
 
-$(document).ready (populate_profile_list);
+function profile_confirmation () {
+  $('#add-profile-modal').modal('show');
+}
+
+$(document).ready (function (){
+  $('#add-profile').click (profile_confirmation)
+  populate_profile_list();
+});

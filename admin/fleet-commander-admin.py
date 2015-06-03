@@ -163,11 +163,13 @@ def profile_save(id):
 
   return '{"status": "ok"}'
 
-@app.route("/profile/add", methods=["GET"])
+@app.route("/profiles/add", methods=["POST"])
 def new_profile():
-  return render_template('new_profile.html')
+  data = dict(request.form)
+  print(data)
+  return render_template('profile_add.html')
 
-@app.route("/profile/delete/<uid>", methods=["GET"])
+@app.route("/profiles/delete/<uid>", methods=["GET"])
 def profile_delete(uid):
   INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
   PROFILE_FILE = os.path.join(app.custom_args['profiles_dir'], uid+'.json')
@@ -243,7 +245,12 @@ def session_start():
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
   collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
-  req = requests.get("http://localhost:8182/session/start")
+
+  try:
+    req = requests.get("http://localhost:8182/session/start")
+  except requests.exceptions.ConnectionError:
+    return '{"status": "could not connect to host"}', 403
+
   return req.content, req.status_code
 
 @app.route("/session/stop", methods=["GET"])
@@ -318,6 +325,10 @@ def parse_config(config_file):
     sys.exit(1)
 
   return args
+
+
+VNC_WSOCKET = VncWebsocketManager()
+
 
 if __name__ == "__main__":
   parser = ArgumentParser(description='Admin interface server')
