@@ -165,7 +165,6 @@ def profile_save(id):
 
 @app.route("/profiles/add", methods=["POST"])
 def new_profile():
-  data = dict(request.form)
   return render_template('profile_add.html')
 
 @app.route("/profiles/delete/<uid>", methods=["GET"])
@@ -239,22 +238,32 @@ def session_changes():
   collector = collectors_by_name['org.gnome.gsettings']
   return collector.dump_changes()
 
-@app.route("/session/start", methods=["GET"])
+@app.route("/session/start", methods=["POST"])
 def session_start():
+  data = dict(request.form)
+  req = None
+
+  if 'host' not in data:
+    return '{"status": "no host was specified in POST request"}'
+
+  try:
+    req = requests.get("http://%s:8182/session/start" % data['host'])
+  except requests.exceptions.ConnectionError:
+    return '{"status": "could not connect to host"}', 403
+
   collectors_by_name.clear()
   collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
   collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
-
-  try:
-    req = requests.get("http://localhost:8182/session/start")
-  except requests.exceptions.ConnectionError:
-    return '{"status": "could not connect to host"}', 403
 
   return req.content, req.status_code
 
 @app.route("/session/stop", methods=["GET"])
 def session_stop():
-  req = requests.get("http://localhost:8182/session/stop")
+  try:
+    req = requests.get("http://localhost:8182/session/stop")
+  except requests.exceptions.ConnectionError:
+    return '{"status": "could not connect to host"}', 403
+
   return req.content, req.status_code
 
 @app.route("/session/select", methods=["POST"])

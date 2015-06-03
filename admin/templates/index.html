@@ -20,24 +20,24 @@
     <div id="add-profile-modal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
-          <form id="add-profile-form" method="POST" action="/profiles/add">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-              <h4 class="modal-title">New Profile</h4>
-            </div>
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">New Profile</h4>
+          </div>
 
-            <div class="modal-body">
-              <div class="form-group">
-                <label for="host">Fleet Commander virtual environment host</label>
-                <input id="host" name="host" placeholder="Enter hostname or IP address" type="hostname" class="form-control"></input>
+          <div class="modal-body">
+            <form id="add-profile-form" method="POST" action="/profiles/add">
+              <div id="host-group" class="form-group">
+                <label for="host" class="control-label">Fleet Commander virtual environment host</label>
+                <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control"></input>
               </div>
-            </div>
+            </form>
+          </div>
 
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <input id='add-profile-confirm' type="submit" class="btn btn-primary" value="Add Profile"/>
-            </div>
-          </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id='add-profile-confirm' class="btn btn-primary">Add Profile</button>
+          </div>
         </div>
       </div>
     </div>

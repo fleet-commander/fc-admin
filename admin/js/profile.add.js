@@ -44,7 +44,6 @@ function startVNC () {
 function closeSession () {
   window.clearInterval(updater);
 
-
   $.getJSON("/session/stop", function (data) {return;});
 }
 
@@ -56,8 +55,14 @@ function restartSession() {
   $(".hidden").hide();
   $('.change-checkbox').hide();
 
-  $.getJSON("/session/start", function (data) {
-    window.setTimeout(startSpice, 1000);
+  $.ajax({
+    method: 'POST',
+    url:    '/session/start',
+    data:   { host: sessionStorage.getItem("fc.session.host")},
+    complete: function (xhr, statusText) {
+      //TODO: react to {}
+    },
+    dataType: "ajax"
   });
 }
 
@@ -95,12 +100,9 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
-  var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
-  vbc_rfb.connect('localhost', '8989', '', 'websockify');
-
-  $.getJSON("/session/start", function (data) {
-    window.setTimeout(restartSession, 1000);
-  });
-
+  //var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
+  //vbc_rfb.connect('localhost', '8935', '', 'websockify');
+  
+  restartSession();
   $("#event-logs").hide();
 });

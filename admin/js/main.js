@@ -53,9 +53,21 @@ function remove_profile(profile) {
 
 function profile_confirmation () {
   $('#add-profile-modal').modal('show');
+  $('#add-profile-confirm').click(function () {
+    if ($('#host').val() == '') {
+      //TODO: Check if http://hostname:8182 works
+      //TODO: Check if http://hostname:VNC35 works
+      $('#host-group').addClass('has-error');
+      return;
+    }
+
+    sessionStorage.setItem("fc.session.host", $('#host').val());
+
+    $('#add-profile-form').submit();
+  });
 }
 
-$(document).ready (function (){
+$(document).ready (function () {
   $('#add-profile').click (profile_confirmation)
   populate_profile_list();
 });
