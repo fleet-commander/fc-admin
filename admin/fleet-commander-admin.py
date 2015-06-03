@@ -166,7 +166,6 @@ def profile_save(id):
 @app.route("/profiles/add", methods=["POST"])
 def new_profile():
   data = dict(request.form)
-  print(data)
   return render_template('profile_add.html')
 
 @app.route("/profiles/delete/<uid>", methods=["GET"])
@@ -285,7 +284,6 @@ def check_for_profile_index():
     logging.error('There was an error attempting to write on %s' % INDEX_FILE)
 
 def parse_config(config_file):
-  #TODO: Safest default for the paths?
   SECTION_NAME = 'admin'
   args = {
       'host': 'localhost',
