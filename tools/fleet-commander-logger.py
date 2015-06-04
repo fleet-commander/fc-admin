@@ -472,4 +472,3 @@ if __name__ == '__main__':
     goa_logger = GoaLogger(connection)
 
     GLib.MainLoop().run()
-
