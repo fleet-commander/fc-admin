@@ -63,7 +63,7 @@ function restartSession() {
       if (xhr.status == 200) {
         var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
         vbc_rfb.connect(location.hostname,
-                        '8989',
+                        '8989', //Get VNC port from /vnc/port request
                         '',
                         'websockify');
         //TODO: React to VNC connection problems
