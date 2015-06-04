@@ -92,6 +92,7 @@ data/Makefile
 tools/Makefile
 admin/Makefile
 data/fleet-commander-controller.service
+data/fleet-commander-controller.conf
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin.service

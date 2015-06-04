@@ -1,4 +1,4 @@
 [controller]
 port = 8182
 host = localhost
-logger_config = /usr/local/etc/xdg 
+logger_config = @XDGCONFIGDIR@ 
