@@ -74,9 +74,7 @@ def update_logger_config(host):
 
   if not config.has_section(SECTION_NAME):
     config.add_section(SECTION_NAME)
-
   config[SECTION_NAME]['admin_server_host'] = host
-  print(config[SECTION_NAME].get('admin_server_host'))
 
   try:
     f = open(config_file, 'w')
