@@ -1,4 +1,4 @@
 [controller]
 port = 8182
 host = localhost
-logger_config = @XDGCONFIGDIR@ 
+logger_config = @XDGCONFIGDIR@/fleet-commander-logger.conf
