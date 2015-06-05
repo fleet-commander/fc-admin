@@ -34,7 +34,7 @@ try:
 except ImportError:
   from ConfigParser import ConfigParser, ParsingError
 
-from flask import Flask
+from flask import Flask, request
 
 class VncSessionManager:
   service = "fleet-commander-vnc-session.service"
@@ -57,6 +57,35 @@ vnc = VncSessionManager()
 has_session = False
 STDPORT = 5935
 
+def update_logger_config(host):
+  SECTION_NAME = 'logger'
+  logger_config = None
+  config = ConfigParser()
+  config_file = app.conf['logger_config']
+  try:
+    config.read(config_file)
+    config[SECTION_NAME]
+  except ParsingError:
+    logging.error('There was an error parsing %s' % config_file)
+  except KeyError:
+    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
+  except:
+    logging.error('There was an unknown error parsing %s' % config_file)
+
+  if not config.has_section(SECTION_NAME):
+    config.add_section(SECTION_NAME)
+
+  config[SECTION_NAME]['admin_server_host'] = host
+  print(config[SECTION_NAME].get('admin_server_host'))
+
+  try:
+    f = open(config_file, 'w')
+    print (config_file)
+    config.write(f)
+    f.close()
+  except:
+    logging.error('There was an unknown error writing %s' % config_file)
+
 @app.route("/vnc/port", methods=["GET"])
 def vnc_address():
   return '{"port": %d}' % STDPORT, 200
@@ -65,6 +94,8 @@ def vnc_address():
 def new_session():
   global has_session
   global vnc
+
+  update_logger_config(request.host.split(":")[0])
 
   if has_session:
     return '{"status": "already_started"}', 403
@@ -91,8 +122,9 @@ def stop_session():
 def parse_config(config_file):
   SECTION_NAME = 'controller'
   args = {
-      'host': '0.0.0.0',
-      'port': 8182
+      'host': 'localhost',
+      'port': 8182,
+      'logger_config': '/etc/xdg/fleet-commander-logger.conf'
   }
 
   if not config_file:
@@ -118,6 +150,7 @@ def parse_config(config_file):
 
   args['host'] = config[SECTION_NAME].get('host', args['host'])
   args['port'] = config[SECTION_NAME].get('port', args['port'])
+  args['logger_config'] = config[SECTION_NAME].get('logger_config', args['logger_config'])
 
   try:
     args['port'] = int(args['port'])
@@ -128,11 +161,11 @@ def parse_config(config_file):
   return args
 
 if __name__ == '__main__':
-  parser = ArgumentParser(description='Admin interface server')
+  parser = ArgumentParser(description='Fleet commander configuration session controller service')
   parser.add_argument(
     '--configuration', action='store', metavar='CONFIGFILE', default=None,
     help='Provide a configuration file path for the web service')
 
   args = parser.parse_args()
-  conf = parse_config(args.configuration)
-  app.run(host=conf['host'], port=conf['port'], debug=True)
+  app.conf = parse_config(args.configuration)
+  app.run(host=app.conf['host'], port=app.conf['port'], debug=True)
