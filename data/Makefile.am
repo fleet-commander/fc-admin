@@ -9,6 +9,9 @@ fleet_commander_admin_config_DATA = fleet-commander-admin.conf
 fleet_commander_vnc_resolutiondir = ${sysconfdir}/xdg/
 fleet_commander_vnc_resolution_DATA = monitors.xml
 
+gnome_initial_setup_donedir = ${sysconfdir}/xdg/
+gnome_initial_setup_done_DATA = gnome-initial-setup-done
+
 fleet_commander_logger_configdir = ${sysconfdir}/xdg/
 fleet_commander_logger_config_DATA = fleet-commander-logger.conf
 
@@ -35,7 +38,8 @@ EXTRA_DIST = \
 	$(fleet_commander_controller_service_in_files) \
 	$(fleet_commander_logger_config_DATA)          \
 	$(fleet_commander_controller_config_DATA)      \
-	$(fleet_commander_vnc_resolution_DATA)
+	$(fleet_commander_vnc_resolution_DATA)         \
+	$(gnome_initial_setup_done_DATA)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
