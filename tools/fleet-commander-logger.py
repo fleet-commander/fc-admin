@@ -40,6 +40,30 @@ DEFAULT_HTTP_HOST = 'localhost'
 DEFAULT_HTTP_PORT = '8181'
 CHANGE_SUBMIT_PATH = '/submit_change/'
 
+class ScreenSaverInhibitor(object):
+    def __init__(self, inhibit=False):
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        self.proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
+                                            'org.freedesktop.ScreenSaver', '/ScreenSaver',
+                                            'org.freedesktop.ScreenSaver', None)
+        self.cookie = None
+
+        if inhibit:
+            self.inhibit()
+
+    def inhibit(self):
+        if self.cookie != None:
+            return
+
+        self.cookie = self.proxy.Inhibit('(ss)', 'org.gnome.FleetCommander.Logger',
+                                         'Preventing ScreenSaver from showing up while Fleet Commander gathers configuration changes')
+    def uninhibit(self):
+        if self.cookie == None:
+            return
+
+        self.proxy.UnInhibit('(u)', self.cookie)
+        self.cookie = None
+
 class ConnectionManager(object):
     '''Manages HTTP connections so that Loggers don't have to
        it also queues commands in case the HTTP server goes away.'''
@@ -467,8 +491,8 @@ if __name__ == '__main__':
         args.port = conf['port']
 
     connection = ConnectionManager(args.host, args.port)
-
     gsettings_logger = GSettingsLogger(connection)
     goa_logger = GoaLogger(connection)
+    inhibitor = ScreenSaverInhibitor(True)
 
     GLib.MainLoop().run()
