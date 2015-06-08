@@ -1,0 +1,20 @@
+<monitors version="1">
+  <configuration>
+    <clone>no</clone>
+    <output name="VNC-0">
+      <vendor>unknown</vendor>
+      <product>unknown</product>
+      <serial>unknown</serial>
+      <width>1024</width>
+      <height>768</height>
+      <rate>60</rate>
+      <x>0</x>
+      <y>0</y>
+      <rotation>normal</rotation>
+      <reflect_x>no</reflect_x>
+      <reflect_y>no</reflect_y>
+      <primary>yes</primary>
+      <presentation>no</presentation>
+    </output>
+  </configuration>
+</monitors>

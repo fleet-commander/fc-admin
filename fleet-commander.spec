@@ -12,7 +12,7 @@ BuildArch: noarch
 
 License: LGPL-2.1+
 URL: https://github.com/fleet-commander/fc-admin
-Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.gz
+Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
 %define systemd_dir %{_prefix}/lib/systemd/system
 
@@ -59,6 +59,9 @@ make
 %make_install
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
 install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+install -m 644 data/monitors.xml %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/monitors.xml
+
+ln -s %{_sysconfdir}/profile %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bash_profile
 ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
@@ -103,10 +106,14 @@ exit 0
 %{_libexecdir}/fleet-commander-logger.py
 %exclude %{_libexecdir}/fleet-commander-logger.pyc
 %exclude %{_libexecdir}/fleet-commander-logger.pyo
+
 %attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/monitors.xml
 %exclude %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
+%exclude %{_sysconfdir}/xdg/monitors.xml
 
+%{_localstatedir}/lib/fleet-commander/.bash_profile
 %{_localstatedir}/lib/fleet-commander/.bashrc
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-logger.conf
 
