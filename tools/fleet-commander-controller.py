@@ -78,7 +78,6 @@ def update_logger_config(host):
 
   try:
     f = open(config_file, 'w')
-    print (config_file)
     config.write(f)
     f.close()
   except:
