@@ -4,6 +4,7 @@ Makefile.in
 */Makefile.in
 .*.swp
 */.*.swp
+admin/profiles/*.json
 data/*.service
 INSTALL
 aclocal.m4
@@ -14,6 +15,7 @@ config.status
 configure
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
+data/fleet-commander-controller.conf
 install-sh
 missing
 fleet-commander*.tar.[gx]z
