@@ -167,7 +167,7 @@ def profile_save(id):
 
 @app.route("/profiles/add", methods=["GET"])
 def new_profile():
-  return render_template('profile_add.html')
+  return render_template('profile.add.html')
 
 @app.route("/profiles/delete/<uid>", methods=["GET"])
 def profile_delete(uid):
@@ -252,7 +252,6 @@ def session_start():
   try:
     req = requests.get("http://%s:8182/session/start" % data['host'][0])
   except requests.exceptions.ConnectionError:
-    print("faff")
     return '{"status": "could not connect to host"}', 403
 
   VNC_WSOCKET.stop()
