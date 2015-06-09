@@ -122,10 +122,16 @@ def profile_index():
 
 @app.route("/profiles/<path:profile_id>", methods=["GET"])
 def profiles(profile_id):
-  return send_from_directory(app.custom_args['profiles_dir'], profile_id)
+  return send_from_directory(app.custom_args['profiles_dir'], profile_id + '.json')
 
 @app.route("/profile/save/<id>", methods=["POST"])
 def profile_save(id):
+  def write_and_close (path, load):
+    f = open(path, 'w+')
+    f.write(load)
+    f.close()
+
+
   if id not in deploys:
     return '{"status": "nonexistinguid"}'
 
@@ -157,11 +163,11 @@ def profile_save(id):
 
   check_for_profile_index()
   index = json.loads(open(INDEX_FILE).read())
-  index.append({"url": filename, "displayName": form["profile-name"][0]})
+  index.append({"url": id, "displayName": form["profile-name"][0]})
   del deploys[id]
 
-  open(PROFILE_FILE, 'w+').write(json.dumps(profile))
-  open(INDEX_FILE, 'w+').write(json.dumps(index))
+  write_and_close(PROFILE_FILE, json.dumps(profile))
+  write_and_close(INDEX_FILE, json.dumps(index))
 
   return '{"status": "ok"}'
 
@@ -235,8 +241,9 @@ def deploy(uid):
   return render_template('deploy.html')
 
 #profile builder methods
-@app.route("/session_changes", methods=["GET"])
+@app.route("/session/changes", methods=["GET"])
 def session_changes():
+  #FIXME: Add GOA changes summary
   collector = collectors_by_name['org.gnome.gsettings']
   return collector.dump_changes()
 

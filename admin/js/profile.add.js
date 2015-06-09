@@ -20,25 +20,28 @@
 var updater;
 var changes;
 var submit=false;
+var tries=0;
+var MAXTRIES=5;
 
 function updateEventList () {
-  $.getJSON ("/session_changes", function (data) {
+  $.getJSON ("/session/changes", function (data) {
     $("#event-list").html("");
     changes = data;
     $.each (data, function (i, item) {
       var row = item.join (" ");
       var id = data.length - 1 - i;
-      var input = '<input type="checkbox" class="change-checkbox" data-id="' + id + '"/>';
-      $("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
+      var li = $('<li></li>');
+      li.appendTo($('#event-list'));
+      li.text(row);
+      $('<input/>', {type: 'checkbox', class: 'change-checkbox', 'data-id': id}).prependTo(li);
+
+      //var input = '<input type="checkbox" class="change-checkbox" data-id="' + id + '"/>';
+      //$("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
     });
     if (submit) {
       $(".change-checkbox").show();
     }
   });
-}
-
-function startVNC () {
-  updater = window.setInterval (updateEventList, 1000);
 }
 
 function closeSession () {
@@ -47,13 +50,38 @@ function closeSession () {
   $.post("/session/stop", { host: sessionStorage.getItem("fc.session.host") });
 }
 
+function vnc_update_state (rfb, state, oldstate, statusMsg) {
+  if (state != 'disconnected')
+    return;
+
+  if (tries >= MAXTRIES) {
+    //TODO: Show an error dialog
+    closeSession();
+
+    tries = 0;
+    return;
+  }
+
+  tries++;
+  rfb.connect(location.hostname, '8989', '', '');
+}
+
+function vncConnect() {
+  var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
+  vbc_rfb.set_onUpdateState(vnc_update_state);
+  vbc_rfb.connect(location.hostname, '8989', '', '');
+}
+
 function restartSession() {
   submit = false;
   closeSession();
   showSession();
-  $('input[type="button"]').show();
-  $(".hidden").hide();
+
+  $("#top-button-box").show();
+
   $('.change-checkbox').hide();
+  $("#event-logs").hide();
+  $("#restart-profile, #submit-profile").hide();
 
   $.ajax({
     method: 'POST',
@@ -61,17 +89,13 @@ function restartSession() {
     data:   { host: sessionStorage.getItem("fc.session.host")},
     complete: function (xhr, statusText) {
       if (xhr.status == 200) {
-        var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
-        vbc_rfb.connect(location.hostname,
-                        '8989', //Get VNC port from /vnc/port request
-                        '',
-                        'websockify');
-        //TODO: React to VNC connection problems
-        return;
+        updater = window.setInterval (updateEventList, 1000);
+        vncConnect();
       }
 
+      //TODO: Inform about other errors to user
       if (xhr.status == 403) {
-        alert(xhr.responseJSON.status);
+        console.log(xhr.responseJSON.status);
       }
 
       //Unknown error
@@ -81,24 +105,23 @@ function restartSession() {
 }
 
 function reviewChanges() {
-  $("#spice-area").hide(200);
+  $("#vnc-area").hide(200);
   $("#event-logs").show(200);
 }
 
 function showSession() {
-  $("#spice-area").show(200);
+  $("#vnc-area").show(200);
   $("#event-logs").hide(200);
 }
 
 function createProfile() {
   submit = true;
-  $('input[type="button"]').hide();
-  $("#restart-profile, #submit-profile").show();
-  $(".change-checkbox").show();
-
-  window.setTimeout(function () {reviewChanges();}, 1000);
-
+  $('#top-button-box').hide();
+  reviewChanges();
   closeSession();
+
+  $(".change-checkbox").show();
+  $("#restart-profile, #submit-profile").show();
 }
 
 function deployProfile() {
@@ -115,5 +138,5 @@ function deployProfile() {
 
 $(document).ready (function () {
   restartSession();
-  $("#event-logs").hide();
+
 });

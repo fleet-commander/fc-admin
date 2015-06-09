@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <script src="/js/jquery-1.11.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/patternfly.min.js"></script>
+
+    <script src="/js/noVNC/include/util.js"></script>
+    <script src="/js/noVNC/include/webutil.js"></script>
+    <script src="/js/noVNC/include/base64.js"></script>
+    <script src="/js/noVNC/include/websock.js"></script>
+    <script src="/js/noVNC/include/des.js"></script>
+    <script src="/js/noVNC/include/keysymdef.js"></script>
+    <script src="/js/noVNC/include/keyboard.js"></script>
+    <script src="/js/noVNC/include/input.js"></script>
+    <script src="/js/noVNC/include/display.js"></script>
+    <script src="/js/noVNC/include/jsunzip.js"></script>
+    <script src="/js/noVNC/include/keysym.js"></script>
+    <script src="/js/noVNC/include/rfb.js"></script>
+
+    <script src="/js/profile.add.js"></script>
+    
+    <link rel="stylesheet" type="text/css" href="/css/patternfly.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/css/profile.add.css"/>
+    
+    <title>Fleet Commander - New Profile</title>
+  </head>
+  <body>
+    <nav id="topnav" class="navbar navbar-default navbar-pf" role="navigation">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/">Fleet Commander</a>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div id="top-button-box">
+        <input id="close-session"   type="button" onclick="closeSession()"   value="Close session"/>
+        <input id="review-changes"  type="button" onclick="reviewChanges()"  value="Review changes"/>
+        <input id="show-session"    type="button" onclick="showSession()"    value="Show session"/>
+        <input id="create-profile"  type="button" onclick="createProfile()"  value="Create profile"/>
+      </div>
+      <div id="vnc-area">
+        <canvas id="vnc-canvas">
+        </canvas>
+      </div>
+      <div id="event-logs">
+        <ul id="event-list">
+        </ul>
+        <input  id="restart-profile" onclick="restartSession()" type="button" value="Start again"/>
+        <input  id="submit-profile"  onclick="deployProfile()"  type="button" value="Next"/>
+      </div>
+    </div>
+  </body>
+</html>
