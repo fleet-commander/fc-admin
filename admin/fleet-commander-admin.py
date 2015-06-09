@@ -131,7 +131,6 @@ def profile_save(id):
     f.write(load)
     f.close()
 
-
   if id not in deploys:
     return '{"status": "nonexistinguid"}'
 
@@ -142,17 +141,14 @@ def profile_save(id):
 
   profile = {}
   settings = {}
-
-  # List all keys of the form 'user-NAME', then trim off 'user-'.
-  users = filter(lambda x: x.startswith('user-'), form.keys())
-  users = list(map(lambda x: x[5:], users))
-
-  # Same as above, but for 'group-NAME' keys.
-  groups = filter(lambda x: x.startswith('group-'), form.keys())
-  groups = list(map(lambda x: x[6:], groups))
+  groups = []
+  users = []
 
   for name, collector in deploys[id].items():
     settings[name] = collector.get_settings()
+
+  groups = [g.strip() for g in form['groups'][0].split(",")]
+  users  = [u.strip() for u in form['users'][0].split(",")]
 
   profile["uid"] = id
   profile["name"] = form["profile-name"][0]
@@ -198,12 +194,6 @@ def profile_discard(id):
   if id in deploys:
     del deploys[id]
   return '{"status": "ok"}'
-
-#Get users and groups from the target host
-@app.route("/getent", methods=['GET'])
-def getent():
-  #TODO: Use the python getent module to get actual users and groups
-  return json.dumps({"users": ["aruiz", "mbarnes"],"groups": ["wheel", "admin", "aruiz", "mbarnes"]})
 
 #Add a configuration change to a session
 @app.route("/submit_change/<name>", methods=["POST"])
