@@ -289,9 +289,9 @@ class GSettingsLogger(object):
             self.__dconf_bus_name_appared_cb,
             self.__dconf_bus_name_vanished_cb)
 
-    def __settings_changed_cb(self, settings, key):
+    def __settings_changed(self, settings, key):
         logger.debug(
-            'GSettings::changed("%s", "%s") at %s',
+            'dconf change ("%s", "%s") at %s',
              settings.props.schema_id, key, settings.props.path)
 
         assert settings.props.path.endswith('/')
@@ -320,7 +320,6 @@ class GSettingsLogger(object):
 
     def __new_settings_for_schema(self, schema, path):
         settings = Gio.Settings.new_full(schema, None, path)
-        settings.connect('changed', self.__settings_changed_cb)
         return settings
 
     def __path_to_reloc_settings_add(self, path, keys):
@@ -397,9 +396,9 @@ class GSettingsLogger(object):
 
         logger.debug('>>> Keys: ' + str(', ').join(keys))
 
-        # Do nothing if we already know the schema at this path.
-        # Our Settings::changed callback will record the change.
+        # Submit change for a key belonging to a known schema
         if path in self.path_to_known_settings:
+            self.__settings_changed(self.path_to_known_settings[path], key)
             return
 
         # Note the keys that changed on this path.  We know a relocatable
