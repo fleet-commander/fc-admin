@@ -45,7 +45,4 @@ function profileDiscard() {
 $(document).ready (function () {
   var path = location.pathname.split("/");
   uid = path[path.length - 1];
-  $.getJSON("/getent", function (data) {
-    populateUsersGroups(data.users, data.groups);
-  });
 });
