@@ -279,11 +279,15 @@ def session_stop():
 
 @app.route("/session/select", methods=["POST"])
 def session_select():
-  data = dict(request.form)
-  sel = []
-  if not "sel[]" in data:
-    return '{"status": "bad_form_data"}'
-  selected_indices = [int(x) for x in data['sel[]']]
+  data = request.get_json()
+
+  if not isinstance(data, dict):
+    return '{"status": "bad JSON format"}'
+
+  if not "sel" in data:
+    return '{"status": "bad_form_data"}', 403
+
+  selected_indices = [int(x) for x in data['sel']]
   collector = collectors_by_name['org.gnome.gsettings']
   collector.remember_selected(selected_indices)
 

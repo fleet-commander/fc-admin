@@ -31,22 +31,37 @@
       </div>
     </nav>
 
+    <div class="modal fade" id="event-logs">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" onclick="listenChanges()" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Profile Changes</h4>
+          </div>
+          <div class="modal-body">
+            <form id="selected-changes-form">
+              <div class="form-group">
+                <ul id="event-list">
+                </ul>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <input  id="restart-profile" onclick="listenChanges()" data-dismiss="modal" type="button" value="Back"/>
+            <input  id="submit-profile"  onclick="deployProfile()"  type="button" value="Save"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="container-fluid">
       <div id="top-button-box">
         <input id="close-session"   type="button" onclick="closeSession()"   value="Close session"/>
-        <input id="review-changes"  type="button" onclick="reviewChanges()"  value="Review changes"/>
-        <input id="show-session"    type="button" onclick="showSession()"    value="Show session"/>
-        <input id="create-profile"  type="button" onclick="createProfile()"  value="Create profile"/>
+        <input id="review-changes"  type="button" onclick="reviewAndSubmit()"  value="Review and submit"/>
       </div>
       <div id="vnc-area">
         <canvas id="vnc-canvas">
         </canvas>
-      </div>
-      <div id="event-logs">
-        <ul id="event-list">
-        </ul>
-        <input  id="restart-profile" onclick="restartSession()" type="button" value="Start again"/>
-        <input  id="submit-profile"  onclick="deployProfile()"  type="button" value="Next"/>
       </div>
     </div>
   </body>

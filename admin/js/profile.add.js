@@ -31,12 +31,13 @@ function updateEventList () {
       var row = item.join (" ");
       var id = data.length - 1 - i;
       var li = $('<li></li>');
+      var p  = $('<div></div>', {text: row}).appendTo(li);
       li.appendTo($('#event-list'));
-      li.text(row);
-      $('<input/>', {type: 'checkbox', class: 'change-checkbox', 'data-id': id}).prependTo(li);
-
-      //var input = '<input type="checkbox" class="change-checkbox" data-id="' + id + '"/>';
-      //$("#event-list").html($("#event-list").html() + "<li>" + input + row + "</li>");
+      $('<input/>', {type:  'checkbox', class: 'change-checkbox', 'data-id': id})
+        .click (function (e) {
+          e.stopImmediatePropagation();
+        })
+        .prependTo(li);
     });
     if (submit) {
       $(".change-checkbox").show();
@@ -75,13 +76,9 @@ function vncConnect() {
 function restartSession() {
   submit = false;
   closeSession();
-  showSession();
 
   $("#top-button-box").show();
-
   $('.change-checkbox').hide();
-  $("#event-logs").hide();
-  $("#restart-profile, #submit-profile").hide();
 
   $.ajax({
     method: 'POST',
@@ -89,7 +86,7 @@ function restartSession() {
     data:   { host: sessionStorage.getItem("fc.session.host")},
     complete: function (xhr, statusText) {
       if (xhr.status == 200) {
-        updater = window.setInterval (updateEventList, 1000);
+        listenChanges();
         vncConnect();
       }
 
@@ -104,39 +101,34 @@ function restartSession() {
   });
 }
 
-function reviewChanges() {
-  $("#vnc-area").hide(200);
-  $("#event-logs").show(200);
+function reviewAndSubmit() {
+  window.clearInterval(updater);
+  $('.change-checkbox').show();
+  $('#event-logs').modal('show');
 }
 
-function showSession() {
-  $("#vnc-area").show(200);
-  $("#event-logs").hide(200);
-}
-
-function createProfile() {
-  submit = true;
-  $('#top-button-box').hide();
-  reviewChanges();
-  closeSession();
-
-  $(".change-checkbox").show();
-  $("#restart-profile, #submit-profile").show();
+function listenChanges() {
+  updater = window.setInterval (updateEventList, 1000);
 }
 
 function deployProfile() {
   var sel = [];
+
   $.each($('input[data-id]:checked'), function (i,e) {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
-  $.post("/session/select", {"sel": sel}, function (data) {
-      if (data.status == "ok") {
-        location.pathname = "/deploy/" + data.uuid;
-      }
-  }, "json");
+
+  $.ajax({method: 'POST',
+          url:    '/session/select',
+          data:   JSON.stringify({'sel': sel}),
+          dataType: 'json',
+          contentType: 'application/json'
+  }).done(function (data) {
+    if (data.status == 'ok')
+      location.pathname = '/deploy/' + data.uuid;
+  });
 }
 
 $(document).ready (function () {
   restartSession();
-
 });
