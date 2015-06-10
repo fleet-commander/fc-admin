@@ -56,13 +56,18 @@
     </div>
 
     <div class="container-fluid">
-      <div id="top-button-box">
-        <input id="close-session"   type="button" onclick="closeSession()"   value="Close session"/>
-        <input id="review-changes"  type="button" onclick="reviewAndSubmit()"  value="Review and submit"/>
-      </div>
-      <div id="vnc-area">
-        <canvas id="vnc-canvas">
-        </canvas>
+      <div class="panel panel-default" style="margin-top: 20px">
+        <div class="panel-heading">
+          <span>Virtual Session</span>
+          <span class="pull-right">
+            <input id="close-session" class="btn " type="button" onclick="closeSession()"   value="Close session"/>
+            <input id="review-changes" class="btn btn-primary" type="button" onclick="reviewAndSubmit()" value="Review and submit"/>
+          </span>
+        </div>
+        <div id="vnc-area" class="panel-body">
+          <canvas id="vnc-canvas" class="center-block">
+          </canvas>
+        </div>
       </div>
     </div>
   </body>
