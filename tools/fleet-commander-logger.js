@@ -1,6 +1,4 @@
 #!/usr/bin/gjs
-
-/* vim: set et ts=4 sw=4: */
 /*
  * Copyright (c) 2015 Red Hat, Inc.
  *
@@ -27,7 +25,18 @@ const GLib = imports.gi.GLib;
 const Gio  = imports.gi.Gio;
 const Soup = imports.gi.Soup;
 
+//Global constants
+const SUBMIT_PATH = '/submit_change/'
+
+//Mainloop
 const ml = new GLib.MainLoop(null, false);
+
+//Global application objects
+var connmgr         = null;
+var gsettingslogger = null;
+var goalogger       = null;
+
+//Global settings
 var options = null;
 var _debug = false;
 
@@ -108,7 +117,32 @@ function parse_options () {
   return result;
 }
 
+
+var ConnectionManager = function (host, port) {
+    this.uri = new Soup.URI("http://" + host + ":" + port);
+    this.session = new Soup.Session();
+}
+ConnectionManager.prototype.submit_change = function (namespace, data) {
+    debug("Submitting change " + namespace + ":")
+    debug(data)
+
+    this.uri.set_path(SUBMIT_PATH+namespace);
+    let msg = Soup.Message.new_from_uri("POST", this.uri);
+    msg.set_request('application/json', Soup.MemoryUse.STATIC, data, data.length);
+    this.session.queue_message(msg, function (s, m) {
+        debug("Submitted change returned code " + m.status_code + " " + m.response_body.data);
+        if (m.status_code != 200) {
+            printerr("ERROR: there was an error submitting changeset " + namespace + " " + data);
+            printerr(m.response_body.data);
+        }
+    }, null);
+}
+
 //Something ugly to overcome the lack of exit()
 options = parse_options ();
-if (options != null)
-  ml.run();
+
+if (options != null) {
+    connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
+    connmgr.submit_change("foo", '{"bar": "baz"}');
+    ml.run();
+}
