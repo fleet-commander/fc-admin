@@ -26,10 +26,11 @@ const Gio  = imports.gi.Gio;
 const Soup = imports.gi.Soup;
 
 //Global constants
-const SUBMIT_PATH = '/submit_change/'
+const RETRY_INTERVAL = 1000;
+const SUBMIT_PATH    = '/submit_change/';
 
 //Mainloop
-const ml = new GLib.MainLoop(null, false);
+const ml = imports.mainloop;
 
 //Global application objects
 var connmgr         = null;
@@ -117,25 +118,62 @@ function parse_options () {
   return result;
 }
 
-
+// ConnectionManager - This class manages
 var ConnectionManager = function (host, port) {
     this.uri = new Soup.URI("http://" + host + ":" + port);
     this.session = new Soup.Session();
+    this.queue = [];
+    this.timeout = 0;
 }
-ConnectionManager.prototype.submit_change = function (namespace, data) {
-    debug("Submitting change " + namespace + ":")
-    debug(data)
+function perform_submits () {
+    if (this.queue.length < 1)
+        return false;
 
-    this.uri.set_path(SUBMIT_PATH+namespace);
-    let msg = Soup.Message.new_from_uri("POST", this.uri);
-    msg.set_request('application/json', Soup.MemoryUse.STATIC, data, data.length);
-    this.session.queue_message(msg, function (s, m) {
-        debug("Submitted change returned code " + m.status_code + " " + m.response_body.data);
-        if (m.status_code != 200) {
-            printerr("ERROR: there was an error submitting changeset " + namespace + " " + data);
-            printerr(m.response_body.data);
-        }
-    }, null);
+    for (let i = 0; i < this.queue.length ; i++) {
+        debug("Submitting change " + this.queue[i].ns + ":")
+        debug(this.queue[i].data);
+
+        let payload = this.queue[i].data;
+        let ns      = this.queue[i].ns;
+
+        this.uri.set_path(SUBMIT_PATH+ns);
+        let msg = Soup.Message.new_from_uri("POST", this.uri);
+        msg.set_request('application/json', Soup.MemoryUse.STATIC, payload, payload.length);
+
+
+        this.session.queue_message(msg, function (s, m) {
+            debug("Response from server: returned code " + m.status_code);
+            switch (m.status_code) {
+                case 200:
+                    debug ("Change submitted " + ns + " " + payload);
+                    break;
+                case 403:
+                    printerr("ERROR: invalid change namespace " + ns);
+                    printerr(m.response_body.data);
+                    break;
+                default:
+                    printerr("ERROR: There was an error trying to contact the server");
+                    return;
+            }
+
+            //Remove this item, if the queue is empty remove timeout
+            this.queue = this.queue.splice(i, 1);
+            if (this.queue.length < 1 && this.timeout > 0) {
+                GLib.source_remove(this.timeout);
+                this.timeout = 0;
+            }
+        }.bind(this));
+    }
+    return true;
+}
+
+ConnectionManager.prototype.submit_change = function (namespace, data) {
+    this.queue.push({ns: namespace, data: data});
+
+    if (this.queue.length > 0 && this.timeout < 1)
+        this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
+                                         RETRY_INTERVAL,
+                                         perform_submits.bind(this));
 }
 
 //Something ugly to overcome the lack of exit()
@@ -143,6 +181,5 @@ options = parse_options ();
 
 if (options != null) {
     connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
-    connmgr.submit_change("foo", '{"bar": "baz"}');
     ml.run();
 }
