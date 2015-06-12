@@ -33,10 +33,7 @@ const SUBMIT_PATH    = '/submit_change/';
 const ml = imports.mainloop;
 
 //Global application objects
-var connmgr         = null;
 var inhibitor       = null;
-var gsettingslogger = null;
-var goalogger       = null;
 
 //Global settings
 var options = null;
@@ -219,11 +216,40 @@ ConnectionManager.prototype.submit_change = function (namespace, data) {
                                          perform_submits.bind(this));
 }
 
+var GoaLogger = function (connmgr) {
+    this.connmgr = connmgr;
+    this.path = [GLib.get_user_config_dir(), 'goa-1.0', 'accounts.conf'].join('/');
+
+    this.monitor = Gio.File.new_for_path(this.path).monitor_file(Gio.FileMonitorFlags.NONE, null);
+    this.monitor.connect ('changed', function (monitor, this_file, other_file, event_type) {
+        debug("GFileMonitor::changed " + [this.path, event_type.value_nick].join(" "));
+
+        switch (event_type) {
+            case Gio.FileMonitorEvent.CHANGED:
+            case Gio.FileMonitorEvent.CREATED:
+            case Gio.FileMonitorEvent.DELETED:
+                this.update();
+                break;
+            default:
+                break;
+        }
+    }.bind(this));
+
+    if (GLib.file_test (this.path, GLib.FileTest.EXISTS))
+        this.update();
+}
+
+GoaLogger.prototype.update = function () {
+    debug("Updating GOA configuration");
+}
+
 //Something ugly to overcome the lack of exit()
 options = parse_options ();
 
 if (options != null) {
-    connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
     inhibitor = new ScreenSaverInhibitor();
+    let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
+    let goalogger = new GoaLogger(connmgr);
+
     ml.run();
 }
