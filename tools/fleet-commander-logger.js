@@ -34,6 +34,7 @@ const ml = imports.mainloop;
 
 //Global application objects
 var connmgr         = null;
+var inhibitor       = null;
 var gsettingslogger = null;
 var goalogger       = null;
 
@@ -118,6 +119,47 @@ function parse_options () {
   return result;
 }
 
+
+var ScreenSaverInhibitor = function () {
+    let bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
+    this.proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, null,
+                                        'org.freedesktop.ScreenSaver', '/ScreenSaver',
+                                        'org.freedesktop.ScreenSaver', null);
+    this.cookie = null;
+
+    this.inhibit();
+}
+
+ScreenSaverInhibitor.prototype.inhibit = function () {
+    debug("Inhibiting screen saver");
+    if (this.cookie != null) {
+        debug("Screen saver already inhibited");
+        return;
+    }
+
+    try {
+        let args =  new GLib.Variant('(ss)', 'org.gnome.FleetCommander.Logger',
+                                     'Preventing ScreenSaver from locking the screen while Fleet Commander Logger runs');
+        let ret = this.proxy.call_sync('Inhibit', args, Gio.DBusCallFlags.NONE, 1000, null);
+        this.cookie = ret.get_child_value(0).get_uint32();
+    } catch (e) {
+        debug(e);
+        printerr("ERROR: There was an error attempting to inhibit the screen saver")
+    }
+}
+
+ScreenSaverInhibitor.prototype.uninhibit = function () {
+    debug("Uninhibiting screen saver");
+    try {
+        let args =  GLib.Variant.new_tuple([new GLib.Variant('u', this.cookie)], 1);
+        this.proxy.call_sync('UnInhibit', args, Gio.DBusCallFlags.NONE, 1000, null);
+    } catch (e) {
+        debug(e);
+        printerr("ERROR: There was an error attempting to uninhibit the screen saver")
+    }
+    this.cookie = null;
+}
+
 // ConnectionManager - This class manages
 var ConnectionManager = function (host, port) {
     this.uri = new Soup.URI("http://" + host + ":" + port);
@@ -168,6 +210,7 @@ function perform_submits () {
 }
 
 ConnectionManager.prototype.submit_change = function (namespace, data) {
+    //FIXME: Bound the amount of queued changes
     this.queue.push({ns: namespace, data: data});
 
     if (this.queue.length > 0 && this.timeout < 1)
@@ -181,5 +224,6 @@ options = parse_options ();
 
 if (options != null) {
     connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
+    inhibitor = new ScreenSaverInhibitor();
     ml.run();
 }
