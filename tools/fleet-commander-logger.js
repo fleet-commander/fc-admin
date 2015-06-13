@@ -45,6 +45,10 @@ function debug (msg) {
   printerr("DEBUG: " + msg);
 }
 
+function hasSuffix (haystack, needle) {
+    return (haystack.length - needle.length) == haystack.lastIndexOf(needle);
+}
+
 function parse_options () {
   let result = {
       'admin_server_host': 'localhost',
@@ -221,6 +225,10 @@ var GoaLogger = function (connmgr) {
     this.path = [GLib.get_user_config_dir(), 'goa-1.0', 'accounts.conf'].join('/');
 
     this.monitor = Gio.File.new_for_path(this.path).monitor_file(Gio.FileMonitorFlags.NONE, null);
+
+    if (GLib.file_test (this.path, GLib.FileTest.EXISTS))
+        this.update();
+
     this.monitor.connect ('changed', function (monitor, this_file, other_file, event_type) {
         debug("GFileMonitor::changed " + [this.path, event_type.value_nick].join(" "));
 
@@ -234,13 +242,57 @@ var GoaLogger = function (connmgr) {
                 break;
         }
     }.bind(this));
-
-    if (GLib.file_test (this.path, GLib.FileTest.EXISTS))
-        this.update();
 }
 
 GoaLogger.prototype.update = function () {
-    debug("Updating GOA configuration");
+    debug("Updating GOA configuration data");
+
+    let kf = new GLib.KeyFile();
+    try {
+        kf.load_from_file(this.path, GLib.KeyFileFlags.NONE);
+    } catch (e) {
+        debug(e);
+        printerr("ERROR: Could not parse configuration file " + this.path);
+        return;
+    }
+
+    //FIXME: Send empty dataset on file removal
+
+    //TODO: Test this and consider whether the *Enabled keys are worth ignoring
+    /*kf.get_groups().forEach (function(group) {
+        kf.get_keys(group).every (function (key) {
+            if (key == 'IsTemporary' && kf.get_boolean(group, key)) {
+                debug ("Removing group " + group + " as it is temporary");
+                kf.remove_group(group);
+                return false;
+            }
+
+            if (hasSuffix(key, "Enabled"))
+                kf.remove_key(group, key);
+
+            return true;
+        });
+    });*/
+
+    //TODO: figure out how reliable this parametrization method is
+    /* if (key == 'Identity') {
+                val = ['${username}', val.split('@').pop()].join("@");
+            }
+     */
+
+    let result = {};
+    kf.get_groups()[0].forEach(function(group) {
+        let fcmdr_group = "fcmdr_" + group.split(" ").pop();
+        let fcmdr_obj = {};
+        result[fcmdr_group] = fcmdr_obj;
+        kf.get_keys(group)[0].forEach(function(key) {
+            fcmdr_obj[key] = kf.get_value(group, key);
+        });
+    });
+
+    this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify(result));
+
+    return;
 }
 
 //Something ugly to overcome the lack of exit()
