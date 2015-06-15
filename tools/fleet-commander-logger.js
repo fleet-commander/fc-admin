@@ -221,6 +221,7 @@ ConnectionManager.prototype.submit_change = function (namespace, data) {
 }
 
 var GoaLogger = function (connmgr) {
+    debug("Constructing GoaLogger");
     this.connmgr = connmgr;
     this.path = [GLib.get_user_config_dir(), 'goa-1.0', 'accounts.conf'].join('/');
 
@@ -295,6 +296,38 @@ GoaLogger.prototype.update = function () {
     return;
 }
 
+var GSettingsLogger = function (connmgr) {
+    this.connmgr = connmgr;
+
+    this.BUS_NAME       = 'ca.desrt.dconf';
+    this.OBJECT_PATH    = '/ca/desrt/dconf/Writer/user';
+    this.INTERFACE_NAME = 'ca.desrt.dconf.Writer';
+
+    this.path_to_known_settings = {};
+    this.path_to_reloc_settings = {};
+    this.path_to_changed_keys   = {};
+    this.relocatable_schemas    = [];
+    this.dconf_subscription_id  = 0;
+
+    let schema_source = Gio.SettingsSchemaSource.get_default();
+
+    /* Populate a table of paths to Settings objects.  We can do this up
+     * front for fixed-path schemas.  For relocatable schemas we have to
+     * wait for a change to occur and then try to derive the schema from
+     * the path and key(s) in the change notification. */
+    Gio.Settings.list_schemas().forEach(function(schema_name) {
+        let schema   = schema_source.lookup(schema_name, true);
+        let path     = schema.get_path();
+        let settings = Gio.Settings.new_full(schema, null, schema.get_path());
+        this.path_to_known_settings[path] = settings;
+    }.bind(this));
+
+    Gio.Settings.list_relocatable_schemas().forEach(function(schema_name) {
+        let schema = schema_source.lookup(schema_name, true);
+        this.relocatable_schemas.push(schema);
+    }.bind(this));
+}
+
 //Something ugly to overcome the lack of exit()
 options = parse_options ();
 
@@ -302,6 +335,7 @@ if (options != null) {
     inhibitor = new ScreenSaverInhibitor();
     let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
     let goalogger = new GoaLogger(connmgr);
+    let gsetlogger = new GSettingsLogger(connmgr);
 
     ml.run();
 }
