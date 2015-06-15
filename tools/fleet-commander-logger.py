@@ -398,8 +398,9 @@ class GSettingsLogger(object):
 
         # Submit change for a key belonging to a known schema
         if path in self.path_to_known_settings:
-            self.__settings_changed(self.path_to_known_settings[path], key)
-            return
+            for key in keys:
+                self.__settings_changed(self.path_to_known_settings[path], key)
+                return
 
         # Note the keys that changed on this path.  We know a relocatable
         # schema is in use at this path, but we can't be certain which one.
