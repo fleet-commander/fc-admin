@@ -24,6 +24,7 @@
 const GLib = imports.gi.GLib;
 const Gio  = imports.gi.Gio;
 const Soup = imports.gi.Soup;
+const Json = imports.gi.Json;
 
 //Global constants
 const RETRY_INTERVAL = 1000;
@@ -168,7 +169,7 @@ var ConnectionManager = function (host, port) {
     this.queue = [];
     this.timeout = 0;
 }
-function perform_submits () {
+ConnectionManager.prototype._perform_submits = function () {
     if (this.queue.length < 1)
         return false;
 
@@ -217,7 +218,7 @@ ConnectionManager.prototype.submit_change = function (namespace, data) {
     if (this.queue.length > 0 && this.timeout < 1)
         this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
                                          RETRY_INTERVAL,
-                                         perform_submits.bind(this));
+                                         this._perform_submits.bind(this));
 }
 
 var GoaLogger = function (connmgr) {
@@ -304,27 +305,26 @@ var GSettingsLogger = function (connmgr) {
     this.OBJECT_PATH    = '/ca/desrt/dconf/Writer/user';
     this.INTERFACE_NAME = 'ca.desrt.dconf.Writer';
 
-    this.path_to_known_settings = {};
+    this.path_to_known_schema = {};
     this.path_to_reloc_settings = {};
     this.path_to_changed_keys   = {};
     this.relocatable_schemas    = [];
     this.dconf_subscription_id  = 0;
 
-    let schema_source = Gio.SettingsSchemaSource.get_default();
+    this.schema_source = Gio.SettingsSchemaSource.get_default();
 
-    /* Populate a table of paths to Settings objects.  We can do this up
+    /* Populate a table of paths to schema ids.  We can do this up
      * front for fixed-path schemas.  For relocatable schemas we have to
      * wait for a change to occur and then try to derive the schema from
      * the path and key(s) in the change notification. */
     Gio.Settings.list_schemas().forEach(function(schema_name) {
-        let schema   = schema_source.lookup(schema_name, true);
+        let schema   = this.schema_source.lookup(schema_name, true);
         let path     = schema.get_path();
-        let settings = Gio.Settings.new_full(schema, null, schema.get_path());
-        this.path_to_known_settings[path] = settings;
+        this.path_to_known_schema[path] = schema_name;
     }.bind(this));
 
     Gio.Settings.list_relocatable_schemas().forEach(function(schema_name) {
-        let schema = schema_source.lookup(schema_name, true);
+        let schema = this.schema_source.lookup(schema_name, true);
         this.relocatable_schemas.push(schema);
     }.bind(this));
 
@@ -351,7 +351,42 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
         keys.push(keys_variant.get_child_value(i).get_string()[0]);
       }
     }
-    debug("dconf Notify " + path);
+    let schema_known = false;
+
+    debug("dconf Notify: " + path)
+    debug(">>> Keys: " + keys);
+
+    if (Object.keys(this.path_to_known_schema).indexOf(path) != -1) {
+      debug(">>> Schema not known yet");
+      this._settings_changed(this.path_to_known_schema[path], keys);
+    } else {
+       debug(">>> Schema not known yet");
+    }
+}
+
+GSettingsLogger.prototype._settings_changed = function(schema_name, keys) {
+    let schema   = this.schema_source.lookup(schema_name, true);
+    let settings = Gio.Settings.new_full(schema, null, null);
+    debug ("submitted change for keys [" + keys + "] on schema " + schema_name);
+    keys.forEach(function(key) {
+        let variant   = settings.get_value(key);
+        let builder   = new Json.Builder();
+        let generator = new Json.Generator();
+
+        builder.begin_object();
+        builder.set_member_name("key");
+        builder.add_string_value(schema.get_path() + key);
+        builder.set_member_name("schema");
+        builder.add_string_value(schema_name);
+        builder.set_member_name("value");
+        builder.add_value(Json.gvariant_serialize(variant));
+        builder.end_object();
+
+        generator.set_root(builder.get_root());
+        let data = generator.to_data(null)[0];
+
+        this.connmgr.submit_change("org.gnome.gsettings", data);
+    }.bind(this));
 }
 
 GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
