@@ -336,12 +336,45 @@ var GSettingsLogger = function (connmgr) {
         this._bus_name_disappeared_cb.bind(this));
 }
 
-GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
-    debug(this.BUS_NAME + " bus appeared");
+GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name, object_path,
+                                                        interface_name, signal_name, parameters) {
+    let path = parameters.get_child_value(0).get_string()[0];
+    let keys = [];
+    let tag  = parameters.get_child_value(2).get_string()[0];
+    if (!hasSuffix(path, "/")) {
+      let split = path.split("/");
+      keys.push(split.pop());
+      path = split.join("/") + "/";
+    } else {
+      let keys_variant = parameters.get_child_value(1);
+      for (let i = 0; i < keys_variant.n_children(); i++) {
+        keys.push(keys_variant.get_child_value(i).get_string()[0]);
+      }
+    }
+    debug("dconf Notify " + path);
 }
 
-GSettingsLogger.prototype._bus_name_disappeared_cb = function () {
+GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
+    debug(this.BUS_NAME + " bus appeared");
+    this.dconf_subscription_id = connection.signal_subscribe (
+        owner,
+        this.INTERFACE_NAME,
+        'Notify',
+        this.OBJECT_PATH,
+        null,
+        Gio.DBusSignalFlags.NONE,
+        this._writer_notify_cb.bind(this),
+        null);
+}
+
+GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_name) {
     debug(this.BUS_NAME + " bus disappeared");
+
+    if (this.dconf_subscription_id == 0)
+      return;
+
+    connection.signal_unsubscribe (this.dconf_subscription_id);
+    this.dconf_subscription_id = 0;
 }
 
 //Something ugly to overcome the lack of exit()
