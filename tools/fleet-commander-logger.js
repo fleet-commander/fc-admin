@@ -297,6 +297,7 @@ GoaLogger.prototype.update = function () {
 }
 
 var GSettingsLogger = function (connmgr) {
+    debug("Constructing GSettingsLogger");
     this.connmgr = connmgr;
 
     this.BUS_NAME       = 'ca.desrt.dconf';
@@ -326,6 +327,21 @@ var GSettingsLogger = function (connmgr) {
         let schema = schema_source.lookup(schema_name, true);
         this.relocatable_schemas.push(schema);
     }.bind(this));
+
+    Gio.bus_watch_name(
+        Gio.BusType.SESSION,
+        this.BUS_NAME,
+        Gio.BusNameWatcherFlags.NONE,
+        this._bus_name_appeared_cb.bind(this),
+        this._bus_name_disappeared_cb.bind(this));
+}
+
+GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
+    debug(this.BUS_NAME + " bus appeared");
+}
+
+GSettingsLogger.prototype._bus_name_disappeared_cb = function () {
+    debug(this.BUS_NAME + " bus disappeared");
 }
 
 //Something ugly to overcome the lack of exit()
