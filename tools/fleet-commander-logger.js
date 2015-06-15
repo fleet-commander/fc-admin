@@ -162,7 +162,7 @@ ScreenSaverInhibitor.prototype.uninhibit = function () {
     this.cookie = null;
 }
 
-// ConnectionManager - This class manages
+// ConnectionManager - This class manages the HTTP connection to the admin server
 var ConnectionManager = function (host, port) {
     this.uri = new Soup.URI("http://" + host + ":" + port);
     this.session = new Soup.Session();
