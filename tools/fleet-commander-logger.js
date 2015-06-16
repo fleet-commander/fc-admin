@@ -184,7 +184,6 @@ ConnectionManager.prototype._perform_submits = function () {
         let msg = Soup.Message.new_from_uri("POST", this.uri);
         msg.set_request('application/json', Soup.MemoryUse.STATIC, payload, payload.length);
 
-
         this.session.queue_message(msg, function (s, m) {
             debug("Response from server: returned code " + m.status_code);
             switch (m.status_code) {
@@ -212,8 +211,12 @@ ConnectionManager.prototype._perform_submits = function () {
 }
 
 ConnectionManager.prototype.submit_change = function (namespace, data) {
+    debug ("Submitting changeset as namespace " + namespace)
+    debug (">>> " + data);
+
     //FIXME: Bound the amount of queued changes
     this.queue.push({ns: namespace, data: data});
+
 
     if (this.queue.length > 0 && this.timeout < 1)
         this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
@@ -306,8 +309,6 @@ var GSettingsLogger = function (connmgr) {
     this.INTERFACE_NAME = 'ca.desrt.dconf.Writer';
 
     this.path_to_known_schema = {};
-    this.path_to_reloc_settings = {};
-    this.path_to_changed_keys   = {};
     this.relocatable_schemas    = [];
     this.dconf_subscription_id  = 0;
 
@@ -357,17 +358,22 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
     debug(">>> Keys: " + keys);
 
     if (Object.keys(this.path_to_known_schema).indexOf(path) != -1) {
-      debug(">>> Schema not known yet");
-      this._settings_changed(this.path_to_known_schema[path], keys);
-    } else {
-       debug(">>> Schema not known yet");
+      let schema   = this.schema_source.lookup(this.path_to_known_schema[path], true);
+      let settings = Gio.Settings.new_full(schema, null, null);
+      this._settings_changed(schema, settings, keys);
+      return;
     }
+
+    debug(">>> Schema not known yet");
+    let schema = this._guess_schema(path, keys);
+    if (schema == null)
+      return;
+    
+    this._settings_changed(schema, keys);
 }
 
-GSettingsLogger.prototype._settings_changed = function(schema_name, keys) {
-    let schema   = this.schema_source.lookup(schema_name, true);
-    let settings = Gio.Settings.new_full(schema, null, null);
-    debug ("submitted change for keys [" + keys + "] on schema " + schema_name);
+GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
+    debug ("Submitting change for keys [" + keys + "] on schema " + schema.get_id());
     keys.forEach(function(key) {
         let variant   = settings.get_value(key);
         let builder   = new Json.Builder();
@@ -375,9 +381,9 @@ GSettingsLogger.prototype._settings_changed = function(schema_name, keys) {
 
         builder.begin_object();
         builder.set_member_name("key");
-        builder.add_string_value(schema.get_path() + key);
+        builder.add_string_value(settings.path + key);
         builder.set_member_name("schema");
-        builder.add_string_value(schema_name);
+        builder.add_string_value(schema.get_id());
         builder.set_member_name("value");
         builder.add_value(Json.gvariant_serialize(variant));
         builder.end_object();
@@ -387,6 +393,10 @@ GSettingsLogger.prototype._settings_changed = function(schema_name, keys) {
 
         this.connmgr.submit_change("org.gnome.gsettings", data);
     }.bind(this));
+}
+
+GSettingsLogger.prototype._guess_schema = function (path, keys) {
+  return null;
 }
 
 GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
