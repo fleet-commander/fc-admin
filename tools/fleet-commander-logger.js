@@ -324,10 +324,7 @@ var GSettingsLogger = function (connmgr) {
         this.path_to_known_schema[path] = schema_name;
     }.bind(this));
 
-    Gio.Settings.list_relocatable_schemas().forEach(function(schema_name) {
-        let schema = this.schema_source.lookup(schema_name, true);
-        this.relocatable_schemas.push(schema);
-    }.bind(this));
+    this.relocatable_schemas = Gio.Settings.list_relocatable_schemas();
 
     Gio.bus_watch_name(
         Gio.BusType.SESSION,
@@ -365,11 +362,13 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
     }
 
     debug(">>> Schema not known yet");
-    let schema = this._guess_schema(path, keys);
-    if (schema == null)
+    let schema_name = this._guess_schema(path, keys);
+    if (schema_name == null)
       return;
-    
-    this._settings_changed(schema, keys);
+ 
+    let schema   = this.schema_source.lookup(schema_name, true);
+    let settings = Gio.Settings.new_full (schema, null, path);
+    this._settings_changed(schema, settings, keys);
 }
 
 GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
@@ -396,7 +395,28 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
 }
 
 GSettingsLogger.prototype._guess_schema = function (path, keys) {
-  return null;
+    let candidates = this.relocatable_schemas.filter(function(schema_name) {
+        let schema = this.schema_source.lookup(schema_name, true);
+        if (schema == null)
+            return false;
+
+        return keys.every(function (key) {
+            return schema.has_key(key);
+        }.bind(this));
+    }.bind(this));
+
+    if (candidates.length == 1)
+    {
+      debug("Schema found: " + candidates[0]);
+      return candidates[0];
+    }
+
+    if (candidates.length > 1)
+      debug("Too many schemas match this keyset: " + candidates);
+    else
+      debug("No schemas with this key were found");
+
+    return null;
 }
 
 GSettingsLogger.prototype._bus_name_appeared_cb = function (connection, name, owner) {
