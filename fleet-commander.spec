@@ -3,7 +3,7 @@ Version:        0.1
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
-BuildRequires:  python3-gobject
+#BuildRequires:  python3-gobject
 BuildRequires:  tigervnc-server-minimal
 BuildRequires:  dconf
 BuildRequires:  systemd
@@ -44,7 +44,9 @@ Starts a GNOME session inside an Xvnc server with a special user to be accessed 
 
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
-Requires: python3-gobject
+#Requires: python3-gobject
+Requires: gjs
+Requires: libsoup
 Requires: json-glib
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions 
@@ -104,11 +106,13 @@ exit 0
 %{systemd_dir}/fleet-commander-admin.service
 
 %files -n fleet-commander-logger
-%defattr(755, root, root) 
+%defattr(755, root, root)
 
-%{_libexecdir}/fleet-commander-logger.py
-%exclude %{_libexecdir}/fleet-commander-logger.pyc
-%exclude %{_libexecdir}/fleet-commander-logger.pyo
+%{_libexecdir}/fleet-commander-logger.js
+
+#%{_libexecdir}/fleet-commander-logger.py
+#%exclude %{_libexecdir}/fleet-commander-logger.pyc
+#%exclude %{_libexecdir}/fleet-commander-logger.pyo
 
 %attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
