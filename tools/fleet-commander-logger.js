@@ -308,8 +308,10 @@ var GSettingsLogger = function (connmgr) {
     this.OBJECT_PATH    = '/ca/desrt/dconf/Writer/user';
     this.INTERFACE_NAME = 'ca.desrt.dconf.Writer';
 
-    this.path_to_known_schema = {};
+    this.path_to_known_schema   = {};
     this.relocatable_schemas    = [];
+    this.past_keys_for_path     = {};
+    this.found_schemas_for_path = {};
     this.dconf_subscription_id  = 0;
 
     this.schema_source = Gio.SettingsSchemaSource.get_default();
@@ -394,7 +396,26 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
     }.bind(this));
 }
 
+
+/* In this function we try to guess the schema by trying to find a
+ * unique candidate that has all the keys that affect a given path.
+ *
+ * We could vastly improve this function if we had DConf bindings
+ * to list all the keys in a given path outside of GSettings */
 GSettingsLogger.prototype._guess_schema = function (path, keys) {
+    if (this.found_schemas_for_path[path]) {
+        let schema = this.found_schemas_for_path[path];
+        debug("Schema for path " + path + " was already found: " + schema);
+        return schema;
+    }
+
+    /* We store (path,keys) we didn't find a schema for in case
+     * future keys might help complete the picture and allows us
+     * to find a schema. */
+    if (this.past_keys_for_path[path]) {
+        keys = this.past_keys_for_path[path].concat(keys);
+    }
+
     let candidates = this.relocatable_schemas.filter(function(schema_name) {
         let schema = this.schema_source.lookup(schema_name, true);
         if (schema == null)
@@ -407,6 +428,7 @@ GSettingsLogger.prototype._guess_schema = function (path, keys) {
 
     if (candidates.length == 1)
     {
+      this.found_schemas_for_path[path] = candidates[0];
       debug("Schema found: " + candidates[0]);
       return candidates[0];
     }
@@ -415,6 +437,9 @@ GSettingsLogger.prototype._guess_schema = function (path, keys) {
       debug("Too many schemas match this keyset: " + candidates);
     else
       debug("No schemas with this key were found");
+
+    /* We keep all the keys for future attempts */
+    this.past_keys_for_path[path] = keys;
 
     return null;
 }
