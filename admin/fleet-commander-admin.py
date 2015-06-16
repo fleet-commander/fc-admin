@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # vi:ts=2 sw=2 sts=2
 
 # Copyright (C) 2014 Red Hat, Inc.
@@ -202,7 +202,7 @@ def submit_change(name):
     collectors_by_name[name].handle_change(request)
     return '{"status": "ok"}'
   else:
-    return '{"status": 400}' # 400: Bad request
+    return '{"status": "namespace %s not supported or session not started"}' % name, 403
 
 #Static files
 @app.route("/js/<path:js>", methods=["GET"])

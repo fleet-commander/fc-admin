@@ -4,6 +4,8 @@ Release:        1%{?dist}
 Summary:        Fleet Commander
 
 #BuildRequires:  python3-gobject
+BuildRequires:  python
+BuildRequires:  python-requests
 BuildRequires:  tigervnc-server-minimal
 BuildRequires:  dconf
 BuildRequires:  systemd
@@ -21,8 +23,9 @@ Admin interface for Fleet Commander
 
 %package -n fleet-commander-admin
 Summary: Fleet Commander web interface
-Requires: python3
-Requires: python3-flask
+Requires: python
+Requires: python-requests
+Requires: python-flask
 Requires: systemd
 Requires(preun): systemd
 

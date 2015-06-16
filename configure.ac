@@ -50,10 +50,8 @@ fi
 # Dependencies #
 ################
 
-# TODO: python3, python3-gobject, json-glib
-
-AM_PATH_PYTHON(3.0,, [:])
-AC_PYTHON_MODULE([gi], [mandatory])
+AM_PATH_PYTHON([2.7],, [:])
+AC_PYTHON_MODULE([requests], [mandatory])
 
 # libexecdir expansion for .desktop file
 # TODO: Make xdgconfigdir parametric
