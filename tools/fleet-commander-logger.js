@@ -428,7 +428,11 @@ GSettingsLogger.prototype._guess_schema = function (path, keys) {
 
     if (candidates.length == 1)
     {
+      /* Keep the schema for this path around and discard its keys array
+       * from the past_keys_for_path object as we don't need it anymore */
       this.found_schemas_for_path[path] = candidates[0];
+      delete this.past_keys_for_path[path];
+
       debug("Schema found: " + candidates[0]);
       return candidates[0];
     }
