@@ -26,6 +26,7 @@ Summary: Fleet Commander web interface
 Requires: python
 Requires: python-requests
 Requires: python-flask
+Requires: python-websockify
 Requires: systemd
 Requires(preun): systemd
 
