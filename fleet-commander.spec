@@ -14,7 +14,7 @@ BuildArch: noarch
 
 License: LGPL-2.1+
 URL: https://github.com/fleet-commander/fc-admin
-Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.gz
+Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
 %define systemd_dir %{_prefix}/lib/systemd/system
 
