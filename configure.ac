@@ -57,7 +57,7 @@ AC_PYTHON_MODULE([requests], [mandatory])
 # TODO: Make xdgconfigdir parametric
 privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
-profilesdir='${localstatedir}'/fleet-commander-admin
+profilesdir='${localstatedir}'/lib/fleet-commander-admin
 fcdatadir='${datarootdir}'/fleet-commander-admin
 
 AC_SUBST(privlibexecdir)
