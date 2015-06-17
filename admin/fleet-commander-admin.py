@@ -252,7 +252,7 @@ def session_start():
     return '{"status": "could not connect to host"}', 403
 
   VNC_WSOCKET.stop()
-  VNC_WSOCKET.target_host = data['host']
+  VNC_WSOCKET.target_host = data['host'][0]
   VNC_WSOCKET.target_port = 5935
   VNC_WSOCKET.start()
 
