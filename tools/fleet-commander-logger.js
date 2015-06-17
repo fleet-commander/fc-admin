@@ -182,7 +182,7 @@ ConnectionManager.prototype._perform_submits = function () {
 
         this.uri.set_path(SUBMIT_PATH+ns);
         let msg = Soup.Message.new_from_uri("POST", this.uri);
-        msg.set_request('application/json', Soup.MemoryUse.STATIC, payload, payload.length);
+        msg.set_request('application/json', Soup.MemoryUse.COPY, payload, payload.length);
 
         this.session.queue_message(msg, function (s, m) {
             debug("Response from server: returned code " + m.status_code);
