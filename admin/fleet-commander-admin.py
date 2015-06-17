@@ -31,9 +31,9 @@ from argparse import ArgumentParser
 
 #compat between Pyhon 2 and 3
 try:
-  from configparser import ConfigParser
+  from configparser import ConfigParser, ParsingError
 except ImportError:
-  from ConfigParser import ConfigParser
+  from ConfigParser import ConfigParser, ParsingError
 
 from flask import Flask, request, send_from_directory, render_template, jsonify
 
@@ -322,19 +322,28 @@ def parse_config(config_file):
   config = ConfigParser()
   try:
     config.read(config_file)
-    config[SECTION_NAME]
-  except FileNotFoundError:
+  except IOError:
     logging.warning('Could not find configuration file %s' % config_file)
-  except configparser.ParsingError:
+  except ParsingError:
     logging.error('There was an error parsing %s' % config_file)
     sys.exit(1)
-  except KeyError:
-    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
-    return args
   except:
     logging.error('There was an unknown error parsing %s' % config_file)
+    raise
     sys.exit(1)
 
+  if not config.has_section(SECTION_NAME):
+    return args
+
+  def config_to_dict (config):
+    res = {}
+    for g in config.sections():
+      res[g] = {}
+      for o in config.options(g):
+        res[g][o] = config.get(g, o)
+    return res
+
+  config = config_to_dict(config)
   args['host'] = config[SECTION_NAME].get('host', args['host'])
   args['port'] = config[SECTION_NAME].get('port', args['port'])
   args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
