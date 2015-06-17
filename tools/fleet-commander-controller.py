@@ -134,16 +134,26 @@ def parse_config(config_file):
   config = ConfigParser()
   try:
     config.read(config_file)
-    config[SECTION_NAME]  
   except ParsingError:
     logging.error('There was an error parsing %s' % config_file)
     sys.exit(1)
-  except KeyError:
-    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
-    return args
   except:
     logging.error('There was an unknown error parsing %s' % config_file)
     sys.exit(1)
+
+  if not config.has_section(SECTION_NAME):
+    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
+    return args
+
+  def config_to_dict (config):
+    res = {}
+    for g in config.sections():
+      res[g] = {}
+      for o in config.options(g):
+        res[g][o] = config.get(g, o)
+    return res
+
+  config = config_to_dict(config)
 
   args['host'] = config[SECTION_NAME].get('host', args['host'])
   args['port'] = config[SECTION_NAME].get('port', args['port'])
