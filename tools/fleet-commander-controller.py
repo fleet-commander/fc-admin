@@ -64,17 +64,16 @@ def update_logger_config(host):
   config_file = app.conf['logger_config']
   try:
     config.read(config_file)
-    config[SECTION_NAME]
   except ParsingError:
     logging.error('There was an error parsing %s' % config_file)
-  except KeyError:
-    logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
+    return
   except:
     logging.error('There was an unknown error parsing %s' % config_file)
+    return
 
   if not config.has_section(SECTION_NAME):
     config.add_section(SECTION_NAME)
-  config[SECTION_NAME]['admin_server_host'] = host
+  config.set(SECTION_NAME, 'admin_server_host', str(host))
 
   try:
     f = open(config_file, 'w')
