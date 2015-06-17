@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # vi:ts=2 sw=2 sts=2
 
 # Copyright (C) 2014 Red Hat, Inc.
