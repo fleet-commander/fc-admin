@@ -40,6 +40,7 @@ Requires: xorg-x11-server-utils
 Requires: gnome-session
 Requires: tigervnc-server
 Requires: systemd
+Requires: python
 Requires(preun): systemd
 
 %description -n fleet-commander-vnc-session
