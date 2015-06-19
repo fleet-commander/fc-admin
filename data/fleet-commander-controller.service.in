@@ -7,3 +7,6 @@ ExecStart=@PRIVLIBEXECDIR@/fleet-commander-controller.py --configuration  @XDGCO
 
 StandardOutput=syslog
 StandardError=inherit
+
+[Install]
+Alias=fleet-commander-controller.service

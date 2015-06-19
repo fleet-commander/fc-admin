@@ -8,3 +8,6 @@ ExecStart=@PRIVLIBEXECDIR@/fleet-commander-admin.py --configuration @XDGCONFIGDI
 
 StandardOutput=syslog
 StandardError=inherit
+
+[Install]
+Alias=fleet-commander-admin.service
