@@ -1,6 +1,6 @@
 Name:           fleet-commander
-Version:        0.1
-Release:        2%{?dist}
+Version:        0.2.0
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 #BuildRequires:  python3-gobject
