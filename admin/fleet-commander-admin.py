@@ -149,6 +149,8 @@ def profile_save(id):
 
   groups = [g.strip() for g in form['groups'][0].split(",")]
   users  = [u.strip() for u in form['users'][0].split(",")]
+  groups = filter(groups)
+  users  = filter(users)
 
   profile["uid"] = id
   profile["name"] = form["profile-name"][0]
