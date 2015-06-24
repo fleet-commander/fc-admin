@@ -387,6 +387,8 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
         builder.add_string_value(schema.get_id());
         builder.set_member_name("value");
         builder.add_value(Json.gvariant_serialize(variant));
+        builder.set_member_name("signature");
+        builder.add_string_value(variant.get_type().dup_string());
         builder.end_object();
 
         generator.set_root(builder.get_root());
