@@ -137,10 +137,10 @@ exit 0
 %defattr(755, root, root)
 %{_libexecdir}/fleet-commander-xvnc.sh
 %{_libexecdir}/fleet-commander-xinitrc.sh
-%{_libexecdir}/fleet-commander-controller.py
+%{_libexecdir}/fleet_commander_controller.py
 
-%exclude %{_libexecdir}/fleet-commander-controller.pyc
-%exclude %{_libexecdir}/fleet-commander-controller.pyo
+%exclude %{_libexecdir}/fleet_commander_controller.pyc
+%exclude %{_libexecdir}/fleet_commander_controller.pyo
 
 %attr(644, root, root) %{systemd_dir}/fleet-commander-vnc-session.service
 %attr(644, root, root) %{systemd_dir}/fleet-commander-controller.service
