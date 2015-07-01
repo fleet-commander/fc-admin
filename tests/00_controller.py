@@ -39,16 +39,36 @@ class TestController(unittest.TestCase):
       'logger_config': '/tmp/fcl.conf'
   }
 
-  def setUp(cls):
+  @classmethod
+  def setUpClass(cls):
     fleet_commander_controller.app.conf = cls.args
     fleet_commander_controller.app.config['TESTING'] = True
     cls.app = fleet_commander_controller.app.test_client()
+    #Clear all files to avoid false positives
+    cls.tearDownClass()
+
+  @classmethod
+  def tearDownClass(cls):
+    f = cls.args['logger_config']
+    if os.path.exists(f):
+      os.remove(f)
+    if os.path.exists(cls.cookie):
+      os.remove(cls.cookie)
 
   def test_00_start(self):
     ret = self.app.get("/session/start")
+    # Check if systemctl start was executed
     self.assertTrue(os.path.exists(self.cookie))
+    # Check HTTP return code and content
     self.assertEqual (ret.status_code, 200)
     self.assertEqual (ret.data, '{"status": "ok"}')
+    # Check that the logger_config file has the right content
+    self.assertTrue(os.path.exists(self.args['logger_config']))
+    f = self.args['logger_config']
+    self.assertTrue(os.path.exists(f))
+    data = open(f).read().strip().split('\n')
+    self.assertTrue ('[logger]' in data)
+    self.assertTrue ('admin_server_host = localhost' in data)
 
   def test_01_restart(self):
     ret = self.app.get("/session/start")
