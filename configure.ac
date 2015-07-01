@@ -88,6 +88,7 @@ AC_OUTPUT([
 Makefile
 data/Makefile
 tools/Makefile
+tests/Makefile
 admin/Makefile
 data/fleet-commander-controller.service
 data/fleet-commander-controller.conf
