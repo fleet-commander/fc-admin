@@ -42,15 +42,12 @@ class VncSessionManager:
     pass
 
   def start(self):
-    ret = subprocess.Popen("systemctl start %s" % self.service, shell=True).wait()
-    
-    if ret != 0:
+    if subprocess.call(["systemctl", "start", self.service]) != 0:
       return False
     return True
 
   def stop(self):
-    ret = subprocess.Popen("systemctl stop %s" % self.service, shell=True)
-
+    subprocess.call(["systemctl", "stop", self.service])
 
 app = Flask(__name__)
 vnc = VncSessionManager()
