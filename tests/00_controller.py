@@ -26,10 +26,7 @@ import subprocess
 import signal
 import requests
 
-sys.path.append(os.getcwd() + '/../tools/')
 import fleet_commander_controller
-
-os.environ['PATH'] = ":".join([os.getcwd() + "/tools", os.environ['PATH']])
 
 class TestController(unittest.TestCase):
   cookie = "/tmp/fleet-commander-start"
