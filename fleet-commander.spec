@@ -113,7 +113,7 @@ exit 0
 %files -n fleet-commander-logger
 %defattr(755, root, root)
 
-%{_libexecdir}/fleet-commander-logger.js
+%{_libexecdir}/fleet_commander_logger.js
 
 #%{_libexecdir}/fleet-commander-logger.py
 #%exclude %{_libexecdir}/fleet-commander-logger.pyc

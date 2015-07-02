@@ -2,7 +2,7 @@
 #fcmdr_logger_SCRIPTS = fleet-commander-logger.py
 
 fleet_commander_logger_jsdir = ${libexecdir}
-fleet_commander_logger_js_SCRIPTS = fleet-commander-logger.js
+fleet_commander_logger_js_SCRIPTS = fleet_commander_logger.js
 
 fleet_commander_controllerdir = ${libexecdir}
 fleet_commander_controller_SCRIPTS = fleet_commander_controller.py
