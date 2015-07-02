@@ -20,6 +20,7 @@
  *          Matthew Barnes <mbarnes@redhat.com>
  */
 
+const System = imports.system;
 
 const GLib = imports.gi.GLib;
 const Gio  = imports.gi.Gio;
@@ -33,11 +34,7 @@ const SUBMIT_PATH    = '/submit_change/';
 //Mainloop
 const ml = imports.mainloop;
 
-//Global application objects
-var inhibitor       = null;
-
 //Global settings
-var options = null;
 var _debug = false;
 
 function debug (msg) {
@@ -83,11 +80,11 @@ function parse_options () {
 
         if (!GLib.file_test (ARGV[i], GLib.FileTest.EXISTS)) {
             printerr("ERROR: " + ARGV[i] + " does not exists");
-            return null;
+            System.exit(1);
         }
         if (!GLib.file_test (ARGV[i], GLib.FileTest.IS_REGULAR)) {
             printerr("ERROR: " + ARGV[i] + " is not a regular file");
-            return null;
+            System.exit(1)
         }
 
         let kf = new GLib.KeyFile();
@@ -96,12 +93,12 @@ function parse_options () {
         } catch (e) {
             debug(e);
             printerr("ERROR: Could not parse configuration file " + ARGV[i]);
-            return null;
+            System.exit(1)
         }
 
         if (!kf.has_group("logger")) {
             printerr("ERROR: "+ARGV[i]+" does not have [logger] section");
-            return null;
+            System.exit(1)
         }
         try {
             result['admin_server_host'] = kf.get_value("logger", "admin_server_host");
@@ -367,7 +364,7 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
     let schema_name = this._guess_schema(path, keys);
     if (schema_name == null)
       return;
- 
+
     let schema   = this.schema_source.lookup(schema_name, true);
     let settings = Gio.Settings.new_full (schema, null, path);
     this._settings_changed(schema, settings, keys);
@@ -473,14 +470,13 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
     this.dconf_subscription_id = 0;
 }
 
-//Something ugly to overcome the lack of exit()
-options = parse_options ();
+if (GLib.getenv('FC_TESTING') == null) {
+  let options = parse_options ();
 
-if (options != null) {
-    inhibitor = new ScreenSaverInhibitor();
-    let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
-    let goalogger = new GoaLogger(connmgr);
-    let gsetlogger = new GSettingsLogger(connmgr);
+  let inhibitor = new ScreenSaverInhibitor();
+  let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
+  let goalogger = new GoaLogger(connmgr);
+  let gsetlogger = new GSettingsLogger(connmgr);
 
-    ml.run();
+  ml.run();
 }
