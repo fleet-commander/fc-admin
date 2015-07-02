@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright © 2015 , Red Hat Inc.
+  Author: Alberto Ruiz <aruiz@redhat.com>
+-->
+<schemalist gettext-domain="fleet-commander-test">
+  <schema id="test"
+    path="/test/">
+    <key name="test" type="b">
+      <default>true</default>
+      <summary>Test</summary>
+      <description>A test boolean property</description>
+    </key>
+  </schema>
+</schemalist>
