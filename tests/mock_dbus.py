@@ -1,3 +1,4 @@
+#!/bin/env python
 import dbus.service
 import dbusmock
 import dbus.mainloop.glib

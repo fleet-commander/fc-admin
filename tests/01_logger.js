@@ -21,46 +21,59 @@
 
 const GLib           = imports.gi.GLib;
 const Gio            = imports.gi.Gio;
+const loop           = imports.mainloop;
 const JsUnit         = imports.jsUnit;
 const FleetCommander = imports.fleet_commander_logger;
-const loop           = imports.mainloop;
 
-let dbus;
-let dbusmock;
+let dbus     = null;
+let dbusmock = null;
 
 function setUpSuite () {
   let launcher = new Gio.SubprocessLauncher();
-  launcher.set_flags(Gio.SubprocessFlags.STDOUT_PIPE);
+  launcher.set_flags(Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
   dbus = launcher.spawnv("dbus-daemon --session --print-address --nofork".split(" "));
 
   let address = Gio.DataInputStream.new (dbus.get_stdout_pipe()).read_line(null, null, null);
+
   GLib.setenv("DBUS_SESSION_BUS_ADDRESS", address[0].toString(), true);
   launcher.setenv("DBUS_SESSION_BUS_ADDRESS", address[0].toString(), true);
-  dbusmock = launcher.spawnv("python -m dbusmock org.freedesktop.ScreenSaver /ScreenSaver org.freedesktop.ScreenSaver".split(" "));
+  dbusmock = launcher.spawnv(["./mock_dbus.py"]);
 
-  let bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
-  let proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, null,
-                                      'org.freedesktop.ScreenSaver', '/ScreenSaver',
-                                      'org.freedesktop.ScreenSaver', null);
+  /* NOTE: We let mock_dbus 500ms time to start.
+   * We could wait for the bus name and timeout too
+   * and do this more reliable */
+  GLib.usleep(500000);
 }
 
 function tearDownSuite () {
-  dbusmock.force_exit();
-  dbusmock.wait(null);
-  dbus.force_exit();
-  dbus.wait(null);
+  if (dbusmock != null) {
+    dbusmock.force_exit();
+    dbusmock.wait(null);
+    dbusmock = null;
+  }
+
+  if (dbus != null) {
+    dbus.force_exit();
+    dbus.wait(null);
+    dbus = null;
+  }
 }
 
 function testInhibitor () {
   let inhibitor = new FleetCommander.ScreenSaverInhibitor();
-  JsUnit.assertFalse(inhibitor.cookie == null);
+  JsUnit.assertTrue(inhibitor.cookie == 9191);
   inhibitor.uninhibit();
   JsUnit.assertTrue(inhibitor.cookie == null);
 }
 
+let ret = 1;
+try {
+  setUpSuite();
+  ret = JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);
+} catch (e) {
+  tearDownSuite();
+  throw e;
+}
 
-setUpSuite();
-let ret = JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);
 tearDownSuite();
-
 ret;
