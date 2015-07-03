@@ -28,6 +28,8 @@ const FleetCommander = imports.fleet_commander_logger;
 let dbus     = null;
 let dbusmock = null;
 
+/* setUp and tearDown global wise, not per test */
+
 function setUpSuite () {
   let launcher = new Gio.SubprocessLauncher();
   launcher.set_flags(Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
@@ -59,11 +61,51 @@ function tearDownSuite () {
   }
 }
 
+/* Mock objects */
+
+var MockConnectionManager = function () {
+  this.log = [];
+}
+
+MockConnectionManager.prototype.submit_change = function (namespaces, data) {
+  print ("asdasd");
+  this.log.push([namespace, data]);
+}
+
+MockConnectionManager.prototype.pop = function () {
+  return this.log.pop();
+}
+
+/* Test suite */
+
 function testInhibitor () {
   let inhibitor = new FleetCommander.ScreenSaverInhibitor();
   JsUnit.assertTrue(inhibitor.cookie == 9191);
   inhibitor.uninhibit();
   JsUnit.assertTrue(inhibitor.cookie == null);
+}
+
+function testGSettingsLoggerWriteKeyForKnownSchema () {
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  let proxy = Gio.DBusProxy.new_sync (Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
+                                      glog.BUS_NAME,
+                                      glog.OBJECT_PATH,
+                                      glog.INTERFACE_NAME,
+                                      null);
+
+  loop.timeout_add(100, function () {
+    let args = GLib.Variant.new ("(ay)", [[]]);
+    this.call_sync('Change', args, Gio.DBusCallFlags.NONE, 1000, null);
+    return false;
+  }.bind(proxy));
+  loop.timeout_add(3100, function () {
+    loop.quit();
+  }.bind(proxy));
+
+  loop.run ();
+  print(mgr.log);
 }
 
 let ret = 1;
