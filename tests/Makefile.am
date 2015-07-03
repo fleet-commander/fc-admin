@@ -11,8 +11,8 @@ CLEANFILES = data/gschema.compiled
 EXTRA_DIST = \
 	00_controller.py         \
 	01_logger.sh             \
-	01__mock_dbus.py         \
-	01__logger_test_suite.js \
+	_01_mock_dbus.py         \
+	_01_logger_test_suite.js \
 	mock_dbus.py             \
 	data/test.gschema.xml    \
 	tools/systemctl
