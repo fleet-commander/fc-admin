@@ -37,7 +37,7 @@ dconf = dbusmock.mockobject.DBusMockObject(dconf_bus,
                                            "/ca/desrt/dconf/Writer/user",
                                            "ca.desrt.dconf.Writer",
                                            {})
-dconf.AddMethod("ca.desrt.dconf.Writer", "Change", "as", "s",
+dconf.AddMethod("ca.desrt.dconf.Writer", "Change", "ay", "s",
                  'self.EmitSignal("ca.desrt.dconf.Writer", "Notify", "sass", ["/test/", ["test",], "tag"]);ret = "tag"')
 
 dbusmock.mockobject.objects["/ScreenSaver"] = screensaver

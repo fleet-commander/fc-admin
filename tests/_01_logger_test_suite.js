@@ -24,42 +24,7 @@ const Gio            = imports.gi.Gio;
 const loop           = imports.mainloop;
 const JsUnit         = imports.jsUnit;
 const FleetCommander = imports.fleet_commander_logger;
-
-let dbus     = null;
-let dbusmock = null;
-
-/* setUp and tearDown global wise, not per test */
-
-function setUpSuite () {
-  let launcher = new Gio.SubprocessLauncher();
-  launcher.set_flags(Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
-  dbus = launcher.spawnv("dbus-daemon --session --print-address --nofork".split(" "));
-
-  let address = Gio.DataInputStream.new (dbus.get_stdout_pipe()).read_line(null, null, null);
-
-  GLib.setenv("DBUS_SESSION_BUS_ADDRESS", address[0].toString(), true);
-  launcher.setenv("DBUS_SESSION_BUS_ADDRESS", address[0].toString(), true);
-  dbusmock = launcher.spawnv(["./mock_dbus.py"]);
-
-  /* NOTE: We let mock_dbus 500ms time to start.
-   * We could wait for the bus name and timeout too
-   * and do this more reliable */
-  GLib.usleep(500000);
-}
-
-function tearDownSuite () {
-  if (dbusmock != null) {
-    dbusmock.force_exit();
-    dbusmock.wait(null);
-    dbusmock = null;
-  }
-
-  if (dbus != null) {
-    dbus.force_exit();
-    dbus.wait(null);
-    dbus = null;
-  }
-}
+FleetCommander._debug = true;
 
 /* Mock objects */
 
@@ -67,8 +32,7 @@ var MockConnectionManager = function () {
   this.log = [];
 }
 
-MockConnectionManager.prototype.submit_change = function (namespaces, data) {
-  print ("asdasd");
+MockConnectionManager.prototype.submit_change = function (namespace, data) {
   this.log.push([namespace, data]);
 }
 
@@ -100,22 +64,22 @@ function testGSettingsLoggerWriteKeyForKnownSchema () {
     this.call_sync('Change', args, Gio.DBusCallFlags.NONE, 1000, null);
     return false;
   }.bind(proxy));
-  loop.timeout_add(3100, function () {
+
+  loop.timeout_add(1100, function () {
     loop.quit();
   }.bind(proxy));
 
   loop.run ();
-  print(mgr.log);
+
+  let change = mgr.pop();
+  JsUnit.assertTrue(change != null);
+  JsUnit.assertTrue(change.length == 2);
+
+  JsUnit.assertEquals(change[0], "org.gnome.gsettings");
+
+  /* we normalize the json object using the same parser */
+  JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'test','value':true,'signature':'b'}),
+                      JSON.stringify(JSON.parse(change[1])));
 }
 
-let ret = 1;
-try {
-  setUpSuite();
-  ret = JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);
-} catch (e) {
-  tearDownSuite();
-  throw e;
-}
-
-tearDownSuite();
-ret;
+JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);
