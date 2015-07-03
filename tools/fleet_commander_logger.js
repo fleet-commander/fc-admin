@@ -120,8 +120,14 @@ function parse_options () {
 
 
 var ScreenSaverInhibitor = function () {
-    let bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
-    this.proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, null,
+    //let bus = Gio.DBus.session;
+    let conn = Gio.DBusConnection.new_for_address_sync (GLib.getenv('DBUS_SESSION_BUS_ADDRESS'),
+                                                        Gio.DBusConnectionFlags.MESSAGE_BUS_CONNECTION |
+                                                        Gio.DBusConnectionFlags.AUTHENTICATION_CLIENT,
+                                                        null, null);
+    conn.exit_on_close = true;
+
+    this.proxy = Gio.DBusProxy.new_sync(conn, Gio.DBusProxyFlags.NONE, null,
                                         'org.freedesktop.ScreenSaver', '/ScreenSaver',
                                         'org.freedesktop.ScreenSaver', null);
     this.cookie = null;
