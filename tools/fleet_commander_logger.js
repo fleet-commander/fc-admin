@@ -120,14 +120,7 @@ function parse_options () {
 
 
 var ScreenSaverInhibitor = function () {
-    //let bus = Gio.DBus.session;
-    let conn = Gio.DBusConnection.new_for_address_sync (GLib.getenv('DBUS_SESSION_BUS_ADDRESS'),
-                                                        Gio.DBusConnectionFlags.MESSAGE_BUS_CONNECTION |
-                                                        Gio.DBusConnectionFlags.AUTHENTICATION_CLIENT,
-                                                        null, null);
-    conn.exit_on_close = true;
-
-    this.proxy = Gio.DBusProxy.new_sync(conn, Gio.DBusProxyFlags.NONE, null,
+    this.proxy = Gio.DBusProxy.new_sync(Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
                                         'org.freedesktop.ScreenSaver', '/ScreenSaver',
                                         'org.freedesktop.ScreenSaver', null);
     this.cookie = null;
@@ -307,6 +300,9 @@ var GSettingsLogger = function (connmgr) {
     debug("Constructing GSettingsLogger");
     this.connmgr = connmgr;
 
+    /* If we are on testing mode, we quit the mainloop after submitting schemas */
+    this._quit_on_callbacks = GLib.getenv('FC_TESTING') == null;
+
     this.BUS_NAME       = 'ca.desrt.dconf';
     this.OBJECT_PATH    = '/ca/desrt/dconf/Writer/user';
     this.INTERFACE_NAME = 'ca.desrt.dconf.Writer';
@@ -368,8 +364,10 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
 
     debug(">>> Schema not known yet");
     let schema_name = this._guess_schema(path, keys);
-    if (schema_name == null)
+    if (schema_name == null) {
+      if (this._quit_on_callbacks) ml.quit();
       return;
+    }
 
     let schema   = this.schema_source.lookup(schema_name, true);
     let settings = Gio.Settings.new_full (schema, null, path);
@@ -399,8 +397,9 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
 
         this.connmgr.submit_change("org.gnome.gsettings", data);
     }.bind(this));
-}
 
+  if (this._quit_on_callbacks) ml.quit();
+}
 
 /* In this function we try to guess the schema by trying to find a
  * unique candidate that has all the keys that affect a given path.
