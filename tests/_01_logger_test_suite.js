@@ -21,10 +21,9 @@
 
 const GLib           = imports.gi.GLib;
 const Gio            = imports.gi.Gio;
-const loop           = imports.mainloop;
 const JsUnit         = imports.jsUnit;
 const FleetCommander = imports.fleet_commander_logger;
-FleetCommander._debug = true;
+//FleetCommander._debug = true;
 
 /* Mock objects */
 
@@ -39,6 +38,9 @@ MockConnectionManager.prototype.submit_change = function (namespace, data) {
 MockConnectionManager.prototype.pop = function () {
   return this.log.pop();
 }
+MockConnectionManager.prototype.finish_changes = function () {
+    this.loop.quit();
+}
 
 /* Test suite */
 
@@ -49,27 +51,41 @@ function testInhibitor () {
   JsUnit.assertTrue(inhibitor.cookie == null);
 }
 
+function setupDbusCall (method, args, glog) {
+  let loop = GLib.MainLoop.new (null, false);
+  glog.connmgr.loop = loop;
+
+  let proxy = Gio.DBusProxy.new_sync (Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
+                                    glog.BUS_NAME,
+                                    glog.OBJECT_PATH,
+                                    glog.INTERFACE_NAME,
+                                    null);
+
+  /* We wait for the logger to catch the bus name */
+  GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, function () {
+    if (glog.dconf_subscription_id != 0) {
+      this.call_sync(method, args, Gio.DBusCallFlags.NONE, 1000, null);
+      return false;
+    } else {
+      return true;
+    }
+  }.bind(proxy));
+
+  /* We have a timeout of 3 seconds to wait for the mainloop */
+  GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, 3000, function () {
+    loop.quit();
+    return false;
+  }.bind(proxy));
+
+  loop.run();
+}
+
 function testGSettingsLoggerWriteKeyForKnownSchema () {
   let mgr  = new MockConnectionManager();
   let glog = new FleetCommander.GSettingsLogger(mgr);
 
-  let proxy = Gio.DBusProxy.new_sync (Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
-                                      glog.BUS_NAME,
-                                      glog.OBJECT_PATH,
-                                      glog.INTERFACE_NAME,
-                                      null);
-
-  loop.timeout_add(100, function () {
-    let args = GLib.Variant.new ("(ay)", [[]]);
-    this.call_sync('Change', args, Gio.DBusCallFlags.NONE, 1000, null);
-    return false;
-  }.bind(proxy));
-
-  loop.timeout_add(1100, function () {
-    loop.quit();
-  }.bind(proxy));
-
-  loop.run ();
+  let args = GLib.Variant.new ("(ay)", [[]]);
+  setupDbusCall ('Change', args, glog);
 
   let change = mgr.pop();
   JsUnit.assertTrue(change != null);
@@ -77,8 +93,53 @@ function testGSettingsLoggerWriteKeyForKnownSchema () {
 
   JsUnit.assertEquals(change[0], "org.gnome.gsettings");
 
-  /* we normalize the json object using the same parser */
-  JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'test','value':true,'signature':'b'}),
+  // we normalize the json object using the same parser
+  JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'fleet-commander-test','value':true,'signature':'b'}),
+                      JSON.stringify(JSON.parse(change[1])));
+}
+
+function testGSettingsLoggerWriteKeyForUnknownSchema () {
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  setupDbusCall('ChangeCommon', null, glog);
+
+  let change = mgr.pop();
+
+  JsUnit.assertTrue(change == null);
+}
+
+function testGSettingsLoggerWriteKeyForGuessableSchema () {
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  setupDbusCall('ChangeUnique', null, glog);
+
+  let change = mgr.pop();
+
+  JsUnit.assertEquals(change[0], "org.gnome.gsettings");
+  JsUnit.assertEquals(JSON.stringify({'key':'/reloc/foo/fc-unique',
+                                       'schema':'fleet-commander-reloc1',
+                                       'value':true,
+                                       'signature':'b'}),
+                      JSON.stringify(JSON.parse(change[1])));
+}
+
+function testGSettingsLoggerGuessSchemaCachedPath () {
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  setupDbusCall('ChangeCommon', null, glog);
+  setupDbusCall('ChangeUnique', null, glog);
+  mgr.pop();
+  setupDbusCall('ChangeCommon', null, glog);
+
+  let change = mgr.pop();
+  JsUnit.assertEquals(change[0], "org.gnome.gsettings");
+  JsUnit.assertEquals(JSON.stringify({'key':'/reloc/foo/fc-common',
+                                       'schema':'fleet-commander-reloc1',
+                                       'value':true,
+                                       'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
 }
 

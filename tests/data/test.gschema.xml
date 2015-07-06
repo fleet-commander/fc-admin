@@ -4,7 +4,7 @@
   Author: Alberto Ruiz <aruiz@redhat.com>
 -->
 <schemalist gettext-domain="fleet-commander-test">
-  <schema id="test"
+  <schema id="fleet-commander-test"
     path="/test/">
     <key name="test" type="b">
       <default>true</default>
@@ -12,4 +12,28 @@
       <description>A test boolean property</description>
     </key>
   </schema>
+
+  <!-- This schema is guessable -->
+  <schema id="fleet-commander-reloc1">
+    <key name='fc-unique' type="b">
+      <default>true</default>
+      <summary>Test</summary>
+      <description>A test boolean property</description>
+    </key>
+    <key name='fc-common' type="b">
+      <default>true</default>
+      <summary>Test</summary>
+      <description>A test boolean property</description>
+    </key>
+  </schema>
+
+  <!-- This schema is unguessable -->
+  <schema id="fleet-commander-reloc2">
+    <key name='fc-common' type="b">
+      <default>true</default>
+      <summary>Test</summary>
+      <description>A test boolean property</description>
+    </key>
+  </schema>
+
 </schemalist>

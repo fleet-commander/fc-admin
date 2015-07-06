@@ -44,7 +44,7 @@ RET=1
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
-$TOPSRCDIR/tests/_01_mock_dbus.py &
+$TOPSRCDIR/tests/_01_mock_dbus.py > /dev/null 2> /dev/null &
 DBUS_MOCK_PID=$!
 sleep 1
 ps -p $DBUS_MOCK_PID > /dev/null 2> /dev/null
