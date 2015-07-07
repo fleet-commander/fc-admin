@@ -1,5 +1,5 @@
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_srcdir)/tools ; export PATH=$(abs_top_srcdir)/tests/tools:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export GJS_PATH=$(abs_top_srcdir)/tools;
-TESTS = 00_controller.py 01_logger_gsettings.sh
+TESTS = 00_controller.py 01_logger_gsettings.sh 02_logger_connmgr.js
 
 EXTRA_DIST = \
 	$(TESTS)                 \
