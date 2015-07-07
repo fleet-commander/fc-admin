@@ -35,7 +35,7 @@ fi
 glib-compile-schemas $GSETTINGS_SCHEMA_DIR
 if [ $? -ne 0 ] ; then
   echo "Failed to copy schema file to tempdir" >&2
-  exit 
+  exit 1
 fi
 
 RET=1
