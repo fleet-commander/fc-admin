@@ -240,8 +240,8 @@ var GoaLogger = function (connmgr) {
 
     this.monitor = Gio.File.new_for_path(this.path).monitor_file(Gio.FileMonitorFlags.NONE, null);
 
-    if (GLib.file_test (this.path, GLib.FileTest.EXISTS))
-        this.update();
+
+    this.update();
 
     this.monitor.connect ('changed', function (monitor, this_file, other_file, event_type) {
         debug("GFileMonitor::changed " + [this.path, event_type.value_nick].join(" "));
@@ -261,16 +261,25 @@ var GoaLogger = function (connmgr) {
 GoaLogger.prototype.update = function () {
     debug("Updating GOA configuration data");
 
+    // If file doesn't exist we send empty content
+    if (GLib.file_test (this.path, GLib.FileTest.EXISTS) == false) {
+        this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify({}));
+        this.connmgr.finish_changes();
+        return;
+    }
+
     let kf = new GLib.KeyFile();
     try {
         kf.load_from_file(this.path, GLib.KeyFileFlags.NONE);
     } catch (e) {
         debug(e);
         printerr("ERROR: Could not parse configuration file " + this.path);
+
+        // Send empty content
+        this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify({}));
+        this.connmgr.finish_changes();
         return;
     }
-
-    //FIXME: Send empty dataset on file removal
 
     //TODO: Test this and consider whether the *Enabled keys are worth ignoring
     /*kf.get_groups().forEach (function(group) {
@@ -296,7 +305,14 @@ GoaLogger.prototype.update = function () {
 
     let result = {};
     kf.get_groups()[0].forEach(function(group) {
-        let fcmdr_group = "fcmdr_" + group.split(" ").pop();
+        if (group.indexOf(" ") == -1)
+          return;
+        let split = group.split(" ");
+        if (split.length != 2)
+          return;
+        if (split[0] != "Account")
+          return;
+        let fcmdr_group = "fcmdr_" + split[1];
         let fcmdr_obj = {};
         result[fcmdr_group] = fcmdr_obj;
         kf.get_keys(group)[0].forEach(function(key) {
@@ -305,7 +321,7 @@ GoaLogger.prototype.update = function () {
     });
 
     this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify(result));
-
+    this.connmgr.finish_changes();
     return;
 }
 
