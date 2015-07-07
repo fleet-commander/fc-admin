@@ -220,6 +220,15 @@ ConnectionManager.prototype.submit_change = function (namespace, data) {
                                          this._perform_submits.bind(this));
 }
 
+ConnectionManager.prototype.give_up = function () {
+  this.queue = [];
+  if (this.timeout == 0)
+    return;
+
+  GLib.source_remove(this.timeout);
+  this.timeout = 0;
+}
+
 /* TODO: This function will commit batches of changes in a single request */
 ConnectionManager.prototype.finish_changes = function () {
 }
