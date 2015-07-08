@@ -23,3 +23,4 @@ tests/*.trs
 tests/*.log
 */*.pyc
 test-driver
+tests/data/gschemas.compiled
