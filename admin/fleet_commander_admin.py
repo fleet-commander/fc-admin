@@ -124,6 +124,8 @@ def profile_index():
 def profiles(profile_id):
   return send_from_directory(app.custom_args['profiles_dir'], profile_id + '.json')
 
+#FIXME: Rename this to profiles
+#FIXME: Use JSON instead of urlencoding
 @app.route("/profile/save/<id>", methods=["POST"])
 def profile_save(id):
   def write_and_close (path, load):
@@ -191,6 +193,7 @@ def profile_delete(uid):
   open(INDEX_FILE, 'w+').write(json.dumps(index))
   return '{"status": "ok"}'
 
+#FIXME: Rename this to profiles
 @app.route("/profile/discard/<id>", methods=["GET"])
 def profile_discard(id):
   if id in deploys:
@@ -276,6 +279,7 @@ def session_stop():
   VNC_WSOCKET.stop()
 
   #FIXME: Clear loggers
+  #FIXME: Clear unsaved deploys
   try:
     req = requests.get("http://%s:8182/session/stop" % data['host'][0])
   except requests.exceptions.ConnectionError:

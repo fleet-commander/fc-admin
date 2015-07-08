@@ -118,6 +118,7 @@ function deployProfile() {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
 
+  //FIXME: Close session
   $.ajax({method: 'POST',
           url:    '/session/select',
           data:   JSON.stringify({'sel': sel}),
