@@ -132,7 +132,7 @@ def profile_save(id):
     f.close()
 
   if id not in deploys:
-    return '{"status": "nonexistinguid"}'
+    return '{"status": "nonexistinguid"}', 403
 
   INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
   PROFILE_FILE = os.path.join(app.custom_args['profiles_dir'], id+'.json')
