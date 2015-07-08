@@ -103,9 +103,9 @@ exit 0
 %{_datadir}/fleet-commander-admin/img/*.gif
 %{_datadir}/fleet-commander-admin/css/*.css
 %{_datadir}/fleet-commander-admin/templates/*.html
-%attr(755, -, -) %{_libexecdir}/fleet-commander-admin.py
-%exclude %{_libexecdir}/fleet-commander-admin.pyc
-%exclude %{_libexecdir}/fleet-commander-admin.pyo
+%attr(755, -, -) %{_libexecdir}/fleet_commander_admin.py
+%exclude %{_libexecdir}/fleet_commander_admin.pyc
+%exclude %{_libexecdir}/fleet_commander_admin.pyo
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %{systemd_dir}/fleet-commander-admin.service
