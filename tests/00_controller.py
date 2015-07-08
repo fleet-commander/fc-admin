@@ -22,6 +22,7 @@ import os
 import sys
 import unittest
 
+sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'tools'))
 import fleet_commander_controller
 
 class TestController(unittest.TestCase):
