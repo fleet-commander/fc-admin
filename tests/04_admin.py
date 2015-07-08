@@ -153,11 +153,62 @@ class TestAdmin(unittest.TestCase):
       self.assertEqual(ret.status_code, 403)
 
   def test_04_change_select_and_deploy(self):
+    host = 'somehost'
+    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
+
+    change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
+    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+    self.assertEqual(ret.status_code, 200)
+
+    change2 = {'key':'/foo/baz', 'schema':'foo', 'value':True, 'signature':'b'}
+    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+    self.assertEqual(ret.status_code, 200)
+
+    #Select changes for the profile and get UUID to save it
+    ret = self.app.post('/session/select', data=json.dumps({'sel': [1]}), content_type='application/json')
+    self.assertEqual(ret.status_code, 200)
+
+    payload = json.loads(ret.data)
+    self.assertTrue(isinstance(payload, dict))
+    self.assertTrue(payload.has_key('uuid'))
+    self.assertTrue(payload.has_key('status'))
+    self.assertEqual(payload['status'], 'ok')
+
+    #Save the profile with the selected changes
+    uuid = payload['uuid']
+    #FIXME: rename this method to profiles/save
+    profile_obj  = {'profile-name': 'myprofile','profile-desc':'mydesc','groups':'', 'users':''}
+    profile_data = urllib.urlencode(profile_obj)
+    ret = self.app.post("/profile/save/"+uuid, content_type='application/x-www-form-urlencoded', data=profile_data)
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status":"ok"}))
+
+    #Get index
+    ret = self.app.get("/profiles/")
+    self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid, 'displayName': profile_obj['profile-name']}]))
+
+    #Get profile
+    ret = self.app.get("/profiles/"+uuid)
+    self.assertEqual(ret.status_code, 200)
+    profile = json.loads(ret.data)
+    self.assertEqual(profile['uid'], uuid)
+    self.assertEqual(profile['description'], profile_obj['profile-desc'])
+    self.assertEqual(profile['name'], profile_obj['profile-name'])
+    self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
+
+    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
+
+  def test_05_change_merge_several_changes(self):
     pass
-#    change = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
-#    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change), content_type='application/json')
-#    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
-#    self.assertEqual(ret.status_code, 200)
+    #host = 'somehost'
+    #self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    #fleet_commander_admin.requests.pop()
+    #self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    #fleet_commander_admin.requests.pop()
 
 if __name__ == '__main__':
   unittest.main()
