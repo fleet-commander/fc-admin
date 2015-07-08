@@ -241,6 +241,8 @@ def session_changes():
 
 @app.route("/session/start", methods=["POST"])
 def session_start():
+  #FIXME: Prevent starting two sessions
+  #FIXME: Use JSON instead of url encoding
   global VNC_WSOCKET
   data = dict(request.form)
   req = None
@@ -266,12 +268,14 @@ def session_start():
 
 @app.route("/session/stop", methods=["POST"])
 def session_stop():
+  #FIXME: Make this a GET method by storing the host of the current session in session_start
   global VNC_WSOCKET
   data = dict(request.form)
   req = None
 
   VNC_WSOCKET.stop()
 
+  #FIXME: Clear loggers
   try:
     req = requests.get("http://%s:8182/session/stop" % data['host'][0])
   except requests.exceptions.ConnectionError:
