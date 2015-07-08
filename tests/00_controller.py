@@ -20,11 +20,7 @@
 
 import os
 import sys
-import time
 import unittest
-import subprocess
-import signal
-import requests
 
 import fleet_commander_controller
 
