@@ -21,3 +21,4 @@ missing
 fleet-commander*.tar.[gx]z
 tests/*.trs
 tests/*.log
+*/*.pyc
