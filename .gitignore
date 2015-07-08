@@ -19,3 +19,5 @@ data/fleet-commander-controller.conf
 install-sh
 missing
 fleet-commander*.tar.[gx]z
+tests/*.trs
+tests/*.log
