@@ -28,24 +28,29 @@ const FleetCommander = imports.fleet_commander_logger;
 
 // Mock objects //
 
-var MockConnectionManager = function (loop, counter) {
-  this.loop = loop;
+var MockConnectionManager = function (counter) {
   this.log = [];
   this.counter = counter;
 }
-
 MockConnectionManager.prototype.submit_change = function (namespace, data) {
   this.log.push([namespace, data]);
 }
-
+MockConnectionManager.prototype.finish_changes = function () {
+}
 MockConnectionManager.prototype.pop = function () {
   return this.log.pop();
 }
-MockConnectionManager.prototype.finish_changes = function () {
-    this.counter--;
-    if (this.counter < 1)
-      this.loop.quit();
+
+MockFileMonitor = function (path, callback) {
+  this.path = path;
+  this.callback = callback;
 }
+MockFileMonitor.prototype.emit = function (event_type) {
+  this.callback (this, null, null, event_type);
+}
+
+// We replace the file monitor implementation
+FleetCommander.FileMonitor = MockFileMonitor;
 
 // Setup environment //
 let xdgconfig = null;
@@ -75,7 +80,7 @@ function writeAccountContent (content) {
 // Test suite //
 
 function testGoaEmpty () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
   let goa = new FleetCommander.GoaLogger(server);
   let change = server.pop();
   JsUnit.assertNotNull (change);
@@ -84,7 +89,7 @@ function testGoaEmpty () {
 }
 
 function testGoeExisting () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
 
   let content = "[Account account_1234567890_0]\n" +
   "Provider=google\n" +
@@ -106,26 +111,15 @@ function testGoeExisting () {
 }
 
 function testGoaFileChanged () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
   let goa = new FleetCommander.GoaLogger(server);
 
   let content = "[Account account_1234567890_0]\n" +
-  "Provider=google\n" +
+    "Provider=google\n" +
   "Identity=someone@gmail.com";
   writeAccountContent(content);
 
-  let timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
-                                  4000,
-                                  function () {
-    timeout = 0;
-    server.loop.quit();
-    return false;
-  });
-
-  server.loop.run ();
-  if (timeout != 0)
-    GLib.source_remove (timeout);
-  JsUnit.assertTrue ("The test timed out", timeout != 0);
+  goa.monitor.emit(Gio.FileMonitorEvent.CHANGED);
 
   let change = server.pop();
   JsUnit.assertEquals("org.gnome.online-accounts", change[0]);
@@ -138,7 +132,7 @@ function testGoaFileChanged () {
 }
 
 function testGoaFileRemoved () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
 
   let content = "[Account account_1234567890_0]\n" +
   "Provider=google\n" +
@@ -146,21 +140,8 @@ function testGoaFileRemoved () {
   writeAccountContent(content);
 
   let goa = new FleetCommander.GoaLogger(server);
-  server.pop();
-  let timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
-                                  4000,
-                                  function () {
-    timeout = 0;
-    server.loop.quit();
-    return false;
-  });
-
   GLib.unlink (goadir + "/accounts.conf");
-
-  server.loop.run();
-  if (timeout != 0)
-    GLib.source_remove (timeout);
-  JsUnit.assertTrue ("The test timed out", timeout != 0);
+  goa.monitor.emit(Gio.FileMonitorEvent.DELETED);
 
   let change = server.pop();
   JsUnit.assertNotNull(change);
@@ -169,7 +150,7 @@ function testGoaFileRemoved () {
 }
 
 function testGoaUnparseable () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
 
   let content = "{}%{$%#}%$}{%$}{";
   writeAccountContent(content);
@@ -182,7 +163,7 @@ function testGoaUnparseable () {
 }
 
 function testGoaBadSectionIgnored () {
-  let server = new MockConnectionManager (GLib.MainLoop.new (null, false), 2);
+  let server = new MockConnectionManager (2);
   let content = "[RamdonSection Foo]\nsomekey=1";
   writeAccountContent(content);
 
