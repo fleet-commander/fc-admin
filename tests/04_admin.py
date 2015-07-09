@@ -26,6 +26,8 @@ import shutil
 import urllib
 import tempfile
 import requests
+import socket
+import time
 
 class MockResponse:
   pass
@@ -229,6 +231,31 @@ class TestAdmin(unittest.TestCase):
 
     self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
     fleet_commander_admin.requests.pop()
+
+
+class TestVncWebsocketManager(unittest.TestCase):
+  cookie = "/tmp/fcmdr.test.websockify"
+  @classmethod
+  def setUpClass(cls):
+    if os.path.exists(cls.cookie):
+      os.remove(cls.cookie)
+
+  @classmethod
+  def tearDownClass(cls):
+    if os.path.exists(cls.cookie):
+      os.remove(cls.cookie)
+
+  def test_00_start_stop(self):
+    args = dict(listen_host='listen', listen_port=9999,
+                target_host='target', target_port=8888)
+    vnc = fleet_commander_admin.VncWebsocketManager(**args)
+    vnc.start()
+    time.sleep(0.05) #Give enough time for the script to write the file
+    self.assertTrue(os.path.exists(self.cookie))
+    self.assertTrue(open(self.cookie).read(),
+                    "%s:%s %s:%s" % (args['listen_host'], args['listen_port'],
+                                     args['target_host'], args['target_port']))
+    vnc.stop()
 
 if __name__ == '__main__':
   unittest.main()
