@@ -239,6 +239,7 @@ def deploy(uid):
 @app.route("/session/changes", methods=["GET"])
 def session_changes():
   #FIXME: Add GOA changes summary
+  #FIXME: return empty json list and 403 if there's no session
   collector = collectors_by_name['org.gnome.gsettings']
   return collector.dump_changes()
 
