@@ -167,6 +167,12 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
     self.assertEqual(ret.status_code, 200)
 
+    #Check all changes
+    ret = self.app.get("/session/changes")
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps(json.loads(ret.data)),
+                     json.dumps([[change1['key'], change1['value']],[change2['key'], change2['value']]]))
+
     #Select changes for the profile and get UUID to save it
     ret = self.app.post('/session/select', data=json.dumps({'sel': [1]}), content_type='application/json')
     self.assertEqual(ret.status_code, 200)
