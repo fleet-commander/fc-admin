@@ -209,12 +209,26 @@ class TestAdmin(unittest.TestCase):
     fleet_commander_admin.requests.pop()
 
   def test_05_change_merge_several_changes(self):
-    pass
-    #host = 'somehost'
-    #self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
-    #fleet_commander_admin.requests.pop()
-    #self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
-    #fleet_commander_admin.requests.pop()
+    host = 'somehost'
+    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
+
+    change1 = {'key':'/foo/bar', 'schema':'foo', 'value':"first", 'signature':'s'}
+    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+    self.assertEqual(ret.status_code, 200)
+
+    change2 = {'key':'/foo/bar', 'schema':'foo', 'value':'second', 'signature':'s'}
+    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+    self.assertEqual(ret.status_code, 200)
+
+    ret = self.app.get('/session/changes')
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']],]))
+
+    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
 
 if __name__ == '__main__':
   unittest.main()
