@@ -233,17 +233,19 @@ ConnectionManager.prototype.give_up = function () {
 ConnectionManager.prototype.finish_changes = function () {
 }
 
+// Generic
+var FileMonitor = function(path, callback) {
+    this.monitor = Gio.File.new_for_path(path).monitor_file(Gio.FileMonitorFlags.NONE, null);
+    this.monitor.connect ('changed', callback);
+}
+
+// This clas logs changes in the GNOME Online Accounts configuration file
 var GoaLogger = function (connmgr) {
     debug("Constructing GoaLogger");
     this.connmgr = connmgr;
     this.path = [GLib.get_user_config_dir(), 'goa-1.0', 'accounts.conf'].join('/');
-
-    this.monitor = Gio.File.new_for_path(this.path).monitor_file(Gio.FileMonitorFlags.NONE, null);
-
-
     this.update();
-
-    this.monitor.connect ('changed', function (monitor, this_file, other_file, event_type) {
+    this.monitor = new FileMonitor (this.path, function (monitor, this_file, other_file, event_type) {
         debug("GFileMonitor::changed " + [this.path, event_type.value_nick].join(" "));
 
         switch (event_type) {
@@ -424,8 +426,7 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
 
         this.connmgr.submit_change("org.gnome.gsettings", data);
     }.bind(this));
-
-  this.connmgr.finish_changes();
+    this.connmgr.finish_changes();
 }
 
 /* In this function we try to guess the schema by trying to find a
