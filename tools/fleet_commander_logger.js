@@ -84,7 +84,7 @@ function parse_options () {
         }
         if (!GLib.file_test (ARGV[i], GLib.FileTest.IS_REGULAR)) {
             printerr("ERROR: " + ARGV[i] + " is not a regular file");
-            System.exit(1)
+            System.exit(1);
         }
 
         let kf = new GLib.KeyFile();
@@ -93,12 +93,12 @@ function parse_options () {
         } catch (e) {
             debug(e);
             printerr("ERROR: Could not parse configuration file " + ARGV[i]);
-            System.exit(1)
+            System.exit(1);
         }
 
         if (!kf.has_group("logger")) {
             printerr("ERROR: "+ARGV[i]+" does not have [logger] section");
-            System.exit(1)
+            System.exit(1);
         }
         try {
             result['admin_server_host'] = kf.get_value("logger", "admin_server_host");
