@@ -129,7 +129,7 @@ class TestAdmin(unittest.TestCase):
   def test_02_session_start_stop(self):
     # Start session
     host = 'somehost'
-    ret = self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
     self.assertTrue (fleet_commander_admin.VNC_WSOCKET.started)
     self.assertEqual (fleet_commander_admin.VNC_WSOCKET.target_host, host)
@@ -147,7 +147,7 @@ class TestAdmin(unittest.TestCase):
     fleet_commander_admin.requests.raise_error_on_get()
 
     host = 'somehost'
-    rets = [self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded'),
+    rets = [self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json'),
             self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')]
 
     for ret in rets:
@@ -156,7 +156,7 @@ class TestAdmin(unittest.TestCase):
 
   def test_04_change_select_and_deploy(self):
     host = 'somehost'
-    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
     fleet_commander_admin.requests.pop()
 
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
@@ -223,7 +223,7 @@ class TestAdmin(unittest.TestCase):
 
   def test_05_discard_profile(self):
     host = 'somehost'
-    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
     fleet_commander_admin.requests.pop()
 
     # Create profile candidate: We assume all of these methods as tested
@@ -247,7 +247,7 @@ class TestAdmin(unittest.TestCase):
 
   def test_06_change_merge_several_changes(self):
     host = 'somehost'
-    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
     fleet_commander_admin.requests.pop()
 
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':"first", 'signature':'s'}

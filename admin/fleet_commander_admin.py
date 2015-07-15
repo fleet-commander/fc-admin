@@ -248,21 +248,23 @@ def deploy(uid):
 @app.route("/session/start", methods=["POST"])
 def session_start():
   #FIXME: Prevent starting two sessions
-  #FIXME: Use JSON instead of url encoding
   global VNC_WSOCKET
-  data = dict(request.form)
+  data = request.get_json()
   req = None
+
+  if not data:
+    return '{"status": "Request data was not a valid JSON object"}', 403
 
   if 'host' not in data:
     return '{"status": "no host was specified in POST request"}', 403
 
   try:
-    req = requests.get("http://%s:8182/session/start" % data['host'][0])
+    req = requests.get("http://%s:8182/session/start" % data['host'])
   except requests.exceptions.ConnectionError:
     return '{"status": "could not connect to host"}', 403
 
   VNC_WSOCKET.stop()
-  VNC_WSOCKET.target_host = data['host'][0]
+  VNC_WSOCKET.target_host = data['host']
   VNC_WSOCKET.target_port = 5935
   VNC_WSOCKET.start()
 

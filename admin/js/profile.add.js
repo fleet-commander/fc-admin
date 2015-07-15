@@ -83,7 +83,8 @@ function restartSession() {
   $.ajax({
     method: 'POST',
     url:    '/session/start',
-    data:   { host: sessionStorage.getItem("fc.session.host")},
+    contentType: 'application/json',
+    data:   JSON.stringify({ host: sessionStorage.getItem("fc.session.host") }),
     complete: function (xhr, statusText) {
       if (xhr.status == 200) {
         listenChanges();
