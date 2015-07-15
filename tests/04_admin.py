@@ -210,6 +210,16 @@ class TestAdmin(unittest.TestCase):
     self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
     fleet_commander_admin.requests.pop()
 
+    #Remove profile
+    ret = self.app.get("/profiles/delete/"+uuid)
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+
+    #Check that index is empty
+    ret = self.app.get("/profiles/")
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
+
   def test_05_change_merge_several_changes(self):
     host = 'somehost'
     self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
