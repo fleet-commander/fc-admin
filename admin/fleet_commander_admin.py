@@ -126,7 +126,7 @@ def profiles(profile_id):
 
 #FIXME: Rename this to profiles
 #FIXME: Use JSON instead of urlencoding
-@app.route("/profile/save/<id>", methods=["POST"])
+@app.route("/profiles/save/<id>", methods=["POST"])
 def profile_save(id):
   def write_and_close (path, load):
     f = open(path, 'w+')
@@ -194,7 +194,7 @@ def profile_delete(uid):
   return '{"status": "ok"}'
 
 #FIXME: Rename this to profiles
-@app.route("/profile/discard/<id>", methods=["GET"])
+@app.route("/profiles/discard/<id>", methods=["GET"])
 def profile_discard(id):
   if id in deploys:
     del deploys[id]

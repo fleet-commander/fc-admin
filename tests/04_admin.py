@@ -119,7 +119,7 @@ class TestAdmin(unittest.TestCase):
   def test_01_attempt_save_unselected_profile(self):
     profile_id = '0123456789'
     profile_data = urllib.urlencode(dict(name='myprofile', description='mydesc', settings={}, groups='', users=''))
-    ret = self.app.post('/profile/save/' + profile_id , data=profile_data, content_type='application/x-www-form-urlencode')
+    ret = self.app.post('/profiles/save/' + profile_id , data=profile_data, content_type='application/x-www-form-urlencode')
 
     PROFILE = os.path.join (self.args['profiles_dir'], profile_id + '.json')
     self.assertFalse(os.path.exists(PROFILE), msg='profile file was not created')
@@ -190,7 +190,7 @@ class TestAdmin(unittest.TestCase):
     #FIXME: rename this method to profiles/save
     profile_obj  = {'profile-name': 'myprofile','profile-desc':'mydesc','groups':'', 'users':''}
     profile_data = urllib.urlencode(profile_obj)
-    ret = self.app.post("/profile/save/"+uuid, content_type='application/x-www-form-urlencoded', data=profile_data)
+    ret = self.app.post("/profiles/save/"+uuid, content_type='application/x-www-form-urlencoded', data=profile_data)
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status":"ok"}))
 

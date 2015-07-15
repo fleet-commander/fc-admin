@@ -31,13 +31,13 @@ function populateUsersGroups(users, groups) {
 }
 
 function profileSave() {
-  $.post("/profile/save/" + uid, $('form').serialize(), function (data) {
+  $.post("/profiles/save/" + uid, $('form').serialize(), function (data) {
     location.pathname = "/";
   });
 }
 
 function profileDiscard() {
-  $.get("/profile/discard/"+uid, function (data) {
+  $.get("/profiles/discard/"+uid, function (data) {
     location.pathname = "/";
   });
 }
