@@ -196,9 +196,19 @@ def profile_delete(uid):
 #FIXME: Rename this to profiles
 @app.route("/profiles/discard/<id>", methods=["GET"])
 def profile_discard(id):
+  print (id)
   if id in deploys:
     del deploys[id]
-  return '{"status": "ok"}'
+    return '{"status": "ok"}', 200
+  return '{"status": "profile %s not found"}' % id, 403
+
+#profile builder methods
+@app.route("/changes", methods=["GET"])
+def session_changes():
+  #FIXME: Add GOA changes summary
+  #FIXME: return empty json list and 403 if there's no session
+  collector = collectors_by_name['org.gnome.gsettings']
+  return collector.dump_changes()
 
 #Add a configuration change to a session
 @app.route("/changes/submit/<name>", methods=["POST"])
@@ -234,14 +244,6 @@ def index():
 @app.route("/deploy/<uid>", methods=["GET"])
 def deploy(uid):
   return render_template('deploy.html')
-
-#profile builder methods
-@app.route("/changes", methods=["GET"])
-def session_changes():
-  #FIXME: Add GOA changes summary
-  #FIXME: return empty json list and 403 if there's no session
-  collector = collectors_by_name['org.gnome.gsettings']
-  return collector.dump_changes()
 
 @app.route("/session/start", methods=["POST"])
 def session_start():
@@ -288,6 +290,7 @@ def session_stop():
 
   return req.content, req.status_code
 
+#FIXME: Rename this to /changes/select
 @app.route("/session/select", methods=["POST"])
 def session_select():
   data = request.get_json()

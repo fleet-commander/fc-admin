@@ -202,6 +202,7 @@ class TestAdmin(unittest.TestCase):
     ret = self.app.get("/profiles/"+uuid)
     self.assertEqual(ret.status_code, 200)
     profile = json.loads(ret.data)
+    self.assertTrue(isinstance(profile, dict))
     self.assertEqual(profile['uid'], uuid)
     self.assertEqual(profile['description'], profile_obj['profile-desc'])
     self.assertEqual(profile['name'], profile_obj['profile-name'])
@@ -220,7 +221,31 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
 
-  def test_05_change_merge_several_changes(self):
+  def test_05_discard_profile(self):
+    host = 'somehost'
+    self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
+
+    # Create profile candidate: We assume all of these methods as tested
+    change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
+    self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+    ret = self.app.post('/session/select', data=json.dumps({'sel': [0]}), content_type='application/json')
+    payload = json.loads(ret.data)
+
+    # discard a profile candidate
+    ret = self.app.get('/profiles/discard/' + payload['uuid'])
+    self.assertEqual(ret.status_code, 200)
+    self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+
+    # discard a non-existing profile
+    ret = self.app.get('/profiles/discard/invaliduuid')
+    self.assertEqual(ret.status_code, 403)
+    self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
+
+    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    fleet_commander_admin.requests.pop()
+
+  def test_06_change_merge_several_changes(self):
     host = 'somehost'
     self.app.post('/session/start', data='host='+host, content_type='application/x-www-form-urlencoded')
     fleet_commander_admin.requests.pop()
