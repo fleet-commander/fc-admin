@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HTTP_HOST = 'localhost'
 DEFAULT_HTTP_PORT = '8181'
-CHANGE_SUBMIT_PATH = '/submit_change/'
+CHANGE_SUBMIT_PATH = '/changes/submit/'
 
 class ScreenSaverInhibitor(object):
     def __init__(self, inhibit=False):

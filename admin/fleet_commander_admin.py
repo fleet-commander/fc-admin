@@ -201,7 +201,7 @@ def profile_discard(id):
   return '{"status": "ok"}'
 
 #Add a configuration change to a session
-@app.route("/submit_change/<name>", methods=["POST"])
+@app.route("/changes/submit/<name>", methods=["POST"])
 def submit_change(name):
   if name in collectors_by_name:
     collectors_by_name[name].handle_change(request)
@@ -236,7 +236,7 @@ def deploy(uid):
   return render_template('deploy.html')
 
 #profile builder methods
-@app.route("/session/changes", methods=["GET"])
+@app.route("/changes", methods=["GET"])
 def session_changes():
   #FIXME: Add GOA changes summary
   #FIXME: return empty json list and 403 if there's no session

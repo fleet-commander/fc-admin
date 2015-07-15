@@ -24,7 +24,7 @@ var tries=0;
 var MAXTRIES=5;
 
 function updateEventList () {
-  $.getJSON ("/session/changes", function (data) {
+  $.getJSON ("/changes", function (data) {
     $("#event-list").html("");
     changes = data;
     $.each (data, function (i, item) {

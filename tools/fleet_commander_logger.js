@@ -29,7 +29,7 @@ const Json = imports.gi.Json;
 
 //Global constants
 const RETRY_INTERVAL = 1000;
-const SUBMIT_PATH    = '/submit_change/';
+const SUBMIT_PATH    = '/changes/submit/';
 
 //Mainloop
 const ml = imports.mainloop;

@@ -160,17 +160,17 @@ class TestAdmin(unittest.TestCase):
     fleet_commander_admin.requests.pop()
 
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
-    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+    ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
     self.assertEqual(ret.status_code, 200)
 
     change2 = {'key':'/foo/baz', 'schema':'foo', 'value':True, 'signature':'b'}
-    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+    ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
     self.assertEqual(ret.status_code, 200)
 
     #Check all changes
-    ret = self.app.get("/session/changes")
+    ret = self.app.get("/changes")
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)),
                      json.dumps([[change1['key'], change1['value']],[change2['key'], change2['value']]]))
@@ -216,22 +216,23 @@ class TestAdmin(unittest.TestCase):
     fleet_commander_admin.requests.pop()
 
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':"first", 'signature':'s'}
-    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+    ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
     self.assertEqual(ret.status_code, 200)
 
     change2 = {'key':'/foo/bar', 'schema':'foo', 'value':'second', 'signature':'s'}
-    ret = self.app.post('/submit_change/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+    ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
     self.assertEqual(ret.status_code, 200)
 
-    ret = self.app.get('/session/changes')
+    ret = self.app.get('/changes')
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']],]))
 
     self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
     fleet_commander_admin.requests.pop()
 
+  #TODO: Test GOA Collector
 
 class TestVncWebsocketManager(unittest.TestCase):
   cookie = "/tmp/fcmdr.test.websockify"
