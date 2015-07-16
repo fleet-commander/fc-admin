@@ -109,244 +109,240 @@ class GSettingsCollector(object):
     return self.selection
 
 ##############################################################
-app = Flask(__name__)
+class AdminService(Flask):
+  def __init__(self, name, config, vnc_websocket):
+    super(AdminService, self).__init__(name)
+    self.vnc_websocket = vnc_websocket
+    self.collectors_by_name = {}
+    self.current_session = {}
 
-#TODO: Subclass Flask and use all these as instance properties
-VNC_WSOCKET = VncWebsocketManager()
-collectors_by_name = {}
-global_config = {}
-current_session = {}
+    routes = [
+        ("/profiles/",                  ["GET"],  self.profiles),
+        ("/profiles/<path:profile_id>", ["GET"],  self.profiles_id),
+        ("/profiles/save/<id>",         ["POST"], self.profiles_save),
+        ("/profiles/add",               ["GET"],  self.profiles_add),
+        ("/profiles/delete/<uid>",      ["GET"],  self.profiles_delete),
+        ("/profiles/discard/<id>",      ["GET"],  self.profiles_discard),
+        ("/changes",                    ["GET"],  self.changes),
+        ("/changes/submit/<name>",      ["POST"], self.changes_submit_name),
+        ("/js/<path:js>",               ["GET"],  self.js_files),
+        ("/css/<path:css>",             ["GET"],  self.css_files),
+        ("/img/<path:img>",             ["GET"],  self.img_files),
+        ("/fonts/<path:font>",          ["GET"],  self.font_files),
+        ("/",                           ["GET"],  self.index),
+        ("/deploy/<uid>",               ["GET"],  self.deploy),
+        ("/session/start",              ["POST"], self.session_start),
+        ("/session/stop",               ["GET"],  self.session_stop),
+        ("/session/select",             ["POST"], self.session_select),
+    ]
+    for route in routes:
+        self.route(route[0], methods=route[1])(route[2])
 
-@app.route("/profiles/", methods=["GET"])
-def profile_index():
-  check_for_profile_index()
-  return send_from_directory(app.custom_args['profiles_dir'], "index.json")
+    self.custom_args = config
+    self.template_folder = os.path.join(config['data_dir'], 'templates')
 
-@app.route("/profiles/<path:profile_id>", methods=["GET"])
-def profiles(profile_id):
-  return send_from_directory(app.custom_args['profiles_dir'], profile_id + '.json')
+  def profiles(self):
+    self.check_for_profile_index()
+    return send_from_directory(self.custom_args['profiles_dir'], "index.json")
 
-#FIXME: Use JSON instead of urlencoding
-@app.route("/profiles/save/<id>", methods=["POST"])
-def profile_save(id):
-  global collectors_by_name
-  global current_session
+  def profiles_id(self, profile_id):
+    return send_from_directory(self.custom_args['profiles_dir'], profile_id + '.json')
 
-  def write_and_close (path, load):
-    f = open(path, 'w+')
-    f.write(load)
-    f.close()
+  #FIXME: Use JSON instead of urlencoding
+  def profiles_save(self, id):
+      def write_and_close (path, load):
+        f = open(path, 'w+')
+        f.write(load)
+        f.close()
 
-  changeset = current_session.get('changeset', None)
-  uid = current_session.get('uid', None)
+      changeset = self.current_session.get('changeset', None)
+      uid = self.current_session.get('uid', None)
 
-  if not uid or uid != id:
-    return '{"status": "nonexistinguid"}', 403
-  if not changeset:
-    return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
+      if not uid or uid != id:
+        return '{"status": "nonexistinguid"}', 403
+      if not changeset:
+        return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
 
-  INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
-  PROFILE_FILE = os.path.join(app.custom_args['profiles_dir'], id+'.json')
+      INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+      PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
 
-  form = dict(request.form)
+      form = dict(request.form)
 
-  profile = {}
-  settings = {}
-  groups = []
-  users = []
+      profile = {}
+      settings = {}
+      groups = []
+      users = []
 
-  for name, collector in current_session['changeset'].items():
-    settings[name] = collector.get_settings()
+      for name, collector in self.current_session['changeset'].items():
+        settings[name] = collector.get_settings()
 
-  groups = [g.strip() for g in form['groups'][0].split(",")]
-  users  = [u.strip() for u in form['users'][0].split(",")]
-  groups = filter(None, groups)
-  users  = filter(None, users)
+      groups = [g.strip() for g in form['groups'][0].split(",")]
+      users  = [u.strip() for u in form['users'][0].split(",")]
+      groups = filter(None, groups)
+      users  = filter(None, users)
 
-  profile["uid"] = uid
-  profile["name"] = form["profile-name"][0]
-  profile["description"] = form["profile-desc"][0]
-  profile["settings"] = settings
-  profile["applies-to"] = {"users": users, "groups": groups}
-  profile["etag"] = "placeholder"
+      profile["uid"] = uid
+      profile["name"] = form["profile-name"][0]
+      profile["description"] = form["profile-desc"][0]
+      profile["settings"] = settings
+      profile["applies-to"] = {"users": users, "groups": groups}
+      profile["etag"] = "placeholder"
 
-  check_for_profile_index()
-  index = json.loads(open(INDEX_FILE).read())
-  index.append({"url": id, "displayName": form["profile-name"][0]})
+      self.check_for_profile_index()
+      index = json.loads(open(INDEX_FILE).read())
+      index.append({"url": id, "displayName": form["profile-name"][0]})
 
-  del(current_session["uid"])
-  del(current_session["changeset"])
-  collectors_by_name.clear()
+      del(self.current_session["uid"])
+      del(self.current_session["changeset"])
+      self.collectors_by_name.clear()
 
-  write_and_close(PROFILE_FILE, json.dumps(profile))
-  write_and_close(INDEX_FILE, json.dumps(index))
+      write_and_close(PROFILE_FILE, json.dumps(profile))
+      write_and_close(INDEX_FILE, json.dumps(index))
 
-  return '{"status": "ok"}'
+      return '{"status": "ok"}'
 
-@app.route("/profiles/add", methods=["GET"])
-def new_profile():
-  return render_template('profile.add.html')
+  def profiles_add(self):
+    return render_template('profile.add.html')
 
-@app.route("/profiles/delete/<uid>", methods=["GET"])
-def profile_delete(uid):
-  INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
-  PROFILE_FILE = os.path.join(app.custom_args['profiles_dir'], uid+'.json')
+  def profiles_delete(self, uid):
+    INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+    PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
 
-  try:
-    os.remove(PROFILE_FILE)
-  except:
-    pass
+    try:
+      os.remove(PROFILE_FILE)
+    except:
+      pass
 
-  index = json.loads(open(INDEX_FILE).read())
-  for profile in index:
-    if (profile["url"] == uid):
-      index.remove(profile)
+    index = json.loads(open(INDEX_FILE).read())
+    for profile in index:
+      if (profile["url"] == uid):
+        index.remove(profile)
 
-  open(INDEX_FILE, 'w+').write(json.dumps(index))
-  return '{"status": "ok"}'
-
-#FIXME: Rename this to profiles
-@app.route("/profiles/discard/<id>", methods=["GET"])
-def profile_discard(id):
-  global current_session
-  if current_session.get('uid', None) == id:
-    del(current_session["uid"])
-    del(current_session["changeset"])
-    return '{"status": "ok"}', 200
-  return '{"status": "profile %s not found"}' % id, 403
-
-#profile builder methods
-@app.route("/changes", methods=["GET"])
-def session_changes():
-  #FIXME: Add GOA changes summary
-  #FIXME: return empty json list and 403 if there's no session
-  collector = collectors_by_name['org.gnome.gsettings']
-  return collector.dump_changes()
-
-#Add a configuration change to a session
-@app.route("/changes/submit/<name>", methods=["POST"])
-def submit_change(name):
-  if name in collectors_by_name:
-    collectors_by_name[name].handle_change(request)
+    open(INDEX_FILE, 'w+').write(json.dumps(index))
     return '{"status": "ok"}'
-  else:
-    return '{"status": "namespace %s not supported or session not started"}' % name, 403
 
-#Static files
-@app.route("/js/<path:js>", methods=["GET"])
-def js_files(js):
-  return send_from_directory(os.path.join(app.custom_args['data_dir'], "js"), js)
+  def profiles_discard(self, id):
+    if self.current_session.get('uid', None) == id:
+      del(self.current_session["uid"])
+      del(self.current_session["changeset"])
+      return '{"status": "ok"}', 200
+    return '{"status": "profile %s not found"}' % id, 403
 
-@app.route("/css/<path:css>", methods=["GET"])
-def css_files(css):
-  return send_from_directory(os.path.join(app.custom_args['data_dir'], "css"), css)
+  def changes(self):
+    #FIXME: Add GOA changes summary
+    #FIXME: return empty json list and 403 if there's no session
+    collector = self.collectors_by_name['org.gnome.gsettings']
+    return collector.dump_changes()
 
-@app.route("/img/<path:img>", methods=["GET"])
-def img_files(img):
-  return send_from_directory(os.path.join(app.custom_args['data_dir'], "img"), img)
+  #Add a configuration change to a session
+  def changes_submit_name(self, name):
+    if name in self.collectors_by_name:
+      self.collectors_by_name[name].handle_change(request)
+      return '{"status": "ok"}'
+    else:
+      return '{"status": "namespace %s not supported or session not started"}' % name, 403
 
-@app.route("/fonts/<path:font>", methods=["GET"])
-def font_files(font):
-  return send_from_directory(os.path.join(app.custom_args['data_dir'], "fonts"), font)
+  def js_files(self, js):
+    return send_from_directory(os.path.join(self.custom_args['data_dir'], "js"), js)
 
-#View methods
-@app.route("/", methods=["GET"])
-def index():
-  return render_template('index.html')
+  def css_files(self, css):
+    return send_from_directory(os.path.join(self.custom_args['data_dir'], "css"), css)
 
-@app.route("/deploy/<uid>", methods=["GET"])
-def deploy(uid):
-  return render_template('deploy.html')
+  def img_files(self, img):
+    return send_from_directory(os.path.join(self.custom_args['data_dir'], "img"), img)
 
-@app.route("/session/start", methods=["POST"])
-def session_start():
-  global VNC_WSOCKET
-  global current_session
+  def font_files(self, font):
+    return send_from_directory(os.path.join(self.custom_args['data_dir'], "fonts"), font)
 
-  data = request.get_json()
-  req = None
+  def index(self):
+    return render_template('index.html')
 
-  if current_session.get('host', None):
-    return '{"status": "session already started"}', 403
+  def deploy(self, uid):
+    return render_template('deploy.html')
 
-  if not data:
-    return '{"status": "Request data was not a valid JSON object"}', 403
+  def session_start(self):
+    data = request.get_json()
+    req = None
 
-  if 'host' not in data:
-    return '{"status": "no host was specified in POST request"}', 403
+    if self.current_session.get('host', None):
+      return '{"status": "session already started"}', 403
 
-  current_session = { 'host': data['host'] }
-  try:
-    req = requests.get("http://%s:8182/session/start" % data['host'])
-  except requests.exceptions.ConnectionError:
-    return '{"status": "could not connect to host"}', 403
+    if not data:
+      return '{"status": "Request data was not a valid JSON object"}', 403
 
-  VNC_WSOCKET.stop()
-  VNC_WSOCKET.target_host = data['host']
-  VNC_WSOCKET.target_port = 5935
-  VNC_WSOCKET.start()
+    if 'host' not in data:
+      return '{"status": "no host was specified in POST request"}', 403
 
-  collectors_by_name.clear()
-  collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
-  collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
+    self.current_session = { 'host': data['host'] }
+    try:
+      req = requests.get("http://%s:8182/session/start" % data['host'])
+    except requests.exceptions.ConnectionError:
+      return '{"status": "could not connect to host"}', 403
 
-  return req.content, req.status_code
+    self.vnc_websocket.stop()
+    self.vnc_websocket.target_host = data['host']
+    self.vnc_websocket.target_port = 5935
+    self.vnc_websocket.start()
 
-@app.route("/session/stop", methods=["GET"])
-def session_stop():
-  host = current_session.get('host', None)
+    self.collectors_by_name.clear()
+    self.collectors_by_name['org.gnome.gsettings']       = GSettingsCollector()
+    self.collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
 
-  if not host:
-    return '{"status": "there was no session started"}', 403
+    return req.content, req.status_code
 
-  msg, status = ('{"status": "could not connect to host"}', 403)
-  try:
-    req = requests.get("http://%s:8182/session/stop" % host)
-    msg, status = (req.content, req.status_code)
-  except requests.exceptions.ConnectionError:
-    pass
+  def session_stop(self):
+    host = self.current_session.get('host', None)
 
-  VNC_WSOCKET.stop()
-  collectors_by_name.clear()
+    if not host:
+      return '{"status": "there was no session started"}', 403
 
-  if host:
-    del(current_session['host'])
+    msg, status = ('{"status": "could not connect to host"}', 403)
+    try:
+      req = requests.get("http://%s:8182/session/stop" % host)
+      msg, status = (req.content, req.status_code)
+    except requests.exceptions.ConnectionError:
+      pass
 
-  return msg, status
+    self.vnc_websocket.stop()
+    self.collectors_by_name.clear()
 
-#FIXME: Rename this to /changes/select
-#TODO: change the key from 'sel' to 'changes'
-#TODO: Handle GOA changesets
-@app.route("/session/select", methods=["POST"])
-def session_select():
-  data = request.get_json()
+    if host:
+      del(self.current_session['host'])
 
-  if not isinstance(data, dict):
-    return '{"status": "bad JSON data"}'
+    return msg, status
 
-  if not "sel" in data:
-    return '{"status": "bad_form_data"}', 403
+  #FIXME: Rename this to /changes/select
+  #TODO: change the key from 'sel' to 'changes'
+  #TODO: Handle GOA changesets
+  def session_select(self):
+    data = request.get_json()
 
-  selected_indices = [int(x) for x in data['sel']]
-  collector = collectors_by_name['org.gnome.gsettings']
-  collector.remember_selected(selected_indices)
+    if not isinstance(data, dict):
+      return '{"status": "bad JSON data"}'
 
-  uid = str(uuid.uuid1().int)
-  current_session['uid'] = uid
-  current_session['changeset'] = dict(collectors_by_name)
-  collectors_by_name.clear()
+    if not "sel" in data:
+      return '{"status": "bad_form_data"}', 403
 
-  return json.dumps({"status": "ok", "uuid": uid})
+    selected_indices = [int(x) for x in data['sel']]
+    collector = self.collectors_by_name['org.gnome.gsettings']
+    collector.remember_selected(selected_indices)
 
-def check_for_profile_index():
-  INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], "index.json")
-  if os.path.isfile(INDEX_FILE):
-    return
+    uid = str(uuid.uuid1().int)
+    self.current_session['uid'] = uid
+    self.current_session['changeset'] = dict(self.collectors_by_name)
+    self.collectors_by_name.clear()
 
-  try:
-    open(INDEX_FILE, 'w+').write(json.dumps([]))
-  except OSError:
-    logging.error('There was an error attempting to write on %s' % INDEX_FILE)
+    return json.dumps({"status": "ok", "uuid": uid})
+
+  def check_for_profile_index(self):
+    INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
+    if os.path.isfile(INDEX_FILE):
+      return
+
+    try:
+      open(INDEX_FILE, 'w+').write(json.dumps([]))
+    except OSError:
+      logging.error('There was an error attempting to write on %s' % INDEX_FILE)
 
 def parse_config(config_file):
   SECTION_NAME = 'admin'
@@ -371,7 +367,6 @@ def parse_config(config_file):
   except:
     logging.error('There was an unknown error parsing %s' % config_file)
     raise
-    sys.exit(1)
 
   if not config.has_section(SECTION_NAME):
     return args
@@ -405,6 +400,6 @@ if __name__ == "__main__":
     help='Provide a configuration file path for the web service')
 
   args = parser.parse_args()
-  app.custom_args = parse_config(args.configuration)
-  app.template_folder = os.path.join(app.custom_args['data_dir'], 'templates')
-  app.run(host=app.custom_args['host'], port=app.custom_args['port'], debug=True)
+  config = parse_config(args.configuration)
+  app = AdminService (__name__, config, VncWebsocketManager())
+  app.run(host=config['host'], port=config['port'], debug=True)

@@ -29,6 +29,11 @@ import requests
 import socket
 import time
 
+PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
+sys.path.append(PYTHONPATH)
+
+import fleet_commander_admin
+
 class MockResponse:
   pass
 
@@ -71,40 +76,33 @@ class MockVncWebSocket:
   def stop(self):
     self.started = False
 
-PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
-sys.path.append(PYTHONPATH)
-import fleet_commander_admin
-
 # assigned mocked objects
-fleet_commander_admin.requests = MockRequests()
-fleet_commander_admin.VNC_WSOCKET = MockVncWebSocket()
-
 class TestAdmin(unittest.TestCase):
   cookie = "/tmp/fleet-commander-start"
   args = {
       'host': 'localhost',
       'port': 8777,
-      'profiles_dir': tempfile.mkdtemp(),
       'data_dir': PYTHONPATH,
   }
 
+  def setUp(self):
+    fleet_commander_admin.requests.set_default_values()
+    if 'profiles_dir' not in self.args:
+      self.args['profiles_dir'] = tempfile.mkdtemp()
+
+    self.vnc_websocket = MockVncWebSocket()
+    self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
+    self.base_app.config['TESTING'] = True
+    self.app = self.base_app.test_client()
+
   @classmethod
   def setUpClass(cls):
-    fleet_commander_admin.app.custom_args = cls.args
-    fleet_commander_admin.app.config['TESTING'] = True
-    cls.app = fleet_commander_admin.app.test_client()
+    fleet_commander_admin.requests = MockRequests()
 
   @classmethod
   def tearDownClass(cls):
     shutil.rmtree(cls.args['profiles_dir'])
-
-  def setUp(self):
-    shutil.rmtree(self.args['profiles_dir'])
-    self.args['profiles_dir'] = tempfile.mkdtemp()
-    fleet_commander_admin.requests.set_default_values()
-    print ("---")
-  def tearDown(self):
-    print ("###")
+    cls.args['profiles_dir'] = tempfile.mkdtemp()
 
   def get_data_from_file(self, path):
     return open(path).read()
@@ -135,9 +133,9 @@ class TestAdmin(unittest.TestCase):
     host = 'somehost'
     ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
-    self.assertTrue (fleet_commander_admin.VNC_WSOCKET.started)
-    self.assertEqual (fleet_commander_admin.VNC_WSOCKET.target_host, host)
-    self.assertEqual (fleet_commander_admin.VNC_WSOCKET.target_port, 5935)
+    self.assertTrue (self.vnc_websocket.started)
+    self.assertEqual (self.vnc_websocket.target_host, host)
+    self.assertEqual (self.vnc_websocket.target_port, 5935)
     self.assertEqual (ret.data, MockRequests.DEFAULT_CONTENT)
     self.assertEqual (ret.status_code, MockRequests.DEFAULT_STATUS)
     self.assertEqual (fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
