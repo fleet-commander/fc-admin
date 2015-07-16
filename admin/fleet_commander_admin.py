@@ -148,58 +148,65 @@ class AdminService(Flask):
   def profiles_id(self, profile_id):
     return send_from_directory(self.custom_args['profiles_dir'], profile_id + '.json')
 
-  #FIXME: Use JSON instead of urlencoding
   def profiles_save(self, id):
-      def write_and_close (path, load):
-        f = open(path, 'w+')
-        f.write(load)
-        f.close()
+    def write_and_close (path, load):
+      f = open(path, 'w+')
+      f.write(load)
+      f.close()
 
-      changeset = self.current_session.get('changeset', None)
-      uid = self.current_session.get('uid', None)
+    changeset = self.current_session.get('changeset', None)
+    uid = self.current_session.get('uid', None)
 
-      if not uid or uid != id:
-        return '{"status": "nonexistinguid"}', 403
-      if not changeset:
-        return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
+    if not uid or uid != id:
+      return '{"status": "nonexistinguid"}', 403
+    if not changeset:
+      return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
 
-      INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-      PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
+    INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+    PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
 
-      form = dict(request.form)
+    data = request.get_json()
 
-      profile = {}
-      settings = {}
-      groups = []
-      users = []
+    print(data)
+    if not isinstance(data, dict):
+        print ("asdasd")
+        return '{"status": "JSON request is not an object"}', 403
+    if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
+        print("asdasdas")
+        return '{"status": "missing key(s) in profile settings request JSON object"}', 403
 
-      for name, collector in self.current_session['changeset'].items():
-        settings[name] = collector.get_settings()
+    profile = {}
+    settings = {}
+    groups = []
+    users = []
 
-      groups = [g.strip() for g in form['groups'][0].split(",")]
-      users  = [u.strip() for u in form['users'][0].split(",")]
-      groups = filter(None, groups)
-      users  = filter(None, users)
+    for name, collector in self.current_session['changeset'].items():
+      settings[name] = collector.get_settings()
 
-      profile["uid"] = uid
-      profile["name"] = form["profile-name"][0]
-      profile["description"] = form["profile-desc"][0]
-      profile["settings"] = settings
-      profile["applies-to"] = {"users": users, "groups": groups}
-      profile["etag"] = "placeholder"
+    groups = [g.strip() for g in data['groups'].split(",")]
+    users  = [u.strip() for u in data['users'].split(",")]
+    groups = filter(None, groups)
+    users  = filter(None, users)
 
-      self.check_for_profile_index()
-      index = json.loads(open(INDEX_FILE).read())
-      index.append({"url": id, "displayName": form["profile-name"][0]})
+    profile["uid"] = uid
+    profile["name"] = data["profile-name"]
+    profile["description"] = data["profile-desc"]
+    profile["settings"] = settings
+    profile["applies-to"] = {"users": users, "groups": groups}
+    profile["etag"] = "placeholder"
 
-      del(self.current_session["uid"])
-      del(self.current_session["changeset"])
-      self.collectors_by_name.clear()
+    self.check_for_profile_index()
+    index = json.loads(open(INDEX_FILE).read())
+    index.append({"url": id, "displayName": data["profile-name"]})
 
-      write_and_close(PROFILE_FILE, json.dumps(profile))
-      write_and_close(INDEX_FILE, json.dumps(index))
+    del(self.current_session["uid"])
+    del(self.current_session["changeset"])
+    self.collectors_by_name.clear()
 
-      return '{"status": "ok"}'
+    write_and_close(PROFILE_FILE, json.dumps(profile))
+    write_and_close(INDEX_FILE, json.dumps(index))
+
+    return '{"status": "ok"}'
 
   def profiles_add(self):
     return render_template('profile.add.html')

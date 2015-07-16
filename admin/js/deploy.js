@@ -31,15 +31,25 @@ function populateUsersGroups(users, groups) {
 }
 
 function profileSave() {
-  $.post("/profiles/save/" + uid, $('form').serialize(), function (data) {
-    location.pathname = "/";
+  var payload = {}
+  $.each($('form').serializeArray(), function (array, input) {
+    payload[input.name] = input.value;
+  });
+
+  //TODO: show spinner/progress indicator
+  $.ajax({
+    method: 'POST',
+    url: '/profiles/save/' + uid,
+    data: JSON.stringify(payload),
+    contentType: 'application/json',
+  }).always (function (data) {
+    location.pathname = '/';
   });
 }
 
 function profileDiscard() {
-  $.get("/profiles/discard/"+uid, function (data) {
-    location.pathname = "/";
-  });
+  $.get("/profiles/discard/"+uid)
+    .always(function () { location.pathname = "/"; });
 }
 
 $(document).ready (function () {
