@@ -124,7 +124,7 @@ function deployProfile() {
           dataType: 'json',
           contentType: 'application/json'
   }).done(function (data) {
-    $.get('/session/stop').done(function () {
+    $.get('/session/stop').always(function () {
       if (data.status == 'ok')
         location.pathname = '/deploy/' + data.uuid;
     });
