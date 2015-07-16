@@ -169,10 +169,8 @@ class AdminService(Flask):
 
     print(data)
     if not isinstance(data, dict):
-        print ("asdasd")
         return '{"status": "JSON request is not an object"}', 403
     if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
-        print("asdasdas")
         return '{"status": "missing key(s) in profile settings request JSON object"}', 403
 
     profile = {}
