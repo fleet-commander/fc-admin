@@ -47,8 +47,7 @@ function updateEventList () {
 
 function closeSession () {
   window.clearInterval(updater);
-
-  $.post("/session/stop", { host: sessionStorage.getItem("fc.session.host") });
+  $.get("/session/stop");
 }
 
 function vnc_update_state (rfb, state, oldstate, statusMsg) {
@@ -119,15 +118,16 @@ function deployProfile() {
     sel.push(changes.length - 1 - $(this).attr('data-id'));
   });
 
-  //FIXME: Close session
   $.ajax({method: 'POST',
           url:    '/session/select',
           data:   JSON.stringify({'sel': sel}),
           dataType: 'json',
           contentType: 'application/json'
   }).done(function (data) {
-    if (data.status == 'ok')
-      location.pathname = '/deploy/' + data.uuid;
+    $.get('/session/stop').done(function () {
+      if (data.status == 'ok')
+        location.pathname = '/deploy/' + data.uuid;
+    });
   });
 }
 

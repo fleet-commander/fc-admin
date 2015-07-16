@@ -110,10 +110,12 @@ class GSettingsCollector(object):
 
 ##############################################################
 app = Flask(__name__)
+
+#TODO: Subclass Flask and use all these as instance properties
 VNC_WSOCKET = VncWebsocketManager()
-deploys = {}
 collectors_by_name = {}
 global_config = {}
+current_session = {}
 
 @app.route("/profiles/", methods=["GET"])
 def profile_index():
@@ -124,17 +126,24 @@ def profile_index():
 def profiles(profile_id):
   return send_from_directory(app.custom_args['profiles_dir'], profile_id + '.json')
 
-#FIXME: Rename this to profiles
 #FIXME: Use JSON instead of urlencoding
 @app.route("/profiles/save/<id>", methods=["POST"])
 def profile_save(id):
+  global collectors_by_name
+  global current_session
+
   def write_and_close (path, load):
     f = open(path, 'w+')
     f.write(load)
     f.close()
 
-  if id not in deploys:
+  changeset = current_session.get('changeset', None)
+  uid = current_session.get('uid', None)
+
+  if not uid or uid != id:
     return '{"status": "nonexistinguid"}', 403
+  if not changeset:
+    return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
 
   INDEX_FILE = os.path.join(app.custom_args['profiles_dir'], 'index.json')
   PROFILE_FILE = os.path.join(app.custom_args['profiles_dir'], id+'.json')
@@ -146,7 +155,7 @@ def profile_save(id):
   groups = []
   users = []
 
-  for name, collector in deploys[id].items():
+  for name, collector in current_session['changeset'].items():
     settings[name] = collector.get_settings()
 
   groups = [g.strip() for g in form['groups'][0].split(",")]
@@ -154,7 +163,7 @@ def profile_save(id):
   groups = filter(None, groups)
   users  = filter(None, users)
 
-  profile["uid"] = id
+  profile["uid"] = uid
   profile["name"] = form["profile-name"][0]
   profile["description"] = form["profile-desc"][0]
   profile["settings"] = settings
@@ -164,7 +173,10 @@ def profile_save(id):
   check_for_profile_index()
   index = json.loads(open(INDEX_FILE).read())
   index.append({"url": id, "displayName": form["profile-name"][0]})
-  del deploys[id]
+
+  del(current_session["uid"])
+  del(current_session["changeset"])
+  collectors_by_name.clear()
 
   write_and_close(PROFILE_FILE, json.dumps(profile))
   write_and_close(INDEX_FILE, json.dumps(index))
@@ -196,9 +208,10 @@ def profile_delete(uid):
 #FIXME: Rename this to profiles
 @app.route("/profiles/discard/<id>", methods=["GET"])
 def profile_discard(id):
-  print (id)
-  if id in deploys:
-    del deploys[id]
+  global current_session
+  if current_session.get('uid', None) == id:
+    del(current_session["uid"])
+    del(current_session["changeset"])
     return '{"status": "ok"}', 200
   return '{"status": "profile %s not found"}' % id, 403
 
@@ -247,10 +260,14 @@ def deploy(uid):
 
 @app.route("/session/start", methods=["POST"])
 def session_start():
-  #FIXME: Prevent starting two sessions
   global VNC_WSOCKET
+  global current_session
+
   data = request.get_json()
   req = None
+
+  if current_session.get('host', None):
+    return '{"status": "session already started"}', 403
 
   if not data:
     return '{"status": "Request data was not a valid JSON object"}', 403
@@ -258,6 +275,7 @@ def session_start():
   if 'host' not in data:
     return '{"status": "no host was specified in POST request"}', 403
 
+  current_session = { 'host': data['host'] }
   try:
     req = requests.get("http://%s:8182/session/start" % data['host'])
   except requests.exceptions.ConnectionError:
@@ -274,31 +292,37 @@ def session_start():
 
   return req.content, req.status_code
 
-@app.route("/session/stop", methods=["POST"])
+@app.route("/session/stop", methods=["GET"])
 def session_stop():
-  #FIXME: Make this a GET method by storing the host of the current session in session_start
-  global VNC_WSOCKET
-  data = dict(request.form)
-  req = None
+  host = current_session.get('host', None)
+
+  if not host:
+    return '{"status": "there was no session started"}', 403
+
+  msg, status = ('{"status": "could not connect to host"}', 403)
+  try:
+    req = requests.get("http://%s:8182/session/stop" % host)
+    msg, status = (req.content, req.status_code)
+  except requests.exceptions.ConnectionError:
+    pass
 
   VNC_WSOCKET.stop()
+  collectors_by_name.clear()
 
-  #FIXME: Clear loggers
-  #FIXME: Clear unsaved deploys
-  try:
-    req = requests.get("http://%s:8182/session/stop" % data['host'][0])
-  except requests.exceptions.ConnectionError:
-    return '{"status": "could not connect to host"}', 403
+  if host:
+    del(current_session['host'])
 
-  return req.content, req.status_code
+  return msg, status
 
 #FIXME: Rename this to /changes/select
+#TODO: change the key from 'sel' to 'changes'
+#TODO: Handle GOA changesets
 @app.route("/session/select", methods=["POST"])
 def session_select():
   data = request.get_json()
 
   if not isinstance(data, dict):
-    return '{"status": "bad JSON format"}'
+    return '{"status": "bad JSON data"}'
 
   if not "sel" in data:
     return '{"status": "bad_form_data"}', 403
@@ -308,7 +332,8 @@ def session_select():
   collector.remember_selected(selected_indices)
 
   uid = str(uuid.uuid1().int)
-  deploys[uid] = dict(collectors_by_name)
+  current_session['uid'] = uid
+  current_session['changeset'] = dict(collectors_by_name)
   collectors_by_name.clear()
 
   return json.dumps({"status": "ok", "uuid": uid})

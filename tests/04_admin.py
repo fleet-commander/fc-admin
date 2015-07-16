@@ -42,6 +42,7 @@ class MockRequests:
     self.set_default_values()
 
   def get(self, url):
+    print ("--> "+url)
     if self.raise_error:
       raise requests.exceptions.ConnectionError('Connection failed!')
     self.queue.append(url)
@@ -101,6 +102,9 @@ class TestAdmin(unittest.TestCase):
     shutil.rmtree(self.args['profiles_dir'])
     self.args['profiles_dir'] = tempfile.mkdtemp()
     fleet_commander_admin.requests.set_default_values()
+    print ("---")
+  def tearDown(self):
+    print ("###")
 
   def get_data_from_file(self, path):
     return open(path).read()
@@ -138,25 +142,21 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual (ret.status_code, MockRequests.DEFAULT_STATUS)
     self.assertEqual (fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
 
-    ret = self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    ret = self.app.get('/session/stop')
     self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/stop" % host)
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
 
   def test_03_stop_start_failed_connection(self):
     fleet_commander_admin.requests.raise_error_on_get()
-
-    host = 'somehost'
-    rets = [self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json'),
-            self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')]
-
+    rets = [self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json'),
+            self.app.get('/session/stop')]
     for ret in rets:
       self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'could not connect to host'}))
       self.assertEqual(ret.status_code, 403)
 
   def test_04_change_select_and_deploy(self):
-    host = 'somehost'
-    self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+    self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json')
     fleet_commander_admin.requests.pop()
 
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
@@ -191,8 +191,8 @@ class TestAdmin(unittest.TestCase):
     profile_obj  = {'profile-name': 'myprofile','profile-desc':'mydesc','groups':'', 'users':''}
     profile_data = urllib.urlencode(profile_obj)
     ret = self.app.post("/profiles/save/"+uuid, content_type='application/x-www-form-urlencoded', data=profile_data)
-    self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status":"ok"}))
+    self.assertEqual(ret.status_code, 200)
 
     #Get index
     ret = self.app.get("/profiles/")
@@ -208,7 +208,7 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual(profile['name'], profile_obj['profile-name'])
     self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
 
-    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    ret = self.app.get('/session/stop')
     fleet_commander_admin.requests.pop()
 
     #Remove profile
@@ -223,7 +223,7 @@ class TestAdmin(unittest.TestCase):
 
   def test_05_discard_profile(self):
     host = 'somehost'
-    self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+    ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
     fleet_commander_admin.requests.pop()
 
     # Create profile candidate: We assume all of these methods as tested
@@ -242,7 +242,7 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual(ret.status_code, 403)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
 
-    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    self.app.get('/session/stop')
     fleet_commander_admin.requests.pop()
 
   def test_06_change_merge_several_changes(self):
@@ -264,7 +264,7 @@ class TestAdmin(unittest.TestCase):
     self.assertEqual(ret.status_code, 200)
     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']],]))
 
-    self.app.post('/session/stop', data='host='+host, content_type='application/x-www-form-urlencoded')
+    self.app.get('/session/stop')
     fleet_commander_admin.requests.pop()
 
   #TODO: Test GOA Collector
