@@ -40,6 +40,26 @@
       </div>
     </div>
 
+    <div id="del-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Delete Profile Confirmation</h4>
+          </div>
+
+          <div class="modal-body">
+            Are you sure you want to delete profile "<span id="del-profile-name"></span>"?
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id='del-profile-confirm' class="btn btn-danger">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="container-fluid">
       <div class="panel panel-default" style="margin-top: 20px;">
         <div class="panel-heading">
@@ -50,7 +70,7 @@
         <table class="table">
           <thead>
               <tr>
-                <td>Name</td><td>Description</td><td>Target OS</td><td>Applies to</td>
+                <td>Name</td><td>Description</td><td>Target OS</td><td>Applies to</td><td></td>
               </tr>
             </thead>
             <tbody id="profile-list">

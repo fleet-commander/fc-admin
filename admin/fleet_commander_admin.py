@@ -134,6 +134,8 @@ class AdminService(Flask):
         ("/deploy/<uid>",               ["GET"],  self.deploy),
         ("/session/start",              ["POST"], self.session_start),
         ("/session/stop",               ["GET"],  self.session_stop),
+        #workaround for bootstrap font path
+        ("/components/bootstrap/dist/font", ["GET"], self.font_files),
     ]
     for route in routes:
         self.route(route[0], methods=route[1])(route[2])

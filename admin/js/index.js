@@ -28,27 +28,30 @@ function populate_profile_list() {
       $('<td></td>').appendTo(tr); // os
       $('<td></td>').appendTo(tr); // applies to
 
-      /*$('<input>', {
-        value: 'Remove',
-        type:  'button',
-        on: {
-          click: function() {
-            remove_profile(val);
-          }
-        }
-      }).appendTo(tr);*/
+      var delete_col = $('<td></td>');
+      delete_col.appendTo(tr);
 
-      tr.appendTo($("#profile-list"));
+      $('<a></a>')
+        .attr('href', '#')
+        .click(function () { remove_profile (val); })
+        .text('X') //TODO: Use an icon
+        .appendTo(delete_col);
+
+      tr.appendTo('#profile-list');
     });
   });
 }
 
 function remove_profile(profile) {
-  if (confirm('Are you sure you want to delete ' + profile.displayName)) {
-    $.getJSON ('/profile/delete/' + profile.url, function (data) {
-      populate_profile_list();
-    });
-  }
+  $('#del-profile-name').text(profile.displayName);
+  $('#del-profile-modal').modal('show');
+  $('#del-profile-confirm').click(function () {
+    $.getJSON ('/profiles/delete/' + profile.url)
+      .always(function () {
+        populate_profile_list();
+        $('#del-profile-modal').modal('hide');
+      });
+  });
 }
 
 function profile_confirmation () {
