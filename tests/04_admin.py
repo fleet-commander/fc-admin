@@ -174,7 +174,7 @@ class TestAdmin(unittest.TestCase):
                      json.dumps([[change1['key'], change1['value']],[change2['key'], change2['value']]]))
 
     #Select changes for the profile and get UUID to save it
-    ret = self.app.post('/session/select', data=json.dumps({'sel': [1]}), content_type='application/json')
+    ret = self.app.post('/changes/select', data=json.dumps({'sel': [1]}), content_type='application/json')
     self.assertEqual(ret.status_code, 200)
 
     payload = json.loads(ret.data)
@@ -226,7 +226,7 @@ class TestAdmin(unittest.TestCase):
     # Create profile candidate: We assume all of these methods as tested
     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
     self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-    ret = self.app.post('/session/select', data=json.dumps({'sel': [0]}), content_type='application/json')
+    ret = self.app.post('/changes/select', data=json.dumps({'sel': [0]}), content_type='application/json')
     payload = json.loads(ret.data)
 
     # discard a profile candidate

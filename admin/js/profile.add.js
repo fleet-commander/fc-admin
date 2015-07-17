@@ -119,7 +119,7 @@ function deployProfile() {
   });
 
   $.ajax({method: 'POST',
-          url:    '/session/select',
+          url:    '/changes/select',
           data:   JSON.stringify({'sel': sel}),
           dataType: 'json',
           contentType: 'application/json'

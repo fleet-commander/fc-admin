@@ -125,6 +125,7 @@ class AdminService(Flask):
         ("/profiles/discard/<id>",      ["GET"],  self.profiles_discard),
         ("/changes",                    ["GET"],  self.changes),
         ("/changes/submit/<name>",      ["POST"], self.changes_submit_name),
+        ("/changes/select",             ["POST"], self.changes_select),
         ("/js/<path:js>",               ["GET"],  self.js_files),
         ("/css/<path:css>",             ["GET"],  self.css_files),
         ("/img/<path:img>",             ["GET"],  self.img_files),
@@ -133,7 +134,6 @@ class AdminService(Flask):
         ("/deploy/<uid>",               ["GET"],  self.deploy),
         ("/session/start",              ["POST"], self.session_start),
         ("/session/stop",               ["GET"],  self.session_stop),
-        ("/session/select",             ["POST"], self.session_select),
     ]
     for route in routes:
         self.route(route[0], methods=route[1])(route[2])
@@ -167,7 +167,6 @@ class AdminService(Flask):
 
     data = request.get_json()
 
-    print(data)
     if not isinstance(data, dict):
         return '{"status": "JSON request is not an object"}', 403
     if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
@@ -235,11 +234,45 @@ class AdminService(Flask):
 
   def changes(self):
     #FIXME: Add GOA changes summary
-    #FIXME: return empty json list and 403 if there's no session
     collector = self.collectors_by_name.get('org.gnome.gsettings', None)
     if collector:
       return collector.dump_changes(), 200
     return json.dumps([]), 403
+
+  #TODO: change the key from 'sel' to 'changes'
+  #TODO: Handle GOA changesets
+  def changes_select(self):
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+      return '{"status": "bad JSON data"}', 403
+
+    if not "sel" in data:
+      return '{"status": "bad_form_data"}', 403
+
+    if not 'org.gnome.gsettings' in self.collectors_by_name:
+      return '{"status": "session was not started"}', 403
+
+    selected_indices = [int(x) for x in data['sel']]
+    collector = self.collectors_by_name['org.gnome.gsettings']
+    collector.remember_selected(selected_indices)
+
+    uid = str(uuid.uuid1().int)
+    self.current_session['uid'] = uid
+    self.current_session['changeset'] = dict(self.collectors_by_name)
+    self.collectors_by_name.clear()
+
+    return json.dumps({"status": "ok", "uuid": uid})
+
+  def check_for_profile_index(self):
+    INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
+    if os.path.isfile(INDEX_FILE):
+      return
+
+    try:
+      open(INDEX_FILE, 'w+').write(json.dumps([]))
+    except OSError:
+      logging.error('There was an error attempting to write on %s' % INDEX_FILE)
 
   #Add a configuration change to a session
   def changes_submit_name(self, name):
@@ -317,39 +350,6 @@ class AdminService(Flask):
       del(self.current_session['host'])
 
     return msg, status
-
-  #FIXME: Rename this to /changes/select
-  #TODO: change the key from 'sel' to 'changes'
-  #TODO: Handle GOA changesets
-  def session_select(self):
-    data = request.get_json()
-
-    if not isinstance(data, dict):
-      return '{"status": "bad JSON data"}'
-
-    if not "sel" in data:
-      return '{"status": "bad_form_data"}', 403
-
-    selected_indices = [int(x) for x in data['sel']]
-    collector = self.collectors_by_name['org.gnome.gsettings']
-    collector.remember_selected(selected_indices)
-
-    uid = str(uuid.uuid1().int)
-    self.current_session['uid'] = uid
-    self.current_session['changeset'] = dict(self.collectors_by_name)
-    self.collectors_by_name.clear()
-
-    return json.dumps({"status": "ok", "uuid": uid})
-
-  def check_for_profile_index(self):
-    INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
-    if os.path.isfile(INDEX_FILE):
-      return
-
-    try:
-      open(INDEX_FILE, 'w+').write(json.dumps([]))
-    except OSError:
-      logging.error('There was an error attempting to write on %s' % INDEX_FILE)
 
 def parse_config(config_file):
   SECTION_NAME = 'admin'
