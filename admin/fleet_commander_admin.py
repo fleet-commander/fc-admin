@@ -236,8 +236,10 @@ class AdminService(Flask):
   def changes(self):
     #FIXME: Add GOA changes summary
     #FIXME: return empty json list and 403 if there's no session
-    collector = self.collectors_by_name['org.gnome.gsettings']
-    return collector.dump_changes()
+    collector = self.collectors_by_name.get('org.gnome.gsettings', None)
+    if collector:
+      return collector.dump_changes(), 200
+    return json.dumps([]), 403
 
   #Add a configuration change to a session
   def changes_submit_name(self, name):

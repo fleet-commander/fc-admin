@@ -264,6 +264,10 @@ class TestAdmin(unittest.TestCase):
     self.app.get('/session/stop')
     fleet_commander_admin.requests.pop()
 
+  def test_07_empty_collector(self):
+    ret = self.app.get('/changes')
+    self.assertEqual(ret.status_code, 403)
+
   #TODO: Test GOA Collector
 
 class TestVncWebsocketManager(unittest.TestCase):
