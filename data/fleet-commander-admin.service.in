@@ -4,7 +4,8 @@ After=network.target remote-fs.target nss-lookup.target
 
 [Service]
 User=fleet-commander-admin
-ExecStart=@PRIVLIBEXECDIR@/fleet_commander_admin.py --configuration @XDGCONFIGDIR@/fleet-commander-admin.conf
+Environment=PYTHONPATH=@FCPYTHONDIR@
+ExecStart=@PYTHON@ -m fleetcommander --configuration @XDGCONFIGDIR@/fleet-commander-admin.conf
 
 StandardOutput=syslog
 StandardError=inherit

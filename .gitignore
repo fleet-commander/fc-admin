@@ -21,6 +21,6 @@ missing
 fleet-commander*.tar.[gx]z
 tests/*.trs
 tests/*.log
-*/*.pyc
+*.py[co]
 test-driver
 tests/data/gschemas.compiled

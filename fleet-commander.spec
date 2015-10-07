@@ -54,7 +54,7 @@ Requires: gjs
 Requires: libsoup
 Requires: json-glib
 %description -n fleet-commander-logger
-Logs changes for Fleet Commander virtual sessions 
+Logs changes for Fleet Commander virtual sessions
 
 %prep
 %setup -q
@@ -103,9 +103,18 @@ exit 0
 %{_datadir}/fleet-commander-admin/img/*.gif
 %{_datadir}/fleet-commander-admin/css/*.css
 %{_datadir}/fleet-commander-admin/templates/*.html
-%attr(755, -, -) %{_libexecdir}/fleet_commander_admin.py
-%exclude %{_libexecdir}/fleet_commander_admin.pyc
-%exclude %{_libexecdir}/fleet_commander_admin.pyo
+%{_libdir}/fleet-commander/fleetcommander/__init__.py
+%{_libdir}/fleet-commander/fleetcommander/__init__.py[co]
+%{_libdir}/fleet-commander/fleetcommander/__main__.py
+%{_libdir}/fleet-commander/fleetcommander/__main__.py[co]
+%{_libdir}/fleet-commander/fleetcommander/admin.py
+%{_libdir}/fleet-commander/fleetcommander/admin.py[co]
+%{_libdir}/fleet-commander/fleetcommander/collectors.py
+%{_libdir}/fleet-commander/fleetcommander/collectors.py[co]
+%{_libdir}/fleet-commander/fleetcommander/utils.py
+%{_libdir}/fleet-commander/fleetcommander/utils.py[co]
+%{_libdir}/fleet-commander/fleetcommander/wsmanagers.py
+%{_libdir}/fleet-commander/fleetcommander/wsmanagers.py[co]
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %{systemd_dir}/fleet-commander-admin.service
