@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # vi:ts=2 sw=2 sts=2
 
 # Copyright (C) 2015 Red Hat, Inc.
@@ -16,283 +17,295 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this program; if not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Alberto Ruiz <aruiz@redhat.com>
+# Authors: Alberto Ruiz <aruiz@redhat.com>
+#          Oliver Gutiérrez <ogutierrez@redhat.com>
 
-# import os
-# import sys
-# import json
-# import unittest
-# import shutil
-# import urllib
-# import tempfile
-# import requests
-# import socket
-# import time
+import os
+import sys
+import json
+import unittest
+import shutil
+import urllib
+import tempfile
+import requests
+import socket
+import time
 
-# PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
-# sys.path.append(PYTHONPATH)
+PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
+sys.path.append(PYTHONPATH)
 
-# import fleet_commander_admin
+from fleetcommander import admin as fleet_commander_admin
+from fleetcommander.wsmanagers import VncWebsocketManager
 
-# class MockResponse:
-#   pass
+class MockResponse:
+    pass
 
-# class MockRequests:
-#   DEFAULT_CONTENT = "SOMECONTENT"
-#   DEFAULT_STATUS  = 200
-#   exceptions = requests.exceptions
-#   def __init__(self):
-#     self.queue = []
-#     self.raise_error = False
-#     self.set_default_values()
 
-#   def get(self, url):
-#     print ("--> "+url)
-#     if self.raise_error:
-#       raise requests.exceptions.ConnectionError('Connection failed!')
-#     self.queue.append(url)
-#     ret = MockRequests()
-#     ret.content = self.content
-#     ret.status_code = self.status_code
-#     return ret
+class MockRequests:
+    DEFAULT_CONTENT = "SOMECONTENT"
+    DEFAULT_STATUS = 200
+    exceptions = requests.exceptions
 
-#   def pop(self):
-#     return self.queue.pop()
+    def __init__(self):
+        self.queue = []
+        self.raise_error = False
+        self.set_default_values()
 
-#   def set_default_values(self):
-#     self.content = self.DEFAULT_CONTENT
-#     self.status_code = self.DEFAULT_STATUS
-#     self.raise_error = False
+    def get(self, url):
+        print("--> "+url)
+        if self.raise_error:
+            raise requests.exceptions.ConnectionError('Connection failed!')
+        self.queue.append(url)
+        ret = MockRequests()
+        ret.content = self.content
+        ret.status_code = self.status_code
+        return ret
 
-#   def raise_error_on_get(self):
-#     self.raise_error = True
+    def pop(self):
+        return self.queue.pop()
 
-# class MockVncWebSocket:
-#   def __init__(self, **kwargs):
-#     self.started = False
-#     self.args = kwargs
-#   def start(self):
-#     self.started = True
-#   def stop(self):
-#     self.started = False
+    def set_default_values(self):
+        self.content = self.DEFAULT_CONTENT
+        self.status_code = self.DEFAULT_STATUS
+        self.raise_error = False
 
-# # assigned mocked objects
-# class TestAdmin(unittest.TestCase):
-#   cookie = "/tmp/fleet-commander-start"
-#   args = {
-#       'host': 'localhost',
-#       'port': 8777,
-#       'data_dir': PYTHONPATH,
-#   }
+    def raise_error_on_get(self):
+        self.raise_error = True
 
-#   def setUp(self):
-#     fleet_commander_admin.requests.set_default_values()
-#     if 'profiles_dir' not in self.args:
-#       self.args['profiles_dir'] = tempfile.mkdtemp()
 
-#     self.vnc_websocket = MockVncWebSocket()
-#     self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
-#     self.base_app.config['TESTING'] = True
-#     self.app = self.base_app.test_client()
+class MockVncWebSocket:
 
-#   @classmethod
-#   def setUpClass(cls):
-#     fleet_commander_admin.requests = MockRequests()
+    def __init__(self, **kwargs):
+        self.started = False
+        self.args = kwargs
 
-#   @classmethod
-#   def tearDownClass(cls):
-#     shutil.rmtree(cls.args['profiles_dir'])
-#     cls.args['profiles_dir'] = tempfile.mkdtemp()
+    def start(self):
+        self.started = True
 
-#   def get_data_from_file(self, path):
-#     return open(path).read()
+    def stop(self):
+        self.started = False
 
-#   def test_00_profiles(self):
-#     ret = self.app.get("/profiles/")
+# assigned mocked objects
 
-#     INDEX_FILE = os.path.join (self.args['profiles_dir'], 'index.json')
 
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertTrue(os.path.exists(INDEX_FILE),
-#         msg='index file was not created')
-#     self.assertEqual(ret.data, self.get_data_from_file(INDEX_FILE),
-#         msg='index content was not correct')
+class TestAdmin(unittest.TestCase):
+    cookie = "/tmp/fleet-commander-start"
+    args = {
+        'host': 'localhost',
+        'port': 8777,
+        'data_dir': PYTHONPATH,
+    }
 
-#   def test_01_attempt_save_unselected_profile(self):
-#     profile_id = '0123456789'
-#     profile_data = json.dumps(dict(name='myprofile', description='mydesc', settings={}, groups='', users=''))
-#     ret = self.app.post('/profiles/save/' + profile_id , data=profile_data, content_type='application/json')
+    def setUp(self):
+        fleet_commander_admin.requests.set_default_values()
+        if 'profiles_dir' not in self.args:
+            self.args['profiles_dir'] = tempfile.mkdtemp()
 
-#     PROFILE = os.path.join (self.args['profiles_dir'], profile_id + '.json')
-#     self.assertFalse(os.path.exists(PROFILE), msg='profile file was not created')
-#     self.assertEqual (ret.status_code, 403)
-#     self.assertEqual (json.dumps(json.loads(ret.data)), json.dumps({"status": "nonexistinguid"}))
+        self.vnc_websocket = MockVncWebSocket()
+        self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
+        self.base_app.config['TESTING'] = True
+        self.app = self.base_app.test_client()
 
-#   def test_02_session_start_stop(self):
-#     # Start session
-#     host = 'somehost'
-#     ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+    @classmethod
+    def setUpClass(cls):
+        fleet_commander_admin.requests = MockRequests()
 
-#     self.assertTrue (self.vnc_websocket.started)
-#     self.assertEqual (self.vnc_websocket.target_host, host)
-#     self.assertEqual (self.vnc_websocket.target_port, 5935)
-#     self.assertEqual (ret.data, MockRequests.DEFAULT_CONTENT)
-#     self.assertEqual (ret.status_code, MockRequests.DEFAULT_STATUS)
-#     self.assertEqual (fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.args['profiles_dir'])
+        cls.args['profiles_dir'] = tempfile.mkdtemp()
 
-#     ret = self.app.get('/session/stop')
-#     self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/stop" % host)
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
+    def get_data_from_file(self, path):
+        return open(path).read()
 
-#   def test_03_stop_start_failed_connection(self):
-#     fleet_commander_admin.requests.raise_error_on_get()
-#     rets = [self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json'),
-#             self.app.get('/session/stop')]
-#     for ret in rets:
-#       self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'could not connect to host'}))
-#       self.assertEqual(ret.status_code, 403)
+    def test_00_profiles(self):
+        ret = self.app.get("/profiles/")
 
-#   def test_04_change_select_and_deploy(self):
-#     self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json')
-#     fleet_commander_admin.requests.pop()
+        INDEX_FILE = os.path.join(self.args['profiles_dir'], 'index.json')
 
-#     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
-#     ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
-#     self.assertEqual(ret.status_code, 200)
+        self.assertEqual(ret.status_code, 200)
+        self.assertTrue(os.path.exists(INDEX_FILE),
+            msg='index file was not created')
+        self.assertEqual(ret.data, self.get_data_from_file(INDEX_FILE),
+            msg='index content was not correct')
 
-#     change2 = {'key':'/foo/baz', 'schema':'foo', 'value':True, 'signature':'b'}
-#     ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
-#     self.assertEqual(ret.status_code, 200)
+    def test_01_attempt_save_unselected_profile(self):
+        profile_id = '0123456789'
+        profile_data = json.dumps(dict(name='myprofile', description='mydesc', settings={}, groups='', users=''))
+        ret = self.app.post('/profiles/save/' + profile_id, data=profile_data, content_type='application/json')
 
-#     #Check all changes
-#     ret = self.app.get("/changes")
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(json.dumps(json.loads(ret.data)),
-#                      json.dumps([[change1['key'], change1['value']],[change2['key'], change2['value']]]))
+        PROFILE = os.path.join(self.args['profiles_dir'], profile_id + '.json')
+        self.assertFalse(os.path.exists(PROFILE), msg='profile file was not created')
+        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "nonexistinguid"}))
 
-#     #Select changes for the profile and get UUID to save it
-#     ret = self.app.post('/changes/select', data=json.dumps({'sel': [1]}), content_type='application/json')
-#     self.assertEqual(ret.status_code, 200)
+    def test_02_session_start_stop(self):
+        # Start session
+        host = 'somehost'
+        ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
-#     payload = json.loads(ret.data)
-#     self.assertTrue(isinstance(payload, dict))
-#     self.assertTrue(payload.has_key('uuid'))
-#     self.assertTrue(payload.has_key('status'))
-#     self.assertEqual(payload['status'], 'ok')
+        self.assertTrue(self.vnc_websocket.started)
+        self.assertEqual(self.vnc_websocket.target_host, host)
+        self.assertEqual(self.vnc_websocket.target_port, 5935)
+        self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
+        self.assertEqual(ret.status_code, MockRequests.DEFAULT_STATUS)
+        self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
 
-#     #Save the profile with the selected changes
-#     uuid = payload['uuid']
-#     profile_obj  = {'profile-name': 'myprofile','profile-desc':'mydesc','groups':'', 'users':''}
-#     profile_data = json.dumps(profile_obj)
-#     ret = self.app.post("/profiles/save/"+uuid, content_type='application/json', data=profile_data)
-#     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status":"ok"}))
-#     self.assertEqual(ret.status_code, 200)
+        ret = self.app.get('/session/stop')
+        self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/stop" % host)
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
 
-#     #Get index
-#     ret = self.app.get("/profiles/")
-#     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid, 'displayName': profile_obj['profile-name']}]))
+    def test_03_stop_start_failed_connection(self):
+        fleet_commander_admin.requests.raise_error_on_get()
+        rets = [self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json'),
+                self.app.get('/session/stop')]
+        for ret in rets:
+            self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'could not connect to host'}))
+            self.assertEqual(ret.status_code, 403)
 
-#     #Get profile
-#     ret = self.app.get("/profiles/"+uuid)
-#     self.assertEqual(ret.status_code, 200)
-#     profile = json.loads(ret.data)
-#     self.assertTrue(isinstance(profile, dict))
-#     self.assertEqual(profile['uid'], uuid)
-#     self.assertEqual(profile['description'], profile_obj['profile-desc'])
-#     self.assertEqual(profile['name'], profile_obj['profile-name'])
-#     self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
+    def test_04_change_select_and_deploy(self):
+        self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json')
+        fleet_commander_admin.requests.pop()
 
-#     ret = self.app.get('/session/stop')
-#     fleet_commander_admin.requests.pop()
+        change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
+        ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
 
-#     #Remove profile
-#     ret = self.app.get("/profiles/delete/"+uuid)
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        change2 = {'key': '/foo/baz', 'schema': 'foo', 'value': True, 'signature': 'b'}
+        ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
 
-#     #Check that index is empty
-#     ret = self.app.get("/profiles/")
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
+        # Check all changes
+        ret = self.app.get("/changes")
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps(json.loads(ret.data)),
+                         json.dumps([[change1['key'], change1['value']], [change2['key'], change2['value']]]))
 
-#   def test_05_discard_profile(self):
-#     host = 'somehost'
-#     ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-#     fleet_commander_admin.requests.pop()
+        # Select changes for the profile and get UUID to save it
+        ret = self.app.post('/changes/select', data=json.dumps({'sel': [1]}), content_type='application/json')
+        self.assertEqual(ret.status_code, 200)
 
-#     # Create profile candidate: We assume all of these methods as tested
-#     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':True, 'signature':'b'}
-#     self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-#     ret = self.app.post('/changes/select', data=json.dumps({'sel': [0]}), content_type='application/json')
-#     payload = json.loads(ret.data)
+        payload = json.loads(ret.data)
+        self.assertTrue(isinstance(payload, dict))
+        self.assertTrue(payload.has_key('uuid'))
+        self.assertTrue(payload.has_key('status'))
+        self.assertEqual(payload['status'], 'ok')
 
-#     # discard a profile candidate
-#     ret = self.app.get('/profiles/discard/' + payload['uuid'])
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        # Save the profile with the selected changes
+        uuid = payload['uuid']
+        profile_obj = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': '', 'users': ''}
+        profile_data = json.dumps(profile_obj)
+        ret = self.app.post("/profiles/save/"+uuid, content_type='application/json', data=profile_data)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "ok"}))
+        self.assertEqual(ret.status_code, 200)
 
-#     # discard a non-existing profile
-#     ret = self.app.get('/profiles/discard/invaliduuid')
-#     self.assertEqual(ret.status_code, 403)
-#     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
+        # Get index
+        ret = self.app.get("/profiles/")
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid, 'displayName': profile_obj['profile-name']}]))
 
-#     self.app.get('/session/stop')
-#     fleet_commander_admin.requests.pop()
+        # Get profile
+        ret = self.app.get("/profiles/"+uuid)
+        self.assertEqual(ret.status_code, 200)
+        profile = json.loads(ret.data)
+        self.assertTrue(isinstance(profile, dict))
+        self.assertEqual(profile['uid'], uuid)
+        self.assertEqual(profile['description'], profile_obj['profile-desc'])
+        self.assertEqual(profile['name'], profile_obj['profile-name'])
+        self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
 
-#   def test_06_change_merge_several_changes(self):
-#     host = 'somehost'
-#     self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-#     fleet_commander_admin.requests.pop()
+        ret = self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
 
-#     change1 = {'key':'/foo/bar', 'schema':'foo', 'value':"first", 'signature':'s'}
-#     ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
-#     self.assertEqual(ret.status_code, 200)
+        # Remove profile
+        ret = self.app.get("/profiles/delete/"+uuid)
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
 
-#     change2 = {'key':'/foo/bar', 'schema':'foo', 'value':'second', 'signature':'s'}
-#     ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
-#     self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
-#     self.assertEqual(ret.status_code, 200)
+        # Check that index is empty
+        ret = self.app.get("/profiles/")
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
 
-#     ret = self.app.get('/changes')
-#     self.assertEqual(ret.status_code, 200)
-#     self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']],]))
+    def test_05_discard_profile(self):
+        host = 'somehost'
+        ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+        fleet_commander_admin.requests.pop()
 
-#     self.app.get('/session/stop')
-#     fleet_commander_admin.requests.pop()
+        # Create profile candidate: We assume all of these methods as tested
+        change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
+        self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+        ret = self.app.post('/changes/select', data=json.dumps({'sel': [0]}), content_type='application/json')
+        payload = json.loads(ret.data)
 
-#   def test_07_empty_collector(self):
-#     ret = self.app.get('/changes')
-#     self.assertEqual(ret.status_code, 403)
+        # discard a profile candidate
+        ret = self.app.get('/profiles/discard/' + payload['uuid'])
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
 
-#   #TODO: Test GOA Collector
+        # discard a non-existing profile
+        ret = self.app.get('/profiles/discard/invaliduuid')
+        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
 
-# class TestVncWebsocketManager(unittest.TestCase):
-#   cookie = "/tmp/fcmdr.test.websockify"
-#   @classmethod
-#   def setUpClass(cls):
-#     if os.path.exists(cls.cookie):
-#       os.remove(cls.cookie)
+        self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
 
-#   @classmethod
-#   def tearDownClass(cls):
-#     if os.path.exists(cls.cookie):
-#       os.remove(cls.cookie)
+    def test_06_change_merge_several_changes(self):
+        host = 'somehost'
+        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+        fleet_commander_admin.requests.pop()
 
-#   def test_00_start_stop(self):
-#     args = dict(listen_host='listen', listen_port=9999,
-#                 target_host='target', target_port=8888)
-#     vnc = fleet_commander_admin.VncWebsocketManager(**args)
-#     vnc.start()
-#     time.sleep(0.05) #Give enough time for the script to write the file
-#     self.assertTrue(os.path.exists(self.cookie))
-#     self.assertTrue(open(self.cookie).read(),
-#                     "%s:%s %s:%s" % (args['listen_host'], args['listen_port'],
-#                                      args['target_host'], args['target_port']))
-#     vnc.stop()
+        change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': "first", 'signature': 's'}
+        ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
 
-# if __name__ == '__main__':
-#   unittest.main()
+        change2 = {'key': '/foo/bar', 'schema': 'foo', 'value': 'second', 'signature': 's'}
+        ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change2), content_type='application/json')
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get('/changes')
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']], ]))
+
+        self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
+
+    def test_07_empty_collector(self):
+        ret = self.app.get('/changes')
+        self.assertEqual(ret.status_code, 403)
+
+    # TODO: Test GOA Collector
+
+
+class TestVncWebsocketManager(unittest.TestCase):
+    cookie = "/tmp/fcmdr.test.websockify"
+
+    @classmethod
+    def setUpClass(cls):
+        if os.path.exists(cls.cookie):
+            os.remove(cls.cookie)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls.cookie):
+            os.remove(cls.cookie)
+
+    def test_00_start_stop(self):
+        args = dict(listen_host='listen', listen_port=9999,
+                    target_host='target', target_port=8888)
+        vnc = VncWebsocketManager(**args)
+        vnc.start()
+        time.sleep(0.05)  # Give enough time for the script to write the file
+        self.assertTrue(os.path.exists(self.cookie))
+        self.assertTrue(open(self.cookie).read(),
+                        "%s:%s %s:%s" % (args['listen_host'], args['listen_port'],
+                                         args['target_host'], args['target_port']))
+        vnc.stop()
+
+if __name__ == '__main__':
+    unittest.main()
