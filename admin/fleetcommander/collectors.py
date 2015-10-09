@@ -34,7 +34,7 @@ class GoaCollector(object):
         self.json = {}
 
     def handle_change(self, request):
-        self.json = dict(request.json)
+        self.json = dict(request.get_json())
 
     def get_settings(self):
         return self.json
@@ -56,13 +56,14 @@ class GSettingsCollector(object):
                 self.selection.append(change)
 
     def handle_change(self, request):
-        self.changes[request.json['key']] = request.json
+        data = request.get_json()
+        self.changes[data['key']] = data
 
     def dump_changes(self):
         data = []
         for key, change in sorted(self.changes.items()):
             data.append([key, change['value']])
-        return json.dumps(data)
+        return data
 
     def get_settings(self):
         return self.selection
