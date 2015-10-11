@@ -26,9 +26,11 @@ import os
 import re
 import json
 import mimetypes
+import logging
 
 from traceback import format_tb
 from wsgiref.simple_server import make_server
+from cgi import parse_qs, escape
 
 HTTP_RESPONSE_CODES = {
     200: 'OK',
@@ -39,6 +41,21 @@ HTTP_RESPONSE_CODES = {
     405: 'METHOD NOT ALLOWED',
     500: 'INTERNAL SERVER ERROR',
 }
+
+
+class RequestDataDict(dict):
+    """
+    Dictionary for request data
+    """
+
+    def __init__(self, data_string=''):
+        super(RequestDataDict, self).__init__()
+        if data_string != '':
+            self.update(parse_qs(data_string))
+
+    def __getitem__(self, key):
+        item = super(RequestDataDict, self).__getitem__(key)
+        return escape(item)
 
 
 class Request(object):
@@ -54,10 +71,22 @@ class Request(object):
         self._environment = environment
         self.path = environment.get('PATH_INFO', '').lstrip('/')
         self.method = environment.get('REQUEST_METHOD')
+
+        # Parse query string
+        self.query_string = environment.get('QUERY_STRING', '')
+        self.GET = RequestDataDict(self.query_string)
+
+        # Handle request content
         self.content = ''
         if environment.get('CONTENT_LENGTH'):
             length = int(environment.get('CONTENT_LENGTH'))
             self.content = environment.get('wsgi.input').read(length)
+
+        # Parse post data
+        if self.method == 'POST':
+            self.POST = RequestDataDict(self.content)
+        else:
+            self.POST = RequestDataDict()
 
     def to_json(self):
         """
@@ -122,6 +151,8 @@ class AppRouter(object):
         if not isinstance(routes, (tuple, list)):
             routes = (routes,)
         for route in routes:
+            logging.debug(
+                'Adding %s route for methods %s' % (route[0], route[1]))
             pattern = re.compile(route[0])
             self.routes.append((pattern, route[1], route[2]))
 
@@ -130,11 +161,14 @@ class AppRouter(object):
         Find a suitable route for given HTTP method and path
         """
         for route in self.routes:
-            if request.method not in route[1]:
-                return None, 405
 
             matches = route[0].match(request.path)
             if matches is not None:
+
+                # Check method
+                if request.method not in route[1]:
+                    return None, 405
+
                 # Let's handle it
                 return route[2], matches.groupdict()
 
@@ -211,6 +245,7 @@ class Phial(object):
                 # On errors return internal server error 500
                 response = HttpResponse('', 500,)
 
+                # Show traceback
                 e_type, e_value, tb = sys.exc_info()
                 traceback = ['Traceback (most recent call last):']
                 traceback += format_tb(tb)
@@ -219,7 +254,8 @@ class Phial(object):
         else:
             response = HttpResponse('', parms)
 
-        status = '%s %s' % (response.status, HTTP_RESPONSE_CODES[response.status])
+        status = '%s %s' % (response.status,
+                            HTTP_RESPONSE_CODES[response.status])
         headers = response.get_headers()
 
         # Prepare response
@@ -231,6 +267,7 @@ class Phial(object):
         Run WSGI application as standalone using wsgiref
         """
         httpd = make_server(host, port, self.application)
+        logging.info('Listening on %s:%s' % (host, port))
         httpd.serve_forever()
 
 
@@ -243,6 +280,7 @@ if __name__ == '__main__':
         def __init__(self):
             routes = [
                 (r'^(?P<category>\w+)/(?P<object_id>\d+)/$', ['GET'], self.category_object),
+                (r'^methodtest/$', ['GET', 'POST', 'PUT', 'DELETE'], self.methodtest),
                 (r'^static/(?P<path>.+)$', ['GET'], self.static),
                 (r'^$', ['GET'], self.index),
             ]
@@ -257,6 +295,51 @@ if __name__ == '__main__':
 
         def static(self, request, path):
             return self.serve_static(request, path)
+
+        def methodtest(self, request):
+            return HttpResponse("""
+                    <html>
+                        <head>
+                            <title>Method test</title>
+                            <style>
+                                form {
+                                    display: inline-block;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Phial test application</h1>
+                            <h2>Method test</h2>
+                            <form method="get">
+                                <input type="hidden" name="formfield1" value="formfield1_data1">
+                                <input type="hidden" name="formfield2" value="formfield1_data2">
+                                <input type="hidden" name="formfield3" value="formfield1_data3">
+                                <input type="submit" value="Test GET">
+                            </form>
+                            <form method="post">
+                                <input type="hidden" name="formfield1" value="formfield1_data1">
+                                <input type="hidden" name="formfield2" value="formfield1_data2">
+                                <input type="hidden" name="formfield3" value="formfield1_data3">
+                                <input type="submit" value="Test POST">
+                            </form>
+                            <h2>Request contents</h2>
+                            <pre>
+                                %s
+                            </pre>
+                            <h2>Request data</h2>
+                            <h3>GET</h3>
+                            <pre>
+                                %s
+                            </pre>
+                            <h3>POST</h3>
+                            <pre>
+                                %s
+                            </pre>
+
+                        </body>
+                    </html>
+                """ % (request.content, request.GET, request.POST),
+                mimetype="text/html")
 
     app = MyApp()
     app.run()
