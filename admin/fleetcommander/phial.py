@@ -27,6 +27,8 @@ import re
 import json
 import mimetypes
 import logging
+import StringIO
+import urllib
 
 from traceback import format_tb
 from wsgiref.simple_server import make_server
@@ -58,7 +60,7 @@ class RequestDataDict(dict):
         return escape(item)
 
 
-class Request(object):
+class HttpRequest(object):
 
     """
     WSGI Request helper class
@@ -101,16 +103,17 @@ class HttpResponse(object):
     HTTP Response class
     """
 
-    def __init__(self, content, status=200, mimetype='text/plain'):
+    def __init__(self, content, status_code=200, mimetype='text/plain'):
         """
         Class initialization
         """
 
+        # TODO: Migrate to use wsgiref.headers.Headers
         self.headers = {
             'Content-type': mimetype,
         }
 
-        self.status = status
+        self.status_code = status_code
         self.content = content
 
     def get_headers(self):
@@ -186,6 +189,8 @@ class Phial(object):
         """
         Class initialization
         """
+        self.config = {} # For mocking flask application configuration dict
+
         # Set application paths
         self.static_dir = os.path.abspath(templates_dir)
         self.templates_dir = os.path.abspath(static_dir)
@@ -228,12 +233,10 @@ class Phial(object):
         # Return HTTP response
         return HttpResponse(filecontents, mimetype=mimetype)
 
-    def application(self, environ, start_response):
+    def handle_request(self, request):
         """
-        WSGI application method
+        Handles a request and returns a response
         """
-        # Create request instance
-        request = Request(environ)
         # Routing
         handler, parms = self.routes.find(request)
 
@@ -243,7 +246,7 @@ class Phial(object):
                 response = handler(request, **parms)
             except:
                 # On errors return internal server error 500
-                response = HttpResponse('', 500,)
+                response = HttpResponse(HTTP_RESPONSE_CODES[500], 500)
 
                 # Show traceback
                 e_type, e_value, tb = sys.exc_info()
@@ -252,15 +255,32 @@ class Phial(object):
                 traceback.append('%s: %s' % (e_type.__name__, e_value))
                 print '\n'.join(traceback)
         else:
-            response = HttpResponse('', parms)
+            response = HttpResponse(HTTP_RESPONSE_CODES[parms], parms)
 
-        status = '%s %s' % (response.status,
-                            HTTP_RESPONSE_CODES[response.status])
+        return response
+
+    def application(self, environ, start_response):
+        """
+        WSGI application method
+        """
+        # Create request instance
+        request = HttpRequest(environ)
+
+        response = self.handle_request(request)
+
+        status = '%s %s' % (response.status_code,
+                            HTTP_RESPONSE_CODES[response.status_code])
         headers = response.get_headers()
 
         # Prepare response
         start_response(status, headers)
         return response.content
+
+    def test_client(self):
+        """
+        Returns a test client for this application
+        """
+        return TestClient(self)
 
     def run(self, host='', port=8000, **kwargs):
         """
@@ -271,75 +291,50 @@ class Phial(object):
         httpd.serve_forever()
 
 
-if __name__ == '__main__':
+class TestClient(object):
 
-    class MyApp(Phial):
+    """
+    Phial test client class
+    """
+
+    def __init__(self, app):
         """
-        Phial test app
+        Class initialization
         """
-        def __init__(self):
-            routes = [
-                (r'^(?P<category>\w+)/(?P<object_id>\d+)/$', ['GET'], self.category_object),
-                (r'^methodtest/$', ['GET', 'POST', 'PUT', 'DELETE'], self.methodtest),
-                (r'^static/(?P<path>.+)$', ['GET'], self.static),
-                (r'^$', ['GET'], self.index),
-            ]
+        self.app = app
 
-            super(MyApp, self).__init__(routes=routes)
+    def _generate_environment(self, path, method='GET', data={}, content='', content_type=None):
+        """
+        Generates a WSGI environment object
+        """
+        environment = {
+            'PATH_INFO': path,
+            'REQUEST_METHOD': method,
+            'QUERY_STRING': '',
+            'wsgi.input': '',
+        }
+        if method == 'GET' and data:
+            environment['QUERY_STRING'] = urllib.urlencode(data)
+        elif method == 'POST' and data:
+            content = urllib.urlencode(data)
 
-        def index(self, request):
-            return HttpResponse('Index page')
+        if content_type is not None:
+            environment['CONTENT_TYPE'] = content_type
 
-        def category_object(self, request, category, object_id):
-            return HttpResponse('Category: %s\nID: %s' % (category, object_id))
+        environment['wsgi.input'] = StringIO.StringIO(content)
+        environment['CONTENT_LENGTH'] = len(content)
 
-        def static(self, request, path):
-            return self.serve_static(request, path)
+        return environment
 
-        def methodtest(self, request):
-            return HttpResponse("""
-                    <html>
-                        <head>
-                            <title>Method test</title>
-                            <style>
-                                form {
-                                    display: inline-block;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>Phial test application</h1>
-                            <h2>Method test</h2>
-                            <form method="get">
-                                <input type="hidden" name="formfield1" value="formfield1_data1">
-                                <input type="hidden" name="formfield2" value="formfield1_data2">
-                                <input type="hidden" name="formfield3" value="formfield1_data3">
-                                <input type="submit" value="Test GET">
-                            </form>
-                            <form method="post">
-                                <input type="hidden" name="formfield1" value="formfield1_data1">
-                                <input type="hidden" name="formfield2" value="formfield1_data2">
-                                <input type="hidden" name="formfield3" value="formfield1_data3">
-                                <input type="submit" value="Test POST">
-                            </form>
-                            <h2>Request contents</h2>
-                            <pre>
-                                %s
-                            </pre>
-                            <h2>Request data</h2>
-                            <h3>GET</h3>
-                            <pre>
-                                %s
-                            </pre>
-                            <h3>POST</h3>
-                            <pre>
-                                %s
-                            </pre>
+    def get(self, path, data={}):
+        """
+        Get request simulation
+        """
+        environment = self._generate_environment(path, data=data)
+        request = HttpRequest(environment)
+        return self.app.handle_request(request)
 
-                        </body>
-                    </html>
-                """ % (request.content, request.GET, request.POST),
-                mimetype="text/html")
-
-    app = MyApp()
-    app.run()
+    def post(self, path, data, content_type=None):
+        environment = self._generate_environment(path, 'POST', {}, data, content_type)
+        request = HttpRequest(environment)
+        return self.app.handle_request(request)
