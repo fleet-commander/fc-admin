@@ -62,7 +62,7 @@ class GSettingsCollector(object):
         data = []
         for key, change in sorted(self.changes.items()):
             data.append([key, change['value']])
-        return json.dumps(data)
+        return data
 
     def get_settings(self):
         return self.selection

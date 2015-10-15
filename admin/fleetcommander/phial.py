@@ -90,7 +90,7 @@ class HttpRequest(object):
         else:
             self.POST = RequestDataDict()
 
-    def to_json(self):
+    def get_json(self):
         """
         Return request data in json format
         """
@@ -115,12 +115,22 @@ class HttpResponse(object):
 
         self.status_code = status_code
         self.content = content
+        self.data = content
 
     def get_headers(self):
         """
         Return headers as a list of tuples
         """
         return [(header, value) for header, value in self.headers.items()]
+
+
+class JSONResponse(HttpResponse):
+    """
+    JSON Response class
+    """
+    def __init__(self, content, status_code=200, mimetype='application/json'):
+        content = json.dumps(content)
+        super(JSONResponse, self).__init__(content, status_code=200, mimetype='application/json')
 
 
 class AppRouter(object):
@@ -189,7 +199,7 @@ class Phial(object):
         """
         Class initialization
         """
-        self.config = {} # For mocking flask application configuration dict
+        self.config = {}  # For mocking flask application configuration dict
 
         # Set application paths
         self.static_dir = os.path.abspath(templates_dir)
@@ -202,7 +212,7 @@ class Phial(object):
         """
         Renders a template using given context to render it
         """
-        absolute_path = os.path.join(self.template_dir, template)
+        absolute_path = os.path.join(self.templates_dir, template)
 
         # Open file and load contents
         fd = open(absolute_path, 'r')
@@ -211,11 +221,14 @@ class Phial(object):
 
         return filecontents
 
-    def serve_static(self, request, path, mimetype=None):
+    def serve_static(self, request, path, mimetype=None, basedir=None):
         """
         Serve static files
         """
-        absolute_path = os.path.join(self.static_dir, path)
+        if basedir is None:
+            absolute_path = os.path.join(self.static_dir, path)
+        else:
+            absolute_path = os.path.join(basedir, path)
 
         if not os.path.exists(absolute_path):
             return HttpResponse('Not found', 404)
@@ -232,6 +245,13 @@ class Phial(object):
 
         # Return HTTP response
         return HttpResponse(filecontents, mimetype=mimetype)
+
+    def serve_html_template(self, template, context={}):
+        """
+        Returns a response using an HTML template
+        """
+        content = self.render_template(template, context)
+        return HttpResponse(content, mimetype='text/html')
 
     def handle_request(self, request):
         """

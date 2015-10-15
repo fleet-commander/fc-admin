@@ -20,7 +20,6 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
-
 # Python imports
 import os
 import json
@@ -28,56 +27,64 @@ import requests
 import uuid
 import logging
 
-# External library imports
-from flask import Flask, request, send_from_directory, render_template
-
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector
+from phial import Phial, JSONResponse
 
 
-class AdminService(Flask):
+class AdminService(Phial):
 
     def __init__(self, name, config, vnc_websocket):
-        super(AdminService, self).__init__(name)
+
+        routes = [
+            (r'^static/(?P<path>.+)$',            ['GET'],    self.serve_static),
+            # Workaround for bootstrap font path
+            # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
+            ('^profiles/$',                       ['GET'],    self.profiles),
+            ('^profiles/save/<id>',               ['POST'],   self.profiles_save),
+            ('^profiles/add$',                    ['GET'],    self.profiles_add),
+            ('^profiles/delete/<uid>',            ['GET'],    self.profiles_delete),
+            ('^profiles/discard/<id>',            ['GET'],    self.profiles_discard),
+            ('^profiles/(?P<profile_id>[-\w]+)$', ['GET'],    self.profiles_id),
+            ('^changes',                          ['GET'],    self.changes),
+            ('^changes/submit/(?P<name>[-\w]+)$', ['POST'],   self.changes_submit_name),
+            ('^changes/select',                   ['POST'],   self.changes_select),
+            ('^deploy/(?P<name>[-\w]+)$',         ['GET'],    self.deploy),
+            ('^session/start$',                   ['POST'],   self.session_start),
+            ('^session/stop$',                    ['GET'],    self.session_stop),
+            ('^$',                                ['GET'],    self.index),
+        ]
+        super(AdminService, self).__init__(routes=routes)
+
         self.vnc_websocket = vnc_websocket
         self.collectors_by_name = {}
         self.current_session = {}
-
-        routes = [
-            ("/profiles/",                  ["GET"],  self.profiles),
-            ("/profiles/<path:profile_id>", ["GET"],  self.profiles_id),
-            ("/profiles/save/<id>",         ["POST"], self.profiles_save),
-            ("/profiles/add",               ["GET"],  self.profiles_add),
-            ("/profiles/delete/<uid>",      ["GET"],  self.profiles_delete),
-            ("/profiles/discard/<id>",      ["GET"],  self.profiles_discard),
-            ("/changes",                    ["GET"],  self.changes),
-            ("/changes/submit/<name>",      ["POST"], self.changes_submit_name),
-            ("/changes/select",             ["POST"], self.changes_select),
-            ("/js/<path:js>",               ["GET"],  self.js_files),
-            ("/css/<path:css>",             ["GET"],  self.css_files),
-            ("/img/<path:img>",             ["GET"],  self.img_files),
-            ("/fonts/<path:font>",          ["GET"],  self.font_files),
-            ("/",                           ["GET"],  self.index),
-            ("/deploy/<uid>",               ["GET"],  self.deploy),
-            ("/session/start",              ["POST"], self.session_start),
-            ("/session/stop",               ["GET"],  self.session_stop),
-            # workaround for bootstrap font path
-            ("/components/bootstrap/dist/font", ["GET"], self.font_files),
-        ]
-        for route in routes:
-            self.route(route[0], methods=route[1])(route[2])
-
         self.custom_args = config
-        self.template_folder = os.path.join(config['data_dir'], 'templates')
 
-    def profiles(self):
+        self.templates_dir = os.path.join(config['data_dir'], 'templates')
+
+    def check_for_profile_index(self):
+        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
+        if os.path.isfile(INDEX_FILE):
+            return
+
+        try:
+            open(INDEX_FILE, 'w+').write(json.dumps([]))
+        except OSError:
+            logging.error('There was an error attempting to write on %s' % INDEX_FILE)
+
+    # Views
+    def index(self, request):
+        return self.serve_html_template('index.html')
+
+    def profiles(self, request):
         self.check_for_profile_index()
-        return send_from_directory(self.custom_args['profiles_dir'], "index.json")
+        return self.serve_static(request, 'index.json', basedir=self.custom_args['profiles_dir'])
 
-    def profiles_id(self, profile_id):
-        return send_from_directory(self.custom_args['profiles_dir'], profile_id + '.json')
+    def profiles_id(self, request, profile_id):
+        return self.serve_static(request, profile_id + '.json', basedir=self.custom_args['profiles_dir'])
 
-    def profiles_save(self, id):
+    def profiles_save(self, request, id):
         def write_and_close(path, load):
             f = open(path, 'w+')
             f.write(load)
@@ -132,10 +139,10 @@ class AdminService(Flask):
         write_and_close(PROFILE_FILE, json.dumps(profile))
         write_and_close(INDEX_FILE, json.dumps(index))
 
-        return '{"status": "ok"}'
+        return JSONResponse({ 'status': 'ok' })
 
-    def profiles_add(self):
-        return render_template('profile.add.html')
+    def profiles_add(self, request):
+        return self.serve_html_template('profile.add.html')
 
     def profiles_delete(self, uid):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
@@ -152,35 +159,36 @@ class AdminService(Flask):
                 index.remove(profile)
 
         open(INDEX_FILE, 'w+').write(json.dumps(index))
-        return '{"status": "ok"}'
+        return JSONResponse({ 'status': 'ok' })
 
-    def profiles_discard(self, id):
+    def profiles_discard(self, request, id):
         if self.current_session.get('uid', None) == id:
             del(self.current_session["uid"])
             del(self.current_session["changeset"])
-            return '{"status": "ok"}', 200
-        return '{"status": "profile %s not found"}' % id, 403
+            return JSONResponse({ 'status': 'ok' })
 
-    def changes(self):
+        return JSONResponse({ 'status': 'profile %s not found' % id}, 403)
+
+    def changes(self, request):
         # FIXME: Add GOA changes summary
         collector = self.collectors_by_name.get('org.gnome.gsettings', None)
         if collector:
-            return collector.dump_changes(), 200
-        return json.dumps([]), 403
+            return JSONResponse(collector.dump_changes())
+        return JSONResponse([], 403)
 
     # TODO: change the key from 'sel' to 'changes'
     # TODO: Handle GOA changesets
-    def changes_select(self):
+    def changes_select(self, request):
         data = request.get_json()
 
         if not isinstance(data, dict):
-            return '{"status": "bad JSON data"}', 403
+            return JSONResponse({"status": "bad JSON data"}, 403)
 
         if "sel" not in data:
-            return '{"status": "bad_form_data"}', 403
+            return JSONResponse({"status": "bad_form_data"}, 403)
 
         if 'org.gnome.gsettings' not in self.collectors_by_name:
-            return '{"status": "session was not started"}', 403
+            return JSONResponse({"status": "session was not started"}, 403)
 
         selected_indices = [int(x) for x in data['sel']]
         collector = self.collectors_by_name['org.gnome.gsettings']
@@ -191,62 +199,37 @@ class AdminService(Flask):
         self.current_session['changeset'] = dict(self.collectors_by_name)
         self.collectors_by_name.clear()
 
-        return json.dumps({"status": "ok", "uuid": uid})
-
-    def check_for_profile_index(self):
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
-        if os.path.isfile(INDEX_FILE):
-            return
-
-        try:
-            open(INDEX_FILE, 'w+').write(json.dumps([]))
-        except OSError:
-            logging.error('There was an error attempting to write on %s' % INDEX_FILE)
+        return JSONResponse({"status": "ok", "uuid": uid})
 
     # Add a configuration change to a session
-    def changes_submit_name(self, name):
+    def changes_submit_name(self, request, name):
         if name in self.collectors_by_name:
             self.collectors_by_name[name].handle_change(request)
-            return '{"status": "ok"}'
+            return JSONResponse({"status": "ok"})
         else:
-            return '{"status": "namespace %s not supported or session not started"}' % name, 403
-
-    def js_files(self, js):
-        return send_from_directory(os.path.join(self.custom_args['data_dir'], "js"), js)
-
-    def css_files(self, css):
-        return send_from_directory(os.path.join(self.custom_args['data_dir'], "css"), css)
-
-    def img_files(self, img):
-        return send_from_directory(os.path.join(self.custom_args['data_dir'], "img"), img)
-
-    def font_files(self, font):
-        return send_from_directory(os.path.join(self.custom_args['data_dir'], "fonts"), font)
-
-    def index(self):
-        return render_template('index.html')
+            return JSONResponse({"status": "namespace %s not supported or session not started"} % name, 403)
 
     def deploy(self, uid):
-        return render_template('deploy.html')
+        return self.serve_html_template('deploy.html')
 
-    def session_start(self):
+    def session_start(self, request):
         data = request.get_json()
         req = None
 
         if self.current_session.get('host', None):
-            return '{"status": "session already started"}', 403
+            return JSONResponse({"status": "session already started"}, 403)
 
         if not data:
-            return '{"status": "Request data was not a valid JSON object"}', 403
+            return JSONResponse({"status": "Request data was not a valid JSON object"}, 403)
 
         if 'host' not in data:
-            return '{"status": "no host was specified in POST request"}', 403
+            return JSONResponse({"status": "no host was specified in POST request"}, 403)
 
         self.current_session = {'host': data['host']}
         try:
             req = requests.get("http://%s:8182/session/start" % data['host'])
         except requests.exceptions.ConnectionError:
-            return '{"status": "could not connect to host"}', 403
+            return JSONResponse({"status": "could not connect to host"}, 403)
 
         self.vnc_websocket.stop()
         self.vnc_websocket.target_host = data['host']
@@ -257,18 +240,18 @@ class AdminService(Flask):
         self.collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
         self.collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
 
-        return req.content, req.status_code
+        return JSONResponse(req.content, req.status_code)
 
-    def session_stop(self):
+    def session_stop(self, request):
         host = self.current_session.get('host', None)
 
         if not host:
-            return '{"status": "there was no session started"}', 403
+            return JSONResponse({"status": "there was no session started"}, 403)
 
-        msg, status = ('{"status": "could not connect to host"}', 403)
+        msg, status = ({"status": "could not connect to host"}, 403)
         try:
             req = requests.get("http://%s:8182/session/stop" % host)
-            msg, status = (req.content, req.status_code)
+            msg, status = (json.loads(req.content), req.status_code)
         except requests.exceptions.ConnectionError:
             pass
 
@@ -278,4 +261,4 @@ class AdminService(Flask):
         if host:
             del(self.current_session['host'])
 
-        return msg, status
+        return JSONResponse(msg, status)
