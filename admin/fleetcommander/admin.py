@@ -250,7 +250,7 @@ class AdminService(Phial):
         if not host:
             return JSONResponse({"status": "there was no session started"}, 403)
 
-        msg, status = ({"status": "could not connect to host"}, 403)
+        msg, status = (json.dumps({"status": "could not connect to host"}), 403)
         try:
             req = requests.get("http://%s:8182/session/stop" % host)
             msg, status = (req.content, req.status_code)
