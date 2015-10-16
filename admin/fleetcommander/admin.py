@@ -29,7 +29,7 @@ import logging
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector
-from phial import Phial, JSONResponse
+from phial import Phial, HttpResponse, JSONResponse
 
 
 class AdminService(Phial):
@@ -37,22 +37,22 @@ class AdminService(Phial):
     def __init__(self, name, config, vnc_websocket):
 
         routes = [
-            (r'^static/(?P<path>.+)$',            ['GET'],    self.serve_static),
+            (r'^static/(?P<path>.+)$',              ['GET'],    self.serve_static),
             # Workaround for bootstrap font path
             # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
-            ('^profiles/$',                       ['GET'],    self.profiles),
-            ('^profiles/save/<id>',               ['POST'],   self.profiles_save),
-            ('^profiles/add$',                    ['GET'],    self.profiles_add),
-            ('^profiles/delete/<uid>',            ['GET'],    self.profiles_delete),
-            ('^profiles/discard/<id>',            ['GET'],    self.profiles_discard),
-            ('^profiles/(?P<profile_id>[-\w]+)$', ['GET'],    self.profiles_id),
-            ('^changes',                          ['GET'],    self.changes),
-            ('^changes/submit/(?P<name>[-\w]+)$', ['POST'],   self.changes_submit_name),
-            ('^changes/select',                   ['POST'],   self.changes_select),
-            ('^deploy/(?P<name>[-\w]+)$',         ['GET'],    self.deploy),
-            ('^session/start$',                   ['POST'],   self.session_start),
-            ('^session/stop$',                    ['GET'],    self.session_stop),
-            ('^$',                                ['GET'],    self.index),
+            ('^profiles/$',                         ['GET'],    self.profiles),
+            ('^profiles/save/(?P<id>[-\w\.]+)$',    ['POST'],   self.profiles_save),
+            ('^profiles/add$',                      ['GET'],    self.profiles_add),
+            ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],    self.profiles_delete),
+            ('^profiles/discard/(?P<id>[-\w\.]+)$', ['GET'],    self.profiles_discard),
+            ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],    self.profiles_id),
+            ('^changes/submit/(?P<name>[-\w\.]+)$',       ['POST'],   self.changes_submit_name),
+            ('^changes/select',                     ['POST'],   self.changes_select),
+            ('^changes',                            ['GET'],    self.changes),
+            ('^deploy/(?P<name>[-\w\.]+)$',         ['GET'],    self.deploy),
+            ('^session/start$',                     ['POST'],   self.session_start),
+            ('^session/stop$',                      ['GET'],    self.session_stop),
+            ('^$',                                  ['GET'],    self.index),
         ]
         super(AdminService, self).__init__(routes=routes)
 
@@ -85,6 +85,7 @@ class AdminService(Phial):
         return self.serve_static(request, profile_id + '.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_save(self, request, id):
+
         def write_and_close(path, load):
             f = open(path, 'w+')
             f.write(load)
@@ -94,9 +95,10 @@ class AdminService(Phial):
         uid = self.current_session.get('uid', None)
 
         if not uid or uid != id:
-            return '{"status": "nonexistinguid"}', 403
+            return JSONResponse({"status": "nonexistinguid"}, 403)
         if not changeset:
-            return '{"status"}: "/changes/select/ change selection has not been submitted yet in the current session"}', 403
+            return JSONResponse({"status": "/changes/select/ change selection \
+                 has not been submitted yet in the current session"}, 403)
 
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
@@ -104,9 +106,9 @@ class AdminService(Phial):
         data = request.get_json()
 
         if not isinstance(data, dict):
-            return '{"status": "JSON request is not an object"}', 403
+            return JSONResponse({"status": "JSON request is not an object"}, 403)
         if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
-            return '{"status": "missing key(s) in profile settings request JSON object"}', 403
+            return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
 
         profile = {}
         settings = {}
@@ -139,12 +141,12 @@ class AdminService(Phial):
         write_and_close(PROFILE_FILE, json.dumps(profile))
         write_and_close(INDEX_FILE, json.dumps(index))
 
-        return JSONResponse({ 'status': 'ok' })
+        return JSONResponse({'status': 'ok'})
 
     def profiles_add(self, request):
         return self.serve_html_template('profile.add.html')
 
-    def profiles_delete(self, uid):
+    def profiles_delete(self, request, uid):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
 
@@ -159,15 +161,15 @@ class AdminService(Phial):
                 index.remove(profile)
 
         open(INDEX_FILE, 'w+').write(json.dumps(index))
-        return JSONResponse({ 'status': 'ok' })
+        return JSONResponse({'status': 'ok'})
 
     def profiles_discard(self, request, id):
         if self.current_session.get('uid', None) == id:
             del(self.current_session["uid"])
             del(self.current_session["changeset"])
-            return JSONResponse({ 'status': 'ok' })
+            return JSONResponse({'status': 'ok'})
 
-        return JSONResponse({ 'status': 'profile %s not found' % id}, 403)
+        return JSONResponse({'status': 'profile %s not found' % id}, 403)
 
     def changes(self, request):
         # FIXME: Add GOA changes summary
@@ -240,7 +242,7 @@ class AdminService(Phial):
         self.collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
         self.collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
 
-        return JSONResponse(req.content, req.status_code)
+        return HttpResponse(req.content, req.status_code)
 
     def session_stop(self, request):
         host = self.current_session.get('host', None)
@@ -251,7 +253,7 @@ class AdminService(Phial):
         msg, status = ({"status": "could not connect to host"}, 403)
         try:
             req = requests.get("http://%s:8182/session/stop" % host)
-            msg, status = (json.loads(req.content), req.status_code)
+            msg, status = (req.content, req.status_code)
         except requests.exceptions.ConnectionError:
             pass
 
@@ -261,4 +263,4 @@ class AdminService(Phial):
         if host:
             del(self.current_session['host'])
 
-        return JSONResponse(msg, status)
+        return HttpResponse(msg, status)

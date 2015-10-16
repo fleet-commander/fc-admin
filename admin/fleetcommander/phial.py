@@ -103,14 +103,14 @@ class HttpResponse(object):
     HTTP Response class
     """
 
-    def __init__(self, content, status_code=200, mimetype='text/plain'):
+    def __init__(self, content, status_code=200, content_type='text/plain'):
         """
         Class initialization
         """
 
         # TODO: Migrate to use wsgiref.headers.Headers
         self.headers = {
-            'Content-type': mimetype,
+            'Content-type': content_type,
         }
 
         self.status_code = status_code
@@ -128,9 +128,9 @@ class JSONResponse(HttpResponse):
     """
     JSON Response class
     """
-    def __init__(self, content, status_code=200, mimetype='application/json'):
+    def __init__(self, content, status_code=200, content_type='application/json'):
         content = json.dumps(content)
-        super(JSONResponse, self).__init__(content, status_code=200, mimetype='application/json')
+        super(JSONResponse, self).__init__(content, status_code=status_code, content_type=content_type)
 
 
 class AppRouter(object):
@@ -221,7 +221,7 @@ class Phial(object):
 
         return filecontents
 
-    def serve_static(self, request, path, mimetype=None, basedir=None):
+    def serve_static(self, request, path, content_type=None, basedir=None):
         """
         Serve static files
         """
@@ -233,10 +233,10 @@ class Phial(object):
         if not os.path.exists(absolute_path):
             return HttpResponse('Not found', 404)
 
-        if mimetype is None:
-            mimetype, encoding = mimetypes.guess_type(absolute_path)
-            if mimetype is None:
-                mimetype = 'text/plain'
+        if content_type is None:
+            content_type, encoding = mimetypes.guess_type(absolute_path)
+            if content_type is None:
+                content_type = 'text/plain'
 
         # Open file and load contents
         fd = open(absolute_path, 'r')
@@ -244,14 +244,14 @@ class Phial(object):
         fd.close()
 
         # Return HTTP response
-        return HttpResponse(filecontents, mimetype=mimetype)
+        return HttpResponse(filecontents, content_type=content_type)
 
     def serve_html_template(self, template, context={}):
         """
         Returns a response using an HTML template
         """
         content = self.render_template(template, context)
-        return HttpResponse(content, mimetype='text/html')
+        return HttpResponse(content, content_type='text/html')
 
     def handle_request(self, request):
         """

@@ -56,7 +56,8 @@ class GSettingsCollector(object):
                 self.selection.append(change)
 
     def handle_change(self, request):
-        self.changes[request.json['key']] = request.json
+        data = request.get_json()
+        self.changes[data['key']] = data
 
     def dump_changes(self):
         data = []
