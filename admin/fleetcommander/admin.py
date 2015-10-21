@@ -29,10 +29,10 @@ import logging
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector
-from phial import Phial, HttpResponse, JSONResponse
+from flaskless import Flaskless, HttpResponse, JSONResponse
 
 
-class AdminService(Phial):
+class AdminService(Flaskless):
 
     def __init__(self, name, config, vnc_websocket):
 
@@ -49,7 +49,7 @@ class AdminService(Phial):
             ('^changes/submit/(?P<name>[-\w\.]+)$',       ['POST'],   self.changes_submit_name),
             ('^changes/select',                     ['POST'],   self.changes_select),
             ('^changes',                            ['GET'],    self.changes),
-            ('^deploy/(?P<name>[-\w\.]+)$',         ['GET'],    self.deploy),
+            ('^deploy/(?P<uid>[-\w\.]+)$',         ['GET'],    self.deploy),
             ('^session/start$',                     ['POST'],   self.session_start),
             ('^session/stop$',                      ['GET'],    self.session_stop),
             ('^$',                                  ['GET'],    self.index),
@@ -61,6 +61,7 @@ class AdminService(Phial):
         self.current_session = {}
         self.custom_args = config
 
+        self.static_dir = config['data_dir']
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
     def check_for_profile_index(self):
@@ -211,7 +212,7 @@ class AdminService(Phial):
         else:
             return JSONResponse({"status": "namespace %s not supported or session not started"} % name, 403)
 
-    def deploy(self, uid):
+    def deploy(self, request, uid):
         return self.serve_html_template('deploy.html')
 
     def session_start(self, request):
@@ -264,3 +265,23 @@ class AdminService(Phial):
             del(self.current_session['host'])
 
         return HttpResponse(msg, status)
+
+
+if __name__ == '__main__':
+
+    # Python import
+    from argparse import ArgumentParser
+
+    # Fleet commander imports
+    from wsmanagers import VncWebsocketManager
+    from utils import parse_config
+
+    parser = ArgumentParser(description='Admin interface server')
+    parser.add_argument(
+        '--configuration', action='store', metavar='CONFIGFILE', default=None,
+        help='Provide a configuration file path for the web service')
+
+    args = parser.parse_args()
+    config = parse_config(args.configuration)
+    app = AdminService(__name__, config, VncWebsocketManager())
+    app.run(host=config['host'], port=config['port'], debug=True)

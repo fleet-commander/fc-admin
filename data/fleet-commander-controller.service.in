@@ -3,7 +3,8 @@ Description=Fleet Commander virtual session controller
 After=network.target remote-fs.target nss-lookup.target
 
 [Service]
-ExecStart=@PRIVLIBEXECDIR@/fleet_commander_controller.py --configuration  @XDGCONFIGDIR@/fleet-commander-controller.conf
+Environment=PYTHONPATH=@FCPYTHONDIR@
+ExecStart=@PYTHON@ -m fleetcommander.controller --configuration @XDGCONFIGDIR@/fleet-commander-controller.conf
 
 StandardOutput=syslog
 StandardError=inherit

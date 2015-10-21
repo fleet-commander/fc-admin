@@ -34,7 +34,7 @@ class GoaCollector(object):
         self.json = {}
 
     def handle_change(self, request):
-        self.json = dict(request.json)
+        self.json = dict(request.get_json())
 
     def get_settings(self):
         return self.json

@@ -74,6 +74,14 @@ class HttpRequest(object):
         self.path = environment.get('PATH_INFO', '').lstrip('/')
         self.method = environment.get('REQUEST_METHOD')
 
+        # Host and port
+        if environment.get('HTTP_HOST'):
+            self.host = environment['HTTP_HOST']
+        else:
+            self.host = environment['SERVER_NAME']
+
+        self.host += ':%s' % environment['SERVER_PORT']
+
         # Parse query string
         self.query_string = environment.get('QUERY_STRING', '')
         self.GET = RequestDataDict(self.query_string)
@@ -189,7 +197,7 @@ class AppRouter(object):
         return None, 404
 
 
-class Phial(object):
+class Flaskless(object):
 
     """
     Minimal flask replacement for Fleet Commander
@@ -273,7 +281,7 @@ class Phial(object):
                 traceback = ['Traceback (most recent call last):']
                 traceback += format_tb(tb)
                 traceback.append('%s: %s' % (e_type.__name__, e_value))
-                print '\n'.join(traceback)
+                logging.error('\n'.join(traceback))
         else:
             response = HttpResponse(HTTP_RESPONSE_CODES[parms], parms)
 
@@ -306,15 +314,17 @@ class Phial(object):
         """
         Run WSGI application as standalone using wsgiref
         """
-        httpd = make_server(host, port, self.application)
+        self.port = port
+        self.host = host
+        self.httpd = make_server(host, port, self.application)
         logging.info('Listening on %s:%s' % (host, port))
-        httpd.serve_forever()
+        self.httpd.serve_forever()
 
 
 class TestClient(object):
 
     """
-    Phial test client class
+    Flaskless test client class
     """
 
     def __init__(self, app):
@@ -331,6 +341,8 @@ class TestClient(object):
             'PATH_INFO': path,
             'REQUEST_METHOD': method,
             'QUERY_STRING': '',
+            'SERVER_NAME': 'localhost',
+            'SERVER_PORT': 8000,
             'wsgi.input': '',
         }
         if method == 'GET' and data:
@@ -351,10 +363,16 @@ class TestClient(object):
         Get request simulation
         """
         environment = self._generate_environment(path, data=data)
+        print 'GET -> %s' % path
         request = HttpRequest(environment)
-        return self.app.handle_request(request)
+        response = self.app.handle_request(request)
+        print response.status_code, response.content
+        return response
 
     def post(self, path, data, content_type=None):
         environment = self._generate_environment(path, 'POST', {}, data, content_type)
+        print 'POST -> %s' % path
         request = HttpRequest(environment)
-        return self.app.handle_request(request)
+        response = self.app.handle_request(request)
+        print response.status_code, response.content
+        return response

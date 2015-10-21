@@ -6,4 +6,5 @@ EXTRA_DIST = \
 	_01_mock_dbus.py         \
 	_01_logger_test_suite.js \
 	data/test.gschema.xml    \
+	tools/websockify         \
 	tools/systemctl
