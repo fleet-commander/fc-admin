@@ -25,7 +25,6 @@ Admin interface for Fleet Commander
 Summary: Fleet Commander web interface
 Requires: python
 Requires: python-requests
-Requires: python-flask
 Requires: python-websockify
 Requires: systemd
 Requires(preun): systemd
@@ -105,12 +104,14 @@ exit 0
 %{_datadir}/fleet-commander-admin/templates/*.html
 %{_libdir}/fleet-commander/fleetcommander/__init__.py
 %{_libdir}/fleet-commander/fleetcommander/__init__.py[co]
-%{_libdir}/fleet-commander/fleetcommander/__main__.py
-%{_libdir}/fleet-commander/fleetcommander/__main__.py[co]
 %{_libdir}/fleet-commander/fleetcommander/admin.py
 %{_libdir}/fleet-commander/fleetcommander/admin.py[co]
 %{_libdir}/fleet-commander/fleetcommander/collectors.py
 %{_libdir}/fleet-commander/fleetcommander/collectors.py[co]
+%{_libdir}/fleet-commander/fleetcommander/controller.py
+%{_libdir}/fleet-commander/fleetcommander/controller.py[co]
+%{_libdir}/fleet-commander/fleetcommander/flaskless.py
+%{_libdir}/fleet-commander/fleetcommander/flaskless.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
 %{_libdir}/fleet-commander/fleetcommander/wsmanagers.py
@@ -146,10 +147,6 @@ exit 0
 %defattr(755, root, root)
 %{_libexecdir}/fleet-commander-xvnc.sh
 %{_libexecdir}/fleet-commander-xinitrc.sh
-%{_libexecdir}/fleet_commander_controller.py
-
-%exclude %{_libexecdir}/fleet_commander_controller.pyc
-%exclude %{_libexecdir}/fleet_commander_controller.pyo
 
 %attr(644, root, root) %{systemd_dir}/fleet-commander-vnc-session.service
 %attr(644, root, root) %{systemd_dir}/fleet-commander-controller.service

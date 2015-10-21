@@ -22,73 +22,75 @@ import os
 import sys
 import unittest
 
-sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'tools'))
-import fleet_commander_controller
+sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
+
+from fleetcommander.controller import VncController
+
 
 class TestController(unittest.TestCase):
-  cookie = "/tmp/fleet-commander-start"
-  args = {
-      'host': 'localhost',
-      'port': 8777,
-      'logger_config': '/tmp/fcl.conf'
-  }
+    cookie = "/tmp/fleet-commander-start"
+    args = {
+        'host': 'localhost',
+        'port': 8777,
+        'logger_config': '/tmp/fcl.conf'
+    }
 
-  @classmethod
-  def setUpClass(cls):
-    fleet_commander_controller.app.conf = cls.args
-    fleet_commander_controller.app.config['TESTING'] = True
-    cls.app = fleet_commander_controller.app.test_client()
-    #Clear all files to avoid false positives
-    cls.tearDownClass()
+    @classmethod
+    def setUpClass(cls):
+        app = VncController(args=cls.args)
+        app.config['TESTING'] = True
+        cls.app = app.test_client()
+        # Clear all files to avoid false positives
+        cls.tearDownClass()
 
-  @classmethod
-  def tearDownClass(cls):
-    f = cls.args['logger_config']
-    if os.path.exists(f):
-      os.remove(f)
-    if os.path.exists(cls.cookie):
-      os.remove(cls.cookie)
+    @classmethod
+    def tearDownClass(cls):
+        f = cls.args['logger_config']
+        if os.path.exists(f):
+            os.remove(f)
+        if os.path.exists(cls.cookie):
+            os.remove(cls.cookie)
 
-  def test_00_start(self):
-    ret = self.app.get("/session/start")
-    # Check if systemctl start was executed
-    self.assertTrue(os.path.exists(self.cookie))
-    # Check HTTP return code and content
-    self.assertEqual (ret.status_code, 200)
-    self.assertEqual (ret.data, '{"status": "ok"}')
-    # Check that the logger_config file has the right content
-    self.assertTrue(os.path.exists(self.args['logger_config']))
-    f = self.args['logger_config']
-    self.assertTrue(os.path.exists(f))
-    data = open(f).read().strip().split('\n')
-    self.assertTrue ('[logger]' in data)
-    self.assertTrue ('admin_server_host = localhost' in data)
+    def test_00_start(self):
+        ret = self.app.get("/session/start")
+        # Check if systemctl start was executed
+        self.assertTrue(os.path.exists(self.cookie))
+        # Check HTTP return code and content
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(ret.data, '{"status": "ok"}')
+        # Check that the logger_config file has the right content
+        self.assertTrue(os.path.exists(self.args['logger_config']))
+        f = self.args['logger_config']
+        self.assertTrue(os.path.exists(f))
+        data = open(f).read().strip().split('\n')
+        self.assertTrue('[logger]' in data)
+        self.assertTrue('admin_server_host = localhost' in data)
 
-  def test_01_restart(self):
-    ret = self.app.get("/session/start")
-    self.assertTrue(os.path.exists(self.cookie))
-    self.assertEqual (ret.status_code, 403)
-    self.assertEqual (ret.data, '{"status": "already_started"}')
+    def test_01_restart(self):
+        ret = self.app.get("/session/start")
+        self.assertTrue(os.path.exists(self.cookie))
+        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(ret.data, '{"status": "already_started"}')
 
-  def test_02_stop(self):
-    ret = self.app.get("/session/stop")
-    self.assertEqual(ret.status_code, 200)
-    self.assertEqual(ret.data, '{"status": "stopped"}')
-    self.assertFalse(os.path.exists(self.cookie))
+    def test_02_stop(self):
+        ret = self.app.get("/session/stop")
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(ret.data, '{"status": "stopped"}')
+        self.assertFalse(os.path.exists(self.cookie))
 
-  def test_03_restop(self):
-    ret = self.app.get("/session/stop")
-    self.assertFalse(os.path.exists(self.cookie))
-    self.assertEqual(ret.status_code, 403)
-    self.assertEqual(ret.data, '{"status": "already_stopped"}')
+    def test_03_restop(self):
+        ret = self.app.get("/session/stop")
+        self.assertFalse(os.path.exists(self.cookie))
+        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(ret.data, '{"status": "already_stopped"}')
 
-  def test_04_start_with_systemctl_failure(self):
-    os.environ['FC_FAIL'] = "true"
-    ret = self.app.get("/session/start")
-    self.assertFalse(os.path.exists(self.cookie))
-    self.assertEqual(ret.status_code, 403)
-    self.assertEqual(ret.data, '{"status": "there was a problem starting the VNC session, check the journal"}')
-    os.environ.pop('FC_FAIL')
+    def test_04_start_with_systemctl_failure(self):
+        os.environ['FC_FAIL'] = "true"
+        ret = self.app.get("/session/start")
+        self.assertFalse(os.path.exists(self.cookie))
+        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(ret.data, '{"status": "there was a problem starting the VNC session, check the journal"}')
+        os.environ.pop('FC_FAIL')
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()
