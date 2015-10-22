@@ -25,17 +25,14 @@ import sys
 import json
 import unittest
 import shutil
-import urllib
 import tempfile
 import requests
-import socket
-import time
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
 
 from fleetcommander import admin as fleet_commander_admin
-from fleetcommander.wsmanagers import VncWebsocketManager
+
 
 class MockResponse:
     pass
@@ -88,12 +85,16 @@ class MockVncWebSocket:
 # assigned mocked objects
 
 
-class TestAdmin(unittest.TestCase):
+class TestAdminWSGIRef(unittest.TestCase):
+
+    test_wsgiref = True
+
     cookie = "/tmp/fleet-commander-start"
     args = {
         'host': 'localhost',
         'port': 8777,
         'data_dir': PYTHONPATH,
+        'database_path': tempfile.mktemp(),
     }
 
     def setUp(self):
@@ -104,7 +105,7 @@ class TestAdmin(unittest.TestCase):
         self.vnc_websocket = MockVncWebSocket()
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
         self.base_app.config['TESTING'] = True
-        self.app = self.base_app.test_client()
+        self.app = self.base_app.test_client(stateless=not self.test_wsgiref)
 
     @classmethod
     def setUpClass(cls):
@@ -125,9 +126,9 @@ class TestAdmin(unittest.TestCase):
 
         self.assertEqual(ret.status_code, 200)
         self.assertTrue(os.path.exists(INDEX_FILE),
-            msg='index file was not created')
+                        msg='index file was not created')
         self.assertEqual(ret.data, self.get_data_from_file(INDEX_FILE),
-            msg='index content was not correct')
+                         msg='index content was not correct')
 
     def test_01_attempt_save_unselected_profile(self):
         profile_id = '0123456789'
@@ -144,9 +145,10 @@ class TestAdmin(unittest.TestCase):
         host = 'somehost'
         ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
-        self.assertTrue(self.vnc_websocket.started)
-        self.assertEqual(self.vnc_websocket.target_host, host)
-        self.assertEqual(self.vnc_websocket.target_port, 5935)
+        self.assertTrue(self.base_app.current_session.get('websockify_pid', False))
+        self.assertEqual(self.base_app.current_session['websocket_target_host'], host)
+        self.assertEqual(self.base_app.current_session['websocket_target_port'], 5935)
+
         self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
         self.assertEqual(ret.status_code, MockRequests.DEFAULT_STATUS)
         self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
@@ -190,8 +192,8 @@ class TestAdmin(unittest.TestCase):
 
         payload = json.loads(ret.data)
         self.assertTrue(isinstance(payload, dict))
-        self.assertTrue(payload.has_key('uuid'))
-        self.assertTrue(payload.has_key('status'))
+        self.assertTrue('uuid' in payload)
+        self.assertTrue('status' in payload)
         self.assertEqual(payload['status'], 'ok')
 
         # Save the profile with the selected changes
@@ -282,30 +284,9 @@ class TestAdmin(unittest.TestCase):
     # TODO: Test GOA Collector
 
 
-class TestVncWebsocketManager(unittest.TestCase):
-    cookie = "/tmp/fcmdr.test.websockify"
+class TestAdminApache(TestAdminWSGIRef):
+    test_wsgiref = False
 
-    @classmethod
-    def setUpClass(cls):
-        if os.path.exists(cls.cookie):
-            os.remove(cls.cookie)
-
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(cls.cookie):
-            os.remove(cls.cookie)
-
-    def test_00_start_stop(self):
-        args = dict(listen_host='listen', listen_port=9999,
-                    target_host='target', target_port=8888)
-        vnc = VncWebsocketManager(**args)
-        vnc.start()
-        time.sleep(0.05)  # Give enough time for the script to write the file
-        self.assertTrue(os.path.exists(self.cookie))
-        self.assertTrue(open(self.cookie).read(),
-                        "%s:%s %s:%s" % (args['listen_host'], args['listen_port'],
-                                         args['target_host'], args['target_port']))
-        vnc.stop()
 
 if __name__ == '__main__':
     unittest.main()
