@@ -203,10 +203,14 @@ class Flaskless(object):
     Minimal flask replacement for Fleet Commander
     """
 
-    def __init__(self, routes=None, templates_dir='.', static_dir='.'):
+    def __init__(self, *args, **kwargs):
         """
         Class initialization
         """
+        routes = kwargs.setdefault('routes', None)
+        templates_dir = kwargs.setdefault('templates_dir', '.')
+        static_dir = kwargs.setdefault('static_dir', '.')
+
         self.config = {}  # For mocking flask application configuration dict
 
         # Set application paths
@@ -215,6 +219,10 @@ class Flaskless(object):
 
         # Initialize application routes
         self.routes = AppRouter(routes)
+
+        # Save args and kwargs for later initialization of testing clients
+        self.args = args
+        self.kwargs = kwargs
 
     def render_template(self, template, context={}):
         """
@@ -304,11 +312,11 @@ class Flaskless(object):
         start_response(status, headers)
         return response.content
 
-    def test_client(self):
+    def test_client(self, stateless=False):
         """
         Returns a test client for this application
         """
-        return TestClient(self)
+        return TestClient(self, stateless)
 
     def run(self, host='', port=8000, **kwargs):
         """
@@ -327,11 +335,12 @@ class TestClient(object):
     Flaskless test client class
     """
 
-    def __init__(self, app):
+    def __init__(self, app, stateless):
         """
         Class initialization
         """
         self.app = app
+        self.stateless = stateless
 
     def _generate_environment(self, path, method='GET', data={}, content='', content_type=None):
         """
@@ -358,21 +367,35 @@ class TestClient(object):
 
         return environment
 
+    def get_app_instance(self):
+        """
+        Generates a clean application instance
+        """
+        return self.app.__class__(*self.app.args, **self.app.kwargs)
+
     def get(self, path, data={}):
         """
         Get request simulation
         """
         environment = self._generate_environment(path, data=data)
-        print 'GET -> %s' % path
+        logging.info('GET -> %s' % path)
         request = HttpRequest(environment)
-        response = self.app.handle_request(request)
-        print response.status_code, response.content
+        if self.stateless:
+            app = self.get_app_instance()
+        else:
+            app = self.app
+        response = app.handle_request(request)
+        logging.info(response.status_code, response.content)
         return response
 
     def post(self, path, data, content_type=None):
         environment = self._generate_environment(path, 'POST', {}, data, content_type)
-        print 'POST -> %s' % path
+        logging.info('POST -> %s' % path)
         request = HttpRequest(environment)
-        response = self.app.handle_request(request)
-        print response.status_code, response.content
+        if self.stateless:
+            app = self.get_app_instance()
+        else:
+            app = self.app
+        response = app.handle_request(request)
+        logging.info(response.status_code, response.content)
         return response

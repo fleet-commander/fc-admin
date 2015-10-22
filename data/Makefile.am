@@ -34,8 +34,12 @@ fleet_commander_admin_servicedir = $(systemdsystemunitdir)
 fleet_commander_admin_service_in_files = fleet-commander-admin.service.in
 fleet_commander_admin_service_DATA = fleet-commander-admin.service
 
+fleet_commander_apache_configdir = ${sysconfdir}/httpd/conf.d/
+fleet_commander_apache_config_in_files = fleet-commander-apache.conf.in
+fleet_commander_apache_config_DATA     = fleet-commander-apache.conf
+
 EXTRA_DIST = \
-    	$(gnome_software_service_desktop_DATA)         \
+    $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
 	$(fleet_commander_vnc_resolution_DATA)         \
@@ -43,7 +47,9 @@ EXTRA_DIST = \
 	$(fleet_commander_service_in_files)            \
 	$(fleet_commander_controller_service_in_files) \
 	$(fleet_commander_logger_config_DATA)          \
-	$(fleet_commander_controller_config_DATA)
+	$(fleet_commander_controller_config_DATA)	   \
+	$(fleet_commander_apache_service_in_files) 	   \
+	$(fleet_commander_apache_config_DATA)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \

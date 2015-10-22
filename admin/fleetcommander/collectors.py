@@ -40,30 +40,65 @@ class GoaCollector(object):
         return self.json
 
 
-class GSettingsCollector(object):
+class BaseCollector(object):
+    """
+    Base collector class
+    """
 
-    def __init__(self):
-        self.changes = {}
-        self.selection = []
+    COLLECTOR_NAME = 'basecollector'
+
+    def __init__(self, db):
+        """
+        Class initialization
+        """
+        self.db = db
+        self.settings = self.db.sessionsettings
+
+    def handle_change(self, request):
+        """
+        Handle a change and store it
+        """
+        data = request.get_json()
+        print data
+        self.settings.update_setting(self.COLLECTOR_NAME, data['key'], request.content)
+
+    def dump_changes(self):
+        """
+        Dump all changes in a sorted list
+        """
+        data = []
+        changes = self.settings.get_for_collector(self.COLLECTOR_NAME)
+        for key, change in sorted(changes.items()):
+            data.append([key, json.loads(change)['value']])
+        return data
 
     def remember_selected(self, selected_indices):
-        self.selection = []
-        sorted_keys = sorted(self.changes.keys())
+        """
+        Mark given changes as selected
+        """
+        changes = self.settings.get_for_collector(self.COLLECTOR_NAME)
+        selection = []
+        sorted_keys = sorted(changes.keys())
         for index in selected_indices:
             if index < len(sorted_keys):
                 key = sorted_keys[index]
-                change = self.changes[key]
-                self.selection.append(change)
+                selection.append(key)
 
-    def handle_change(self, request):
-        data = request.get_json()
-        self.changes[data['key']] = data
-
-    def dump_changes(self):
-        data = []
-        for key, change in sorted(self.changes.items()):
-            data.append([key, change['value']])
-        return data
+        if len(selection) > 0:
+            self.settings.select_settings(self.COLLECTOR_NAME, selection)
 
     def get_settings(self):
-        return self.selection
+        """
+        Return a list of selected changes
+        """
+        changes = self.settings.get_for_collector(self.COLLECTOR_NAME, only_selected=True)
+        keys = sorted(changes.keys())
+        return [json.loads(changes[key]) for key in keys]
+
+
+class GSettingsCollector(BaseCollector):
+    """
+    Gnome Online Accounts collector class
+    """
+    COLLECTOR_NAME = 'org.gnome.gsettings'
+

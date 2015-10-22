@@ -5,6 +5,7 @@ Makefile.in
 .*.swp
 */.*.swp
 admin/profiles/*.json
+admin/database.db
 data/*.service
 INSTALL
 aclocal.m4
@@ -16,6 +17,7 @@ configure
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-controller.conf
+data/fleet-commander-apache.conf
 install-sh
 missing
 fleet-commander*.tar.[gx]z
@@ -24,3 +26,7 @@ tests/*.log
 *.py[co]
 test-driver
 tests/data/gschemas.compiled
+build.sh
+check.sh
+fc-admin.sublime-project
+fc-admin.sublime-workspace
