@@ -53,7 +53,7 @@ class VncController(Flaskless):
     """
     Controller class for VNC sessions
     """
-    def __init__(self, configuration=None, args=None):
+    def __init__(self, configuration=None, confargs=None, *args, **kwargs):
         """
         Class initialization
         """
@@ -64,25 +64,25 @@ class VncController(Flaskless):
             (r'^session/stop$',          ['GET'],    self.stop_session),
 
         ]
-        super(VncController, self).__init__(routes=routes)
+        super(VncController, self).__init__(configuration, confargs, routes=routes)
 
-        self.conf = self.parse_config(configuration, args)
+        self.conf = self.parse_config(configuration, confargs)
         self.vnc = VncSessionManager()
         self.has_session = False
         self.STDPORT = 5935
 
-    def parse_config(self, config_file=None, args=None):
+    def parse_config(self, config_file=None, confargs=None):
         SECTION_NAME = 'controller'
 
-        if args is None:
-            args = {
+        if confargs is None:
+            confargs = {
                 'host': 'localhost',
                 'port': 8182,
                 'logger_config': '/etc/xdg/fleet-commander-logger.conf'
             }
 
         if config_file is None:
-            return args
+            return confargs
 
         if not os.path.exists(config_file):
             logging.warning('Could not find configuration file %s' % config_file)
@@ -100,7 +100,7 @@ class VncController(Flaskless):
 
         if not config.has_section(SECTION_NAME):
             logging.error('Configuration file %s has no "%s" section' % (config_file, SECTION_NAME))
-            return args
+            return confargs
 
         def config_to_dict(config):
             res = {}
@@ -112,17 +112,17 @@ class VncController(Flaskless):
 
         config = config_to_dict(config)
 
-        args['host'] = config[SECTION_NAME].get('host', args['host'])
-        args['port'] = config[SECTION_NAME].get('port', args['port'])
-        args['logger_config'] = config[SECTION_NAME].get('logger_config', args['logger_config'])
+        confargs['host'] = config[SECTION_NAME].get('host', confargs['host'])
+        confargs['port'] = config[SECTION_NAME].get('port', confargs['port'])
+        confargs['logger_config'] = config[SECTION_NAME].get('logger_config', confargs['logger_config'])
 
         try:
-            args['port'] = int(args['port'])
+            confargs['port'] = int(confargs['port'])
         except ValueError:
             logging.error("Error reading configuration at %s: 'port' option must be an integer value")
             sys.exit(1)
 
-        return args
+        return confargs
 
     def update_logger_config(self, host):
         SECTION_NAME = 'logger'

@@ -37,7 +37,7 @@ class TestController(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app = VncController(args=cls.args)
+        app = VncController(confargs=cls.args)
         app.config['TESTING'] = True
         cls.app = app.test_client()
         # Clear all files to avoid false positives

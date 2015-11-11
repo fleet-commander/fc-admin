@@ -1,0 +1,30 @@
+Listen 8008
+
+<VirtualHost *:8008>
+
+    Alias /clientdata/  @PROFILESDIR@/
+    Alias /static/      @FCDATADIR@/
+
+    <Directory @FCDATADIR@>
+        Order allow,deny
+        Allow from all
+        Require all granted
+    </Directory>
+
+    <Files admin.wsgi>
+        Order deny,allow
+        Allow from all
+        Require all granted
+    </Files>
+
+
+    SetEnv FC_ADMIN_CONFIG_FILE @XDGCONFIGDIR@/fleet-commander-admin.conf
+
+    WSGIDaemonProcess fc-admin processes=2 threads=15 display-name=%{GROUP} user=fleet-commander-admin python-path=@FCPYTHONDIR@
+    WSGIScriptAlias / @FCPYTHONDIR@/admin.wsgi
+
+    <Location />
+        WSGIProcessGroup fc-admin
+    </Location>
+
+</VirtualHost>

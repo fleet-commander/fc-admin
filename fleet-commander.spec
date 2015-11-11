@@ -29,7 +29,6 @@ Requires: python-websockify
 Requires: systemd
 Requires(preun): systemd
 
-
 %description -n fleet-commander-admin
 Fleet Commander web interface to create and deploy profiles
 
@@ -52,8 +51,18 @@ Summary: Logs configuration changes in a session
 Requires: gjs
 Requires: libsoup
 Requires: json-glib
+
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions
+
+%package -n fleet-commander-apache
+Summary: Fleet Commander apache integration
+Requires: httpd-filesystem
+Requires: mod_wsgi
+Requires(preun): systemd
+
+%description -n fleet-commander-apache
+Fleet commander integration with Apache web server
 
 %prep
 %setup -q
@@ -69,11 +78,11 @@ install -m 644 data/gnome-software-service.desktop %{buildroot}/%{_localstatedir
 install -m 644 data/monitors.xml %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/monitors.xml
 install -m 644 data/gnome-initial-setup-done %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
 
-
 ln -s %{_sysconfdir}/profile %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bash_profile
 ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
+install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
 
 %clean
 rm -rf %{buildroot}
@@ -110,13 +119,14 @@ exit 0
 %{_libdir}/fleet-commander/fleetcommander/collectors.py[co]
 %{_libdir}/fleet-commander/fleetcommander/controller.py
 %{_libdir}/fleet-commander/fleetcommander/controller.py[co]
+%{_libdir}/fleet-commander/fleetcommander/database.py
+%{_libdir}/fleet-commander/fleetcommander/database.py[co]
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
-%{_libdir}/fleet-commander/fleetcommander/wsmanagers.py
-%{_libdir}/fleet-commander/fleetcommander/wsmanagers.py[co]
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
+%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %{systemd_dir}/fleet-commander-admin.service
 
@@ -151,5 +161,13 @@ exit 0
 %attr(644, root, root) %{systemd_dir}/fleet-commander-vnc-session.service
 %attr(644, root, root) %{systemd_dir}/fleet-commander-controller.service
 %attr(644, root, root) %{_sysconfdir}/xdg/fleet-commander-controller.conf
+
+%files -n fleet-commander-apache
+%defattr(644, root, root)
+%{_sysconfdir}/httpd/conf.d/fleet-commander-apache.conf
+%{_libdir}/fleet-commander/admin.wsgi
+
+%post -n fleet-commander-apache
+semanage port -a -t http_port_t -p tcp 8182; semanage port -a -t http_port_t -p tcp 8989; semanage fcontext -a -t httpd_var_lib_t '/var/lib/fleet-commander-admin/database.db'; restorecon -v '/var/lib/fleet-commander-admin/database.db'
 
 %changelog

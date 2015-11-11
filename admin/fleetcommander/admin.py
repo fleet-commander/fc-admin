@@ -22,21 +22,24 @@
 
 # Python imports
 import os
+import signal
 import json
 import requests
 import uuid
 import logging
+import subprocess
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse
+from database import DBManager
 
 
 class AdminService(Flaskless):
 
-    def __init__(self, name, config, vnc_websocket):
+    def __init__(self, name, config, *args, **kwargs):
 
-        routes = [
+        kwargs['routes'] = [
             (r'^static/(?P<path>.+)$',              ['GET'],    self.serve_static),
             # Workaround for bootstrap font path
             # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
@@ -54,14 +57,26 @@ class AdminService(Flaskless):
             ('^session/stop$',                      ['GET'],    self.session_stop),
             ('^$',                                  ['GET'],    self.index),
         ]
-        super(AdminService, self).__init__(routes=routes)
+        super(AdminService, self).__init__(name, config, *args, **kwargs)
 
-        self.vnc_websocket = vnc_websocket
-        self.collectors_by_name = {}
-        self.current_session = {}
+        self.DNULL = open('/dev/null', 'w')
+        self.websockify_command_template = 'websockify %s:%d %s:%d'
+
+        # Initialize database
+        self.db = DBManager(config['database_path'])
+
+        # Initialize collectors
+        self.collectors_by_name = {
+            'org.gnome.gsettings': GSettingsCollector(self.db),
+            'org.gnome.online-accounts': GoaCollector()
+        }
+
+        self.current_session = self.db.config
         self.custom_args = config
 
         self.static_dir = config['data_dir']
+
+        # TODO: Change path for templates outside of static dir
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
     def check_for_profile_index(self):
@@ -92,11 +107,13 @@ class AdminService(Flaskless):
             f.write(load)
             f.close()
 
-        changeset = self.current_session.get('changeset', None)
+        changeset = self.collectors_by_name
         uid = self.current_session.get('uid', None)
 
         if not uid or uid != id:
             return JSONResponse({"status": "nonexistinguid"}, 403)
+
+        # TODO: Better changes detection
         if not changeset:
             return JSONResponse({"status": "/changes/select/ change selection \
                  has not been submitted yet in the current session"}, 403)
@@ -116,7 +133,7 @@ class AdminService(Flaskless):
         groups = []
         users = []
 
-        for name, collector in self.current_session['changeset'].items():
+        for name, collector in self.collectors_by_name.items():
             settings[name] = collector.get_settings()
 
         groups = [g.strip() for g in data['groups'].split(",")]
@@ -136,8 +153,6 @@ class AdminService(Flaskless):
         index.append({"url": id, "displayName": data["profile-name"]})
 
         del(self.current_session["uid"])
-        del(self.current_session["changeset"])
-        self.collectors_by_name.clear()
 
         write_and_close(PROFILE_FILE, json.dumps(profile))
         write_and_close(INDEX_FILE, json.dumps(index))
@@ -167,7 +182,7 @@ class AdminService(Flaskless):
     def profiles_discard(self, request, id):
         if self.current_session.get('uid', None) == id:
             del(self.current_session["uid"])
-            del(self.current_session["changeset"])
+            # del(self.current_session["changeset"])
             return JSONResponse({'status': 'ok'})
 
         return JSONResponse({'status': 'profile %s not found' % id}, 403)
@@ -175,8 +190,9 @@ class AdminService(Flaskless):
     def changes(self, request):
         # FIXME: Add GOA changes summary
         collector = self.collectors_by_name.get('org.gnome.gsettings', None)
-        if collector:
-            return JSONResponse(collector.dump_changes())
+        changes = collector.dump_changes()
+        if changes:
+            return JSONResponse(changes)
         return JSONResponse([], 403)
 
     # TODO: change the key from 'sel' to 'changes'
@@ -190,7 +206,8 @@ class AdminService(Flaskless):
         if "sel" not in data:
             return JSONResponse({"status": "bad_form_data"}, 403)
 
-        if 'org.gnome.gsettings' not in self.collectors_by_name:
+        # if 'org.gnome.gsettings' not in self.collectors_by_name:
+        if self.current_session.get('host', None) is None:
             return JSONResponse({"status": "session was not started"}, 403)
 
         selected_indices = [int(x) for x in data['sel']]
@@ -199,8 +216,6 @@ class AdminService(Flaskless):
 
         uid = str(uuid.uuid1().int)
         self.current_session['uid'] = uid
-        self.current_session['changeset'] = dict(self.collectors_by_name)
-        self.collectors_by_name.clear()
 
         return JSONResponse({"status": "ok", "uuid": uid})
 
@@ -219,7 +234,7 @@ class AdminService(Flaskless):
         data = request.get_json()
         req = None
 
-        if self.current_session.get('host', None):
+        if self.current_session.get('host', None) is not None:
             return JSONResponse({"status": "session already started"}, 403)
 
         if not data:
@@ -228,27 +243,23 @@ class AdminService(Flaskless):
         if 'host' not in data:
             return JSONResponse({"status": "no host was specified in POST request"}, 403)
 
-        self.current_session = {'host': data['host']}
+        self.current_session['host'] = data['host']
         try:
             req = requests.get("http://%s:8182/session/start" % data['host'])
         except requests.exceptions.ConnectionError:
             return JSONResponse({"status": "could not connect to host"}, 403)
 
-        self.vnc_websocket.stop()
-        self.vnc_websocket.target_host = data['host']
-        self.vnc_websocket.target_port = 5935
-        self.vnc_websocket.start()
-
-        self.collectors_by_name.clear()
-        self.collectors_by_name['org.gnome.gsettings'] = GSettingsCollector()
-        self.collectors_by_name['org.gnome.online-accounts'] = GoaCollector()
+        self.websocket_stop()
+        self.current_session['websocket_target_host'] = data['host']
+        self.current_session['websocket_target_port'] = 5935
+        self.websocket_start()
 
         return HttpResponse(req.content, req.status_code)
 
     def session_stop(self, request):
         host = self.current_session.get('host', None)
 
-        if not host:
+        if host is None:
             return JSONResponse({"status": "there was no session started"}, 403)
 
         msg, status = (json.dumps({"status": "could not connect to host"}), 403)
@@ -258,14 +269,45 @@ class AdminService(Flaskless):
         except requests.exceptions.ConnectionError:
             pass
 
-        self.vnc_websocket.stop()
-        self.collectors_by_name.clear()
+        self.websocket_stop()
 
-        if host:
-            del(self.current_session['host'])
+        # if host:
+        del(self.current_session['host'])
+
+        # Clear session settings data
+        self.db.sessionsettings.clear_settings()
 
         return HttpResponse(msg, status)
 
+    def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
+        if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
+            return
+
+        self.current_session.setdefault('websocket_listen_host', listen_host)
+        self.current_session.setdefault('websocket_listen_port', listen_port)
+        self.current_session.setdefault('websocket_target_host', target_host)
+        self.current_session.setdefault('websocket_target_port', target_port)
+
+        command = self.websockify_command_template % (
+            self.current_session['websocket_listen_host'],
+            self.current_session['websocket_listen_port'],
+            self.current_session['websocket_target_host'],
+            self.current_session['websocket_target_port'])
+
+        process = subprocess.Popen(
+            command, shell=True,
+            stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
+
+        self.current_session['websockify_pid'] = process.pid
+
+    def websocket_stop(self):
+        if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
+            # Kill websockify command
+            try:
+                os.kill(self.current_session['websockify_pid'], signal.SIGKILL)
+            except:
+                pass
+            del(self.current_session['websockify_pid'])
 
 if __name__ == '__main__':
 
@@ -273,7 +315,6 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     # Fleet commander imports
-    from wsmanagers import VncWebsocketManager
     from utils import parse_config
 
     parser = ArgumentParser(description='Admin interface server')
@@ -283,5 +324,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     config = parse_config(args.configuration)
-    app = AdminService(__name__, config, VncWebsocketManager())
+    app = AdminService(__name__, config)
     app.run(host=config['host'], port=config['port'], debug=True)

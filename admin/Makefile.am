@@ -4,9 +4,13 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/admin.py      \
 	fleetcommander/collectors.py \
 	fleetcommander/controller.py \
+	fleetcommander/database.py \
 	fleetcommander/flaskless.py \
-	fleetcommander/utils.py \
-	fleetcommander/wsmanagers.py
+	fleetcommander/utils.py
+
+fc_admin_wsgidir = @FCPYTHONDIR@
+fc_admin_wsgi_SCRIPTS = \
+	admin.wsgi
 
 fc_jsdir   = @FCDATADIR@/js
 fc_js_DATA = \
@@ -51,6 +55,7 @@ fc_css_DATA = $(wildcard css/*.css)
 
 EXTRA_DIST = \
 	     $(fc_admin_py_SCRIPTS) \
+	     $(fc_admin_wsgi_SCRIPTS) \
 	     $(fc_js_DATA) \
 	     $(fc_novnc_DATA) \
 	     $(fc_img_DATA) \

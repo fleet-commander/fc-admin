@@ -41,6 +41,7 @@ def parse_config(config_file):
         'port': 8181,
         'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
         'data_dir': os.getcwd(),
+        'database_path': os.path.join(os.getcwd(), 'database.db'),
     }
 
     if not config_file:
@@ -74,6 +75,7 @@ def parse_config(config_file):
     args['port'] = config[SECTION_NAME].get('port', args['port'])
     args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
     args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
+    args['database_path'] = config[SECTION_NAME].get('database_path', args['database_path'])
 
     try:
         args['port'] = int(args['port'])

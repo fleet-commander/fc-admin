@@ -35,7 +35,7 @@ PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
 
 from fleetcommander import admin as fleet_commander_admin
-from fleetcommander.wsmanagers import VncWebsocketManager
+
 
 class MockResponse:
     pass
@@ -94,6 +94,7 @@ class TestAdmin(unittest.TestCase):
         'host': 'localhost',
         'port': 8777,
         'data_dir': PYTHONPATH,
+        'database_path': tempfile.mktemp(),
     }
 
     def setUp(self):
@@ -104,7 +105,7 @@ class TestAdmin(unittest.TestCase):
         self.vnc_websocket = MockVncWebSocket()
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
         self.base_app.config['TESTING'] = True
-        self.app = self.base_app.test_client()
+        self.app = self.base_app.test_client(stateless=False)
 
     @classmethod
     def setUpClass(cls):
@@ -144,9 +145,10 @@ class TestAdmin(unittest.TestCase):
         host = 'somehost'
         ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
-        self.assertTrue(self.vnc_websocket.started)
-        self.assertEqual(self.vnc_websocket.target_host, host)
-        self.assertEqual(self.vnc_websocket.target_port, 5935)
+        self.assertTrue('websockify_pid' in self.base_app.current_session and self.base_app.current_session['websockify_pid'])
+        self.assertEqual(self.base_app.current_session['websocket_target_host'], host)
+        self.assertEqual(self.base_app.current_session['websocket_target_port'], 5935)
+
         self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
         self.assertEqual(ret.status_code, MockRequests.DEFAULT_STATUS)
         self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
@@ -280,32 +282,6 @@ class TestAdmin(unittest.TestCase):
         self.assertEqual(ret.status_code, 403)
 
     # TODO: Test GOA Collector
-
-
-class TestVncWebsocketManager(unittest.TestCase):
-    cookie = "/tmp/fcmdr.test.websockify"
-
-    @classmethod
-    def setUpClass(cls):
-        if os.path.exists(cls.cookie):
-            os.remove(cls.cookie)
-
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(cls.cookie):
-            os.remove(cls.cookie)
-
-    def test_00_start_stop(self):
-        args = dict(listen_host='listen', listen_port=9999,
-                    target_host='target', target_port=8888)
-        vnc = VncWebsocketManager(**args)
-        vnc.start()
-        time.sleep(0.05)  # Give enough time for the script to write the file
-        self.assertTrue(os.path.exists(self.cookie))
-        self.assertTrue(open(self.cookie).read(),
-                        "%s:%s %s:%s" % (args['listen_host'], args['listen_port'],
-                                         args['target_host'], args['target_port']))
-        vnc.stop()
 
 if __name__ == '__main__':
     unittest.main()
