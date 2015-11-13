@@ -145,7 +145,8 @@ class TestAdminWSGIRef(unittest.TestCase):
         host = 'somehost'
         ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
-        self.assertTrue(self.base_app.current_session.get('websockify_pid', False))
+        self.assertTrue('websockify_pid' in self.base_app.current_session)
+        self.assertTrue(self.base_app.current_session['websockify_pid'] is not None)
         self.assertEqual(self.base_app.current_session['websocket_target_host'], host)
         self.assertEqual(self.base_app.current_session['websocket_target_port'], 5935)
 
