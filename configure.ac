@@ -59,6 +59,7 @@ privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
 profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
+fchomedir='${localstatedir}'/lib/fleet-commander
 fcdatadir='${datarootdir}'/fleet-commander-admin
 fcpythondir='${libdir}'/fleet-commander
 
@@ -67,6 +68,7 @@ AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
 AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
+AC_SUBST(fchomedir)
 AC_SUBST(fcdatadir)
 AC_SUBST(fcpythondir)
 
@@ -81,6 +83,7 @@ AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
+AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
 

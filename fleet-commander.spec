@@ -144,6 +144,7 @@ exit 0
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/monitors.xml
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
+%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/libreoffice/dconfwrite
 %exclude %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 %exclude %{_sysconfdir}/xdg/autostart/gnome-software-service.desktop
 %exclude %{_sysconfdir}/xdg/monitors.xml
