@@ -30,7 +30,7 @@ import logging
 import subprocess
 
 # Fleet commander imports
-from collectors import GoaCollector, GSettingsCollector
+from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse
 from database import DBManager
 
@@ -68,7 +68,8 @@ class AdminService(Flaskless):
         # Initialize collectors
         self.collectors_by_name = {
             'org.gnome.gsettings': GSettingsCollector(self.db),
-            'org.gnome.online-accounts': GoaCollector()
+            'org.gnome.online-accounts': GoaCollector(),
+            'org.libreoffice.registry': LibreOfficeCollector(self.db),
         }
 
         self.current_session = self.db.config
@@ -112,11 +113,6 @@ class AdminService(Flaskless):
 
         if not uid or uid != id:
             return JSONResponse({"status": "nonexistinguid"}, 403)
-
-        # TODO: Better changes detection
-        if not changeset:
-            return JSONResponse({"status": "/changes/select/ change selection \
-                 has not been submitted yet in the current session"}, 403)
 
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
@@ -188,31 +184,38 @@ class AdminService(Flaskless):
         return JSONResponse({'status': 'profile %s not found' % id}, 403)
 
     def changes(self, request):
-        # FIXME: Add GOA changes summary
-        collector = self.collectors_by_name.get('org.gnome.gsettings', None)
-        changes = collector.dump_changes()
-        if changes:
-            return JSONResponse(changes)
-        return JSONResponse([], 403)
+        response = {}
 
-    # TODO: change the key from 'sel' to 'changes'
-    # TODO: Handle GOA changesets
+
+        for db in ['org.gnome.gsettings', 'org.libreoffice.registry']:
+            collector = self.collectors_by_name.get(db, None)
+            if not collector:
+                continue
+
+            changes = collector.dump_changes()
+            if not changes:
+                continue
+
+            response[db] = changes
+
+        return JSONResponse(response)
+
     def changes_select(self, request):
         data = request.get_json()
 
         if not isinstance(data, dict):
             return JSONResponse({"status": "bad JSON data"}, 403)
 
-        if "sel" not in data:
-            return JSONResponse({"status": "bad_form_data"}, 403)
-
-        # if 'org.gnome.gsettings' not in self.collectors_by_name:
         if self.current_session.get('host', None) is None:
             return JSONResponse({"status": "session was not started"}, 403)
 
-        selected_indices = [int(x) for x in data['sel']]
-        collector = self.collectors_by_name['org.gnome.gsettings']
-        collector.remember_selected(selected_indices)
+        for key in data:
+            selection = data[key]
+
+            if not isinstance(selection, list):
+                return JSONResponse({"status": "bad JSON format for " + key}, 403)
+
+            self.collectors_by_name[key].remember_selected(selection)
 
         uid = str(uuid.uuid1().int)
         self.current_session['uid'] = uid
@@ -242,6 +245,8 @@ class AdminService(Flaskless):
 
         if 'host' not in data:
             return JSONResponse({"status": "no host was specified in POST request"}, 403)
+
+        self.db.sessionsettings.clear_settings()
 
         self.current_session['host'] = data['host']
         try:
@@ -273,9 +278,6 @@ class AdminService(Flaskless):
 
         # if host:
         del(self.current_session['host'])
-
-        # Clear session settings data
-        self.db.sessionsettings.clear_settings()
 
         return HttpResponse(msg, status)
 

@@ -59,7 +59,6 @@ class BaseCollector(object):
         Handle a change and store it
         """
         data = request.get_json()
-        print data
         self.settings.update_setting(self.COLLECTOR_NAME, data['key'], request.content)
 
     def dump_changes(self):
@@ -72,16 +71,14 @@ class BaseCollector(object):
             data.append([key, json.loads(change)['value']])
         return data
 
-    def remember_selected(self, selected_indices):
+    def remember_selected(self, selected_keys):
         """
         Mark given changes as selected
         """
         changes = self.settings.get_for_collector(self.COLLECTOR_NAME)
         selection = []
-        sorted_keys = sorted(changes.keys())
-        for index in selected_indices:
-            if index < len(sorted_keys):
-                key = sorted_keys[index]
+        for key in selected_keys:
+            if key in changes:
                 selection.append(key)
 
         if len(selection) > 0:
@@ -98,7 +95,12 @@ class BaseCollector(object):
 
 class GSettingsCollector(BaseCollector):
     """
-    Gnome Online Accounts collector class
+    GSettings collector class
     """
     COLLECTOR_NAME = 'org.gnome.gsettings'
 
+class LibreOfficeCollector(BaseCollector):
+    """
+    LibreOffice collector class
+    """
+    COLLECTOR_NAME = 'org.libreoffice.registry'

@@ -182,13 +182,13 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
 
         # Check all changes
-        ret = self.app.get("/changes")
+        ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)),
-                         json.dumps([[change1['key'], change1['value']], [change2['key'], change2['value']]]))
+            json.dumps({'org.gnome.gsettings': [[change1['key'], change1['value']], [change2['key'], change2['value']]]}))
 
         # Select changes for the profile and get UUID to save it
-        ret = self.app.post('/changes/select', data=json.dumps({'sel': [1]}), content_type='application/json')
+        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change2['key'],]}), content_type='application/json')
         self.assertEqual(ret.status_code, 200)
 
         payload = json.loads(ret.data)
@@ -196,6 +196,10 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertTrue('uuid' in payload)
         self.assertTrue('status' in payload)
         self.assertEqual(payload['status'], 'ok')
+
+        # Stop the virtual session
+        self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
 
         # Save the profile with the selected changes
         uuid = payload['uuid']
@@ -219,9 +223,6 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(profile['name'], profile_obj['profile-name'])
         self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
 
-        ret = self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
-
         # Remove profile
         ret = self.app.get("/profiles/delete/"+uuid)
         self.assertEqual(ret.status_code, 200)
@@ -240,7 +241,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         # Create profile candidate: We assume all of these methods as tested
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
         self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-        ret = self.app.post('/changes/select', data=json.dumps({'sel': [0]}), content_type='application/json')
+        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change1['key'],]}), content_type='application/json')
         payload = json.loads(ret.data)
 
         # discard a profile candidate
@@ -273,21 +274,48 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([[change2['key'], change2['value']], ]))
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'org.gnome.gsettings': [[change2['key'], change2['value']], ]}))
 
         self.app.get('/session/stop')
         fleet_commander_admin.requests.pop()
 
     def test_07_empty_collector(self):
+        host = 'somehost'
+        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+        fleet_commander_admin.requests.pop()
+
         ret = self.app.get('/changes')
-        self.assertEqual(ret.status_code, 403)
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({}))
 
-    # TODO: Test GOA Collector
+        self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
 
+    def test_08_libreoffice_and_gsettings_changes(self):
+        host = 'somehost'
+        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+        fleet_commander_admin.requests.pop ()
+
+        change_libreoffice = {'key': '/org/libreoffice/registry/foo', 'value': 'bar', 'signature': 's'}
+        ret = self.app.post('/changes/submit/org.libreoffice.registry', data=json.dumps(change_libreoffice), content_type='application/json')
+        self.assertEqual(json.dumps({'status': 'ok'}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
+
+        change_gsettings = {'key': '/foo/bar', 'value': 'bar', 'signature': 's'}
+        ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change_gsettings), content_type='application/json')
+        self.assertEqual(json.dumps({'status': 'ok'}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get('/changes')
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps(
+          {'org.gnome.gsettings':      [[change_gsettings['key'],   change_gsettings['value']]],
+           'org.libreoffice.registry': [[change_libreoffice['key'], change_libreoffice['value']]]}))
+        self.app.get('/session/stop')
+        fleet_commander_admin.requests.pop()
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False
-
 
 if __name__ == '__main__':
     unittest.main()

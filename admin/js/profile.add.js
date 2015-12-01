@@ -18,30 +18,37 @@
  */
 
 var updater;
-var changes;
 var submit=false;
 var tries=0;
 var MAXTRIES=5;
 
 function updateEventList () {
   $.getJSON ("/changes", function (data) {
-    $("#event-list").html("");
-    changes = data;
-    $.each (data, function (i, item) {
-      var row = item.join (" ");
-      var id = data.length - 1 - i;
-      var li = $('<li></li>');
-      var p  = $('<div></div>', {text: row}).appendTo(li);
-      li.appendTo($('#event-list'));
-      $('<input/>', {type:  'checkbox', class: 'change-checkbox', 'data-id': id})
-        .click (function (e) {
-          e.stopImmediatePropagation();
-        })
-        .prependTo(li);
-    });
+    $("#gsettings-event-list").html("");
+    $("#libreoffice-event-list").html("");
+
+    if ("org.libreoffice.registry" in data)
+      populateChanges("#libreoffice-event-list", data["org.libreoffice.registry"]);
+    if ("org.gnome.gsettings" in data)
+      populateChanges("#gsettings-event-list", data["org.gnome.gsettings"]);
+
     if (submit) {
       $(".change-checkbox").show();
     }
+  });
+}
+
+function populateChanges(section, data) {
+  $.each (data, function (i, item) {
+    var row = item.join (" ");
+    var li = $('<li></li>');
+    var p  = $('<div></div>', {text: row}).appendTo(li);
+    li.appendTo($(section));
+    $('<input/>', {type:  'checkbox', class: 'change-checkbox', 'data-id': item[0]})
+      .click (function (e) {
+        e.stopImmediatePropagation();
+      })
+      .prependTo(li);
   });
 }
 
@@ -112,15 +119,23 @@ function listenChanges() {
 }
 
 function deployProfile() {
-  var sel = [];
+  var gsettings = [];
+  var libreoffice = [];
 
-  $.each($('input[data-id]:checked'), function (i,e) {
-    sel.push(changes.length - 1 - $(this).attr('data-id'));
+  $.each($('#gsettings-event-list input[data-id]:checked'), function (i,e) {
+    gsettings.push($(this).attr('data-id'));
   });
+
+  $.each($('#libreoffice-event-list input[data-id]:checked'), function (i,e) {
+    libreoffice.push($(this).attr('data-id'));
+  });
+
+  var changeset = {"org.libreoffice.registry": libreoffice,
+                   "org.gnome.gsettings":      gsettings};
 
   $.ajax({method: 'POST',
           url:    '/changes/select',
-          data:   JSON.stringify({'sel': sel}),
+          data:   JSON.stringify(changeset),
           dataType: 'json',
           contentType: 'application/json'
   }).done(function (data) {
