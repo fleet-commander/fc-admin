@@ -96,6 +96,8 @@ function testGSettingsLoggerWriteKeyForKnownSchema () {
   // we normalize the json object using the same parser
   JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'fleet-commander-test','value':true,'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
+
+  Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
 }
 
 function testGSettingsLoggerWriteKeyForUnknownSchema () {
@@ -107,6 +109,8 @@ function testGSettingsLoggerWriteKeyForUnknownSchema () {
   let change = mgr.pop();
 
   JsUnit.assertTrue(change == null);
+
+  Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
 }
 
 function testGSettingsLoggerWriteKeyForGuessableSchema () {
@@ -123,6 +127,7 @@ function testGSettingsLoggerWriteKeyForGuessableSchema () {
                                        'value':true,
                                        'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
+  Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
 }
 
 function testGSettingsLoggerGuessSchemaCachedPath () {
@@ -141,6 +146,30 @@ function testGSettingsLoggerGuessSchemaCachedPath () {
                                        'value':true,
                                        'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
+
+  Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
 }
+
+
+function testLibreOfficeLoggerWriteKey () {
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  setupDbusCall ('ChangeLibreOffice', null, glog);
+
+  let change = mgr.pop();
+
+  JsUnit.assertTrue(change != null);
+  JsUnit.assertTrue(change.length == 2);
+
+  JsUnit.assertEquals(change[0], "org.libreoffice.registry");
+
+  // we normalize the json object using the same parser
+  JsUnit.assertEquals(JSON.stringify({'key':'/org/libreoffice/registry/somepath/somekey', 'value':123,'signature':'i'}),
+                      JSON.stringify(JSON.parse(change[1])));
+
+  Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
+}
+
 
 JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);

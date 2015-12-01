@@ -39,12 +39,16 @@ var _debug = false;
 
 function debug (msg) {
   if (!_debug)
-      return;
+    return;
   printerr("DEBUG: " + msg);
 }
 
 function hasSuffix (haystack, needle) {
-    return (haystack.length - needle.length) == haystack.lastIndexOf(needle);
+  return (haystack.length - needle.length) == haystack.lastIndexOf(needle);
+}
+
+function hasPrefix (haystack, needle) {
+  return 0 == haystack.indexOf(needle);
 }
 
 function parse_options () {
@@ -365,41 +369,102 @@ var GSettingsLogger = function (connmgr) {
 
 GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name, object_path,
                                                         interface_name, signal_name, parameters) {
-    let path = parameters.get_child_value(0).get_string()[0];
-    let keys = [];
-    let tag  = parameters.get_child_value(2).get_string()[0];
-    if (!hasSuffix(path, "/")) {
-      let split = path.split("/");
-      keys.push(split.pop());
-      path = split.join("/") + "/";
-    } else {
-      let keys_variant = parameters.get_child_value(1);
-      for (let i = 0; i < keys_variant.n_children(); i++) {
-        keys.push(keys_variant.get_child_value(i).get_string()[0]);
-      }
+  let path = parameters.get_child_value(0).get_string()[0];
+  let keys = [];
+  let tag  = parameters.get_child_value(2).get_string()[0];
+  if (!hasSuffix(path, "/")) {
+    let split = path.split("/");
+    keys.push(split.pop());
+    path = split.join("/") + "/";
+  } else {
+    let keys_variant = parameters.get_child_value(1);
+    for (let i = 0; i < keys_variant.n_children(); i++) {
+      keys.push(keys_variant.get_child_value(i).get_string()[0]);
     }
-    let schema_known = false;
+  }
+  let schema_known = false;
 
-    debug("dconf Notify: " + path)
-    debug(">>> Keys: " + keys);
+  debug("dconf Notify: " + path)
+  debug(">>> Keys: " + keys);
 
-    if (Object.keys(this.path_to_known_schema).indexOf(path) != -1) {
-      let schema   = this.schema_source.lookup(this.path_to_known_schema[path], true);
-      let settings = Gio.Settings.new_full(schema, null, null);
-      this._settings_changed(schema, settings, keys);
-      return;
-    }
+  if (hasPrefix(path, "/org/libreoffice/registry")) {
+    debug (">>> LibreOffice configuration change detected, no schema search needed");
+    this._libreoffice_change (path, keys);
+    return;
+  }
 
-    debug(">>> Schema not known yet");
-    let schema_name = this._guess_schema(path, keys);
-    if (schema_name == null) {
-      this.connmgr.finish_changes();
-      return;
-    }
-
-    let schema   = this.schema_source.lookup(schema_name, true);
-    let settings = Gio.Settings.new_full (schema, null, path);
+  if (Object.keys(this.path_to_known_schema).indexOf(path) != -1) {
+    let schema   = this.schema_source.lookup(this.path_to_known_schema[path], true);
+    let settings = Gio.Settings.new_full(schema, null, null);
     this._settings_changed(schema, settings, keys);
+    return;
+  }
+
+  debug(">>> Schema not known yet");
+  let schema_name = this._guess_schema(path, keys);
+  if (schema_name == null) {
+    this.connmgr.finish_changes();
+    return;
+  }
+
+  let schema   = this.schema_source.lookup(schema_name, true);
+  let settings = Gio.Settings.new_full (schema, null, path);
+  this._settings_changed(schema, settings, keys);
+}
+
+GSettingsLogger.prototype._libreoffice_change = function(path, keys) {
+  debug ("Submitting LibreOffice change for keys [" + keys + "] for path " + path);
+
+  keys.forEach(function(key) {
+    let builder   = new Json.Builder();
+    let generator = new Json.Generator();
+
+    let command = ["dconf", "read", path + key];
+    let dconf = Gio.Subprocess.new (command, Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
+    let stdout_pipe = dconf.get_stdout_pipe();
+    dconf.wait(null);
+    if (dconf.get_exit_status() != 0) {
+      printerr ("There was an error calling dconf subprocess with arguments: " + command);
+      return;
+    }
+
+    /* FIXME: libdconf doesn't have introspection support, we call dconf manually */
+    let data = Gio.DataInputStream.new (stdout_pipe);
+    let variant_string = data.read_until ("\0", null)[0];
+
+    if (variant_string == null) {
+      printerr ("There was an error reading dconf key " + path + key);
+      return;
+    }
+
+    if (hasSuffix(variant_string, "\n")) {
+      variant_string = variant_string.substring(0, variant_string.length - 1);
+    }
+
+    let variant = null;
+    try {
+       variant = GLib.Variant.parse(null, variant_string, null, null);
+    } catch (e) {
+      printerr ("There was an error parsing the variant string from the dconf read output for '" + path + key + "':");
+      printerr (variant_string);
+      return;
+    }
+
+    builder.begin_object();
+    builder.set_member_name("key");
+    builder.add_string_value(path + key);
+    builder.set_member_name("value");
+    builder.add_value(Json.gvariant_serialize(variant));
+    builder.set_member_name("signature");
+    builder.add_string_value(variant.get_type_string());
+    builder.end_object();
+
+    generator.set_root(builder.get_root());
+    let data = generator.to_data(null)[0];
+
+    this.connmgr.submit_change ("org.libreoffice.registry", data);
+    this.connmgr.finish_changes ();
+  }.bind(this));
 }
 
 GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {

@@ -22,6 +22,8 @@ if [ "x$TOPSRCDIR" = "x" ] ; then
   TOPSRCDIR=`pwd`/../
 fi
 
+dconf write /org/libreoffice/registry/somepath/somekey 123
+
 export GJS_PATH=$TOPSRCDIR/tools/
 export FC_TESTING=true
 export GSETTINGS_SCHEMA_DIR=`mktemp -d`

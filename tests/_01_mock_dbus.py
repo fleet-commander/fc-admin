@@ -45,6 +45,8 @@ dconf.AddMethod("ca.desrt.dconf.Writer", "ChangeUnique", "", "",
                  'self.EmitSignal("ca.desrt.dconf.Writer", "Notify", "sass", ["/reloc/foo/", ["fc-unique",], "tag"])')
 dconf.AddMethod("ca.desrt.dconf.Writer", "ChangeUniqueAndCommon", "", "",
                  'self.EmitSignal("ca.desrt.dconf.Writer", "Notify", "sass", ["/reloc/foo/", ["fc-unique","fc-common"], "tag"])')
+dconf.AddMethod("ca.desrt.dconf.Writer", "ChangeLibreOffice", "", "",
+                 'self.EmitSignal("ca.desrt.dconf.Writer", "Notify", "sass", ["/org/libreoffice/registry/somepath/", ["somekey",], "tag"])')
 
 dbusmock.mockobject.objects["/ScreenSaver"] = screensaver
 ml.run()
