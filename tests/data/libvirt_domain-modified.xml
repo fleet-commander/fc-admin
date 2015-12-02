@@ -1,0 +1,125 @@
+<domain xmlns:ns0="https://wiki.gnome.org/Apps/Boxes" type="kvm" xmlns:qemu="http://libvirt.org/schemas/domain/qemu/1.0">
+  <name>fedora-unkno-fc-%(uuid)s</name>
+  <uuid>%(uuid)s</uuid>
+  <title>Fedora - Fleet Commander temporary session</title>
+  <metadata>
+    <ns0:gnome-boxes>
+      <os-state>installed</os-state>
+      <os-id>http://fedoraproject.org/fedora/unknown</os-id>
+      <media-id>http://fedoraproject.org/fedora/unknown:3</media-id>
+      <media>/home/user/Downloads/Fedora-Live-Workstation-x86_64-23-10.iso</media>
+    </ns0:gnome-boxes>
+  </metadata>
+  <memory unit="KiB">2097152</memory>
+  <currentMemory unit="KiB">2097152</currentMemory>
+  <vcpu placement="static">4</vcpu>
+  <os>
+    <type arch="x86_64" machine="pc-i440fx-2.4">hvm</type>
+    <boot dev="hd" />
+  </os>
+  <features>
+    <acpi />
+    <apic />
+  </features>
+  <cpu match="exact" mode="custom">
+    <model fallback="allow">Broadwell</model>
+    <topology cores="2" sockets="1" threads="2" />
+  </cpu>
+  <clock offset="utc">
+    <timer name="rtc" tickpolicy="catchup" />
+    <timer name="pit" tickpolicy="delay" />
+    <timer name="hpet" present="no" />
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <pm>
+    <suspend-to-mem enabled="no" />
+    <suspend-to-disk enabled="no" />
+  </pm>
+  <devices>
+    <emulator>/usr/bin/qemu-kvm</emulator>
+    <disk device="disk" type="file">
+      <driver cache="writeback" name="qemu" type="qcow2" />
+      <source file="/home/user/.local/share/gnome-boxes/images/fedora-unkno" />
+      <target bus="virtio" dev="vda" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x07" type="pci" />
+    </disk>
+    <disk device="cdrom" type="file">
+      <driver name="qemu" type="raw" />
+      <source file="/home/user/Downloads/Fedora-Live-Workstation-x86_64-23-10.iso" startupPolicy="optional" />
+      <target bus="ide" dev="hdc" />
+      <readonly />
+      <address bus="1" controller="0" target="0" type="drive" unit="0" />
+    </disk>
+    <controller index="0" model="ich9-ehci1" type="usb">
+      <address bus="0x00" domain="0x0000" function="0x7" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci1" type="usb">
+      <master startport="0" />
+      <address bus="0x00" domain="0x0000" function="0x0" multifunction="on" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci2" type="usb">
+      <master startport="2" />
+      <address bus="0x00" domain="0x0000" function="0x1" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci3" type="usb">
+      <master startport="4" />
+      <address bus="0x00" domain="0x0000" function="0x2" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="pci-root" type="pci" />
+    <controller index="0" type="ide">
+      <address bus="0x00" domain="0x0000" function="0x1" slot="0x01" type="pci" />
+    </controller>
+    <controller index="0" type="virtio-serial">
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x05" type="pci" />
+    </controller>
+    <controller index="0" type="ccid" />
+    <interface type="bridge">
+      <source bridge="virbr0" />
+      <target dev="tap0" />
+      <model type="virtio" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x03" type="pci" />
+    </interface>
+    <smartcard mode="passthrough" type="spicevmc">
+      <address controller="0" slot="0" type="ccid" />
+    </smartcard>
+    <serial type="pty">
+      <target port="0" />
+    </serial>
+    <console type="pty">
+      <target port="0" type="serial" />
+    </console>
+    <channel type="spicevmc">
+      <target name="com.redhat.spice.0" type="virtio" />
+      <address bus="0" controller="0" port="1" type="virtio-serial" />
+    </channel>
+    <input bus="usb" type="tablet" />
+    <input bus="usb" type="mouse" />
+    <input bus="usb" type="keyboard" />
+    <input bus="ps2" type="mouse" />
+    <input bus="ps2" type="keyboard" />
+    <graphics autoport="yes" listen="127.0.0.1" type="spice">
+      <listen address="127.0.0.1" type="address" />
+      <image compression="off" />
+    </graphics>
+    <sound model="ac97">
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci" />
+    </sound>
+    <video>
+      <model heads="1" ram="65536" type="qxl" vgamem="16384" vram="65536" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x02" type="pci" />
+    </video>
+    <redirdev bus="usb" type="spicevmc">
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+    </redirdev>
+    <memballoon model="virtio">
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci" />
+    </memballoon>
+  <channel type="pty"><target name="fleet-commander_localhost:8008" type="virtio" /></channel></devices>
+<qemu:commandline><qemu:arg value="-snapshot" /></qemu:commandline></domain>
