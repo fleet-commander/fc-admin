@@ -33,10 +33,8 @@ sys.path.append(PYTHONPATH)
 
 from fleetcommander import admin as fleet_commander_admin
 
-
 class MockResponse:
     pass
-
 
 class MockRequests:
     DEFAULT_CONTENT = "SOMECONTENT"
@@ -209,7 +207,7 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         # Save the profile with the selected changes
         uuid = payload['uuid']
-        profile_obj = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': '', 'users': ''}
+        profile_obj = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': 'foo,bar', 'users': 'baz'}
         profile_data = json.dumps(profile_obj)
         ret = self.app.post("/profiles/save/"+uuid, content_type='application/json', data=profile_data)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "ok"}))
@@ -228,6 +226,15 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(profile['description'], profile_obj['profile-desc'])
         self.assertEqual(profile['name'], profile_obj['profile-name'])
         self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
+
+        # Get applies
+        ret = self.app.get("/profiles/applies")
+        self.assertEqual(ret.status_code, 200)
+        applies = json.loads(ret.data)
+        self.assertTrue(isinstance(applies, dict))
+        self.assertTrue(uuid in applies)
+        self.assertEqual(json.dumps(applies[uuid]), json.dumps({'groups': ['foo' , 'bar'], 'users': ['baz']}))
+        self.assertEqual(len(applies), 1)
 
         # Remove profile
         ret = self.app.get("/profiles/delete/"+uuid)

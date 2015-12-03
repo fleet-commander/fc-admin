@@ -45,6 +45,7 @@ class AdminService(Flaskless):
             # Workaround for bootstrap font path
             # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
             ('^profiles/$',                         ['GET'],    self.profiles),
+            ('^profiles/applies$',                  ['GET'],    self.profiles_applies),
             ('^profiles/save/(?P<id>[-\w\.]+)$',    ['POST'],   self.profiles_save),
             ('^profiles/add$',                      ['GET'],    self.profiles_add),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],    self.profiles_delete),
@@ -82,14 +83,21 @@ class AdminService(Flaskless):
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
     def check_for_profile_index(self):
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], "index.json")
-        if os.path.isfile(INDEX_FILE):
-            return
+        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+        self.test_and_create_file (INDEX_FILE, [])
 
+    def check_for_applies(self):
+        APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
+        self.test_and_create_file (APPLIES_FILE, {})
+
+    def test_and_create_file (self, filename, content):
+        if os.path.isfile(filename):
+            return
         try:
-            open(INDEX_FILE, 'w+').write(json.dumps([]))
+            open(filename, 'w+').write(json.dumps(content))
         except OSError:
-            logging.error('There was an error attempting to write on %s' % INDEX_FILE)
+            logging.error('There was an error attempting to write on %s' % filename)
+
 
     # Views
     def index(self, request):
@@ -104,6 +112,10 @@ class AdminService(Flaskless):
     def profiles(self, request):
         self.check_for_profile_index()
         return self.serve_static(request, 'index.json', basedir=self.custom_args['profiles_dir'])
+
+    def profiles_applies(self, request):
+        self.check_for_applies()
+        return self.serve_static(request, 'applies.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_id(self, request, profile_id):
         return self.serve_static(request, profile_id + '.json', basedir=self.custom_args['profiles_dir'])
@@ -122,6 +134,7 @@ class AdminService(Flaskless):
             return JSONResponse({"status": "nonexistinguid"}, 403)
 
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+        APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
 
         data = request.get_json()
@@ -148,16 +161,24 @@ class AdminService(Flaskless):
         profile["name"] = data["profile-name"]
         profile["description"] = data["profile-desc"]
         profile["settings"] = settings
-        profile["applies-to"] = {"users": users, "groups": groups}
         profile["etag"] = "placeholder"
 
         self.check_for_profile_index()
         index = json.loads(open(INDEX_FILE).read())
+        if not isinstance(index, list):
+            return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
         index.append({"url": id, "displayName": data["profile-name"]})
+
+        self.check_for_applies()
+        applies = json.loads(open(APPLIES_FILE).read())
+        if not isinstance(applies, dict):
+            return JSONResponse({"status": "%s does not contain a JSON object as root element" % APPLIES_FILE})
+        applies[uid] = {"users": users, "groups": groups}
 
         del(self.current_session["uid"])
 
         write_and_close(PROFILE_FILE, json.dumps(profile))
+        write_and_close(APPLIES_FILE, json.dumps(applies))
         write_and_close(INDEX_FILE, json.dumps(index))
 
         return JSONResponse({'status': 'ok'})
