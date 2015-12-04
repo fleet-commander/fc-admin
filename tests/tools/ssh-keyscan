@@ -1,0 +1,3 @@
+#!/bin/bash
+echo $@ > /tmp/fc-libvirt-test/ssh-keyscan-parms
+echo "localhost ssh-rsa KEY"

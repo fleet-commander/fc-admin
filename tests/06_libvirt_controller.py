@@ -22,30 +22,33 @@
 
 import os
 import sys
+import time
 import unittest
+import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
 
-from fleetcommander.libvirtcontroller import LibVirtController
+from fleetcommander import libvirtcontroller
 
 
 class LibvirtModuleMocker(object):
 
     @staticmethod
     def open(connection_uri):
-        # Check connection connection URI
         # Return a LibvirtConnectionMocker
-        return LibvirtConnectionMocker()
+        return LibvirtConnectionMocker(connection_uri)
 
 
 class LibvirtConnectionMocker(object):
     """
     Class for mocking libvirt connection
     """
-    def __init__(self):
+    def __init__(self, connection_uri):
+
+        self.connection_uri = connection_uri
 
         # Load XML data for test domain
-        with fd as open(os.path.join('.', 'data/libvirt_domain-orig.xml')):
+        with open(os.path.join('.', 'data/libvirt_domain-orig.xml')) as fd:
             xmldata = fd.read()
             fd.close()
 
@@ -57,7 +60,9 @@ class LibvirtConnectionMocker(object):
         return self.domains
 
     def createXML(self, xmldata):
-        return LibvirtDomainMocker(xmldata)
+        newdomain = LibvirtDomainMocker(xmldata)
+        self.domains.append(newdomain)
+        return newdomain
 
     def lookupByUUIDString(self, identifier):
         for domain in self.domains:
@@ -70,35 +75,67 @@ class LibvirtDomainMocker(object):
     """
     Class for mocking libvirt domain
     """
-    def __init__(xmldata):
+    def __init__(self, xmldata):
         self.xmldata = xmldata
+        root = ET.fromstring(xmldata)
+        self.domain_name = root.find('name').text
+        self.domain_uuid = root.find('uuid').text
+        self.active = True
+        self.transient = False
 
     def UUIDString(self):
-        pass
+        return self.domain_uuid
 
     def name(self):
-        pass
+        return self.domain_name
 
     def XMLDesc(self):
         return self.xmldata
 
+    def isActive(self):
+        return self.active
+
+    def destroy(self):
+        self.active = False
+
     def undefine(self):
-        pass
+        if not self.transient:
+            self.transient = True
+        else:
+            raise Exception('Trying to undefine transient domain')
 
 
-class TestLibVirtController(unittest.TestCase):
+class TestLibVirtControllerSystemMode(unittest.TestCase):
 
     config = {
         'data_path': '/tmp/fc-libvirt-test',
         'username': 'testuser',
         'hostname': 'localhost',
+        'mode': 'system',
         'admin_hostname': 'localhost',
         'admin_port': 8008,
     }
 
     @classmethod
     def setUpClass(cls):
-        cls.ctrlr = LibVirtController(**cls.config)
+        # Mock libvirt module
+        libvirtcontroller.libvirt = LibvirtModuleMocker()
+        cls.ctrlr = libvirtcontroller.LibVirtController(**cls.config)
+        # Set controller delays to 0  for faster testing
+        cls.ctrlr.SESSION_START_TRIES_DELAY = 0
+        cls.ctrlr.DOMAIN_UNDEFINE_TRIES_DELAY = 0
+        # Prepare paths for command output files
+        cls.ssh_keyscan_parms_file = os.path.join(cls.config['data_path'], 'ssh-keyscan-parms')
+        cls.ssh_parms_file = os.path.join(cls.config['data_path'], 'ssh-parms')
+
+        with open(os.path.join('.', 'data/libvirt_domain-modified.xml')) as fd:
+            cls.modifxml = fd.read()
+            fd.close()
+
+        with open(os.path.join('.', 'data/libvirt_domain-nospice.xml')) as fd:
+            cls.nospicexml = fd.read()
+            fd.close()
+
         # Clear all files to avoid false positives
         cls.tearDownClass()
 
@@ -109,6 +146,8 @@ class TestLibVirtController(unittest.TestCase):
             cls.ctrlr.private_key_file,
             cls.ctrlr.public_key_file,
             cls.ctrlr.known_hosts_file,
+            cls.ssh_keyscan_parms_file,
+            cls.ssh_parms_file,
         ]
         for f in files:
             if os.path.exists(f):
@@ -119,17 +158,98 @@ class TestLibVirtController(unittest.TestCase):
         self.assertTrue(os.path.exists(self.ctrlr.private_key_file))
         self.assertTrue(os.path.exists(self.ctrlr.public_key_file))
 
-    def test_01_check_environment_preparation(self):
-        pass
+    def test_01_check_known_hosts(self):
+        self.ctrlr._check_known_host()
+        self.assertTrue(os.path.exists(self.ssh_keyscan_parms_file))
 
-    def test_02_listdomains(self):
-        pass
+        with open(self.ssh_keyscan_parms_file, 'r') as fd:
+            parms = fd.read()
+            fd.close()
+        self.assertEqual(parms, 'localhost\n')
 
-    def test_03_start(self):
-        pass
+        with open(self.ctrlr.known_hosts_file, 'r') as fd:
+            known_hosts_contents = fd.read()
+            fd.close()
+        self.assertEqual(known_hosts_contents, 'localhost ssh-rsa KEY\n')
 
-    def test_04_stop(self):
-        pass
+    def test_02_check_environment_preparation(self):
+        socket = self.ctrlr._prepare_remote_env()
+        time.sleep(1)  # Wait for file contents being written
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file, 'r') as fd:
+            command = fd.read()
+            fd.close()
+
+        if self.ctrlr.mode == 'system':
+            self.assertEqual(socket, '')
+            self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost virsh list > /dev/null\n')
+        else:
+            self.assertEqual(socket, '/run/user/1000/libvirt/libvirt-sock')
+            self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n')
+
+    def test_03_connect(self):
+        self.assertEqual(self.ctrlr.conn, None)
+        self.ctrlr._connect()
+        self.assertIsInstance(self.ctrlr.conn, LibvirtConnectionMocker)
+        # Check connection URI
+        if self.ctrlr.mode == 'system':
+            uri = 'qemu+libssh2://testuser@localhost/system?keyfile=/tmp/fc-libvirt-test/id_rsa&known_hosts=/tmp/fc-libvirt-test/known_hosts&no_tty=1&sshauth=privkey'
+        else:
+            uri = 'qemu+libssh2://testuser@localhost/session?keyfile=/tmp/fc-libvirt-test/id_rsa&known_hosts=/tmp/fc-libvirt-test/known_hosts&no_tty=1&socket=/run/user/1000/libvirt/libvirt-sock&sshauth=privkey'
+        self.assertEqual(self.ctrlr.conn.connection_uri, uri)
+
+    def test_04_list_domains(self):
+        domains = self.ctrlr.list_domains()
+        self.assertEqual(domains, {'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81': 'fedora-unkno'})
+
+    def test_05_generate_new_domain_xml(self):
+        origxml = self.ctrlr.conn.domains[0].XMLDesc()
+        newxml = self.ctrlr._generate_new_domain_xml(origxml)
+        newdomain_uuid = LibvirtDomainMocker(newxml).UUIDString()
+        self.assertEqual(newxml, self.modifxml % {'uuid': newdomain_uuid})
+
+    def test_06_get_spice_parms(self):
+        fakedomain = LibvirtDomainMocker(self.modifxml)
+        host, port = self.ctrlr._get_spice_parms(fakedomain)
+        self.assertEqual(host, '127.0.0.1')
+        self.assertEqual(port, '5900')
+        # Test fail getting spice parameters
+        nospicedomain = LibvirtDomainMocker(self.nospicexml)
+        self.assertRaises(libvirtcontroller.LibVirtControllerException, self.ctrlr._get_spice_parms, nospicedomain)
+
+    def test_07_open_ssh_tunnel(self):
+        port, pid = self.ctrlr._open_ssh_tunnel('127.0.0.1', '5900')
+        time.sleep(1)  # Wait for file contents being written
+        with open(self.ssh_parms_file, 'r') as fd:
+            os.fsync(fd)
+            command = fd.read()
+            fd.close()
+        self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost -L %s:127.0.0.1:5900 -N\n' % port)
+
+    def test_08_undefine_domain(self):
+        fakedomain = LibvirtDomainMocker(self.modifxml)
+        self.ctrlr._undefine_domain(fakedomain)
+        self.assertTrue(fakedomain.transient)
+        # Test undefine a transient domain
+        self.assertRaises(libvirtcontroller.LibVirtControllerException, self.ctrlr._undefine_domain, fakedomain)
+
+    def test_09_start_stop(self):
+        # Just test start and stop execution
+        uuid, port, pid = self.ctrlr.session_start('e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81')
+        # We pass None as PID to avoid killing any process.
+        self.ctrlr.session_stop(uuid, None)
+
+
+class TestLibVirtControllerSessionMode(TestLibVirtControllerSystemMode):
+    config = {
+        'data_path': '/tmp/fc-libvirt-test',
+        'username': 'testuser',
+        'hostname': 'localhost',
+        'mode': 'session',
+        'admin_hostname': 'localhost',
+        'admin_port': 8008,
+    }
+
 
 if __name__ == '__main__':
     unittest.main()

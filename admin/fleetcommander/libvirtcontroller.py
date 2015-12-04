@@ -45,13 +45,18 @@ class LibVirtController(object):
     DEFAULT_LIBVIRTD_SOCKET = '$XDG_RUNTIME_DIR/libvirt/libvirt-sock'
     LIBVIRT_URL_TEMPLATE = 'qemu+libssh2://%s@%s/%s'
     MAX_SESSION_START_TRIES = 10
+    SESSION_START_TRIES_DELAY = 1
     MAX_DOMAIN_UNDEFINE_TRIES = 5
+    DOMAIN_UNDEFINE_TRIES_DELAY = 1
 
     def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
         """
         Class initialization
         """
         self.data_dir = os.path.abspath(data_path)
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+
         self.private_key_file = os.path.join(self.data_dir, 'id_rsa')
         self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
         self.known_hosts_file = os.path.join(self.data_dir, 'known_hosts')
@@ -92,7 +97,7 @@ class LibVirtController(object):
         pubkeyfile.write(pubkey)
         pubkeyfile.close()
 
-    def _check_known_host(self, hostname):
+    def _check_known_host(self):
         """
         Checks existence of a host in known_hosts file
         """
@@ -104,14 +109,14 @@ class LibVirtController(object):
                 fd.close()
             for line in lines:
                 host, keytype, key = line.split()
-                if host == hostname:
+                if host == self.hostname:
                     return
 
         # Add host to known_hosts
         prog = subprocess.Popen(
             [
                 'ssh-keyscan',
-                hostname,
+                self.hostname,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, error = prog.communicate()
@@ -127,7 +132,7 @@ class LibVirtController(object):
         Runs virsh remotely to execute the session daemon and get needed data for connection
         """
         # Check if host key is already in known_hosts and if not, add it
-        self._check_known_host(self.hostname)
+        self._check_known_host()
 
         if self.mode == 'session':
             command = 'virsh list > /dev/null && echo %s && [ -S %s ]' % (
@@ -174,14 +179,14 @@ class LibVirtController(object):
             url = self.LIBVIRT_URL_TEMPLATE % (self.username, self.hostname, self.mode)
             connection_uri = '%s?%s' % (
                 url,
-                '&'.join(['%s=%s' % (key, value) for key, value in options.items()])
+                '&'.join(['%s=%s' % (key, value) for key, value in sorted(options.items())])
             )
             try:
                 self.conn = libvirt.open(connection_uri)
             except Exception as e:
                 raise LibVirtControllerException('Error connecting to host: %s' % e)
 
-    def _get_spice_parms(self, domain, tries=MAX_SESSION_START_TRIES):
+    def _get_spice_parms(self, domain):
         """
         Obtain spice connection parameters for specified domain
         """
@@ -199,7 +204,7 @@ class LibVirtController(object):
                     pass
 
             if tries < self.MAX_SESSION_START_TRIES:
-                time.sleep(1)
+                time.sleep(self.SESSION_START_TRIES_DELAY)
                 tries += 1
             else:
                 raise LibVirtControllerException('Can not obtain SPICE URI for virtual session')
@@ -272,7 +277,7 @@ class LibVirtController(object):
         """
         tries = 0
         while True:
-            time.sleep(1)
+            time.sleep(self.DOMAIN_UNDEFINE_TRIES_DELAY)
             try:
                 domain.undefine()
                 break
@@ -336,6 +341,7 @@ class LibVirtController(object):
             domain.destroy()
 
         # Undefine domain
-        self._undefine_domain(domain)
-
-
+        try:
+            self._undefine_domain(domain)
+        except:
+            pass
