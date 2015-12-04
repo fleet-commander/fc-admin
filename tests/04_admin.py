@@ -127,8 +127,14 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertTrue(os.path.exists(INDEX_FILE),
                         msg='index file was not created')
-        self.assertEqual(ret.data, self.get_data_from_file(INDEX_FILE),
+        indexdata = self.get_data_from_file(INDEX_FILE)
+        self.assertEqual(ret.data, indexdata,
                          msg='index content was not correct')
+
+        # Testing of profiles static serving
+        ret = self.app.get("/clientdata/index.json")
+        self.assertEqual(ret.data, indexdata,
+                         msg='Statically served index content was not correct')
 
     def test_01_attempt_save_unselected_profile(self):
         profile_id = '0123456789'

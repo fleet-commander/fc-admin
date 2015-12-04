@@ -40,6 +40,7 @@ class AdminService(Flaskless):
     def __init__(self, name, config, *args, **kwargs):
 
         kwargs['routes'] = [
+            (r'^clientdata/(?P<path>.+)$',          ['GET'],    self.serve_clientdata),
             (r'^static/(?P<path>.+)$',              ['GET'],    self.serve_static),
             # Workaround for bootstrap font path
             # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
@@ -93,6 +94,12 @@ class AdminService(Flaskless):
     # Views
     def index(self, request):
         return self.serve_html_template('index.html')
+
+    def serve_clientdata(self, request, path):
+        """
+        Serve client data
+        """
+        return self.serve_static(request, path, basedir=self.custom_args['profiles_dir'])
 
     def profiles(self, request):
         self.check_for_profile_index()
