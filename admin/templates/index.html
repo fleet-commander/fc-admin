@@ -17,7 +17,40 @@
       </div>
     </nav>
 
-    <div id="add-profile-modal" class="modal fade">
+    <div id="configure-hipervisor-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Hipervisor configuration</h4>
+          </div>
+
+          <div class="modal-body">
+            <div id="host-group" class="form-group">
+              <label for="host" class="control-label">Fleet Commander virtual environment host</label>
+              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control"></input>
+              <label for="user" class="control-label">Username for connection</label>
+              <input id="user" name="pubkey" placeholder="enter username" type="text" class="form-control"></input>
+              <label for="mode" class="control-label">Libvirt mode</label>
+              <select id="mode" name="mode" class="form-control">
+                <option value="system" selected>System</option>
+                <option value="session">Session</option>
+              </select>
+              <label for="pubkey" class="control-label">Public key (You must add it yo your SSH allowed keys)</label>
+              <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly>
+              </textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id='configure-hipervisor-confirm' class="btn btn-primary">Add Profile</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="domain-selection-modal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -26,19 +59,16 @@
           </div>
 
           <div class="modal-body">
-            <div id="host-group" class="form-group">
-              <label for="host" class="control-label">Fleet Commander virtual environment host</label>
-              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control"></input>
-            </div>
+            <strong>Domains list to start a session</strong>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id='add-profile-confirm' class="btn btn-primary">Add Profile</button>
           </div>
         </div>
       </div>
     </div>
+
 
     <div id="del-profile-modal" class="modal fade">
       <div class="modal-dialog">

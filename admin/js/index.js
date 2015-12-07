@@ -54,9 +54,10 @@ function remove_profile(profile) {
   });
 }
 
-function profile_confirmation () {
-  $('#add-profile-modal').modal('show');
-  $('#add-profile-confirm').click(function () {
+
+function configure_hipervisor() {
+  $('#configure-hipervisor-modal').modal('show');
+  $('#configure-hipervisor-confirm').click(function () {
     if ($('#host').val() == '') {
       //TODO: Check if http://hostname:8182 works
       //TODO: Check if http://hostname:VNC35 works
@@ -65,13 +66,29 @@ function profile_confirmation () {
     }
 
     $('#host-group').removeClass('has-error');
-    $('#add-profile-modal').modal('hide');
+    $('#configure-hipervisor-modal').modal('hide');
     sessionStorage.setItem("fc.session.host", $('#host').val());
     location.href = "/profiles/add"
   });
 }
 
+function select_domain() {
+  $('#domain-selection-modal').modal('show');
+}
+
+function add_profile () {
+  $.getJSON("/pubkey", function(data){
+    // Add public key to textarea
+    $('#pubkey').html(data.pubkey);
+    if (data.needcfg) {
+      configure_hipervisor();
+    } else {
+      select_domain();
+    }
+  });
+}
+
 $(document).ready (function () {
-  $('#add-profile').click (profile_confirmation)
+  $('#add-profile').click (add_profile)
   populate_profile_list();
 });

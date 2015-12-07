@@ -32,6 +32,7 @@ import subprocess
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse
+from libvirtcontroller import LibVirtController
 from database import DBManager
 
 
@@ -51,12 +52,13 @@ class AdminService(Flaskless):
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],    self.profiles_delete),
             ('^profiles/discard/(?P<id>[-\w\.]+)$', ['GET'],    self.profiles_discard),
             ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],    self.profiles_id),
-            ('^changes/submit/(?P<name>[-\w\.]+)$',       ['POST'],   self.changes_submit_name),
+            ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],   self.changes_submit_name),
             ('^changes/select',                     ['POST'],   self.changes_select),
             ('^changes',                            ['GET'],    self.changes),
-            ('^deploy/(?P<uid>[-\w\.]+)$',         ['GET'],    self.deploy),
+            ('^deploy/(?P<uid>[-\w\.]+)$',          ['GET'],    self.deploy),
             ('^session/start$',                     ['POST'],   self.session_start),
             ('^session/stop$',                      ['GET'],    self.session_stop),
+            ('^pubkey$',                            ['GET'],    self.pubkey),
             ('^$',                                  ['GET'],    self.index),
         ]
         super(AdminService, self).__init__(name, config, *args, **kwargs)
@@ -102,6 +104,16 @@ class AdminService(Flaskless):
     # Views
     def index(self, request):
         return self.serve_html_template('index.html')
+
+    def pubkey(self, request):
+        # Initialize LibVirtController to create keypair
+        ctrlr = LibVirtController(config['data_dir'], None, None, 'system', None, None)
+        with open(ctrlr.public_key_file, 'r') as fd:
+            public_key = fd.read().strip()
+            fd.close()
+        # Check hipervisor configuration
+        needcfg = 'hipervisor' not in self.current_session
+        return JSONResponse({'pubkey': public_key, 'needcfg': needcfg})
 
     def serve_clientdata(self, request, path):
         """
