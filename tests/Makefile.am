@@ -1,10 +1,15 @@
 TESTS_ENVIRONMENT = export PATH=$(abs_top_srcdir)/tests/tools:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export GJS_PATH=$(abs_top_srcdir)/tools; export FC_TESTING=true;
 TESTS = 00_controller.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_goa.js 04_admin.py 05_database.py 06_libvirt_controller.py
 
-EXTRA_DIST = \
-	$(TESTS)                 \
-	_01_mock_dbus.py         \
-	_01_logger_test_suite.js \
-	data/test.gschema.xml    \
-	tools/websockify         \
-	tools/systemctl
+EXTRA_DIST = 							\
+	$(TESTS)                 			\
+	_01_mock_dbus.py         			\
+	_01_logger_test_suite.js 			\
+	data/test.gschema.xml    			\
+	data/libvirt_domain-orig.xml		\
+	data/libvirt_domain-modified.xml	\
+	data/libvirt_domain-nospice.xml		\
+	tools/websockify         			\
+	tools/systemctl						\
+	tools/ssh							\
+	tools/ssh-keyscan

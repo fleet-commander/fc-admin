@@ -6,6 +6,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/controller.py \
 	fleetcommander/database.py \
 	fleetcommander/flaskless.py \
+	fleetcommander/libvirtcontroller.py \
 	fleetcommander/utils.py
 
 fc_admin_wsgidir = @FCPYTHONDIR@

@@ -30,6 +30,19 @@ sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
 
 from fleetcommander import libvirtcontroller
 
+# Preload needed files
+with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-orig.xml')) as fd:
+    XML_ORIG = fd.read()
+    fd.close()
+
+with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-modified.xml')) as fd:
+    XML_MODIF = fd.read()
+    fd.close()
+
+with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-nospice.xml')) as fd:
+    XML_NO_SPICE = fd.read()
+    fd.close()
+
 
 class LibvirtModuleMocker(object):
 
@@ -47,13 +60,8 @@ class LibvirtConnectionMocker(object):
 
         self.connection_uri = connection_uri
 
-        # Load XML data for test domain
-        with open(os.path.join('.', 'data/libvirt_domain-orig.xml')) as fd:
-            xmldata = fd.read()
-            fd.close()
-
         self.domains = [
-            LibvirtDomainMocker(xmldata)
+            LibvirtDomainMocker(XML_ORIG)
         ]
 
     def listAllDomains(self):
@@ -128,14 +136,6 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         cls.ssh_keyscan_parms_file = os.path.join(cls.config['data_path'], 'ssh-keyscan-parms')
         cls.ssh_parms_file = os.path.join(cls.config['data_path'], 'ssh-parms')
 
-        with open(os.path.join('.', 'data/libvirt_domain-modified.xml')) as fd:
-            cls.modifxml = fd.read()
-            fd.close()
-
-        with open(os.path.join('.', 'data/libvirt_domain-nospice.xml')) as fd:
-            cls.nospicexml = fd.read()
-            fd.close()
-
         # Clear all files to avoid false positives
         cls.tearDownClass()
 
@@ -206,15 +206,15 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         origxml = self.ctrlr.conn.domains[0].XMLDesc()
         newxml = self.ctrlr._generate_new_domain_xml(origxml)
         newdomain_uuid = LibvirtDomainMocker(newxml).UUIDString()
-        self.assertEqual(newxml, self.modifxml % {'uuid': newdomain_uuid})
+        self.assertEqual(newxml, XML_MODIF % {'uuid': newdomain_uuid})
 
     def test_06_get_spice_parms(self):
-        fakedomain = LibvirtDomainMocker(self.modifxml)
+        fakedomain = LibvirtDomainMocker(XML_MODIF)
         host, port = self.ctrlr._get_spice_parms(fakedomain)
         self.assertEqual(host, '127.0.0.1')
         self.assertEqual(port, '5900')
         # Test fail getting spice parameters
-        nospicedomain = LibvirtDomainMocker(self.nospicexml)
+        nospicedomain = LibvirtDomainMocker(XML_NO_SPICE)
         self.assertRaises(libvirtcontroller.LibVirtControllerException, self.ctrlr._get_spice_parms, nospicedomain)
 
     def test_07_open_ssh_tunnel(self):
@@ -227,7 +227,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost -L %s:127.0.0.1:5900 -N\n' % port)
 
     def test_08_undefine_domain(self):
-        fakedomain = LibvirtDomainMocker(self.modifxml)
+        fakedomain = LibvirtDomainMocker(XML_MODIF)
         self.ctrlr._undefine_domain(fakedomain)
         self.assertTrue(fakedomain.transient)
         # Test undefine a transient domain

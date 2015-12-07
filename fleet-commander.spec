@@ -123,6 +123,8 @@ exit 0
 %{_libdir}/fleet-commander/fleetcommander/database.py[co]
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py[co]
+%{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py
+%{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
