@@ -127,7 +127,6 @@ class AdminService(Flaskless):
             f.write(load)
             f.close()
 
-        changeset = self.collectors_by_name
         uid = self.current_session.get('uid', None)
 
         if not uid or uid != id:
@@ -213,7 +212,6 @@ class AdminService(Flaskless):
 
     def changes(self, request):
         response = {}
-
 
         for db in ['org.gnome.gsettings', 'org.libreoffice.registry']:
             collector = self.collectors_by_name.get(db, None)

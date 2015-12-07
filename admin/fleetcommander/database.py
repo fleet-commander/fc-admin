@@ -145,7 +145,6 @@ class ConfigValues(SQLiteDict):
     """
     TABLE_NAME = 'config'
 
-
 class SessionSettings(object):
 
     TABLE_NAME = 'sessionsettings'
