@@ -167,7 +167,7 @@ class AdminService(Flaskless):
         index = json.loads(open(INDEX_FILE).read())
         if not isinstance(index, list):
             return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
-        index.append({"url": id, "displayName": data["profile-name"]})
+        index.append({"url": id + ".json", "displayName": data["profile-name"]})
 
         self.check_for_applies()
         applies = json.loads(open(APPLIES_FILE).read())
@@ -197,7 +197,7 @@ class AdminService(Flaskless):
 
         index = json.loads(open(INDEX_FILE).read())
         for profile in index:
-            if (profile["url"] == uid):
+            if (profile["url"] == uid + ".json"):
                 index.remove(profile)
 
         open(INDEX_FILE, 'w+').write(json.dumps(index))

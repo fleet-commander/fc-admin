@@ -215,7 +215,7 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         # Get index
         ret = self.app.get("/profiles/")
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid, 'displayName': profile_obj['profile-name']}]))
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid + ".json", 'displayName': profile_obj['profile-name']}]))
 
         # Get profile
         ret = self.app.get("/profiles/"+uuid)
