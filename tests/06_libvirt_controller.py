@@ -23,6 +23,8 @@
 import os
 import sys
 import time
+import tempfile
+import shutil
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -116,7 +118,7 @@ class LibvirtDomainMocker(object):
 class TestLibVirtControllerSystemMode(unittest.TestCase):
 
     config = {
-        'data_path': '/tmp/fc-libvirt-test',
+        'data_path': tempfile.mkdtemp(prefix='fc-libvirt-test'),
         'username': 'testuser',
         'hostname': 'localhost',
         'mode': 'system',
@@ -135,23 +137,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         # Prepare paths for command output files
         cls.ssh_keyscan_parms_file = os.path.join(cls.config['data_path'], 'ssh-keyscan-parms')
         cls.ssh_parms_file = os.path.join(cls.config['data_path'], 'ssh-parms')
-
-        # Clear all files to avoid false positives
-        cls.tearDownClass()
+        cls.test_directory = cls.config['data_path']
+        os.environ['FC_TEST_DIRECTORY'] = cls.test_directory
 
     @classmethod
     def tearDownClass(cls):
-        # Remove key files and other data
-        files = [
-            cls.ctrlr.private_key_file,
-            cls.ctrlr.public_key_file,
-            cls.ctrlr.known_hosts_file,
-            cls.ssh_keyscan_parms_file,
-            cls.ssh_parms_file,
-        ]
-        for f in files:
-            if os.path.exists(f):
-                os.remove(f)
+        # Remove test directory
+        shutil.rmtree(cls.config['data_path'])
 
     def test_00_create_keys(self):
         self.ctrlr._generate_ssh_keypair()
@@ -182,10 +174,14 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         if self.ctrlr.mode == 'system':
             self.assertEqual(socket, '')
-            self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost virsh list > /dev/null\n')
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost virsh list > /dev/null\n' % {
+                'tmpdir': self.test_directory,
+            })
         else:
             self.assertEqual(socket, '/run/user/1000/libvirt/libvirt-sock')
-            self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n')
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
+                'tmpdir': self.test_directory,
+            })
 
     def test_03_connect(self):
         self.assertEqual(self.ctrlr.conn, None)
@@ -193,9 +189,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertIsInstance(self.ctrlr.conn, LibvirtConnectionMocker)
         # Check connection URI
         if self.ctrlr.mode == 'system':
-            uri = 'qemu+libssh2://testuser@localhost/system?keyfile=/tmp/fc-libvirt-test/id_rsa&known_hosts=/tmp/fc-libvirt-test/known_hosts&no_tty=1&sshauth=privkey'
+            uri = 'qemu+libssh2://testuser@localhost/system?keyfile=%(tmpdir)s/id_rsa&known_hosts=%(tmpdir)s/known_hosts&no_tty=1&sshauth=privkey' % {
+                'tmpdir': self.test_directory,
+            }
         else:
-            uri = 'qemu+libssh2://testuser@localhost/session?keyfile=/tmp/fc-libvirt-test/id_rsa&known_hosts=/tmp/fc-libvirt-test/known_hosts&no_tty=1&socket=/run/user/1000/libvirt/libvirt-sock&sshauth=privkey'
+            uri = 'qemu+libssh2://testuser@localhost/session?keyfile=%(tmpdir)s/id_rsa&known_hosts=%(tmpdir)s/known_hosts&no_tty=1&socket=/run/user/1000/libvirt/libvirt-sock&sshauth=privkey' % {
+                'tmpdir': self.test_directory,
+            }
         self.assertEqual(self.ctrlr.conn.connection_uri, uri)
 
     def test_04_list_domains(self):
@@ -224,7 +224,10 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             os.fsync(fd)
             command = fd.read()
             fd.close()
-        self.assertEqual(command, '-i /tmp/fc-libvirt-test/id_rsa -o UserKnownHostsFile=/tmp/fc-libvirt-test/known_hosts testuser@localhost -L %s:127.0.0.1:5900 -N\n' % port)
+        self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost -L %(port)s:127.0.0.1:5900 -N\n' % {
+            'tmpdir': self.test_directory,
+            'port': port,
+        })
 
     def test_08_undefine_domain(self):
         fakedomain = LibvirtDomainMocker(XML_MODIF)
@@ -242,7 +245,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
 class TestLibVirtControllerSessionMode(TestLibVirtControllerSystemMode):
     config = {
-        'data_path': '/tmp/fc-libvirt-test',
+        'data_path': tempfile.mkdtemp(prefix='fc-libvirt-test'),
         'username': 'testuser',
         'hostname': 'localhost',
         'mode': 'session',

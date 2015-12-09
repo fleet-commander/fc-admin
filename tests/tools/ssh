@@ -1,5 +1,5 @@
 #!/bin/bash
-echo $@ > /tmp/fc-libvirt-test/ssh-parms
+echo $@ > $FC_TEST_DIRECTORY/ssh-parms
 sync
 echo $@ | grep echo > /dev/null
 if [ $? = 0 ]; then
