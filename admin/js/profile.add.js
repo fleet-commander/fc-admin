@@ -14,13 +14,79 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Alberto Ruiz <aruiz@redhat.com>
+ * Authors: Alberto Ruiz <aruiz@redhat.com>
+ *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
 var updater;
 var submit=false;
 var tries=0;
 var MAXTRIES=5;
+
+/* SPICE HTML5 */
+var sc;
+
+function spice_client_connection(host, port) {
+
+  function spice_error(parm1, parm2, parm3, parm4) {
+    console.log(parm1, parm2, parm3, parm4);
+  }
+
+  function agent_connected(sc) {
+    window.addEventListener('resize', handle_resize);
+    window.spice_connection = this;
+    resize_helper(this);
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+      var spice_xfer_area = document.createElement("div");
+      spice_xfer_area.setAttribute('id', 'spice-xfer-area');
+      document.getElementById('spice-area').appendChild(spice_xfer_area);
+      document.getElementById('spice-area').addEventListener('dragover', handle_file_dragover, false);
+      document.getElementById('spice-area').addEventListener('drop', handle_file_drop, false);
+    }
+    else {
+      console.log("File API is not supported");
+    }
+  }
+
+  try {
+    setTimeout(function() {
+      sc = new SpiceMainConn({
+        uri: 'ws://' + window.location.hostname + ':' + port,
+        screen_id: "spice-screen",
+        // dump_id: "debug-div",
+        // message_id: "message-div",
+        // password: password,
+        onerror: spice_error,
+        onagent: agent_connected
+      });
+    },2000)
+  } catch (e) {
+    alert(e.toString());
+    session_stop();
+  }
+}
+
+function session_start() {
+  data = {
+    domain: sessionStorage.getItem("fc.session.domain")
+  }
+  $.ajax({
+    method: 'POST',
+    url: '/session/start',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+    success: function(data) {
+      console.log("Connecting to SPICE", data)
+      spice_client_connection(window.location.hostname, data.port);
+    }
+  })
+}
+
+function session_stop () {
+  sc.stop();
+  $.get("/session/stop");
+}
+
 
 function updateEventList () {
   $.getJSON ("/changes", function (data) {
@@ -147,5 +213,6 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
-  restartSession();
+  session_start();
+  // restartSession();
 });

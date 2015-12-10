@@ -147,6 +147,8 @@ class LibVirtController(object):
                     'ssh',
                     '-i', self.private_key_file,
                     '-o', 'UserKnownHostsFile=%s' % self.known_hosts_file,
+                    '-o', 'PreferredAuthentications=publickey',
+                    '-o', 'PasswordAuthentication=no',
                     '%s@%s' % (self.username, self.hostname),
                     command,
                 ],
@@ -241,7 +243,7 @@ class LibVirtController(object):
         channel.set('type', 'pty')
         target = ET.SubElement(channel, 'target')
         target.set('type', 'virtio')
-        target.set('name', 'fleet-commander_%s:%s' % (self.admin_hostname, self.admin_port))
+        target.set('name', 'fleet-commander_%s-%s' % (self.admin_hostname, self.admin_port))
         return ET.tostring(root)
 
     def _open_ssh_tunnel(self, host, spice_port):
@@ -261,6 +263,8 @@ class LibVirtController(object):
                     'ssh',
                     '-i', self.private_key_file,
                     '-o', 'UserKnownHostsFile=%s' % self.known_hosts_file,
+                    '-o', 'PreferredAuthentications=publickey',
+                    '-o', 'PasswordAuthentication=no',
                     '%s@%s' % (self.username, self.hostname),
                     '-L', '%s:%s:%s' % (local_port, host, spice_port),
                     '-N'
@@ -286,8 +290,7 @@ class LibVirtController(object):
             if tries < self.MAX_DOMAIN_UNDEFINE_TRIES:
                 tries += 1
             else:
-                # Intended to be treated as a warning
-                raise LibVirtControllerException('Error undefining virtual machine')
+                break
 
     def list_domains(self):
         """
@@ -295,7 +298,7 @@ class LibVirtController(object):
         """
         self._connect()
         domains = self.conn.listAllDomains()
-        return {domain.UUIDString(): domain.name() for domain in domains}
+        return [{'uuid': domain.UUIDString(), 'name': domain.name()} for domain in domains]
 
     def session_start(self, identifier):
         """
@@ -341,7 +344,5 @@ class LibVirtController(object):
             domain.destroy()
 
         # Undefine domain
-        try:
-            self._undefine_domain(domain)
-        except:
-            pass
+        self._undefine_domain(domain)
+

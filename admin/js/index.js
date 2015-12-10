@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Alberto Ruiz <aruiz@redhat.com>
+ * Authors: Alberto Ruiz <aruiz@redhat.com>
+ *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
 function populate_profile_list() {
@@ -54,41 +55,97 @@ function remove_profile(profile) {
   });
 }
 
-
-function configure_hipervisor() {
-  $('#configure-hipervisor-modal').modal('show');
-  $('#configure-hipervisor-confirm').click(function () {
-    if ($('#host').val() == '') {
-      //TODO: Check if http://hostname:8182 works
-      //TODO: Check if http://hostname:VNC35 works
-      $('#host-group').addClass('has-error');
-      return;
-    }
-
-    $('#host-group').removeClass('has-error');
-    $('#configure-hipervisor-modal').modal('hide');
-    sessionStorage.setItem("fc.session.host", $('#host').val());
-    location.href = "/profiles/add"
+function configure_hypervisor() {
+  $.getJSON("/hypervisor/", function(data){
+    $('#host').val(data.host);
+    $('#username').val(data.username);
+    $('#mode option[value="' + data.mode + '"]').prop('selected', true);
+    $('#pubkey').html(data.pubkey);
+    $('#configure-hypervisor-modal').modal('show');
   });
 }
 
 function select_domain() {
   $('#domain-selection-modal').modal('show');
+
+  // Function for domain selection handling
+  function domain_selected() {
+    // Once selected the domain, set it's uuid in sessionStorage and redirect
+    $('#domain-selection-modal').modal('hide');
+    sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
+    location.href = "/profiles/add";
+  }
+
+  // Show loading clock
+  spinner = $('#domain-selection-modal .spinner');
+  list = $('#domain-selection-list');
+
+  spinner.show();
+  list.html('');
+
+  // Generate domain list
+  $.getJSON ('/hypervisor/domains/list/', function(data){
+    // Hide loading clock
+    if (data.status) {
+      $.each(data.domains, function() {
+        domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
+        wrapper = $('<div></div>');
+        domain.appendTo(wrapper)
+        wrapper.appendTo(list);
+        domain.click(domain_selected);
+      });
+    } else {
+      alert(data.error);
+    }
+    $('#domain-selection-modal .spinner').hide();
+  });
 }
 
-function add_profile () {
-  $.getJSON("/pubkey", function(data){
-    // Add public key to textarea
-    $('#pubkey').html(data.pubkey);
+function save_hypervisor_configuration() {
+    if ($('#host').val() == '') {
+      $('#host-group').addClass('has-error');
+      return;
+    }
+    if ($('#username').val() == '') {
+      $('#username-group').addClass('has-error');
+      return;
+    }
+    $('#host-group').removeClass('has-error');
+    $('#username-group').removeClass('has-error');
+    $('#configure-hypervisor-modal').modal('hide');
+
+    var data = {
+      host: $('#host').val(),
+      username: $('#username').val(),
+      mode: $('#mode').val(),
+      domains: {}
+    }
+
+    $.ajax({
+      method: 'POST',
+      url: '/hypervisor/',
+      data: JSON.stringify(data),
+      contentType: 'application/json',
+      success: function(data) {
+        $('#configure-hypervisor-modal').modal('hide');
+      }
+    });
+}
+
+function initialization() {
+  $.getJSON ('/init/', function(data){
     if (data.needcfg) {
-      configure_hipervisor();
-    } else {
-      select_domain();
+      configure_hypervisor();
     }
   });
 }
 
 $(document).ready (function () {
-  $('#add-profile').click (add_profile)
+
+  $('#add-profile').click (select_domain);
+  $('#show-hypervisor-config').click(configure_hypervisor);
+  $('#configure-hypervisor-confirm').click(save_hypervisor_configuration);
+
+  initialization();
   populate_profile_list();
 });

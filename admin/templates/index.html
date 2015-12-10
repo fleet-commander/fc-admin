@@ -15,27 +15,37 @@
       <div class="navbar-header">
         <a class="navbar-brand" href="#">Fleet Commander</a>
       </div>
+
+      <div class="nav navbar-utility">
+        <a id="show-hypervisor-config" href="#"><span class="pficon pficon-settings"></span></a>
+      </div>
     </nav>
 
-    <div id="configure-hipervisor-modal" class="modal fade">
+    <div id="configure-hypervisor-modal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Hipervisor configuration</h4>
+            <h4 class="modal-title">Hypervisor configuration</h4>
           </div>
 
           <div class="modal-body">
             <div id="host-group" class="form-group">
               <label for="host" class="control-label">Fleet Commander virtual environment host</label>
               <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control"></input>
-              <label for="user" class="control-label">Username for connection</label>
-              <input id="user" name="pubkey" placeholder="enter username" type="text" class="form-control"></input>
+            </div>
+            <div id="username-group" class="form-group">
+              <label for="username" class="control-label">Username for connection</label>
+              <input id="username" name="pubkey" placeholder="enter username" type="text" class="form-control"></input>
+            </div>
+            <div id="mode-group" class="form-group">
               <label for="mode" class="control-label">Libvirt mode</label>
               <select id="mode" name="mode" class="form-control">
                 <option value="system" selected>System</option>
                 <option value="session">Session</option>
               </select>
+            </div>
+            <div id="pubkey-group" class="form-group">
               <label for="pubkey" class="control-label">Public key (You must add it yo your SSH allowed keys)</label>
               <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly>
               </textarea>
@@ -44,7 +54,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id='configure-hipervisor-confirm' class="btn btn-primary">Add Profile</button>
+            <button id='configure-hypervisor-confirm' class="btn btn-primary">Save</button>
           </div>
         </div>
       </div>
@@ -55,11 +65,13 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">New Profile</h4>
+            <h4 class="modal-title">Select domain</h4>
           </div>
 
           <div class="modal-body">
-            <strong>Domains list to start a session</strong>
+            <div class="spinner"></div>
+            <div id="domain-selection-list">
+            </div>
           </div>
 
           <div class="modal-footer">
