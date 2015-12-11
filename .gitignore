@@ -5,7 +5,6 @@ Makefile.in
 .*.swp
 */.*.swp
 admin/profiles/*.json
-admin/database.db
 data/*.service
 INSTALL
 aclocal.m4
@@ -30,3 +29,7 @@ build.sh
 check.sh
 fc-admin.sublime-project
 fc-admin.sublime-workspace
+id_rsa
+id_rsa.pub
+known_hosts
+database.db
