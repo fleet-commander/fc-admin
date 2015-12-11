@@ -37,7 +37,7 @@ def parse_config(config_file):
     SECTION_NAME = 'admin'
 
     args = {
-        'host': 'localhost',
+        'host': '0.0.0.0',
         'port': 8181,
         'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
         'data_dir': os.getcwd(),
