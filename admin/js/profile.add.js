@@ -18,6 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+
 var updater;
 var submit=false;
 var tries=0;
@@ -29,7 +30,7 @@ var sc;
 function spice_client_connection(host, port) {
 
   function spice_error(parm1, parm2, parm3, parm4) {
-    console.log(parm1, parm2, parm3, parm4);
+    console.log('ERROR ON THE ROCKS:', parm1, parm2, parm3, parm4);
   }
 
   function agent_connected(sc) {
@@ -51,13 +52,13 @@ function spice_client_connection(host, port) {
   try {
     setTimeout(function() {
       sc = new SpiceMainConn({
-        uri: 'ws://' + window.location.hostname + ':' + port,
+        uri: 'ws://' + location.hostname + ':' + port,
         screen_id: "spice-screen",
         // dump_id: "debug-div",
         // message_id: "message-div",
         // password: password,
         onerror: spice_error,
-        onagent: agent_connected
+        // onagent: agent_connected
       });
     },2000)
   } catch (e) {
@@ -68,7 +69,9 @@ function spice_client_connection(host, port) {
 
 function session_start() {
   data = {
-    domain: sessionStorage.getItem("fc.session.domain")
+    domain: sessionStorage.getItem("fc.session.domain"),
+    admin_host: location.hostname,
+    admin_port: location.port || 80
   }
   $.ajax({
     method: 'POST',
@@ -76,15 +79,17 @@ function session_start() {
     data: JSON.stringify(data),
     contentType: 'application/json',
     success: function(data) {
-      console.log("Connecting to SPICE", data)
-      spice_client_connection(window.location.hostname, data.port);
+      spice_client_connection(location.hostname, data.port);
+      listenChanges();
     }
   })
 }
 
 function session_stop () {
   sc.stop();
-  $.get("/session/stop");
+  $.get("/session/stop", function() {
+    location.href = '/';
+  });
 }
 
 

@@ -24,7 +24,6 @@
 import os
 import signal
 import json
-import requests
 import uuid
 import logging
 import subprocess
@@ -41,10 +40,8 @@ class AdminService(Flaskless):
     def __init__(self, name, config, *args, **kwargs):
 
         kwargs['routes'] = [
-            (r'^clientdata/(?P<path>.+)$',          ['GET'],    self.serve_clientdata),
-            (r'^static/(?P<path>.+)$',              ['GET'],    self.serve_static),
-            # Workaround for bootstrap font path
-            # ('^components/bootstrap/dist/font',  ['GET'],    self.font_files),
+            (r'^clientdata/(?P<path>.+)$',          ['GET'],            self.serve_clientdata),
+            (r'^static/(?P<path>.+)$',              ['GET'],            self.serve_static),
             ('^profiles/$',                         ['GET'],            self.profiles),
             ('^profiles/applies$',                  ['GET'],    self.profiles_applies),
             ('^profiles/save/(?P<id>[-\w\.]+)$',    ['POST'],           self.profiles_save),
@@ -86,9 +83,6 @@ class AdminService(Flaskless):
         # TODO: Change path for templates outside of static dir
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
-        # Cached controller by get_libvirt_controller
-        self._ctrlr = None
-
     def check_for_profile_index(self):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         self.test_and_create_file (INDEX_FILE, [])
@@ -106,15 +100,12 @@ class AdminService(Flaskless):
         except OSError:
             logging.error('There was an error attempting to write on %s' % filename)
 
-    def get_libvirt_controller(self):
-        if not self._ctrlr:
-            if 'hypervisor' not in self.current_session:
-                raise Exception('hypervisor is not configured yet')
+    def get_libvirt_controller(self, admin_host=None, admin_port=None):
+        if 'hypervisor' not in self.current_session:
+            raise Exception('hypervisor is not configured yet')
 
-            hypervisor = self.current_session['hypervisor']
-            self._ctrlr = LibVirtController(config['data_dir'], hypervisor['username'], hypervisor['host'], hypervisor['mode'], None, None)
-
-        return self._ctrlr
+        hypervisor = self.current_session['hypervisor']
+        return LibVirtController(config['data_dir'], hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
 
     # Views
     def index(self, request):
@@ -293,7 +284,7 @@ class AdminService(Flaskless):
         if not isinstance(data, dict):
             return JSONResponse({"status": "bad JSON data"}, 403)
 
-        if self.current_session.get('host', None) is None:
+        if self.current_session.get('port', None) is None:
             return JSONResponse({"status": "session was not started"}, 403)
 
         for key in data:
@@ -320,105 +311,56 @@ class AdminService(Flaskless):
     def deploy(self, request, uid):
         return self.serve_html_template('deploy.html')
 
-    # def session_start(self, request):
-    #     data = request.get_json()
-    #     req = None
-
-    #     if self.current_session.get('host', None) is not None:
-    #         return JSONResponse({"status": "session already started"}, 403)
-
-    #     if not data:
-    #         return JSONResponse({"status": "Request data was not a valid JSON object"}, 403)
-
-    #     if 'host' not in data:
-    #         return JSONResponse({"status": "no host was specified in POST request"}, 403)
-
-    #     self.db.sessionsettings.clear_settings()
-
-    #     self.current_session['host'] = data['host']
-    #     try:
-    #         req = requests.get("http://%s:8182/session/start" % data['host'])
-    #     except requests.exceptions.ConnectionError:
-    #         return JSONResponse({"status": "could not connect to host"}, 403)
-
-    #     self.websocket_stop()
-    #     self.current_session['websocket_target_host'] = data['host']
-    #     self.current_session['websocket_target_port'] = 5935
-    #     self.websocket_start()
-
-    #     return HttpResponse(req.content, req.status_code)
-
-    # def session_stop(self, request):
-    #     host = self.current_session.get('host', None)
-
-    #     if host is None:
-    #         return JSONResponse({"status": "there was no session started"}, 403)
-
-    #     msg, status = (json.dumps({"status": "could not connect to host"}), 403)
-    #     try:
-    #         req = requests.get("http://%s:8182/session/stop" % host)
-    #         msg, status = (req.content, req.status_code)
-    #     except requests.exceptions.ConnectionError:
-    #         pass
-
-    #     self.websocket_stop()
-
-    #     # if host:
-    #     del(self.current_session['host'])
-
-    #     return HttpResponse(msg, status)
-
     def session_start(self, request):
         data = request.get_json()
 
         if self.current_session.get('port', None) is not None:
-            return JSONResponse({"status": "Session already started"}, 403)
+            return JSONResponse({"status": "Session already started"}, 400)
 
-        if not data:
-            return JSONResponse({"status": "Request data was not a valid JSON object"}, 403)
-
-        if 'domain' not in data:
-            return JSONResponse({"status": "No domain was specified in POST request"}, 403)
+        if not data or 'domain' not in data or 'admin_host' not in data or 'admin_port' not in data:
+            return JSONResponse({"status": "Invalid data received"}, 400)
 
         self.db.sessionsettings.clear_settings()
 
+        admin_host = data['admin_host']
+        admin_port = data['admin_port']
+
         try:
-            uuid, port, tunnel_pid = self.get_libvirt_controller().session_start(data['domain'])
+            uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(data['domain'])
         except Exception as e:
-            print "Exception!!!!!", e
-            return JSONResponse(unicode(e), 403)
+            return JSONResponse(unicode(e), 400)
 
         self.current_session['uuid'] = uuid
         self.current_session['port'] = port
         self.current_session['tunnel_pid'] = tunnel_pid
 
         self.websocket_stop()
+        self.current_session['websocket_listen_host'] = admin_host
         self.current_session['websocket_target_host'] = 'localhost'
         self.current_session['websocket_target_port'] = port
         self.websocket_start()
 
-        # TODO: Randomize port on websocket creation
+        # TODO: Randomize port on websocket creation for more security
         return JSONResponse({'port': 8989})
 
     def session_stop(self, request):
 
         if 'uuid' not in self.current_session or 'tunnel_pid' not in self.current_session or 'port' not in self.current_session:
-            return JSONResponse({"status": "there was no session started"}, 403)
+            return JSONResponse({"status": "there was no session started"}, 400)
 
         uuid = self.current_session['uuid']
         tunnel_pid = self.current_session['tunnel_pid']
 
-        try:
-            self.get_libvirt_controller().session_stop(uuid, tunnel_pid)
-        except Exception as e:
-            return JSONResponse(unicode(e), 403)
-
-        self.websocket_stop()
-
-        # if host:
         del(self.current_session['uuid'])
         del(self.current_session['tunnel_pid'])
         del(self.current_session['port'])
+
+        self.websocket_stop()
+
+        try:
+            self.get_libvirt_controller().session_stop(uuid, tunnel_pid)
+        except Exception as e:
+            return JSONResponse(unicode(e), 400)
 
         return HttpResponse('')
 
