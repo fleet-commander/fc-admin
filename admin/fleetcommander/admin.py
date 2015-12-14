@@ -31,7 +31,7 @@ import subprocess
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse
-from libvirtcontroller import LibVirtController
+import libvirtcontroller
 from database import DBManager
 
 
@@ -80,6 +80,9 @@ class AdminService(Flaskless):
 
         self.static_dir = config['data_dir']
 
+        # TODO: Change data dir
+        self.data_dir = config['data_dir']
+
         # TODO: Change path for templates outside of static dir
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
@@ -105,7 +108,7 @@ class AdminService(Flaskless):
             raise Exception('hypervisor is not configured yet')
 
         hypervisor = self.current_session['hypervisor']
-        return LibVirtController(config['data_dir'], hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
+        return libvirtcontroller.LibVirtController(self.data_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
 
     # Views
     def index(self, request):
@@ -120,7 +123,7 @@ class AdminService(Flaskless):
     def hypervisor_config(self, request):
         if request.method == 'GET':
             # Initialize LibVirtController to create keypair if needed
-            ctrlr = LibVirtController(config['data_dir'], None, None, 'system', None, None)
+            ctrlr = libvirtcontroller.LibVirtController(self.data_dir, None, None, 'system', None, None)
             with open(ctrlr.public_key_file, 'r') as fd:
                 public_key = fd.read().strip()
                 fd.close()
@@ -328,7 +331,7 @@ class AdminService(Flaskless):
         try:
             uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(data['domain'])
         except Exception as e:
-            return JSONResponse(unicode(e), 400)
+            return JSONResponse({'status': unicode(e)}, 400)
 
         self.current_session['uuid'] = uuid
         self.current_session['port'] = port
@@ -346,7 +349,7 @@ class AdminService(Flaskless):
     def session_stop(self, request):
 
         if 'uuid' not in self.current_session or 'tunnel_pid' not in self.current_session or 'port' not in self.current_session:
-            return JSONResponse({"status": "there was no session started"}, 400)
+            return JSONResponse({'status': 'There was no session started'}, 520)
 
         uuid = self.current_session['uuid']
         tunnel_pid = self.current_session['tunnel_pid']
@@ -359,10 +362,11 @@ class AdminService(Flaskless):
 
         try:
             self.get_libvirt_controller().session_stop(uuid, tunnel_pid)
-        except Exception as e:
-            return JSONResponse(unicode(e), 400)
 
-        return HttpResponse('')
+        except Exception as e:
+            return JSONResponse({'status': unicode(e)}, 400)
+
+        return JSONResponse({'status': True})
 
     def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
         if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:

@@ -155,5 +155,5 @@
       <alias name="balloon0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci" />
     </memballoon>
-  <channel type="pty"><target name="fleet-commander_localhost:8008" type="virtio" /></channel></devices>
+  <channel type="pty"><target name="fleet-commander_localhost-8008" type="virtio" /></channel></devices>
 <qemu:commandline><qemu:arg value="-snapshot" /></qemu:commandline></domain>

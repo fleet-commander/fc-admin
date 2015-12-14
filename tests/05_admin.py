@@ -26,49 +26,19 @@ import json
 import unittest
 import shutil
 import tempfile
-import requests
+from libvirtcontrollermock import LibvirtModuleMocker
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
 
 from fleetcommander import admin as fleet_commander_admin
 
+
 class MockResponse:
     pass
 
-class MockRequests:
-    DEFAULT_CONTENT = "SOMECONTENT"
-    DEFAULT_STATUS = 200
-    exceptions = requests.exceptions
 
-    def __init__(self):
-        self.queue = []
-        self.raise_error = False
-        self.set_default_values()
-
-    def get(self, url):
-        print("--> "+url)
-        if self.raise_error:
-            raise requests.exceptions.ConnectionError('Connection failed!')
-        self.queue.append(url)
-        ret = MockRequests()
-        ret.content = self.content
-        ret.status_code = self.status_code
-        return ret
-
-    def pop(self):
-        return self.queue.pop()
-
-    def set_default_values(self):
-        self.content = self.DEFAULT_CONTENT
-        self.status_code = self.DEFAULT_STATUS
-        self.raise_error = False
-
-    def raise_error_on_get(self):
-        self.raise_error = True
-
-
-class MockVncWebSocket:
+class MockWebSocket:
 
     def __init__(self, **kwargs):
         self.started = False
@@ -80,42 +50,50 @@ class MockVncWebSocket:
     def stop(self):
         self.started = False
 
-# assigned mocked objects
-
 
 class TestAdminWSGIRef(unittest.TestCase):
 
     test_wsgiref = True
 
-    cookie = "/tmp/fleet-commander-start"
-    args = {
-        'host': 'localhost',
-        'port': 8777,
-        'data_dir': PYTHONPATH,
-        'database_path': tempfile.mktemp(),
-    }
+    @classmethod
+    def setUpClass(cls):
+        LibvirtModuleMocker.db_path = tempfile.mktemp()
 
     def setUp(self):
-        fleet_commander_admin.requests.set_default_values()
-        if 'profiles_dir' not in self.args:
-            self.args['profiles_dir'] = tempfile.mkdtemp()
+        self.test_directory = tempfile.mkdtemp()
 
-        self.vnc_websocket = MockVncWebSocket()
-        self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.vnc_websocket)
+        self.args = {
+            'host': 'localhost',
+            'port': 8777,
+            'data_dir': self.test_directory,
+            'database_path': os.path.join(self.test_directory, 'database.db'),
+        }
+
+        os.environ['FC_TEST_DIRECTORY'] = self.test_directory
+        if 'profiles_dir' not in self.args:
+            self.args['profiles_dir'] = os.path.join(self.test_directory, 'profiles')
+            os.mkdir(self.args['profiles_dir'])
+
+        self.websocket = MockWebSocket()
+        # Libvirt module mocker
+
+        fleet_commander_admin.libvirtcontroller.libvirt = LibvirtModuleMocker
+        self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.websocket)
         self.base_app.config['TESTING'] = True
         self.app = self.base_app.test_client(stateless=not self.test_wsgiref)
 
-    @classmethod
-    def setUpClass(cls):
-        fleet_commander_admin.requests = MockRequests()
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.args['profiles_dir'])
-        cls.args['profiles_dir'] = tempfile.mkdtemp()
+    def tearDown(self):
+        shutil.rmtree(self.test_directory)
 
     def get_data_from_file(self, path):
         return open(path).read()
+
+    def configure_hypervisor(self):
+        return self.app.jsonpost('/hypervisor/', data={
+            'host': 'localhost',
+            'username': 'testuser',
+            'mode': 'session',
+        })
 
     def test_00_profiles(self):
         ret = self.app.get("/profiles/")
@@ -144,36 +122,53 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 403)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "nonexistinguid"}))
 
-    def test_02_session_start_stop(self):
-        # Start session
-        host = 'somehost'
-        ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+    def test_02_hypervisor_configuration(self):
+        # Hypervisor nor configured yet
+        ret = self.app.get('/hypervisor/')
+        self.assertTrue(ret.jsondata['needcfg'])
+        self.assertEqual(ret.jsondata['host'], '')
+        self.assertEqual(ret.jsondata['username'], '')
+        self.assertEqual(ret.jsondata['mode'], 'system')
 
+        # Save hypervisor configuration
+        ret = self.configure_hypervisor()
+
+        # Get config again
+        ret = self.app.get('/hypervisor/')
+        self.assertTrue('needcfg' not in ret.jsondata)
+        self.assertEqual(ret.jsondata['host'], 'localhost')
+        self.assertEqual(ret.jsondata['username'], 'testuser')
+        self.assertEqual(ret.jsondata['mode'], 'session')
+
+    def test_03_start_invalid_data(self):
+        ret = self.app.post('/session/start', data=json.dumps({'whatever': 'something'}), content_type='application/json')
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'Invalid data received'}))
+        self.assertEqual(ret.status_code, 400)
+
+    def test_04_session_start_stop(self):
+        # Setup hipervisor
+        self.configure_hypervisor()
+
+        # Start session
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
+        self.assertEqual(ret.status_code, 200)
         self.assertTrue('websockify_pid' in self.base_app.current_session)
         self.assertTrue(self.base_app.current_session['websockify_pid'] is not None)
-        self.assertEqual(self.base_app.current_session['websocket_target_host'], host)
-        self.assertEqual(self.base_app.current_session['websocket_target_port'], 5935)
-
-        self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
-        self.assertEqual(ret.status_code, MockRequests.DEFAULT_STATUS)
-        self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/start" % host)
+        self.assertEqual(self.base_app.current_session['websocket_target_host'], data['admin_host'])
+        # TODO: Port is random now
+        # self.assertEqual(self.base_app.current_session['websocket_target_port'], 5935)
 
         ret = self.app.get('/session/stop')
-        self.assertEqual(fleet_commander_admin.requests.pop(), "http://%s:8182/session/stop" % host)
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(ret.data, MockRequests.DEFAULT_CONTENT)
 
-    def test_03_stop_start_failed_connection(self):
-        fleet_commander_admin.requests.raise_error_on_get()
-        rets = [self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json'),
-                self.app.get('/session/stop')]
-        for ret in rets:
-            self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'could not connect to host'}))
-            self.assertEqual(ret.status_code, 403)
+    def test_05_change_select_and_deploy(self):
+        # Setup hipervisor
+        self.configure_hypervisor()
 
-    def test_04_change_select_and_deploy(self):
-        self.app.post('/session/start', data=json.dumps({'host': 'somehost'}), content_type='application/json')
-        fleet_commander_admin.requests.pop()
+        # Start session
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
 
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
         ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
@@ -188,11 +183,12 @@ class TestAdminWSGIRef(unittest.TestCase):
         # Check all changes
         ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.dumps(json.loads(ret.data)),
+        self.assertEqual(
+            json.dumps(json.loads(ret.data)),
             json.dumps({'org.gnome.gsettings': [[change1['key'], change1['value']], [change2['key'], change2['value']]]}))
 
         # Select changes for the profile and get UUID to save it
-        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change2['key'],]}), content_type='application/json')
+        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change2['key']]}), content_type='application/json')
         self.assertEqual(ret.status_code, 200)
 
         payload = json.loads(ret.data)
@@ -203,7 +199,6 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         # Stop the virtual session
         self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
 
         # Save the profile with the selected changes
         uuid = payload['uuid']
@@ -246,21 +241,23 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
 
-    def test_05_discard_profile(self):
-        host = 'somehost'
-        ret = self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-        fleet_commander_admin.requests.pop()
+    def test_06_discard_profile(self):
+        # Setup hipervisor
+        self.configure_hypervisor()
+
+        # Start session
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
 
         # Create profile candidate: We assume all of these methods as tested
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
         self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change1['key'],]}), content_type='application/json')
-        payload = json.loads(ret.data)
+        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change1['key']]}), content_type='application/json')
 
         # discard a profile candidate
-        ret = self.app.get('/profiles/discard/' + payload['uuid'])
+        ret = self.app.get('/profiles/discard/' + ret.jsondata['uuid'])
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
+        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(ret.jsondata))
 
         # discard a non-existing profile
         ret = self.app.get('/profiles/discard/invaliduuid')
@@ -268,12 +265,10 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
 
         self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
 
-    def test_06_change_merge_several_changes(self):
+    def test_07_change_merge_several_changes(self):
         host = 'somehost'
         self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-        fleet_commander_admin.requests.pop()
 
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': "first", 'signature': 's'}
         ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
@@ -290,24 +285,20 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'org.gnome.gsettings': [[change2['key'], change2['value']], ]}))
 
         self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
 
-    def test_07_empty_collector(self):
+    def test_09_empty_collector(self):
         host = 'somehost'
         self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-        fleet_commander_admin.requests.pop()
 
         ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({}))
 
         self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
 
-    def test_08_libreoffice_and_gsettings_changes(self):
+    def test_09_libreoffice_and_gsettings_changes(self):
         host = 'somehost'
         self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
-        fleet_commander_admin.requests.pop ()
 
         change_libreoffice = {'key': '/org/libreoffice/registry/foo', 'value': 'bar', 'signature': 's'}
         ret = self.app.post('/changes/submit/org.libreoffice.registry', data=json.dumps(change_libreoffice), content_type='application/json')
@@ -325,7 +316,7 @@ class TestAdminWSGIRef(unittest.TestCase):
           {'org.gnome.gsettings':      [[change_gsettings['key'],   change_gsettings['value']]],
            'org.libreoffice.registry': [[change_libreoffice['key'], change_libreoffice['value']]]}))
         self.app.get('/session/stop')
-        fleet_commander_admin.requests.pop()
+
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False

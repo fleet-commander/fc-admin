@@ -86,18 +86,18 @@ function select_domain() {
   // Generate domain list
   $.getJSON ('/hypervisor/domains/list/', function(data){
     // Hide loading clock
-    if (data.status) {
-      $.each(data.domains, function() {
-        domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
-        wrapper = $('<div></div>');
-        domain.appendTo(wrapper)
-        wrapper.appendTo(list);
-        domain.click(domain_selected);
-      });
-    } else {
-      alert(data.error);
-    }
     $('#domain-selection-modal .spinner').hide();
+
+    $.each(data.domains, function() {
+      domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
+      wrapper = $('<div></div>');
+      domain.appendTo(wrapper)
+      wrapper.appendTo(list);
+      domain.click(domain_selected);
+    });
+
+  }, function(data){
+    alert(data.status)
   });
 }
 
