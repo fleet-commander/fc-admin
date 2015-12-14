@@ -15,7 +15,6 @@ config.status
 configure
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-controller.conf
 data/fleet-commander-apache.conf
 install-sh
 missing
@@ -25,7 +24,9 @@ tests/*.log
 *.py[co]
 test-driver
 tests/data/gschemas.compiled
-build.sh
+build-rpm.sh
+install-rpm.sh
+check-full.sh
 check.sh
 fc-admin.sublime-project
 fc-admin.sublime-workspace

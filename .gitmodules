@@ -1,6 +1,3 @@
-[submodule "admin/js/noVNC"]
-	path = admin/js/noVNC
-	url = https://github.com/kanaka/noVNC.git
 [submodule "admin/js/spice-html5"]
 	path = admin/js/spice-html5
 	url = https://github.com/SPICE/spice-html5

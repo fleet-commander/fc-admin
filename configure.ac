@@ -72,13 +72,6 @@ AC_SUBST(fchomedir)
 AC_SUBST(fcdatadir)
 AC_SUBST(fcpythondir)
 
-AC_SUBST(PYTHON)
-AC_SUBST(XVNC)
-AC_SUBST(XRANDR)
-AC_SUBST(SLEEP)
-AC_SUBST(PKILL)
-AC_SUBST(RM)
-
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
@@ -86,12 +79,6 @@ AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
-
-AS_AC_EXPAND(XVNC,"$XVNC")
-AS_AC_EXPAND(XRANDR,"$XRANDR")
-AS_AC_EXPAND(SLEEP,"$SLEEP")
-AS_AC_EXPAND(PKILL,"$PKILL")
-AS_AC_EXPAND(RM,"$RM")
 
 AC_SUBST(SYSTEMUNITDIR)
 
@@ -101,11 +88,8 @@ data/Makefile
 tools/Makefile
 tests/Makefile
 admin/Makefile
-data/fleet-commander-controller.service
-data/fleet-commander-controller.conf
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin.service
-data/fleet-commander-vnc-session.service
 data/fleet-commander-apache.conf
 ])
