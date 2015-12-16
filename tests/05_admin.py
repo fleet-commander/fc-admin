@@ -268,8 +268,6 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.app.get('/session/stop')
 
     def test_07_change_merge_several_changes(self):
-        host = 'somehost'
-        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': "first", 'signature': 's'}
         ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
@@ -287,19 +285,13 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         self.app.get('/session/stop')
 
-    def test_09_empty_collector(self):
-        host = 'somehost'
-        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
+    def test_08_empty_collector(self):
 
         ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({}))
 
-        self.app.get('/session/stop')
-
     def test_09_libreoffice_and_gsettings_changes(self):
-        host = 'somehost'
-        self.app.post('/session/start', data=json.dumps({'host': host}), content_type='application/json')
 
         change_libreoffice = {'key': '/org/libreoffice/registry/foo', 'value': 'bar', 'signature': 's'}
         ret = self.app.post('/changes/submit/org.libreoffice.registry', data=json.dumps(change_libreoffice), content_type='application/json')
@@ -316,7 +308,6 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps(
           {'org.gnome.gsettings':      [[change_gsettings['key'],   change_gsettings['value']]],
            'org.libreoffice.registry': [[change_libreoffice['key'], change_libreoffice['value']]]}))
-        self.app.get('/session/stop')
 
 
 class TestAdminApache(TestAdminWSGIRef):
