@@ -138,6 +138,7 @@ class JSONResponse(HttpResponse):
     """
     def __init__(self, content, status_code=200, content_type='application/json'):
         content = json.dumps(content)
+        self.jsondata = json.loads(content)
         super(JSONResponse, self).__init__(content, status_code=status_code, content_type=content_type)
 
 
@@ -375,7 +376,7 @@ class TestClient(object):
 
     def get(self, path, data={}):
         """
-        Get request simulation
+        GET request simulation
         """
         environment = self._generate_environment(path, data=data)
         logging.info('GET -> %s' % path)
@@ -389,6 +390,9 @@ class TestClient(object):
         return response
 
     def post(self, path, data, content_type=None):
+        """
+        POST request simulation
+        """
         environment = self._generate_environment(path, 'POST', {}, data, content_type)
         logging.info('POST -> %s' % path)
         request = HttpRequest(environment)
@@ -399,3 +403,9 @@ class TestClient(object):
         response = app.handle_request(request)
         logging.info(response.status_code, response.content)
         return response
+
+    def jsonpost(self, path, data):
+        """
+        JSON POST request simulation
+        """
+        return self.post(path, data=json.dumps(data), content_type='application/json')

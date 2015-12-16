@@ -2,3 +2,4 @@
 data_dir      = @FCDATADIR@
 profiles_dir  = @PROFILESDIR@
 database_path = @DATABASEFILE@
+state_dir     = @ADMINSTATEDIR@

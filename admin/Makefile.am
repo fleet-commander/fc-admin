@@ -3,9 +3,9 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/__init__.py   \
 	fleetcommander/admin.py      \
 	fleetcommander/collectors.py \
-	fleetcommander/controller.py \
 	fleetcommander/database.py \
 	fleetcommander/flaskless.py \
+	fleetcommander/libvirtcontroller.py \
 	fleetcommander/utils.py
 
 fc_admin_wsgidir = @FCPYTHONDIR@
@@ -14,22 +14,46 @@ fc_admin_wsgi_SCRIPTS = \
 
 fc_jsdir   = @FCDATADIR@/js
 fc_js_DATA = \
-	     $(wildcard js/*.js)
+		$(wildcard js/*.js)
 
-fc_novncdir = @FCDATADIR@/js/noVNC/include
-fc_novnc_DATA = \
-		js/noVNC/include/util.js \
-		js/noVNC/include/webutil.js \
-		js/noVNC/include/base64.js \
-		js/noVNC/include/websock.js \
-		js/noVNC/include/des.js \
-		js/noVNC/include/keysymdef.js \
-		js/noVNC/include/keyboard.js \
-		js/noVNC/include/input.js \
-		js/noVNC/include/display.js \
-		js/noVNC/include/jsunzip.js \
-		js/noVNC/include/keysym.js \
-		js/noVNC/include/rfb.js
+fc_spicehtml5dir = @FCDATADIR@/js/spice-html5
+fc_spicehtml5_DATA = \
+	js/spice-html5/cursor.js \
+	js/spice-html5/bitmap.js \
+	js/spice-html5/playback.js \
+	js/spice-html5/spiceconn.js \
+	js/spice-html5/ticket.js \
+	js/spice-html5/filexfer.js \
+	js/spice-html5/quic.js \
+	js/spice-html5/thirdparty/prng4.js \
+	js/spice-html5/thirdparty/rsa.js \
+	js/spice-html5/thirdparty/sha1.js \
+	js/spice-html5/thirdparty/rng.js \
+	js/spice-html5/thirdparty/jsbn.js \
+	js/spice-html5/main.js \
+	js/spice-html5/webm.js \
+	js/spice-html5/spicetype.js \
+	js/spice-html5/simulatecursor.js \
+	js/spice-html5/enums.js \
+	js/spice-html5/inputs.js \
+	js/spice-html5/atKeynames.js \
+	js/spice-html5/display.js \
+	js/spice-html5/png.js \
+	js/spice-html5/spicearraybuffer.js \
+	js/spice-html5/resize.js \
+	js/spice-html5/spicemsg.js \
+	js/spice-html5/wire.js \
+	js/spice-html5/lz.js \
+	js/spice-html5/utils.js \
+	js/spice-html5/spicedataview.js
+
+fc_spicehtml5thirdpartydir = @FCDATADIR@/js/spice-html5/thirdparty
+fc_spicehtml5thirdparty_DATA = \
+	js/spice-html5/thirdparty/prng4.js \
+	js/spice-html5/thirdparty/rsa.js \
+	js/spice-html5/thirdparty/sha1.js \
+	js/spice-html5/thirdparty/rng.js \
+	js/spice-html5/thirdparty/jsbn.js
 
 fc_fontdir = @FCDATADIR@/fonts
 fc_font_DATA = \
@@ -57,7 +81,8 @@ EXTRA_DIST = \
 	     $(fc_admin_py_SCRIPTS) \
 	     $(fc_admin_wsgi_SCRIPTS) \
 	     $(fc_js_DATA) \
-	     $(fc_novnc_DATA) \
+	     $(fc_spicehtml5_DATA) \
+	     $(fc_spicehtml5thirdparty_DATA) \
 	     $(fc_img_DATA) \
 	     $(fc_tmpl_DATA) \
 	     $(fc_css_DATA)

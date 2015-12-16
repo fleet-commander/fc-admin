@@ -41,7 +41,6 @@ class SQLiteDict(object):
         'tuple':   tuple,
         'list':    list,
         'dict':    dict,
-
     }
 
     _SERIALIZED_TYPES = ['tuple', 'list', 'dict']
@@ -145,7 +144,6 @@ class ConfigValues(SQLiteDict):
     """
     TABLE_NAME = 'config'
 
-
 class SessionSettings(object):
 
     TABLE_NAME = 'sessionsettings'
@@ -222,7 +220,7 @@ class SessionSettings(object):
         self.db.conn.commit()
 
 
-class DBManager(object):
+class BaseDBManager(object):
     """
     Database manager class
     """
@@ -243,10 +241,6 @@ class DBManager(object):
         """
         self.conn = sqlite3.connect(database)
         self.cursor = self.conn.cursor()
-        # Initialize configuration data
-        self.config = ConfigValues(self)
-        # Session settings initialization
-        self.sessionsettings = SessionSettings(self)
 
     def create_table(self, name, **structure):
         """
@@ -256,3 +250,19 @@ class DBManager(object):
         query = "CREATE TABLE IF NOT EXISTS %s (%s)" % (name, ','.join(col_types))
         self.cursor.execute(query)
         self.conn.commit()
+
+
+class DBManager(BaseDBManager):
+    """
+    Database manager class
+    """
+
+    def __init__(self, database):
+        """
+        Class initialization
+        """
+        super(DBManager, self).__init__(database)
+        # Initialize configuration data
+        self.config = ConfigValues(self)
+        # Session settings initialization
+        self.sessionsettings = SessionSettings(self)

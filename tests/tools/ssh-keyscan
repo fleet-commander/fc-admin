@@ -1,0 +1,3 @@
+#!/bin/bash
+echo $@ > $FC_TEST_DIRECTORY/ssh-keyscan-parms
+echo "localhost ssh-rsa KEY"

@@ -1,0 +1,7 @@
+#!/bin/bash
+echo $@ > $FC_TEST_DIRECTORY/ssh-parms
+sync
+echo $@ | grep echo > /dev/null
+if [ $? = 0 ]; then
+    echo "/run/user/1000/libvirt/libvirt-sock"
+fi

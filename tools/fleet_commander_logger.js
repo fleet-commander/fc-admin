@@ -28,8 +28,10 @@ const Soup = imports.gi.Soup;
 const Json = imports.gi.Json;
 
 //Global constants
-const RETRY_INTERVAL = 1000;
-const SUBMIT_PATH    = '/changes/submit/';
+let RETRY_INTERVAL = 1000;
+let SUBMIT_PATH    = '/changes/submit/';
+let DEV_PATH       = '/dev/virtio-ports/';
+let DEV_PREFIX     = 'fleet-commander_';
 
 //Mainloop
 const ml = imports.mainloop;
@@ -51,20 +53,49 @@ function hasPrefix (haystack, needle) {
   return 0 == haystack.indexOf(needle);
 }
 
+function get_options_from_devfile () {
+  let dev = Gio.file_new_for_path (DEV_PATH);
+
+  let enumerator = dev.enumerate_children ("standard::name", Gio.FileQueryInfoFlags.NONE, null);
+  for (let info = enumerator.next_file (null); info != null; info = enumerator.next_file (null)) {
+    let name = info.get_name ();
+    if (hasPrefix(info.get_name (), DEV_PREFIX)) {
+      let hostport = name.slice (DEV_PREFIX.length, name.length);
+
+      let lastdash = hostport.lastIndexOf ("-");
+      if (lastdash == -1) {
+        debug (name + " file does not have '-' port separator");
+        return null;
+      }
+
+      let host = hostport.slice (0, lastdash);
+      let portstr = hostport.slice (lastdash + 1, hostport.length);
+
+      let port = parseInt(portstr);
+
+      if (port.toString() !=  portstr) {
+        debug ("Could not parse admin connection port string " + portstr + " as integer");
+        return null;
+      }
+
+      return [host, port];
+    }
+  }
+  debug ("No fleet commander file in " + DEV_PATH + " to find host and port");
+  return null;
+}
+
 function parse_options () {
   let result = {
       'admin_server_host': 'localhost',
       'admin_server_port': 8181
   }
 
-  let file = null;
-
   for(let i = 0; i < ARGV.length; i++) {
     switch(ARGV[i]) {
       case "--help":
       case "-h":
         printerr("--help/-h:               show this output message");
-        printerr("--configuration/-c FILE: sets the configuration file");
         printerr("--debug/-d/-v:           enables debugging/verbose output");
         break;
       case "--debug":
@@ -73,49 +104,15 @@ function parse_options () {
         _debug = true;
         debug("Debugging output enabled");
         break;
-      case "--configuration":
-        i++;
-        if (ARGV.length == i) {
-          printerr("ERROR: No configuration value was provided");
-          return null;
-        }
-
-        debug(ARGV[i] + " selected as configuration file");
-
-        if (!GLib.file_test (ARGV[i], GLib.FileTest.EXISTS)) {
-            printerr("ERROR: " + ARGV[i] + " does not exists");
-            System.exit(1);
-        }
-        if (!GLib.file_test (ARGV[i], GLib.FileTest.IS_REGULAR)) {
-            printerr("ERROR: " + ARGV[i] + " is not a regular file");
-            System.exit(1);
-        }
-
-        let kf = new GLib.KeyFile();
-        try {
-            kf.load_from_file(ARGV[i], GLib.KeyFileFlags.NONE);
-        } catch (e) {
-            debug(e);
-            printerr("ERROR: Could not parse configuration file " + ARGV[i]);
-            System.exit(1);
-        }
-
-        if (!kf.has_group("logger")) {
-            printerr("ERROR: "+ARGV[i]+" does not have [logger] section");
-            System.exit(1);
-        }
-        try {
-            result['admin_server_host'] = kf.get_value("logger", "admin_server_host");
-        } catch (e) {
-            debug (e);
-        }
-        try {
-            result['admin_server_port'] = kf.get_value("logger", "admin_server_port");
-        } catch (e) {
-            debug (e);
-        }
-        break;
     }
+    let file = null;
+  }
+
+  let devfile = get_options_from_devfile ();
+  if (devfile != null) {
+    debug ("Found server file in " + DEV_PATH + "fleet-commander_" + devfile[0] + "-" + devfile[1]);
+    result['admin_server_host'] = devfile[0];
+    result['admin_server_port'] = devfile[1];
   }
 
   debug ("admin_server_host: " + result['admin_server_host'] + " - admin_server_port: " + result['admin_server_port']);
@@ -573,7 +570,7 @@ if (GLib.getenv('FC_TESTING') == null) {
 
   let inhibitor = new ScreenSaverInhibitor();
   let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
-  let goalogger = new GoaLogger(connmgr);
+  //let goalogger = new GoaLogger(connmgr);
   let gsetlogger = new GSettingsLogger(connmgr);
 
   ml.run();
