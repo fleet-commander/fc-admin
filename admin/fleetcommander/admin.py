@@ -81,7 +81,7 @@ class AdminService(Flaskless):
         self.static_dir = config['data_dir']
 
         # TODO: Change data dir
-        self.data_dir = config['data_dir']
+        self.state_dir = config['state_dir']
 
         # TODO: Change path for templates outside of static dir
         self.templates_dir = os.path.join(config['data_dir'], 'templates')
@@ -108,7 +108,7 @@ class AdminService(Flaskless):
             raise Exception('hypervisor is not configured yet')
 
         hypervisor = self.current_session['hypervisor']
-        return libvirtcontroller.LibVirtController(self.data_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
+        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
 
     # Views
     def index(self, request):
@@ -123,7 +123,7 @@ class AdminService(Flaskless):
     def hypervisor_config(self, request):
         if request.method == 'GET':
             # Initialize LibVirtController to create keypair if needed
-            ctrlr = libvirtcontroller.LibVirtController(self.data_dir, None, None, 'system', None, None)
+            ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system', None, None)
             with open(ctrlr.public_key_file, 'r') as fd:
                 public_key = fd.read().strip()
                 fd.close()

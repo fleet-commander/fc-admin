@@ -42,6 +42,7 @@ def parse_config(config_file):
         'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
         'data_dir': os.getcwd(),
         'database_path': os.path.join(os.getcwd(), 'database.db'),
+        'state_dir': os.getcwd(),
     }
 
     if not config_file:

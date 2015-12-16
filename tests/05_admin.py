@@ -66,6 +66,7 @@ class TestAdminWSGIRef(unittest.TestCase):
             'host': 'localhost',
             'port': 8777,
             'data_dir': self.test_directory,
+            'state_dir': self.test_directory,
             'database_path': os.path.join(self.test_directory, 'database.db'),
         }
 

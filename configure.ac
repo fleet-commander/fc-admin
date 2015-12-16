@@ -57,6 +57,7 @@ AC_PYTHON_MODULE([requests], [mandatory])
 # TODO: Make xdgconfigdir parametric
 privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
+adminstatedir='${localstatedir}'/lib/fleet-commander-admin/
 profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
@@ -66,6 +67,7 @@ fcpythondir='${libdir}'/fleet-commander
 
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
+AC_SUBST(adminstatedir)
 AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
@@ -74,6 +76,7 @@ AC_SUBST(fcpythondir)
 
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
+AS_AC_EXPAND(ADMINSTATEDIR, "$adminstatedir")
 AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
