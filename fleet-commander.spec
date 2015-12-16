@@ -11,7 +11,7 @@ BuildRequires:  systemd
 
 BuildArch: noarch
 
-License: LGPL-2.1+
+License: LGPL-2.1+ and MIT and BSD-3-Clause and Apache-2.0 and OFL-1.0
 URL: https://github.com/fleet-commander/fc-admin
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
