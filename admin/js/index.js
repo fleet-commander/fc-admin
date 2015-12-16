@@ -32,10 +32,14 @@ function populate_profile_list() {
       var delete_col = $('<td></td>');
       delete_col.appendTo(tr);
 
-      $('<a></a>')
-        .attr('href', '#')
-        .click(function () { remove_profile (val); })
-        .text('X') //TODO: Use an icon
+      var uid = val.url.slice(0, val.url.length - 5);
+
+      $('<input></input>', {"class": "btn btn-danger pull-right", type: "button", value: "Delete"})
+        .click(function () { remove_profile (uid, val.displayName); })
+        .appendTo(delete_col);
+
+      $('<input></input>', {"class": "btn pull-right", type: "button", value: "Preferred apps"})
+        .click(function () { location.href = "/profiles/apps/" + uid })
         .appendTo(delete_col);
 
       tr.appendTo('#profile-list');
@@ -43,11 +47,11 @@ function populate_profile_list() {
   });
 }
 
-function remove_profile(profile) {
-  $('#del-profile-name').text(profile.displayName);
+function remove_profile(uid, displayName) {
+  $('#del-profile-name').text(displayName);
   $('#del-profile-modal').modal('show');
   $('#del-profile-confirm').click(function () {
-    $.getJSON ('/profiles/delete/' + profile.url)
+    $.getJSON ('/profiles/delete/' + uid)
       .always(function () {
         populate_profile_list();
         $('#del-profile-modal').modal('hide');

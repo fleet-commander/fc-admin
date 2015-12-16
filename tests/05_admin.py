@@ -351,6 +351,52 @@ class TestAdminWSGIRef(unittest.TestCase):
           {'org.gnome.gsettings':      [[change_gsettings['key'],   change_gsettings['value']]],
            'org.libreoffice.registry': [[change_libreoffice['key'], change_libreoffice['value']]]}))
 
+    def test_10_profiles_software(self):
+        self.configure_hypervisor()
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
+
+        # Create empty profile
+        ret = self.app.post('/changes/select', data=json.dumps({}), content_type='application/json')
+        payload = json.loads(ret.data)
+
+        uid = payload['uuid']
+        profile_data = json.dumps({'profile-name': 'myprofile',
+                                   'profile-desc': 'mydesc',
+                                   'groups': '',
+                                   'users': ''})
+        ret = self.app.post('/profiles/save/'+uid, content_type='application/json', data=profile_data)
+        self.assertEqual(json.loads(ret.data).get ('status', None), 'ok')
+
+        # Add GNOME Software overrides
+        favourites = json.dumps(['foo.desktop', 'bar.desktop', 'baz.desktop'])
+        ret = self.app.post('/profiles/apps/' + uid, content_type='application/json', data=favourites)
+        self.assertEqual(json.loads(ret.data).get('status', None), 'ok')
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get("/clientdata/%s.json" % uid)
+        profile = json.loads(ret.data)
+        self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 1)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["key"], "/org/gnome/software/popular-overrides")
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], favourites)
+
+        # Modify overrides
+        favourites = json.dumps(['foo.desktop'])
+        ret = self.app.post('/profiles/apps/' + uid, content_type='application/json', data=favourites)
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get("/clientdata/%s.json" % uid)
+        profile = json.loads(ret.data)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], favourites)
+
+        # Empty overrides
+        favourites = json.dumps([])
+        ret = self.app.post('/profiles/apps/' + uid, content_type='application/json', data=favourites)
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get("/clientdata/%s.json" % uid)
+        profile = json.loads(ret.data)
+        self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False

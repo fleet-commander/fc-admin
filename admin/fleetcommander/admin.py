@@ -54,6 +54,7 @@ class AdminService(Flaskless):
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
             ('^profiles/discard/(?P<id>[-\w\.]+)$', ['GET'],            self.profiles_discard),
             ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],            self.profiles_id),
+            ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['GET', 'POST'],    self.profiles_apps),
             ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],           self.changes_submit_name),
             ('^changes/select',                     ['POST'],           self.changes_select),
             ('^changes',                            ['GET'],            self.changes),
@@ -194,6 +195,72 @@ class AdminService(Flaskless):
 
     def profiles_id(self, request, profile_id):
         return self.serve_static(request, profile_id + '.json', basedir=self.custom_args['profiles_dir'])
+
+    def profiles_apps(self, request, uid):
+        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
+
+        if request.method == 'GET':
+            return self.serve_html_template('profile.favourites.html')
+
+        payload = request.get_json()
+
+        if not isinstance(payload, list) or \
+           len(set(map(lambda x: x is unicode, payload))) > 1:
+            return JSONResponse({'status': 'application list is not a list of strings'}, 420)
+
+        if not os.path.isfile (INDEX_FILE) or not os.path.isfile (PROFILE_FILE):
+            return JSONResponse({'status': 'there are no profiles in the database'}, 500)
+
+        profile = None
+        try:
+            profile = json.loads(open(PROFILE_FILE).read())
+        except:
+            return JSONResponse({'status': 'could not read profile data'}, 500)
+
+        if not isinstance(profile, dict):
+            return JSONResponse({'status': 'profile object %s is not a dictionary' % uid}, 500)
+
+        if not profile.get('settings', False):
+            profile['settings'] = {}
+
+        if not isinstance(profile['settings'], dict):
+            return JSONResponse({'status': 'settings value in %s is not a list' % uid}, 500)
+
+        if not profile['settings'].get('org.gnome.gsettings', False):
+            profile['settings']['org.gnome.gsettings'] = []
+
+        gsettings = profile['settings']['org.gnome.gsettings']
+
+        if not isinstance(gsettings, list):
+            return JSONResponse({'status': 'settings/org.gnome.gsettings value in %s is not a list' % uid}, 500)
+
+        existing_change = None
+        for change in gsettings:
+            if 'key' not in change:
+                continue
+
+            if change['key'] != '/org/gnome/software/popular-overrides':
+                continue
+
+            existing_change = change
+
+        if existing_change and payload == []:
+            gsettings.remove (existing_change)
+        elif not existing_change:
+            existing_change = {'key': '/org/gnome/software/popular-overrides',
+                               'signature': 'as'}
+            gsettings.append(existing_change)
+
+        existing_change['value'] = json.dumps(payload)
+
+        try:
+            open(PROFILE_FILE, 'w+').write(json.dumps(profile))
+        except:
+            return JSONResponse({'status': 'could not write profile %s' % uid}, 500)
+
+        return JSONResponse({'status': 'ok'})
+
 
     def profiles_save(self, request, id):
 
