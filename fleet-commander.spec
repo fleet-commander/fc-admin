@@ -60,8 +60,8 @@ make
 %install
 %make_install
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
-install -m 644 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
-install -m 644 data/gnome-software-service.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
+install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+install -m 755 data/gnome-software-service.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
 install -m 644 data/gnome-initial-setup-done %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
 ln -s %{_sysconfdir}/profile %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bash_profile
 ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
@@ -115,8 +115,8 @@ exit 0
 %defattr(755, root, root)
 %{_libexecdir}/fleet_commander_logger.js
 %attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
-%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
-%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
+%attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
+%attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/libreoffice/dconfwrite
 %exclude %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
