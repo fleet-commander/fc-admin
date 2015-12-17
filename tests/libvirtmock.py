@@ -44,6 +44,9 @@ with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-nospi
     XML_NO_SPICE = fd.read()
     fd.close()
 
+TEST_UUID_SPICE = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
+TEST_UUID_NO_SPICE = '0999a0ee-a4c4-11e5-b3a5-68f728db19d3'
+
 
 class State(SQLiteDict):
     """
@@ -74,7 +77,8 @@ class LibvirtConnectionMocker(object):
 
         if 'domains' not in self.state:
             self.state['domains'] = pickle.dumps([
-                LibvirtDomainMocker(XML_ORIG)
+                LibvirtDomainMocker(XML_ORIG),
+                LibvirtDomainMocker(XML_NO_SPICE)
             ])
 
     @property

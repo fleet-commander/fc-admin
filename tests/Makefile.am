@@ -3,7 +3,7 @@ TESTS = 00_database.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_goa.js 
 
 EXTRA_DIST =                         \
 	$(TESTS)                         \
-	libvirtcontrollermock.py         \
+	libvirtmock.py                   \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.js         \
 	data/test.gschema.xml            \

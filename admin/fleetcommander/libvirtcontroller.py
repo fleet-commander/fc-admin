@@ -53,20 +53,13 @@ class LibVirtController(object):
         """
         Class initialization
         """
-        self.data_dir = os.path.abspath(data_path)
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-
-        self.private_key_file = os.path.join(self.data_dir, 'id_rsa')
-        self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
-        self.known_hosts_file = os.path.join(self.data_dir, 'known_hosts')
+        if mode not in ['system', 'session']:
+            raise LibVirtControllerException('Invalid libvirt mode selected. Must be "system" or "session"')
+        self.mode = mode
 
         # Connection data
         self.username = username
         self.hostname = hostname
-        if mode not in ['system', 'session']:
-            raise LibVirtControllerException('Invalid libvirt mode selected. Must be "system" or "session"')
-        self.mode = mode
 
         # Admin data
         self.admin_hostname = admin_hostname
@@ -74,6 +67,14 @@ class LibVirtController(object):
 
         # libvirt connection
         self.conn = None
+
+        self.data_dir = os.path.abspath(data_path)
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+
+        self.private_key_file = os.path.join(self.data_dir, 'id_rsa')
+        self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
+        self.known_hosts_file = os.path.join(self.data_dir, 'known_hosts')
 
         # generate key if neeeded
         if not os.path.exists(self.private_key_file):
@@ -113,14 +114,14 @@ class LibVirtController(object):
                     return
 
         # Add host to known_hosts
-        prog = subprocess.Popen(
+        self._keyscan_prog = subprocess.Popen(
             [
                 'ssh-keyscan',
                 self.hostname,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
-        if prog.returncode == 0:
+        out, error = self._keyscan_prog.communicate()
+        if self._keyscan_prog.returncode == 0:
             with open(self.known_hosts_file, 'a') as fd:
                 fd.write(out)
                 fd.close()
@@ -142,7 +143,7 @@ class LibVirtController(object):
 
         error = None
         try:
-            prog = subprocess.Popen(
+            self._prepare_remote_env_prog = subprocess.Popen(
                 [
                     'ssh',
                     '-i', self.private_key_file,
@@ -153,8 +154,8 @@ class LibVirtController(object):
                     command,
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, error = prog.communicate()
-            if prog.returncode == 0 and error == '':
+            out, error = self._prepare_remote_env_prog.communicate()
+            if self._prepare_remote_env_prog.returncode == 0 and error == '':
                 return out.strip()
         except:
             pass
@@ -165,7 +166,7 @@ class LibVirtController(object):
         Makes a connection to a host using libvirt qemu+ssh
         """
         if self.conn is None:
-            out = self._prepare_remote_env()
+            self._libvirt_socket = self._prepare_remote_env()
 
             options = {
                 'known_hosts': self.known_hosts_file,  # Custom known_hosts file to not alter the default one
@@ -176,8 +177,7 @@ class LibVirtController(object):
             }
 
             if self.mode == 'session':
-                options['socket'] = out
-
+                options['socket'] = self._libvirt_socket
             url = self.LIBVIRT_URL_TEMPLATE % (self.username, self.hostname, self.mode)
             connection_uri = '%s?%s' % (
                 url,
@@ -258,7 +258,7 @@ class LibVirtController(object):
         s.close()
         # Execute SSH and bring up tunnel
         try:
-            prog = subprocess.Popen(
+            self._ssh_tunnel_prog = subprocess.Popen(
                 ' '.join([
                     'ssh',
                     '-i', self.private_key_file,
@@ -271,7 +271,7 @@ class LibVirtController(object):
                 ]),
                 shell=True
             )
-            return (local_port, prog.pid)
+            return (local_port, self._ssh_tunnel_prog.pid)
         except Exception as e:
             raise LibVirtControllerException('Error opening tunnel: %s' % e)
 
@@ -312,19 +312,19 @@ class LibVirtController(object):
         newxml = self._generate_new_domain_xml(origdomain.XMLDesc())
 
         # Create and run new domain from new XML definition
-        domain = self.conn.createXML(newxml)
+        self._last_started_domain = self.conn.createXML(newxml)
 
         # Get spice host and port
-        spice_host, spice_port = self._get_spice_parms(domain)
+        spice_host, spice_port = self._get_spice_parms(self._last_started_domain)
 
         # Create tunnel
         connection_port, tunnel_pid = self._open_ssh_tunnel(spice_host, spice_port)
 
         # Make it transient inmediately after started it
-        self._undefine_domain(domain)
+        self._undefine_domain(self._last_started_domain)
 
         # Return identifier and spice URI for the new domain
-        return (domain.UUIDString(), connection_port, tunnel_pid)
+        return (self._last_started_domain.UUIDString(), connection_port, tunnel_pid)
 
     def session_stop(self, identifier, tunnel_pid):
         """
@@ -337,12 +337,12 @@ class LibVirtController(object):
             pass
         self._connect()
         # Get machine by its uuid
-        domain = self.conn.lookupByUUIDString(identifier)
+        self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)
         # Check machine status
-        if domain.isActive():
+        if self._last_stopped_domain.isActive():
             # Stop machine
-            domain.destroy()
+            self._last_stopped_domain.destroy()
 
         # Undefine domain
-        self._undefine_domain(domain)
+        self._undefine_domain(self._last_stopped_domain)
 

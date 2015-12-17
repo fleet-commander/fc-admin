@@ -22,123 +22,120 @@
 
 import os
 import sys
-import time
 import tempfile
 import shutil
 import unittest
-from libvirtmock import XML_MODIF, XML_NO_SPICE
-from libvirtmock import LibvirtModuleMocker, LibvirtConnectionMocker, LibvirtDomainMocker
+
+import libvirtmock
 
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
 
 from fleetcommander import libvirtcontroller
 
+# Mocking assignments
+libvirtcontroller.libvirt = libvirtmock.LibvirtModuleMocker
+
 
 class TestLibVirtControllerSystemMode(unittest.TestCase):
 
+    LIBVIRT_MODE = 'system'
+
     config = {
-        'data_path': tempfile.mkdtemp(prefix='fc-libvirt-test'),
+        'data_path': None,
         'username': 'testuser',
         'hostname': 'localhost',
-        'mode': 'system',
+        'mode': LIBVIRT_MODE,
         'admin_hostname': 'localhost',
         'admin_port': 8008,
     }
 
-    @classmethod
-    def setUpClass(cls):
-        # Mock libvirt module
-        libvirtcontroller.libvirt = LibvirtModuleMocker()
-        cls.ctrlr = libvirtcontroller.LibVirtController(**cls.config)
-        # Set controller delays to 0  for faster testing
-        cls.ctrlr.SESSION_START_TRIES_DELAY = 0
-        cls.ctrlr.DOMAIN_UNDEFINE_TRIES_DELAY = 0
+    def setUp(self):
+        self.test_directory = tempfile.mkdtemp(prefix='fc-libvirt-test-%s-' % self.LIBVIRT_MODE)
+        self.config['data_path'] = self.test_directory
+
         # Prepare paths for command output files
-        cls.ssh_keyscan_parms_file = os.path.join(cls.config['data_path'], 'ssh-keyscan-parms')
-        cls.ssh_parms_file = os.path.join(cls.config['data_path'], 'ssh-parms')
-        cls.test_directory = cls.config['data_path']
-        os.environ['FC_TEST_DIRECTORY'] = cls.test_directory
+        self.ssh_keyscan_parms_file = os.path.join(self.test_directory, 'ssh-keyscan-parms')
+        self.ssh_parms_file = os.path.join(self.test_directory, 'ssh-parms')
 
-    @classmethod
-    def tearDownClass(cls):
+        # Set environment for commands execution
+        os.environ['FC_TEST_DIRECTORY'] = self.test_directory
+
+    def tearDown(self):
         # Remove test directory
-        shutil.rmtree(cls.config['data_path'])
+        shutil.rmtree(self.test_directory)
 
-    def test_00_create_keys(self):
-        self.ctrlr._generate_ssh_keypair()
-        self.assertTrue(os.path.exists(self.ctrlr.private_key_file))
-        self.assertTrue(os.path.exists(self.ctrlr.public_key_file))
+    def get_controller(self, config):
+        ctrlr = libvirtcontroller.LibVirtController(**config)
+        # Set controller delays to 0  for faster testing
+        ctrlr.SESSION_START_TRIES_DELAY = 0
+        ctrlr.DOMAIN_UNDEFINE_TRIES_DELAY = 0
+        return ctrlr
 
-    def test_01_check_known_hosts(self):
-        self.ctrlr._check_known_host()
+    def test_00_initialization(self):
+        ctrlr = self.get_controller(self.config)
+        # Check data path creation
+        self.assertTrue(os.path.isdir(self.test_directory))
+        # Check key files has been created
+        self.assertTrue(os.path.exists(ctrlr.private_key_file))
+        self.assertTrue(os.path.exists(ctrlr.public_key_file))
+
+        # Invalid mode selected
+        badconfig = self.config.copy()
+        badconfig['data_path'] = os.path.join(self.test_directory, 'invalidmode_data_path')
+        badconfig['mode'] = 'invalidmode'
+        self.assertRaises(libvirtcontroller.LibVirtControllerException, libvirtcontroller.LibVirtController, **badconfig)
+        self.assertFalse(os.path.isdir(badconfig['data_path']))
+
+    def test_01_list_domains(self):
+        ctrlr = self.get_controller(self.config)
+
+        domains = ctrlr.list_domains()
+        self.assertEqual(domains, [
+            {'uuid': libvirtmock.TEST_UUID_SPICE, 'name': 'fedora-unkno'},
+            {'uuid': libvirtmock.TEST_UUID_NO_SPICE, 'name': 'fedora-unspiced'}
+        ])
+
+        # Check ssh-keyscan execution and parameters:
         self.assertTrue(os.path.exists(self.ssh_keyscan_parms_file))
-
         with open(self.ssh_keyscan_parms_file, 'r') as fd:
             parms = fd.read()
             fd.close()
         self.assertEqual(parms, 'localhost\n')
 
-        with open(self.ctrlr.known_hosts_file, 'r') as fd:
+        # Check generated known_hosts file
+        with open(ctrlr.known_hosts_file, 'r') as fd:
             known_hosts_contents = fd.read()
             fd.close()
         self.assertEqual(known_hosts_contents, 'localhost ssh-rsa KEY\n')
 
-    def test_02_check_environment_preparation(self):
-        socket = self.ctrlr._prepare_remote_env()
-        time.sleep(.1)  # Wait for file contents being written
+        # Check remote machine environment preparation
+        ctrlr._prepare_remote_env_prog.wait()  # Wait for process to finish
+
         self.assertTrue(os.path.exists(self.ssh_parms_file))
         with open(self.ssh_parms_file, 'r') as fd:
             command = fd.read()
             fd.close()
 
-        if self.ctrlr.mode == 'system':
-            self.assertEqual(socket, '')
+        if ctrlr.mode == 'system':
             self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost virsh list > /dev/null\n' % {
                 'tmpdir': self.test_directory,
             })
         else:
-            self.assertEqual(socket, '/run/user/1000/libvirt/libvirt-sock')
+            self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
             self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
                 'tmpdir': self.test_directory,
             })
 
-    def test_03_connect(self):
-        self.assertEqual(self.ctrlr.conn, None)
-        self.ctrlr._connect()
-        self.assertIsInstance(self.ctrlr.conn, LibvirtConnectionMocker)
-        # Check connection URI
-        if self.ctrlr.mode == 'system':
-            uri = 'qemu+libssh2://testuser@localhost/system?keyfile=%(tmpdir)s/id_rsa&known_hosts=%(tmpdir)s/known_hosts&no_tty=1&sshauth=privkey' % {
-                'tmpdir': self.test_directory,
-            }
-        else:
-            uri = 'qemu+libssh2://testuser@localhost/session?keyfile=%(tmpdir)s/id_rsa&known_hosts=%(tmpdir)s/known_hosts&no_tty=1&socket=/run/user/1000/libvirt/libvirt-sock&sshauth=privkey' % {
-                'tmpdir': self.test_directory,
-            }
-        self.assertEqual(self.ctrlr.conn.connection_uri, uri)
+    def test_02_start(self):
+        ctrlr = self.get_controller(self.config)
+        uuid, port, pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
 
-    def test_04_list_domains(self):
-        domains = self.ctrlr.list_domains()
-        self.assertEqual(domains, [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}])
+        # Test new domain XML generation
+        new_domain = ctrlr._last_started_domain
+        self.assertEqual(new_domain.XMLDesc(), libvirtmock.XML_MODIF % {'uuid': new_domain.UUIDString()})
 
-    def test_05_generate_new_domain_xml(self):
-        origxml = self.ctrlr.conn.domains[0].XMLDesc()
-        newxml = self.ctrlr._generate_new_domain_xml(origxml)
-        newdomain_uuid = LibvirtDomainMocker(newxml).UUIDString()
-        self.assertEqual(newxml, XML_MODIF % {'uuid': newdomain_uuid})
-
-    def test_06_get_spice_parms(self):
-        fakedomain = LibvirtDomainMocker(XML_MODIF)
-        host, port = self.ctrlr._get_spice_parms(fakedomain)
-        self.assertEqual(host, '127.0.0.1')
-        self.assertEqual(port, '5900')
-        # Test fail getting spice parameters
-        nospicedomain = LibvirtDomainMocker(XML_NO_SPICE)
-        self.assertRaises(libvirtcontroller.LibVirtControllerException, self.ctrlr._get_spice_parms, nospicedomain)
-
-    def test_07_open_ssh_tunnel(self):
-        port, pid = self.ctrlr._open_ssh_tunnel('127.0.0.1', '5900')
-        time.sleep(.1)  # Wait for file contents being written
+        # Test SSH tunnel opening
+        ctrlr._ssh_tunnel_prog.wait()  # Wait for process to finish
         with open(self.ssh_parms_file, 'r') as fd:
             os.fsync(fd)
             command = fd.read()
@@ -148,27 +145,26 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             'port': port,
         })
 
-    def test_08_undefine_domain(self):
-        fakedomain = LibvirtDomainMocker(XML_MODIF)
-        self.ctrlr._undefine_domain(fakedomain)
-        self.assertTrue(fakedomain.transient)
+    def test_03_start_no_spice_domain(self):
+        ctrlr = self.get_controller(self.config)
+        self.assertRaises(libvirtcontroller.LibVirtControllerException, ctrlr.session_start, libvirtmock.TEST_UUID_NO_SPICE)
 
-    def test_09_start_stop(self):
-        # Just test start and stop execution
-        uuid, port, pid = self.ctrlr.session_start('e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81')
-        # We pass None as PID to avoid killing any process.
-        self.ctrlr.session_stop(uuid, None)
+    def test_04_start_stop(self):
+        ctrlr = self.get_controller(self.config)
+        uuid, port, pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
+        ctrlr._prepare_remote_env_prog.wait()  # Wait for process to finish
+        ctrlr._ssh_tunnel_prog.wait()  # Wait for process to finish
+
+        # We pass None as PID to avoid killing any process
+        ctrlr.session_stop(uuid, None)
+
+        # Check domain has been stopped and has been set as transient
+        self.assertFalse(ctrlr._last_stopped_domain.active)
+        self.assertTrue(ctrlr._last_stopped_domain.transient)
 
 
 class TestLibVirtControllerSessionMode(TestLibVirtControllerSystemMode):
-    config = {
-        'data_path': tempfile.mkdtemp(prefix='fc-libvirt-test'),
-        'username': 'testuser',
-        'hostname': 'localhost',
-        'mode': 'session',
-        'admin_hostname': 'localhost',
-        'admin_port': 8008,
-    }
+    LIBVIRT_MODE = 'session'
 
 
 if __name__ == '__main__':
