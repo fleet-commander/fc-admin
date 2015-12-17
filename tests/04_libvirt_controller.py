@@ -26,8 +26,8 @@ import time
 import tempfile
 import shutil
 import unittest
-from libvirtcontrollermock import XML_MODIF, XML_NO_SPICE
-from libvirtcontrollermock import LibvirtModuleMocker, LibvirtConnectionMocker, LibvirtDomainMocker
+from libvirtmock import XML_MODIF, XML_NO_SPICE
+from libvirtmock import LibvirtModuleMocker, LibvirtConnectionMocker, LibvirtDomainMocker
 
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
 

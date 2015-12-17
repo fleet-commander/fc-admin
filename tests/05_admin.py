@@ -26,7 +26,6 @@ import json
 import unittest
 import shutil
 import tempfile
-from libvirtcontrollermock import LibvirtModuleMocker
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -34,8 +33,28 @@ sys.path.append(PYTHONPATH)
 from fleetcommander import admin as fleet_commander_admin
 
 
-class MockResponse:
-    pass
+class MockLibVirtController(object):
+
+    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
+
+        self.data_dir = os.path.abspath(data_path)
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+
+        self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
+
+        with open(self.public_key_file, 'w') as fd:
+            fd.write('PUBLIC_KEY')
+            fd.close()
+
+    def list_domains(self):
+        return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
+
+    def session_start(self, uuid):
+        return ('someuuid', 0, 'tunnel_pid')
+
+    def session_stop(self, uuid, tunnel_pid):
+        pass
 
 
 class MockWebSocket:
@@ -55,10 +74,6 @@ class TestAdminWSGIRef(unittest.TestCase):
 
     test_wsgiref = True
 
-    @classmethod
-    def setUpClass(cls):
-        LibvirtModuleMocker.db_path = tempfile.mktemp()
-
     def setUp(self):
         self.test_directory = tempfile.mkdtemp()
 
@@ -76,9 +91,9 @@ class TestAdminWSGIRef(unittest.TestCase):
             os.mkdir(self.args['profiles_dir'])
 
         self.websocket = MockWebSocket()
-        # Libvirt module mocker
 
-        fleet_commander_admin.libvirtcontroller.libvirt = LibvirtModuleMocker
+        # LibVirtController mocker
+        fleet_commander_admin.libvirtcontroller.LibVirtController = MockLibVirtController
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.websocket)
         self.base_app.config['TESTING'] = True
         self.app = self.base_app.test_client(stateless=not self.test_wsgiref)
@@ -249,6 +264,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         # Start session
         data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
         ret = self.app.jsonpost('/session/start', data=data)
+        print ret.data
 
         # Create profile candidate: We assume all of these methods as tested
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
