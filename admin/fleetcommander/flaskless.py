@@ -292,7 +292,7 @@ class Flaskless(object):
                 traceback.append('%s: %s' % (e_type.__name__, e_value))
                 logging.error('\n'.join(traceback))
         else:
-            response = HttpResponse(HTTP_RESPONSE_CODES[parms], parms)
+            response = HttpResponse(HTTP_RESPONSE_CODES.get(parms, ''), parms)
 
         return response
 
@@ -306,7 +306,7 @@ class Flaskless(object):
         response = self.handle_request(request)
 
         status = '%s %s' % (response.status_code,
-                            HTTP_RESPONSE_CODES[response.status_code])
+                            HTTP_RESPONSE_CODES.get(response.status_code, ''))
         headers = response.get_headers()
 
         # Prepare response
