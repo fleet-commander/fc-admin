@@ -153,7 +153,8 @@ class AdminService(Flaskless):
             try:
                 domains = self.get_libvirt_controller().list_domains()
             except Exception as e:
-                return JSONResponse({'status': False, 'error': unicode(e)})
+                return JSONResponse({'status': False, 'error': 'Error retrieving domains'})
+                logging.debug(e)
         else:
             domains = self.current_session['domains']
         return JSONResponse({'status': True, 'domains': domains})
@@ -331,8 +332,8 @@ class AdminService(Flaskless):
         try:
             uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(data['domain'])
         except Exception as e:
-            return JSONResponse({'status': unicode(e)}, 400)
-
+            return JSONResponse({'status': 'Error starting session'}, 520)
+            logging.debug(e)
         self.current_session['uuid'] = uuid
         self.current_session['port'] = port
         self.current_session['tunnel_pid'] = tunnel_pid
@@ -362,10 +363,9 @@ class AdminService(Flaskless):
 
         try:
             self.get_libvirt_controller().session_stop(uuid, tunnel_pid)
-
         except Exception as e:
-            return JSONResponse({'status': unicode(e)}, 400)
-
+            return JSONResponse({'status': 'Error stopping session'}, 520)
+            logging.debug(e)
         return JSONResponse({'status': True})
 
     def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
