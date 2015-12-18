@@ -85,4 +85,5 @@ EXTRA_DIST = \
 	     $(fc_spicehtml5thirdparty_DATA) \
 	     $(fc_img_DATA) \
 	     $(fc_tmpl_DATA) \
-	     $(fc_css_DATA)
+	     $(fc_css_DATA)                  \
+	     $(fc_font_DATA)

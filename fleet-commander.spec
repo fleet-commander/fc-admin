@@ -92,6 +92,11 @@ exit 0
 %{_datadir}/fleet-commander-admin/img/*.gif
 %{_datadir}/fleet-commander-admin/css/*.css
 %{_datadir}/fleet-commander-admin/templates/*.html
+%{_datadir}/fleet-commander-admin/fonts/*.ttf
+%{_datadir}/fleet-commander-admin/fonts/*.woff
+%{_datadir}/fleet-commander-admin/fonts/*.eot
+%{_datadir}/fleet-commander-admin/fonts/*.svg
+%{_datadir}/fleet-commander-admin/fonts/*.woff2
 %{_libdir}/fleet-commander/fleetcommander/__init__.py
 %{_libdir}/fleet-commander/fleetcommander/__init__.py[co]
 %{_libdir}/fleet-commander/fleetcommander/admin.py
