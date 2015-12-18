@@ -102,17 +102,8 @@ function select_domain() {
 }
 
 function save_hypervisor_configuration() {
-    if ($('#host').val() == '') {
-      $('#host-group').addClass('has-error');
-      return;
-    }
-    if ($('#username').val() == '') {
-      $('#username-group').addClass('has-error');
-      return;
-    }
-    $('#host-group').removeClass('has-error');
-    $('#username-group').removeClass('has-error');
-    $('#configure-hypervisor-modal').modal('hide');
+    $('#configure-hypervisor-modal .modal-body > div').removeClass('has-error');
+    $('#configure-hypervisor-modal .modal-body > div > .error-message').remove();
 
     var data = {
       host: $('#host').val(),
@@ -127,7 +118,16 @@ function save_hypervisor_configuration() {
       data: JSON.stringify(data),
       contentType: 'application/json',
       success: function(data) {
-        $('#configure-hypervisor-modal').modal('hide');
+        if (!data.errors) {
+          $('#configure-hypervisor-modal').modal('hide');
+        } else {
+          $.each(data.errors, function( key, value ) {
+            console.log(key, value);
+            $('#' + key + '-group').append('<div class="help-block error-message">' + value + '</div>')
+            $('#' + key + '-group').addClass('has-error');
+          });
+        }
+
       }
     });
 }

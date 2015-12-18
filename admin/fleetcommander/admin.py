@@ -22,6 +22,7 @@
 
 # Python imports
 import os
+import re
 import signal
 import json
 import uuid
@@ -30,9 +31,13 @@ import subprocess
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
-from flaskless import Flaskless, HttpResponse, JSONResponse
+from flaskless import Flaskless, HttpResponse, JSONResponse, HTTP_RESPONSE_CODES
 import libvirtcontroller
 from database import DBManager
+
+SYSTEM_USER_REGEX = re.compile(r'[a-z_][a-z0-9_]{0,30}')
+IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
+HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
 
 
 class AdminService(Flaskless):
@@ -142,11 +147,25 @@ class AdminService(Flaskless):
                 data.update(self.current_session['hypervisor'])
             return JSONResponse(data)
         elif request.method == 'POST':
+            data = request.get_json()
+            errors = {}
+            # Check username
+            if not re.match(SYSTEM_USER_REGEX, data['username']):
+                errors['username'] = 'Invalid username specified'
+            # Check hostname
+            if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
+                errors['host'] = 'Invalid hostname specified'
+            # Check libvirt mode
+            if data['mode'] not in ('system', 'session'):
+                errors['mode'] = 'Invalid session type'
+            if errors:
+                return JSONResponse({'errors': errors})
             # Save hypervisor configuration
-            self.current_session['hypervisor'] = request.get_json()
-            return JSONResponse({'status': True})
+            self.current_session['hypervisor'] = data
+            return JSONResponse({})
         else:
-            return HttpResponse('', status_code=400)
+            # This should never happen because flaskless should did this before us
+            return HttpResponse(HTTP_RESPONSE_CODES[405], status_code=405)
 
     def domains_list(self, request):
         if 'domains' not in self.current_session:

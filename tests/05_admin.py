@@ -104,11 +104,11 @@ class TestAdminWSGIRef(unittest.TestCase):
     def get_data_from_file(self, path):
         return open(path).read()
 
-    def configure_hypervisor(self):
+    def configure_hypervisor(self, host='localhost', username='testuser', mode='session'):
         return self.app.jsonpost('/hypervisor/', data={
-            'host': 'localhost',
-            'username': 'testuser',
-            'mode': 'session',
+            'host': host,
+            'username': username,
+            'mode': mode,
         })
 
     def test_00_profiles(self):
@@ -141,6 +141,7 @@ class TestAdminWSGIRef(unittest.TestCase):
     def test_02_hypervisor_configuration(self):
         # Hypervisor nor configured yet
         ret = self.app.get('/hypervisor/')
+        self.assertEqual(ret.status_code, 200)
         self.assertTrue(ret.jsondata['needcfg'])
         self.assertEqual(ret.jsondata['host'], '')
         self.assertEqual(ret.jsondata['username'], '')
@@ -148,13 +149,34 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         # Save hypervisor configuration
         ret = self.configure_hypervisor()
+        self.assertEqual(ret.status_code, 200)
 
         # Get config again
         ret = self.app.get('/hypervisor/')
+        self.assertEqual(ret.status_code, 200)
         self.assertTrue('needcfg' not in ret.jsondata)
         self.assertEqual(ret.jsondata['host'], 'localhost')
         self.assertEqual(ret.jsondata['username'], 'testuser')
         self.assertEqual(ret.jsondata['mode'], 'session')
+
+        # Try to save invalid hypervisor configuration
+        ret = self.configure_hypervisor(host='invalid_host_name')
+        self.assertEqual(ret.status_code, 200)
+        self.assertTrue('errors' in ret.jsondata)
+        self.assertTrue('host' in ret.jsondata['errors'])
+        self.assertTrue(ret.jsondata['errors']['host'] == 'Invalid hostname specified')
+
+        ret = self.configure_hypervisor(username='0invalid_username')
+        self.assertEqual(ret.status_code, 200)
+        self.assertTrue('errors' in ret.jsondata)
+        self.assertTrue('username' in ret.jsondata['errors'])
+        self.assertTrue(ret.jsondata['errors']['username'] == 'Invalid username specified')
+
+        ret = self.configure_hypervisor(mode='invalid_mode')
+        self.assertEqual(ret.status_code, 200)
+        self.assertTrue('errors' in ret.jsondata)
+        self.assertTrue('mode' in ret.jsondata['errors'])
+        self.assertTrue(ret.jsondata['errors']['mode'] == 'Invalid session type')
 
     def test_03_start_invalid_data(self):
         ret = self.app.post('/session/start', data=json.dumps({'whatever': 'something'}), content_type='application/json')
