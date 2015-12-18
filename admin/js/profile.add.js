@@ -24,13 +24,16 @@ var submit=false;
 var tries=0;
 var MAXTRIES=5;
 
+
+window.debugger = null;
+
 /* SPICE HTML5 */
 var sc;
 
-function spice_client_connection(host, port) {
+function spiceClientConnection(host, port) {
 
-  function spice_error(parm1, parm2, parm3, parm4) {
-    console.log('ERROR ON THE ROCKS:', parm1, parm2, parm3, parm4);
+  function spice_error(err) {
+    console.error(err);
   }
 
   function agent_connected(sc) {
@@ -49,8 +52,8 @@ function spice_client_connection(host, port) {
     }
   }
 
-  try {
-    setTimeout(function() {
+  setTimeout(function() {
+    try {
       sc = new SpiceMainConn({
         uri: 'ws://' + location.hostname + ':' + port,
         screen_id: "spice-screen",
@@ -60,14 +63,16 @@ function spice_client_connection(host, port) {
         onerror: spice_error,
         // onagent: agent_connected
       });
-    },2000)
-  } catch (e) {
-    alert(e.toString());
-    session_stop();
-  }
+
+    } catch (e) {
+      alert(e.toString());
+      session_stop();
+    }
+  },2000)
+
 }
 
-function session_start() {
+function sessionStart() {
   data = {
     domain: sessionStorage.getItem("fc.session.domain"),
     admin_host: location.hostname,
@@ -79,14 +84,14 @@ function session_start() {
     data: JSON.stringify(data),
     contentType: 'application/json',
     success: function(data) {
-      spice_client_connection(location.hostname, data.port);
+      spiceClientConnection(location.hostname, data.port);
       listenChanges();
     }
   })
 }
 
-function session_stop () {
-  sc.stop();
+function sessionStop () {
+  if (sc) sc.stop();
   $.get("/session/stop", function() {
     location.href = '/';
   });
@@ -120,62 +125,6 @@ function populateChanges(section, data) {
         e.stopImmediatePropagation();
       })
       .prependTo(li);
-  });
-}
-
-function closeSession () {
-  window.clearInterval(updater);
-  $.get("/session/stop");
-}
-
-function vnc_update_state (rfb, state, oldstate, statusMsg) {
-  if (state != 'disconnected')
-    return;
-
-  if (tries >= MAXTRIES) {
-    //TODO: Show an error dialog
-    closeSession();
-
-    tries = 0;
-    return;
-  }
-
-  tries++;
-  rfb.connect(location.hostname, '8989', '', '');
-}
-
-function vncConnect() {
-  var vbc_rfb = new RFB({'target': $D('vnc-canvas')});
-  vbc_rfb.set_onUpdateState(vnc_update_state);
-  vbc_rfb.connect(location.hostname, '8989', '', '');
-}
-
-function restartSession() {
-  submit = false;
-  closeSession();
-
-  $("#top-button-box").show();
-  $('.change-checkbox').hide();
-
-  $.ajax({
-    method: 'POST',
-    url:    '/session/start',
-    contentType: 'application/json',
-    data:   JSON.stringify({ host: sessionStorage.getItem("fc.session.host") }),
-    complete: function (xhr, statusText) {
-      if (xhr.status == 200) {
-        listenChanges();
-        vncConnect();
-      }
-
-      //TODO: Inform about other errors to user
-      if (xhr.status == 403) {
-        console.log(xhr.responseJSON.status);
-      }
-
-      //Unknown error
-    },
-    dataType: "json"
   });
 }
 
@@ -218,6 +167,5 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
-  session_start();
-  // restartSession();
+  sessionStart();
 });

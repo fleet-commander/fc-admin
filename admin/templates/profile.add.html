@@ -4,22 +4,7 @@
     <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/patternfly.min.js"></script>
 
-<!-- NoVNC
-    <script src="/static/js/noVNC/include/util.js"></script>
-    <script src="/static/js/noVNC/include/webutil.js"></script>
-    <script src="/static/js/noVNC/include/base64.js"></script>
-    <script src="/static/js/noVNC/include/websock.js"></script>
-    <script src="/static/js/noVNC/include/des.js"></script>
-    <script src="/static/js/noVNC/include/keysymdef.js"></script>
-    <script src="/static/js/noVNC/include/keyboard.js"></script>
-    <script src="/static/js/noVNC/include/input.js"></script>
-    <script src="/static/js/noVNC/include/display.js"></script>
-    <script src="/static/js/noVNC/include/jsunzip.js"></script>
-    <script src="/static/js/noVNC/include/keysym.js"></script>
-    <script src="/static/js/noVNC/include/rfb.js"></script>
--->
-
-<!-- spice-html5 -->
+    <!-- spice-html5 -->
     <script src="/static/js/spice-html5/spicearraybuffer.js"></script>
     <script src="/static/js/spice-html5/enums.js"></script>
     <script src="/static/js/spice-html5/atKeynames.js"></script>
@@ -52,7 +37,6 @@
     <script src="/static/js/profile.add.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/static/css/patternfly.min.css"/>
-    <!-- <link rel="stylesheet" type="text/css" href="/static/js/spice-html5/spice.css" /> -->
     <link rel="stylesheet" type="text/css" href="/static/css/main.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/profile.add.css"/>
 
@@ -95,19 +79,11 @@
         <div class="panel-heading">
           <span>Virtual Session</span>
           <span class="pull-right">
-            <input id="close-session" class="btn " type="button" onclick="closeSession()"   value="Close session"/>
+            <input id="close-session" class="btn " type="button" onclick="sessionStop()"   value="Close session"/>
             <input id="review-changes" class="btn btn-primary" type="button" onclick="reviewAndSubmit()" value="Review and submit"/>
           </span>
         </div>
 
-        <!-- NoVNC
-        <div id="vnc-area" class="panel-body">
-          <canvas id="vnc-canvas" class="center-block">
-          </canvas>
-        </div>
-        -->
-
-        <!-- spice-html5 -->
         <div class="panel-body">
           <div id="spice-area">
               <div id="spice-screen" class="spice-screen"></div>
