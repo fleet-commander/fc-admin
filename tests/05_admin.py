@@ -178,6 +178,10 @@ class TestAdminWSGIRef(unittest.TestCase):
         ret = self.app.get('/session/stop')
         self.assertEqual(ret.status_code, 200)
 
+        # Attempt to stop without starting a session
+        ret = self.app.get('/session/stop')
+        self.assertEqual(ret.status_code, 520)
+
     def test_05_change_select_and_deploy(self):
         # Setup hipervisor
         self.configure_hypervisor()
