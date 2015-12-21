@@ -65,36 +65,41 @@ function spiceClientConnection(host, port) {
       });
 
     } catch (e) {
-      alert(e.toString());
-      session_stop();
+      console.error(e.toString());
+      sessionStop();
     }
   },2000)
 
 }
 
 function sessionStart() {
-  data = {
-    domain: sessionStorage.getItem("fc.session.domain"),
-    admin_host: location.hostname,
-    admin_port: location.port || 80
-  }
-  $.ajax({
-    method: 'POST',
-    url: '/session/start',
-    data: JSON.stringify(data),
-    contentType: 'application/json',
-    success: function(data) {
-      spiceClientConnection(location.hostname, data.port);
-      listenChanges();
+  // Stop any previous session
+  sessionStop(function(){
+    data = {
+      domain: sessionStorage.getItem("fc.session.domain"),
+      admin_host: location.hostname,
+      admin_port: location.port || 80
     }
-  })
+    $.ajax({
+      method: 'POST',
+      url: '/session/start',
+      data: JSON.stringify(data),
+      contentType: 'application/json',
+      success: function(data) {
+        spiceClientConnection(location.hostname, data.port);
+        listenChanges();
+      }
+    });
+  });
 }
 
-function sessionStop () {
+function sessionStop (cb) {
   if (sc) sc.stop();
   $.get("/session/stop", function() {
-    location.href = '/';
-  });
+    if (!cb) {
+      location.href = '/';
+    }
+  }).always(cb);
 }
 
 
