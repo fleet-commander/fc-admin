@@ -126,6 +126,9 @@ class LibvirtDomainMocker(object):
     def isActive(self):
         return self.active
 
+    def isPersistent(self):
+        return not self.transient
+
     def destroy(self):
         self.active = False
         if self.transient:

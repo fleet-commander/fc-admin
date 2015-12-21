@@ -44,10 +44,10 @@ class LibVirtController(object):
     RSA_KEY_SIZE = 2048
     DEFAULT_LIBVIRTD_SOCKET = '$XDG_RUNTIME_DIR/libvirt/libvirt-sock'
     LIBVIRT_URL_TEMPLATE = 'qemu+libssh2://%s@%s/%s'
-    MAX_SESSION_START_TRIES = 10
-    SESSION_START_TRIES_DELAY = 1
-    MAX_DOMAIN_UNDEFINE_TRIES = 5
-    DOMAIN_UNDEFINE_TRIES_DELAY = 1
+    MAX_SESSION_START_TRIES = 3
+    SESSION_START_TRIES_DELAY = .1
+    MAX_DOMAIN_UNDEFINE_TRIES = 3
+    DOMAIN_UNDEFINE_TRIES_DELAY = .1
 
     def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
         """
@@ -279,18 +279,24 @@ class LibVirtController(object):
         """
         Undefines a domain waiting to be reported as defined to libVirt
         """
-        tries = 0
-        while True:
-            time.sleep(self.DOMAIN_UNDEFINE_TRIES_DELAY)
-            try:
-                domain.undefine()
-                break
-            except:
-                pass
-            if tries < self.MAX_DOMAIN_UNDEFINE_TRIES:
-                tries += 1
-            else:
-                break
+        try:
+            persistent = domain.isPersistent()
+        except:
+            return
+
+        if persistent:
+            tries = 0
+            while True:
+                try:
+                    domain.undefine()
+                    break
+                except:
+                    pass
+                if tries < self.MAX_DOMAIN_UNDEFINE_TRIES:
+                    time.sleep(self.DOMAIN_UNDEFINE_TRIES_DELAY)
+                    tries += 1
+                else:
+                    break
 
     def list_domains(self):
         """
