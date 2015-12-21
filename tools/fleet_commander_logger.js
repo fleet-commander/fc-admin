@@ -53,7 +53,7 @@ function hasPrefix (haystack, needle) {
   return 0 == haystack.indexOf(needle);
 }
 
-function get_options_from_devfile () {
+function get_options_from_devfile (options) {
   let dev = Gio.file_new_for_path (DEV_PATH);
 
   let enumerator = dev.enumerate_children ("standard::name", Gio.FileQueryInfoFlags.NONE, null);
@@ -65,7 +65,7 @@ function get_options_from_devfile () {
       let lastdash = hostport.lastIndexOf ("-");
       if (lastdash == -1) {
         debug (name + " file does not have '-' port separator");
-        return null;
+        return options;
       }
 
       let host = hostport.slice (0, lastdash);
@@ -75,14 +75,48 @@ function get_options_from_devfile () {
 
       if (port.toString() !=  portstr) {
         debug ("Could not parse admin connection port string " + portstr + " as integer");
-        return null;
+        return options;
       }
 
-      return [host, port];
+      debug ("Found server file in " + DEV_PATH + "fleet-commander_" + host + "-" + port);
+
+      if (host == "localhost" || host == "127.0.0.1") {
+        let route = get_default_route ();
+        if (route) {
+          debug ("Found " + host + " as admin host, using default route");
+          host = route;
+        }
+      }
+      options['admin_server_host'] = host;
+      options['admin_server_port'] = port;
+
+      return options;
     }
   }
   debug ("No fleet commander file in " + DEV_PATH + " to find host and port");
-  return null;
+  return options;
+}
+
+function get_default_route () {
+  let route = null;
+  let ipr = Gio.Subprocess.new (["ip", "-4", "list", "0/0"],
+                                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
+
+  let pipe = ipr.get_stdout_pipe ();
+  ipr.wait (null);
+  let input = Gio.DataInputStream.new (pipe);
+  let stdout = input.read_until ("\0", null)[0];
+
+  if (ipr.get_exit_status () != 0) {
+    printerr ("There was an error calling ip to get the default route");
+  } else {
+    let routev = stdout.trim ().split (" ");
+    if (routev.length > 2) {
+      route = routev[2];
+    }
+  }
+
+  return route;
 }
 
 function parse_options () {
@@ -107,15 +141,6 @@ function parse_options () {
     }
     let file = null;
   }
-
-  let devfile = get_options_from_devfile ();
-  if (devfile != null) {
-    debug ("Found server file in " + DEV_PATH + "fleet-commander_" + devfile[0] + "-" + devfile[1]);
-    result['admin_server_host'] = devfile[0];
-    result['admin_server_port'] = devfile[1];
-  }
-
-  debug ("admin_server_host: " + result['admin_server_host'] + " - admin_server_port: " + result['admin_server_port']);
   return result;
 }
 
@@ -567,6 +592,9 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 
 if (GLib.getenv('FC_TESTING') == null) {
   let options = parse_options ();
+  options = get_options_from_devfile (options);
+
+  debug ("admin_server_host: " + options['admin_server_host'] + " - admin_server_port: " + options['admin_server_port']);
 
   let inhibitor = new ScreenSaverInhibitor();
   let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
