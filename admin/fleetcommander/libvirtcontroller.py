@@ -61,6 +61,13 @@ class LibVirtController(object):
         self.username = username
         self.hostname = hostname
 
+        # SSH connection parameters
+        if hostname:
+            hostport = hostname.split(':')
+            if len(hostport) == 1:
+                hostport.append(22)
+            self.ssh_host, self.ssh_port = hostport
+
         # Admin data
         self.admin_hostname = admin_hostname
         self.admin_port = admin_port
@@ -110,14 +117,15 @@ class LibVirtController(object):
                 fd.close()
             for line in lines:
                 host, keytype, key = line.split()
-                if host == self.hostname:
+                if host == self.ssh_host:
                     return
 
         # Add host to known_hosts
         self._keyscan_prog = subprocess.Popen(
             [
                 'ssh-keyscan',
-                self.hostname,
+                '-p', str(self.ssh_port),
+                self.ssh_host,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, error = self._keyscan_prog.communicate()
@@ -126,7 +134,7 @@ class LibVirtController(object):
                 fd.write(out)
                 fd.close()
         else:
-            raise LibVirtControllerException('Error checking host keys: %s' % error or 'Unknown error')
+            raise LibVirtControllerException('Error checking host keys: %s' % error)
 
     def _prepare_remote_env(self):
         """
@@ -142,6 +150,7 @@ class LibVirtController(object):
             command = 'virsh list > /dev/null'
 
         error = None
+
         try:
             self._prepare_remote_env_prog = subprocess.Popen(
                 [
@@ -150,16 +159,16 @@ class LibVirtController(object):
                     '-o', 'UserKnownHostsFile=%s' % self.known_hosts_file,
                     '-o', 'PreferredAuthentications=publickey',
                     '-o', 'PasswordAuthentication=no',
-                    '%s@%s' % (self.username, self.hostname),
+                    '%s@%s' % (self.username, self.ssh_host),
+                    '-p', str(self.ssh_port),
                     command,
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, error = self._prepare_remote_env_prog.communicate()
             if self._prepare_remote_env_prog.returncode == 0 and error == '':
                 return out.strip()
-        except:
-            pass
-        raise LibVirtControllerException('Error connecting to host: %s' % error or 'Unknown error')
+        except Exception as e:
+            raise LibVirtControllerException('Error connecting to host: %s' % e)
 
     def _connect(self):
         """
@@ -265,7 +274,8 @@ class LibVirtController(object):
                     '-o', 'UserKnownHostsFile=%s' % self.known_hosts_file,
                     '-o', 'PreferredAuthentications=publickey',
                     '-o', 'PasswordAuthentication=no',
-                    '%s@%s' % (self.username, self.hostname),
+                    '%s@%s' % (self.username, self.ssh_host),
+                    '-p', str(self.ssh_port),
                     '-L', '%s:%s:%s' % (local_port, host, spice_port),
                     '-N'
                 ]),

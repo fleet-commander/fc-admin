@@ -100,7 +100,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         with open(self.ssh_keyscan_parms_file, 'r') as fd:
             parms = fd.read()
             fd.close()
-        self.assertEqual(parms, 'localhost\n')
+        self.assertEqual(parms, '-p %s localhost\n' % ctrlr.ssh_port)
 
         # Check generated known_hosts file
         with open(ctrlr.known_hosts_file, 'r') as fd:
@@ -117,13 +117,15 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             fd.close()
 
         if ctrlr.mode == 'system':
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost virsh list > /dev/null\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null\n' % {
                 'tmpdir': self.test_directory,
+                'sshport': ctrlr.ssh_port
             })
         else:
             self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
-            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
+            self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s virsh list > /dev/null && echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock && [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]\n' % {
                 'tmpdir': self.test_directory,
+                'sshport': ctrlr.ssh_port
             })
 
     def test_02_start(self):
@@ -140,8 +142,9 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             os.fsync(fd)
             command = fd.read()
             fd.close()
-        self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -L %(port)s:127.0.0.1:5900 -N\n' % {
+        self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o UserKnownHostsFile=%(tmpdir)s/known_hosts -o PreferredAuthentications=publickey -o PasswordAuthentication=no testuser@localhost -p %(sshport)s -L %(port)s:127.0.0.1:5900 -N\n' % {
             'tmpdir': self.test_directory,
+            'sshport': ctrlr.ssh_port,
             'port': port,
         })
 
