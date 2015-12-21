@@ -24,8 +24,9 @@ var submit=false;
 var tries=0;
 var MAXTRIES=5;
 
-
-window.debugger = null;
+window.alert = function(message) {
+  console.log('ALERT:' + message);
+}
 
 /* SPICE HTML5 */
 var sc;
