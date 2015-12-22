@@ -64,7 +64,14 @@ function configure_hypervisor() {
     $('#host').val(data.host);
     $('#username').val(data.username);
     $('#mode option[value="' + data.mode + '"]').prop('selected', true);
+    $('#adminhost').val(data.adminhost);
     $('#pubkey').html(data.pubkey);
+
+    // Set placeholder for admin port
+    var adminhost = location.hostname;
+    var adminport = location.port || 80
+    $('#adminhost').attr('placeholder', adminhost + ':' + adminport);
+
     $('#configure-hypervisor-modal').modal('show');
   });
 }
@@ -113,6 +120,7 @@ function save_hypervisor_configuration() {
       host: $('#host').val(),
       username: $('#username').val(),
       mode: $('#mode').val(),
+      adminhost: $('#adminhost').val(),
       domains: {}
     }
 
