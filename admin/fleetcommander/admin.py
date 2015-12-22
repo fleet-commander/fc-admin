@@ -28,6 +28,7 @@ import json
 import uuid
 import logging
 import subprocess
+import copy
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
@@ -39,6 +40,25 @@ SYSTEM_USER_REGEX = re.compile(r'[a-z_][a-z0-9_]{0,30}')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
 HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
 
+
+def merge_settings(a, b):
+    result = copy.deepcopy (a)
+    for domain in b:
+        if domain not in result:
+            result[domain] = b[domain]
+            continue
+
+        index = {}
+        for change in a[domain]:
+            index[change["key"]] = change
+
+        for change in b[domain]:
+            key = change["key"]
+            index[key] = change
+
+        result[domain] = [index[key] for key in index]
+
+    return result
 
 class AdminService(Flaskless):
 
@@ -61,6 +81,7 @@ class AdminService(Flaskless):
             ('^deploy/(?P<uid>[-\w\.]+)$',          ['GET'],            self.deploy),
             ('^session/start$',                     ['POST'],           self.session_start),
             ('^session/stop$',                      ['GET'],            self.session_stop),
+            ('^session/save$',                      ['POST'],           self.session_save),
             ('^hypervisor/domains/list/$',          ['GET'],            self.domains_list),
             ('^hypervisor/$',                       ['GET', 'POST'],    self.hypervisor_config),
             ('^init/$',                             ['GET'],            self.webapp_init),
@@ -260,8 +281,9 @@ class AdminService(Flaskless):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
 
-        if request.method == 'GET':
-            return self.serve_html_template('profile.favourites.html')
+        #TODO: return list of popular overrides
+        #if request.method == 'GET':
+        #    return self.serve_html_template('profile.favourites.html')
 
         payload = request.get_json()
 
@@ -318,69 +340,6 @@ class AdminService(Flaskless):
             open(PROFILE_FILE, 'w+').write(json.dumps(profile))
         except:
             return JSONResponse({'status': 'could not write profile %s' % uid}, 500)
-
-        return JSONResponse({'status': 'ok'})
-
-
-    def profiles_save(self, request, id):
-
-        def write_and_close(path, load):
-            f = open(path, 'w+')
-            f.write(load)
-            f.close()
-
-        uid = self.current_session.get('uid', None)
-
-        if not uid or uid != id:
-            return JSONResponse({"status": "nonexistinguid"}, 403)
-
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-        APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], id+'.json')
-
-        data = request.get_json()
-
-        if not isinstance(data, dict):
-            return JSONResponse({"status": "JSON request is not an object"}, 403)
-        if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
-            return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
-
-        profile = {}
-        settings = {}
-        groups = []
-        users = []
-
-        for name, collector in self.collectors_by_name.items():
-            settings[name] = collector.get_settings()
-
-        groups = [g.strip() for g in data['groups'].split(",")]
-        users = [u.strip() for u in data['users'].split(",")]
-        groups = filter(None, groups)
-        users = filter(None, users)
-
-        profile["uid"] = uid
-        profile["name"] = data["profile-name"]
-        profile["description"] = data["profile-desc"]
-        profile["settings"] = settings
-        profile["etag"] = "placeholder"
-
-        self.check_for_profile_index()
-        index = json.loads(open(INDEX_FILE).read())
-        if not isinstance(index, list):
-            return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
-        index.append({"url": id + ".json", "displayName": data["profile-name"]})
-
-        self.check_for_applies()
-        applies = json.loads(open(APPLIES_FILE).read())
-        if not isinstance(applies, dict):
-            return JSONResponse({"status": "%s does not contain a JSON object as root element" % APPLIES_FILE})
-        applies[uid] = {"users": users, "groups": groups}
-
-        del(self.current_session["uid"])
-
-        write_and_close(PROFILE_FILE, json.dumps(profile))
-        write_and_close(APPLIES_FILE, json.dumps(applies))
-        write_and_close(INDEX_FILE, json.dumps(index))
 
         return JSONResponse({'status': 'ok'})
 
@@ -445,10 +404,7 @@ class AdminService(Flaskless):
 
             self.collectors_by_name[key].remember_selected(selection)
 
-        uid = str(uuid.uuid1().int)
-        self.current_session['uid'] = uid
-
-        return JSONResponse({"status": "ok", "uuid": uid})
+        return JSONResponse({"status": "ok"})
 
     # Add a configuration change to a session
     def changes_submit_name(self, request, name):
@@ -521,6 +477,49 @@ class AdminService(Flaskless):
             return JSONResponse({'status': 'Error stopping session'}, 520)
             logging.debug(e)
         return JSONResponse({'status': True})
+
+    def session_save(self, request):
+        def write_and_close(path, load):
+            f = open(path, 'w+')
+            f.write(load)
+            f.close()
+
+        data = request.get_json()
+
+        if not isinstance(data, dict):
+            return JSONResponse({"status": "JSON request is not an object"}, 403)
+        if not 'uid' in data:
+            return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
+
+        uid = data['uid']
+
+        if not uid:
+            return JSONResponse({"status": "nonexistinguid"}, 403)
+
+        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
+
+        settings = {}
+
+        for name, collector in self.collectors_by_name.items():
+            settings[name] = collector.get_settings()
+
+        try:
+            profile = json.loads(open(PROFILE_FILE).read())
+        except:
+            return JSONResponse ({'status': 'could not parse profile %s' % uid}, 500)
+
+        if not profile.get('settings', False) or \
+                not isinstance(profile['settings'], dict) or \
+                profile['settings'] == {}:
+            profile['settings'] = settings
+        else:
+            profile['settings'] = merge_settings (profile['settings'], settings)
+
+        write_and_close(PROFILE_FILE, json.dumps(profile))
+
+        del(self.current_session["uid"])
+
+        return JSONResponse({'status': 'ok'})
 
     def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
         if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
