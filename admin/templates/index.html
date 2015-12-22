@@ -4,8 +4,10 @@
     <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/patternfly.min.js"></script>
 
-    <script src="/static/js/favourites.js"></script>
+
     <script src="/static/js/index.js"></script>
+    <script src="/static/js/favourites.js"></script>
+    <script src="/static/js/deploy.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/static/css/patternfly.min.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/main.css"/>
@@ -60,7 +62,42 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id='configure-hypervisor-confirm' class="btn btn-primary">Save</button>
+            <button id='configure-hypervisor-confirm' class="btn btn-primary" onclick="saveHypervisorConfig()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="add-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Add profile</h4>
+          </div>
+
+          <div id="profile-data" class="modal-body">
+            <div id="profile-name-group" class="form-group">
+              <label for="profile-name" class="control-label">Name</label>
+              <input id="profile-name" type="text" name="profile-name" class="form-control"/>
+            </div>
+            <div id="profile-desc-group" class="form-group">
+              <label for="profile-desc" class="control-label">Description</label>
+              <input id="profile-desc" type="text" name="profile-desc" class="form-control"/>
+            </div>
+            <div id="profile-users-group" class="form-group">
+              <label for="users" class="control-label">Users</label>
+              <input id="profile-users" name="profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
+            </div>
+            <div id="profile-groups-group" class="form-group">
+              <label for="groups" class="control-label">Groups</label>
+              <input id="profile-groups" name="profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <input onclick="profileNew()" class="btn btn-primary" type="button" value="Save"/>
           </div>
         </div>
       </div>
@@ -112,7 +149,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Select domain</h4>
+            <h4 class="modal-title">Favourite apps</h4>
           </div>
 
           <div class="modal-body">

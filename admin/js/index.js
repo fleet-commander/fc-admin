@@ -18,7 +18,17 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-function populate_profile_list() {
+function clearModalFormErrors(modalId) {
+  $('#' + modalId + '-hypervisor-modal div.form-group').removeClass('has-error');
+  $('#' + modalId + ' div.form-group > .error-message').remove();
+}
+
+function addFormError(fieldId, errorMessage) {
+  $('#' + fieldId + '-group').append('<div class="help-block error-message">' + errorMessage + '</div>')
+  $('#' + fieldId + '-group').addClass('has-error');
+}
+
+function populateProfileList() {
   $.ajaxSetup({cache: false});
   $.getJSON ("/profiles/", function (data) {
     $("#profile-list").html ("");
@@ -35,11 +45,11 @@ function populate_profile_list() {
       var uid = val.url.slice(0, val.url.length - 5);
 
       $('<input></input>', {"class": "btn btn-danger pull-right", type: "button", value: "Delete"})
-        .click(function () { remove_profile (uid, val.displayName); })
+        .click(function () { removeProfile (uid, val.displayName); })
         .appendTo(delete_col);
 
       $('<input></input>', {"class": "btn pull-right", type: "button", value: "Preferred apps"})
-        .click(function () { show_favourites_dialog(uid); })
+        .click(function () { showFavouritesDialog(uid); })
         .appendTo(delete_col);
 
       tr.appendTo('#profile-list');
@@ -47,19 +57,19 @@ function populate_profile_list() {
   });
 }
 
-function remove_profile(uid, displayName) {
+function removeProfile(uid, displayName) {
   $('#del-profile-name').text(displayName);
   $('#del-profile-modal').modal('show');
   $('#del-profile-confirm').click(function () {
     $.getJSON ('/profiles/delete/' + uid)
       .always(function () {
-        populate_profile_list();
+        populateProfileList();
         $('#del-profile-modal').modal('hide');
       });
   });
 }
 
-function configure_hypervisor() {
+function configureHypervisor() {
   $.getJSON("/hypervisor/", function(data){
     $('#host').val(data.host);
     $('#username').val(data.username);
@@ -76,11 +86,11 @@ function configure_hypervisor() {
   });
 }
 
-function select_domain() {
+function selectDomain() {
   $('#domain-selection-modal').modal('show');
 
   // Function for domain selection handling
-  function domain_selected() {
+  function domainSelected() {
     // Once selected the domain, set it's uuid in sessionStorage and redirect
     $('#domain-selection-modal').modal('hide');
     sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
@@ -104,7 +114,7 @@ function select_domain() {
       wrapper = $('<div></div>');
       domain.appendTo(wrapper)
       wrapper.appendTo(list);
-      domain.click(domain_selected);
+      domain.click(domainSelected);
     });
 
   }, function(data){
@@ -112,9 +122,8 @@ function select_domain() {
   });
 }
 
-function save_hypervisor_configuration() {
-    $('#configure-hypervisor-modal .modal-body > div').removeClass('has-error');
-    $('#configure-hypervisor-modal .modal-body > div > .error-message').remove();
+function saveHypervisorConfig() {
+    clearModalFormErrors('configure-hypervisor-modal');
 
     var data = {
       host: $('#host').val(),
@@ -134,23 +143,24 @@ function save_hypervisor_configuration() {
           $('#configure-hypervisor-modal').modal('hide');
         } else {
           $.each(data.errors, function( key, value ) {
-            console.log(key, value);
-            $('#' + key + '-group').append('<div class="help-block error-message">' + value + '</div>')
-            $('#' + key + '-group').addClass('has-error');
+            addFormError(key, value);
           });
         }
-
       }
     });
 }
 
+function addProfile() {
+  $('#add-profile-modal').modal('show');
+}
+
+
 $(document).ready (function () {
 
-  $('#add-profile').click (select_domain);
-  $('#show-hypervisor-config').click(configure_hypervisor);
-  $('#configure-hypervisor-confirm').click(save_hypervisor_configuration);
+  $('#add-profile').click (addProfile);
+  $('#show-hypervisor-config').click(configureHypervisor);
 
-  populate_profile_list();
+  populateProfileList();
 
   // Show hypervisor dialog if not configured
   $.getJSON ('/init/', function(data){

@@ -30,6 +30,34 @@ function populateUsersGroups(users, groups) {
   });
 }
 
+function profileNew() {
+  clearModalFormErrors('add-profile-modal');
+
+  if (!$('#profile-name').val()) {
+    //$('#profile-name-group').addClass('has-error');
+    addFormError('profile-name', 'Profile name is required');
+    return
+  }
+
+  var data = {
+    'profile-name': $('#profile-name').val(),
+    'profile-desc': $('#profile-desc').val(),
+    'users': $('#profile-users').val(),
+    'groups': $('#profile-groups').val(),
+  }
+
+  //TODO: show spinner/progress indicator
+  $.ajax({
+    method: 'POST',
+    url: '/profiles/new',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+  }).always (function (data) {
+    $('#add-profile-modal').modal('hide');
+  });
+}
+
+// TODO: Functionality to be revised
 function profileSave() {
   var payload = {}
   $.each($('form').serializeArray(), function (array, input) {
@@ -47,12 +75,13 @@ function profileSave() {
   });
 }
 
+// TODO: Functionality to be revised
 function profileDiscard() {
   $.get("/profiles/discard/"+uid)
     .always(function () { location.pathname = "/"; });
 }
 
 $(document).ready (function () {
-  var path = location.pathname.split("/");
-  uid = path[path.length - 1];
+  // var path = location.pathname.split("/");
+  // uid = path[path.length - 1];
 });
