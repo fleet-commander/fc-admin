@@ -143,6 +143,7 @@ class AdminService(Flaskless):
                     'username': '',
                     'mode': 'system',
                     'needcfg': True,
+                    'adminhost': '',
                 })
             else:
                 data.update(self.current_session['hypervisor'])
@@ -159,6 +160,10 @@ class AdminService(Flaskless):
             # Check libvirt mode
             if data['mode'] not in ('system', 'session'):
                 errors['mode'] = 'Invalid session type'
+            # Check admin host
+            if 'adminhost' in data and data['adminhost'] != '':
+                if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
+                    errors['adminhost'] = 'Invalid hostname specified'
             if errors:
                 return JSONResponse({'errors': errors})
             # Save hypervisor configuration
@@ -412,8 +417,16 @@ class AdminService(Flaskless):
 
         self.db.sessionsettings.clear_settings()
 
-        admin_host = data['admin_host']
-        admin_port = data['admin_port']
+        hypervisor = self.current_session['hypervisor']
+        forcedadminhost = hypervisor.get('adminhost', None)
+        if forcedadminhost:
+            forcedadminhostdata = forcedadminhost.split(':')
+            if len(forcedadminhostdata) < 2:
+                forcedadminhostdata.append(data['admin_port'])
+            admin_host, admin_port = forcedadminhostdata
+        else:
+            admin_host = data['admin_host']
+            admin_port = data['admin_port']
 
         try:
             uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(data['domain'])
@@ -425,7 +438,7 @@ class AdminService(Flaskless):
         self.current_session['tunnel_pid'] = tunnel_pid
 
         self.websocket_stop()
-        self.current_session['websocket_listen_host'] = admin_host
+        self.current_session['websocket_listen_host'] = data['admin_host']
         self.current_session['websocket_target_host'] = 'localhost'
         self.current_session['websocket_target_port'] = port
         self.websocket_start()
