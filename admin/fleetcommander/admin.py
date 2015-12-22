@@ -48,16 +48,15 @@ class AdminService(Flaskless):
             (r'^clientdata/(?P<path>.+)$',          ['GET'],            self.serve_clientdata),
             (r'^static/(?P<path>.+)$',              ['GET'],            self.serve_static),
             ('^profiles/$',                         ['GET'],            self.profiles),
-            ('^profiles/applies$',                  ['GET'],    self.profiles_applies),
-            ('^profiles/save/(?P<id>[-\w\.]+)$',    ['POST'],           self.profiles_save),
-            ('^profiles/add$',                      ['GET'],            self.profiles_add),
+            ('^profiles/new$',                      ['POST'],           self.profiles_new),
+            ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
             ('^profiles/discard/(?P<id>[-\w\.]+)$', ['GET'],            self.profiles_discard),
             ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],            self.profiles_id),
             ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['GET', 'POST'],    self.profiles_apps),
             ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],           self.changes_submit_name),
-            ('^changes/select',                     ['POST'],           self.changes_select),
-            ('^changes',                            ['GET'],            self.changes),
+            ('^changes/select$',                    ['POST'],           self.changes_select),
+            ('^changes$',                           ['GET'],            self.changes),
             ('^deploy/(?P<uid>[-\w\.]+)$',          ['GET'],            self.deploy),
             ('^session/start$',                     ['POST'],           self.session_start),
             ('^session/stop$',                      ['GET'],            self.session_stop),
@@ -193,6 +192,58 @@ class AdminService(Flaskless):
     def profiles(self, request):
         self.check_for_profile_index()
         return self.serve_static(request, 'index.json', basedir=self.custom_args['profiles_dir'])
+
+    def profiles_new(self, request):
+        def write_and_close(path, load):
+            f = open(path, 'w+')
+            f.write(load)
+            f.close()
+
+        data = request.get_json()
+        uid  = uid = str(uuid.uuid1().int)
+
+        INDEX_FILE   = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+        APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
+        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'],  uid+'.json')
+
+
+        if not isinstance(data, dict):
+            return JSONResponse({"status": "JSON request is not an object"}, 403)
+        if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
+            return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
+        #TODO: return which fields were empty
+
+        profile = {}
+        groups = []
+        users = []
+
+        groups = [g.strip() for g in data['groups'].split(",")]
+        users = [u.strip() for u in data['users'].split(",")]
+        groups = filter(None, groups)
+        users = filter(None, users)
+
+        profile["uid"] = uid
+        profile["name"] = data["profile-name"]
+        profile["description"] = data["profile-desc"]
+        profile["settings"]    = {}
+
+        self.check_for_profile_index()
+        index = json.loads(open(INDEX_FILE).read())
+        if not isinstance(index, list):
+            return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
+        index.append({"url": uid + ".json", "displayName": data["profile-name"]})
+
+        self.check_for_applies()
+        applies = json.loads(open(APPLIES_FILE).read())
+        if not isinstance(applies, dict):
+            return JSONResponse({"status": "%s does not contain a JSON object as root element" % APPLIES_FILE})
+        applies[uid] = {"users": users, "groups": groups}
+
+        write_and_close(PROFILE_FILE, json.dumps(profile))
+        write_and_close(APPLIES_FILE, json.dumps(applies))
+        write_and_close(INDEX_FILE, json.dumps(index))
+
+        return JSONResponse({'status': 'ok', 'uid': uid})
 
     def profiles_applies(self, request):
         self.check_for_applies()
