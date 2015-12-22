@@ -48,6 +48,7 @@ class AdminService(Flaskless):
             (r'^clientdata/(?P<path>.+)$',          ['GET'],            self.serve_clientdata),
             (r'^static/(?P<path>.+)$',              ['GET'],            self.serve_static),
             ('^profiles/$',                         ['GET'],            self.profiles),
+            ('^profiles/livesession$'               ['GET'],            self.profiles_livesession),
             ('^profiles/new$',                      ['POST'],           self.profiles_new),
             ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
@@ -118,6 +119,9 @@ class AdminService(Flaskless):
     # Views
     def index(self, request):
         return self.serve_html_template('index.html')
+
+    def profiles_livesession(self, request):
+        return self.serve_html_template('profiles.livesession.html')
 
     def webapp_init(self, request):
         if 'hypervisor' not in self.current_session:
