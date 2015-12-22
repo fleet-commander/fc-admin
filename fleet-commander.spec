@@ -33,7 +33,6 @@ Fleet Commander web interface to create and deploy profiles
 
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
-#Requires: python3-gobject
 Requires: gjs
 Requires: libsoup
 Requires: json-glib
@@ -72,10 +71,10 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 rm -rf %{buildroot}
 
 %pre -n fleet-commander-admin
-getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
+getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
 
 %pre -n fleet-commander-logger
-getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -r -g users -d %{_localstatedir}/lib/fleet-commander -s /bin/bash -c "Fleet Commander" fleet-commander
+getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -M -d %{_localstatedir}/lib/fleet-commander -s /bin/bash -c "Fleet Commander" fleet-commander
 exit 0
 
 %preun -n fleet-commander-admin
@@ -119,7 +118,7 @@ exit 0
 %files -n fleet-commander-logger
 %defattr(755, root, root)
 %{_libexecdir}/fleet_commander_logger.js
-%attr(755, fleet-commander, users) %{_localstatedir}/lib/fleet-commander
+%attr(755, fleet-commander, fleet-commander) %{_localstatedir}/lib/fleet-commander
 %attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
 %attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
 %attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
