@@ -42,8 +42,9 @@ function addOverrideFromEntry () {
     return;
   }
 
-  if (overrides == null)
-    overrdes = [];
+  if (overrides == null) {
+    overrides = [];
+  }
 
   overrides.push (app);
 
