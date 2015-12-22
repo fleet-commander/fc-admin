@@ -48,7 +48,7 @@ class AdminService(Flaskless):
             (r'^clientdata/(?P<path>.+)$',          ['GET'],            self.serve_clientdata),
             (r'^static/(?P<path>.+)$',              ['GET'],            self.serve_static),
             ('^profiles/$',                         ['GET'],            self.profiles),
-            ('^profiles/livesession$'               ['GET'],            self.profiles_livesession),
+            ('^profiles/livesession$',              ['GET'],            self.profiles_livesession),
             ('^profiles/new$',                      ['POST'],           self.profiles_new),
             ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
