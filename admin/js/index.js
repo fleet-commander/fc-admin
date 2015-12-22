@@ -44,11 +44,11 @@ function populateProfileList() {
 
       var uid = val.url.slice(0, val.url.length - 5);
 
-      $('<input></input>', {"class": "btn btn-danger pull-right", type: "button", value: "Delete"})
+      $('<button></button>', {"class": "btn btn-danger pull-right", html: '<span class="pficon pficon-delete"></span> Delete'})
         .click(function () { removeProfile (uid, val.displayName); })
         .appendTo(delete_col);
 
-      $('<input></input>', {"class": "btn pull-right", type: "button", value: "Preferred apps"})
+      $('<button></button>', {"class": "btn pull-right", html: '<span class="pficon pficon-flag"></span> Preferred apps'})
         .click(function () { showFavouritesDialog(uid); })
         .appendTo(delete_col);
 

@@ -21,7 +21,6 @@
       </div>
 
       <div class="nav navbar-utility">
-        <a id="show-hypervisor-config" href="#"><span class="pficon pficon-settings"></span></a>
       </div>
     </nav>
 
@@ -168,18 +167,29 @@
           </div>
 
           <div class="modal-footer">
-              <input type="button" class="btn btn-primary pull-right" value="Save" onclick="saveOverrides()"></input>
-              <input type="button" class="btn pull-right" value="Discard" data-dismiss="modal"></input>
+            <input type="button" class="btn btn-default" value="Cancel" data-dismiss="modal"></input>
+            <input type="button" class="btn btn-primary" value="Save" onclick="saveOverrides()"></input>
           </div>
         </div>
       </div>
     </div>
 
     <div class="container-fluid">
-      <div class="panel panel-default" style="margin-top: 20px;">
+
+      <div classs="panel panel-default text-right" style="margin-top: 10px; padding: 10px 0; text-align: right">
+        <button id="show-hypervisor-config" class="btn btn-default" type="button">
+          <span class="pficon pficon-settings"></span> Hypervisor configuration
+        </button>
+      </div>
+
+      <div class="panel panel-default">
         <div class="panel-heading">
           <span>Profiles</span>
-          <button id="add-profile" class="btn btn-primary pull-right" type="button">Add Profile</button>
+          <span class="pull-right">
+            <button id="add-profile" class="btn btn-primary" type="button">
+              <span class="pficon pficon-add"></span>Add Profile
+            </button>
+          </span>
         </div>
 
         <table class="table">

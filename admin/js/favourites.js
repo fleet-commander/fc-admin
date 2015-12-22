@@ -145,7 +145,7 @@ function saveOverrides () {
   return;
 }
 
-function show_favourites_dialog (profile_uid) {
+function showFavouritesDialog (profile_uid) {
   overrides = null;
   uid = profile_uid;
   $('#favourite-apps-modal').modal('show');
