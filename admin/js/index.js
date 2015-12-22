@@ -39,7 +39,7 @@ function populate_profile_list() {
         .appendTo(delete_col);
 
       $('<input></input>', {"class": "btn pull-right", type: "button", value: "Preferred apps"})
-        .click(function () { location.href = "/profiles/apps/" + uid })
+        .click(function () { show_favourites_dialog(uid); })
         .appendTo(delete_col);
 
       tr.appendTo('#profile-list');
@@ -144,20 +144,19 @@ function save_hypervisor_configuration() {
     });
 }
 
-function initialization() {
-  $.getJSON ('/init/', function(data){
-    if (data.needcfg) {
-      configure_hypervisor();
-    }
-  });
-}
-
 $(document).ready (function () {
 
   $('#add-profile').click (select_domain);
   $('#show-hypervisor-config').click(configure_hypervisor);
   $('#configure-hypervisor-confirm').click(save_hypervisor_configuration);
 
-  initialization();
   populate_profile_list();
+
+  // Show hypervisor dialog if not configured
+  $.getJSON ('/init/', function(data){
+    if (data.needcfg) {
+      configure_hypervisor();
+    }
+  });
+
 });

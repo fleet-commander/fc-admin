@@ -18,7 +18,7 @@
  */
 
 var uid = null;
-var overrides;
+var overrides = null;
 
 function hasSuffix (haystack, needle) {
   return (haystack.length - needle.length) == haystack.lastIndexOf(needle);
@@ -132,12 +132,12 @@ function readFavourites () {
 function saveOverrides () {
   $.ajax({
     method: 'POST',
-    url: location.pathname,
+    url: '/profiles/apps/' + uid,
     data: JSON.stringify(overrides),
     contentType: 'application/json'
   })
     .done (function (data) {
-      location.href = "/";
+      $('#favourite-apps-modal').modal('hide');
     })
     .fail (function (data) {
         //FIXME: Error dialog/feedback?
@@ -145,14 +145,10 @@ function saveOverrides () {
   return;
 }
 
-function discard () {
-  location.href = "/";
+function show_favourites_dialog (profile_uid) {
+  overrides = null;
+  uid = profile_uid;
+  $('#favourite-apps-modal').modal('show');
+  readFavourites ();
 }
 
-$(document).ready (function () {
-  var path = location.pathname.split("/");
-  uid =  path[path.length - 1];
-  overrides = null;
-
-  readFavourites ();
-});
