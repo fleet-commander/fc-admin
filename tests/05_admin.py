@@ -104,6 +104,18 @@ class TestAdminWSGIRef(unittest.TestCase):
     def get_data_from_file(self, path):
         return open(path).read()
 
+    def create_dumb_profile (self, payload=None):
+        profile = {
+                "profile-name": "foo",
+                "profile-desc": "bar",
+                "users":        "user1,user2,user3",
+                "groups":       "group1,group2"
+        }
+
+        if not payload:
+            payload=profile
+        return payload, self.app.post("/profiles/new", data=json.dumps(payload), content_type='application/json')
+
     def configure_hypervisor(self, host='localhost', username='testuser', mode='session'):
         return self.app.jsonpost('/hypervisor/', data={
             'host': host,
@@ -128,17 +140,70 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.data, indexdata,
                          msg='Statically served index content was not correct')
 
-    def test_01_attempt_save_unselected_profile(self):
-        profile_id = '0123456789'
-        profile_data = json.dumps(dict(name='myprofile', description='mydesc', settings={}, groups='', users=''))
-        ret = self.app.post('/profiles/save/' + profile_id, data=profile_data, content_type='application/json')
+    def test_01_profiles_new(self):
+        profile, ret = self.create_dumb_profile ()
+        self.assertEqual(json.loads(ret.data).get("status", False), "ok")
+        self.assertTrue(json.loads(ret.data).get("uid", False))
 
-        PROFILE = os.path.join(self.args['profiles_dir'], profile_id + '.json')
-        self.assertFalse(os.path.exists(PROFILE), msg='profile file was not created')
-        self.assertEqual(ret.status_code, 403)
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "nonexistinguid"}))
+        uid = json.loads(ret.data)["uid"]
+        INDEX_FILE   = os.path.join(self.args['profiles_dir'], 'index.json')
+        APPLIES_FILE = os.path.join(self.args['profiles_dir'], 'applies.json')
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
 
-    def test_02_hypervisor_configuration(self):
+        self.assertEqual(json.loads(self.get_data_from_file (INDEX_FILE))[0]["url"], uid + ".json")
+        self.assertEqual(json.loads(self.get_data_from_file (INDEX_FILE))[0]["displayName"], profile["profile-name"])
+        self.assertEqual(json.dumps(json.loads(self.get_data_from_file (APPLIES_FILE))[uid]),
+                json.dumps({"users": profile["users"].split(","), "groups": profile["groups"].split(",")}))
+        self.assertEqual(json.dumps(json.loads(self.get_data_from_file (PROFILE_FILE))),
+                json.dumps({"description": profile["profile-desc"], "settings": {}, "name": profile["profile-name"], "uid": uid}))
+
+    def test_02_session_save_empty (self):
+        self.configure_hypervisor()
+
+        profile, ret = self.create_dumb_profile ()
+        uid = json.loads(ret.data)["uid"]
+        self.assertEqual(ret.status_code, 200)
+
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
+        ret = self.app.jsonpost('/session/save', data={'uid': uid})
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.get('/session/stop')
+        self.assertEqual(ret.status_code, 200)
+
+    def test_03_session_select_save (self):
+        self.configure_hypervisor()
+
+        profile, ret = self.create_dumb_profile ()
+        uid = json.loads(ret.data)["uid"]
+
+        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
+        ret = self.app.jsonpost('/session/start', data=data)
+
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
+
+        gsettings = json.loads(self.get_data_from_file (PROFILE_FILE))['settings']
+        self.assertEqual(gsettings, {})
+
+        change = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
+        self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change), content_type='application/json')
+        ret = self.app.post('/changes/select', data='{"org.gnome.gsettings": ["/foo/bar"]}', content_type='application/json')
+        self.assertEqual(ret.status_code, 200)
+
+        ret = self.app.jsonpost('/session/save', data={'uid': uid})
+        self.assertEqual(ret.status_code, 200)
+
+        gsettings = json.loads(self.get_data_from_file (PROFILE_FILE))['settings']['org.gnome.gsettings']
+        self.assertEqual(len(gsettings), 1)
+        self.assertEqual(gsettings[0]["key"], "/foo/bar")
+        self.assertEqual(gsettings[0]["value"], True)
+        self.assertEqual(gsettings[0]["signature"], "b")
+
+        ret = self.app.get('/session/stop')
+        self.assertEqual(ret.status_code, 200)
+
+    def test_04_hypervisor_configuration(self):
         # Hypervisor nor configured yet
         ret = self.app.get('/hypervisor/')
         self.assertEqual(ret.status_code, 200)
@@ -178,12 +243,12 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertTrue('mode' in ret.jsondata['errors'])
         self.assertTrue(ret.jsondata['errors']['mode'] == 'Invalid session type')
 
-    def test_03_start_invalid_data(self):
+    def test_05_start_invalid_data(self):
         ret = self.app.post('/session/start', data=json.dumps({'whatever': 'something'}), content_type='application/json')
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'Invalid data received'}))
         self.assertEqual(ret.status_code, 400)
 
-    def test_04_session_start_stop(self):
+    def test_06_session_start_stop(self):
         # Setup hipervisor
         self.configure_hypervisor()
 
@@ -204,9 +269,18 @@ class TestAdminWSGIRef(unittest.TestCase):
         ret = self.app.get('/session/stop')
         self.assertEqual(ret.status_code, 520)
 
-    def test_05_change_select_and_deploy(self):
+    def test_07_change_select_and_deploy(self):
         # Setup hipervisor
         self.configure_hypervisor()
+
+        # Create dumb profile
+        profile_obj = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': 'foo,bar', 'users': 'baz'}
+        profile_obj, ret = self.create_dumb_profile (payload=profile_obj)
+        self.assertEqual(ret.status_code, 200)
+        ret_json = json.loads(ret.data)
+        self.assertTrue(isinstance(ret_json, dict))
+        self.assertTrue('uid' in ret_json)
+        uid = ret_json['uid']
 
         # Start session
         data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
@@ -229,37 +303,33 @@ class TestAdminWSGIRef(unittest.TestCase):
             json.dumps(json.loads(ret.data)),
             json.dumps({'org.gnome.gsettings': [[change1['key'], change1['value']], [change2['key'], change2['value']]]}))
 
-        # Select changes for the profile and get UUID to save it
+        # Select changes to save in the profile
         ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change2['key']]}), content_type='application/json')
         self.assertEqual(ret.status_code, 200)
 
         payload = json.loads(ret.data)
         self.assertTrue(isinstance(payload, dict))
-        self.assertTrue('uuid' in payload)
         self.assertTrue('status' in payload)
         self.assertEqual(payload['status'], 'ok')
+
+        # Save the profile with the selected changes
+        ret = self.app.jsonpost("/session/save", data={"uid": uid})
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "ok"}))
+        self.assertEqual(ret.status_code, 200)
 
         # Stop the virtual session
         self.app.get('/session/stop')
 
-        # Save the profile with the selected changes
-        uuid = payload['uuid']
-        profile_obj = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': 'foo,bar', 'users': 'baz'}
-        profile_data = json.dumps(profile_obj)
-        ret = self.app.post("/profiles/save/"+uuid, content_type='application/json', data=profile_data)
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({"status": "ok"}))
-        self.assertEqual(ret.status_code, 200)
-
         # Get index
         ret = self.app.get("/profiles/")
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uuid + ".json", 'displayName': profile_obj['profile-name']}]))
+        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([{'url': uid + ".json", 'displayName': profile_obj['profile-name']}]))
 
         # Get profile
-        ret = self.app.get("/profiles/"+uuid)
+        ret = self.app.get("/profiles/"+uid)
         self.assertEqual(ret.status_code, 200)
         profile = json.loads(ret.data)
         self.assertTrue(isinstance(profile, dict))
-        self.assertEqual(profile['uid'], uuid)
+        self.assertEqual(profile['uid'], uid)
         self.assertEqual(profile['description'], profile_obj['profile-desc'])
         self.assertEqual(profile['name'], profile_obj['profile-name'])
         self.assertEqual(json.dumps(profile['settings']['org.gnome.gsettings'][0]), json.dumps(change2))
@@ -269,12 +339,12 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         applies = json.loads(ret.data)
         self.assertTrue(isinstance(applies, dict))
-        self.assertTrue(uuid in applies)
-        self.assertEqual(json.dumps(applies[uuid]), json.dumps({'groups': ['foo' , 'bar'], 'users': ['baz']}))
+        self.assertTrue(uid in applies)
+        self.assertEqual(json.dumps(applies[uid]), json.dumps({'groups': ['foo' , 'bar'], 'users': ['baz']}))
         self.assertEqual(len(applies), 1)
 
         # Remove profile
-        ret = self.app.get("/profiles/delete/"+uuid)
+        ret = self.app.get("/profiles/delete/"+uid)
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
 
@@ -283,34 +353,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps([]))
 
-    def test_06_discard_profile(self):
-        # Setup hipervisor
-        self.configure_hypervisor()
-
-        # Start session
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
-        ret = self.app.jsonpost('/session/start', data=data)
-        print ret.data
-
-        # Create profile candidate: We assume all of these methods as tested
-        change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
-        self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
-        ret = self.app.post('/changes/select', data=json.dumps({'org.gnome.gsettings': [change1['key']]}), content_type='application/json')
-
-        # discard a profile candidate
-        ret = self.app.get('/profiles/discard/' + ret.jsondata['uuid'])
-        self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.dumps({"status": "ok"}), json.dumps(ret.jsondata))
-
-        # discard a non-existing profile
-        ret = self.app.get('/profiles/discard/invaliduuid')
-        self.assertEqual(ret.status_code, 403)
-        self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({'status': 'profile invaliduuid not found'}))
-
-        self.app.get('/session/stop')
-
-    def test_07_change_merge_several_changes(self):
-
+    def test_08_change_merge_several_changes(self):
         change1 = {'key': '/foo/bar', 'schema': 'foo', 'value': "first", 'signature': 's'}
         ret = self.app.post('/changes/submit/org.gnome.gsettings', data=json.dumps(change1), content_type='application/json')
         self.assertEqual(json.dumps({"status": "ok"}), json.dumps(json.loads(ret.data)))
@@ -327,13 +370,13 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         self.app.get('/session/stop')
 
-    def test_08_empty_collector(self):
+    def test_09_empty_collector(self):
 
         ret = self.app.get('/changes')
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.dumps(json.loads(ret.data)), json.dumps({}))
 
-    def test_09_libreoffice_and_gsettings_changes(self):
+    def test_10_libreoffice_and_gsettings_changes(self):
 
         change_libreoffice = {'key': '/org/libreoffice/registry/foo', 'value': 'bar', 'signature': 's'}
         ret = self.app.post('/changes/submit/org.libreoffice.registry', data=json.dumps(change_libreoffice), content_type='application/json')
@@ -353,20 +396,11 @@ class TestAdminWSGIRef(unittest.TestCase):
 
     def test_10_profiles_software(self):
         self.configure_hypervisor()
-        data = {'domain': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'admin_host': 'localhost', 'admin_port': 8181}
-        ret = self.app.jsonpost('/session/start', data=data)
 
-        # Create empty profile
-        ret = self.app.post('/changes/select', data=json.dumps({}), content_type='application/json')
-        payload = json.loads(ret.data)
+        profile = {'profile-name': 'myprofile', 'profile-desc': 'mydesc', 'groups': '', 'users': ''}
 
-        uid = payload['uuid']
-        profile_data = json.dumps({'profile-name': 'myprofile',
-                                   'profile-desc': 'mydesc',
-                                   'groups': '',
-                                   'users': ''})
-        ret = self.app.post('/profiles/save/'+uid, content_type='application/json', data=profile_data)
-        self.assertEqual(json.loads(ret.data).get ('status', None), 'ok')
+        profile, ret = self.create_dumb_profile (profile)
+        uid = json.loads(ret.data)["uid"]
 
         # Add GNOME Software overrides
         favourites = json.dumps(['foo.desktop', 'bar.desktop', 'baz.desktop'])
@@ -397,6 +431,28 @@ class TestAdminWSGIRef(unittest.TestCase):
         ret = self.app.get("/clientdata/%s.json" % uid)
         profile = json.loads(ret.data)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
+
+    def test_11_merge_settings(self):
+        a = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": False, "signature": "b"}]}
+        b = {"org.libreoffice.registry": [{"key": "/org/libreoffice/registry/foo", "value": "asd", "signature": "string"}]}
+        c = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"}]}
+        d = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"},
+                                     {"key": "/foo/bleh", "value": True, "signature": "b"}]}
+
+        ab = fleet_commander_admin.merge_settings(a, b)
+        ac = fleet_commander_admin.merge_settings(a, c)
+        aa = fleet_commander_admin.merge_settings(a, a)
+        ad = fleet_commander_admin.merge_settings(a, d)
+        an = fleet_commander_admin.merge_settings(a, {})
+
+        self.assertEqual(len(ab), 2)
+        self.assertTrue("org.gnome.gsettings" in ab)
+        self.assertTrue("org.libreoffice.registry" in ab)
+        self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
+        self.assertTrue(ac["org.gnome.gsettings"][0]["value"] == True)
+        self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
+        self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
+        self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False

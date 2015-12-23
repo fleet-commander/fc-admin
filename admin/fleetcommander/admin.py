@@ -72,7 +72,6 @@ class AdminService(Flaskless):
             ('^profiles/new$',                      ['POST'],           self.profiles_new),
             ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
-            ('^profiles/discard/(?P<id>[-\w\.]+)$', ['GET'],            self.profiles_discard),
             ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],            self.profiles_id),
             ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['GET', 'POST'],    self.profiles_apps),
             ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],           self.changes_submit_name),
@@ -362,14 +361,6 @@ class AdminService(Flaskless):
 
         open(INDEX_FILE, 'w+').write(json.dumps(index))
         return JSONResponse({'status': 'ok'})
-
-    def profiles_discard(self, request, id):
-        if self.current_session.get('uid', None) == id:
-            del(self.current_session["uid"])
-            # del(self.current_session["changeset"])
-            return JSONResponse({'status': 'ok'})
-
-        return JSONResponse({'status': 'profile %s not found' % id}, 403)
 
     def changes(self, request):
         response = {}
