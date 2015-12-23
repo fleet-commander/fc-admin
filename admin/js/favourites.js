@@ -32,39 +32,41 @@ function populateOverrides () {
 }
 
 function addOverrideFromEntry () {
+  clearModalFormErrors('favourite-apps-modal');
+
   var app = $('#app-name').val ();
 
   if (hasSuffix (app, ".desktop") == false) {
-    return;
+    showMessageDialog('Application identifier must have .desktop extension', 'Invalid entry');
   }
 
   if (app.indexOf('"') != -1 || app.indexOf("'") != -1) {
-    return;
+    showMessageDialog('Application identifier must not contain quotes', 'Invalid entry');
   }
 
   if (overrides == null) {
     overrides = [];
   }
 
+  for (i in overrides) {
+    if (overrides[i] == app) {
+      showMessageDialog('Application identifier is already in favourites', 'Invalid entry');
+      return
+    }
+  }
+
   overrides.push (app);
 
   addOverride (app);
-}
 
-function insertOverride (app) {
-  for (i in overrides) {
-    if (overrides[i] == app)
-      return;
-  }
-
-  overrides.push(app);
-  populateOverrides ();
+  $('#app-name').val ('');
 }
 
 function addOverride (app) {
-  var duplicate = false;
+
   if (typeof (app) != "string")
     return;
+
   if (hasSuffix (app, ".desktop") == false)
     return;
 
@@ -135,19 +137,21 @@ function saveOverrides () {
     url: '/profiles/apps/' + uid,
     data: JSON.stringify(overrides),
     contentType: 'application/json'
-  })
-    .done (function (data) {
-      $('#favourite-apps-modal').modal('hide');
-    })
-    .fail (function (data) {
-        //FIXME: Error dialog/feedback?
-    });
-  return;
+  }).success (function (data) {
+    hideFavouritesDialog();
+  }).fail (function (data) {
+    showMessageDialog('Error saving preferred apps', 'Error');
+  });
 }
 
-function showFavouritesDialog (profile_uid) {
+function hideFavouritesDialog () {
+  $('#favourite-apps-modal').modal('hide');
+  $('#edit-profile-modal').modal('show');
+}
+
+function showFavouritesDialog () {
   overrides = null;
-  uid = profile_uid;
+  $('#edit-profile-modal').modal('hide');
   $('#favourite-apps-modal').modal('show');
   readFavourites ();
 }

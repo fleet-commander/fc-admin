@@ -54,10 +54,12 @@ function profileNew() {
     contentType: 'application/json',
   }).always (function (data) {
     $('#add-profile-modal').modal('hide');
+    // Refresh profiles
+    populateProfileList();
   });
 }
 
-// TODO: Functionality to be revised
+// TODO: Functionality to be reviewed
 function profileSave() {
   var payload = {}
   $.each($('form').serializeArray(), function (array, input) {
@@ -75,13 +77,8 @@ function profileSave() {
   });
 }
 
-// TODO: Functionality to be revised
+// TODO: Functionality to be reviewed
 function profileDiscard() {
   $.get("/profiles/discard/"+uid)
     .always(function () { location.pathname = "/"; });
 }
-
-$(document).ready (function () {
-  // var path = location.pathname.split("/");
-  // uid = path[path.length - 1];
-});

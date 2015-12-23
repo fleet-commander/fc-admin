@@ -18,8 +18,16 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+function showMessageDialog(message, title) {
+  title = title || 'Info';
+  var dialog = $('#message-dialog-modal');
+  $('#message-dialog-modal h4').html(title);
+  $('#message-dialog-modal .modal-body').html(message);
+  dialog.modal('show');
+}
+
 function clearModalFormErrors(modalId) {
-  $('#' + modalId + '-hypervisor-modal div.form-group').removeClass('has-error');
+  $('#' + modalId + ' div.form-group').removeClass('has-error');
   $('#' + modalId + ' div.form-group > .error-message').remove();
 }
 
@@ -39,18 +47,21 @@ function populateProfileList() {
       $('<td></td>').appendTo(tr); // os
       $('<td></td>').appendTo(tr); // applies to
 
-      var delete_col = $('<td></td>');
-      delete_col.appendTo(tr);
+      var actions_col = $('<td></td>');
+      actions_col.appendTo(tr);
+
+      var actions_container = $('<span></span>', { class: 'pull-right' });
+      actions_container.appendTo(actions_col)
 
       var uid = val.url.slice(0, val.url.length - 5);
 
-      $('<button></button>', {"class": "btn btn-danger pull-right", html: '<span class="pficon pficon-delete"></span> Delete'})
-        .click(function () { removeProfile (uid, val.displayName); })
-        .appendTo(delete_col);
+      $('<button></button>', {"class": "btn btn-default", text: 'Edit'})
+        .click(function () { editProfile(uid); })
+        .appendTo(actions_container);
 
-      $('<button></button>', {"class": "btn pull-right", html: '<span class="pficon pficon-flag"></span> Preferred apps'})
-        .click(function () { showFavouritesDialog(uid); })
-        .appendTo(delete_col);
+      $('<button></button>', {"class": "btn btn-danger", text: 'Delete'})
+        .click(function () { removeProfile (uid, val.displayName); })
+        .appendTo(actions_container);
 
       tr.appendTo('#profile-list');
     });
@@ -86,7 +97,13 @@ function configureHypervisor() {
   });
 }
 
+function hideDomainSelection () {
+  $('#favourite-apps-modal').modal('hide');
+  $('#edit-profile-modal').modal('show');
+}
+
 function selectDomain() {
+  $('#edit-profile-modal').modal('hide');
   $('#domain-selection-modal').modal('show');
 
   // Function for domain selection handling
@@ -94,7 +111,8 @@ function selectDomain() {
     // Once selected the domain, set it's uuid in sessionStorage and redirect
     $('#domain-selection-modal').modal('hide');
     sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
-    location.href = "/profiles/add";
+    sessionStorage.setItem("fc.session.profile_uid", uid);
+    location.href = "/profiles/livesession";
   }
 
   // Show loading clock
@@ -154,6 +172,20 @@ function addProfile() {
   $('#add-profile-modal').modal('show');
 }
 
+function editProfile(profileId) {
+  // Get profile id data
+  $.getJSON('/profiles/' + profileId, function(data) {
+    // Load data in required fields
+    $('#edit-profile-name').val(data.name);
+    $('#edit-profile-desc').val(data.desc || '');
+    $('#edit-profile-users').val(data.users || '');
+    $('#edit-profile-groups').val(data.groups || '');
+    // Set global uid
+    uid = profileId;
+    // Show dialog
+    $('#edit-profile-modal').modal('show');
+  });
+}
 
 $(document).ready (function () {
 
@@ -168,5 +200,11 @@ $(document).ready (function () {
       configure_hypervisor();
     }
   });
+
+  var editing = sessionStorage.getItem("fc.session.profile_uid");
+  if (editing) {
+    sessionStorage.removeItem("fc.session.profile_uid");
+    editProfile(editing);
+  }
 
 });
