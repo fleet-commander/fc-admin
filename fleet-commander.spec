@@ -104,6 +104,8 @@ exit 0
 %{_libdir}/fleet-commander/fleetcommander/collectors.py[co]
 %{_libdir}/fleet-commander/fleetcommander/database.py
 %{_libdir}/fleet-commander/fleetcommander/database.py[co]
+%{_libdir}/fleet-commander/fleetcommander/fcdbus.py
+%{_libdir}/fleet-commander/fleetcommander/fcdbus.py[co]
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py
 %{_libdir}/fleet-commander/fleetcommander/flaskless.py[co]
 %{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py
@@ -113,7 +115,9 @@ exit 0
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
+%attr(644, -, -) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{systemd_dir}/fleet-commander-admin.service
+%{systemd_dir}/fleet-commander-dbus.service
 
 %files -n fleet-commander-logger
 %defattr(755, root, root)

@@ -26,12 +26,22 @@ fleet_commander_apache_config_DATA     = fleet-commander-apache.conf
 fleet_commander_libreoffice_dconfdir = ${fchomedir}/.config/libreoffice
 fleet_commander_libreoffice_dconf_DATA   = dconfwrite
 
+fleet_commander_dbus_servicedir = $(systemdsystemunitdir)
+fleet_commander_dbus_service_in_files = fleet-commander-dbus.service.in
+fleet_commander_dbus_service_DATA = fleet-commander-dbus.service
+
+fleet_commander_dbus_configdir = ${sysconfdir}/dbus-1/system.d/
+fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
+
 EXTRA_DIST = \
     $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
+	$(fleet_commander_dbus_config_DATA)            \
 	$(gnome_initial_setup_done_DATA)               \
-	$(fleet_commander_service_in_files)            \
+	$(fleet_commander_admin_service_in_files)      \
+	$(fleet_commander_dbus_service_in_files)       \
+	$(fleet_commander_dbus_service_DATA)           \
 	$(fleet_commander_logger_config_DATA)          \
 	$(fleet_commander_apache_service_in_files)     \
 	$(fleet_commander_apache_config_DATA)          \
@@ -40,5 +50,6 @@ EXTRA_DIST = \
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
 	$(fleet_commander_admin_config_DATA)        \
-	$(fleet_commander_admin_service_DATA)
+	$(fleet_commander_admin_service_DATA)       \
+	$(fleet_commander_dbus_service_DATA)
 

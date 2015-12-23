@@ -4,6 +4,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/admin.py      \
 	fleetcommander/collectors.py \
 	fleetcommander/database.py \
+	fleetcommander/fcdbus.py            \
 	fleetcommander/flaskless.py \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/utils.py
