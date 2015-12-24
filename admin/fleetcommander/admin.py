@@ -71,8 +71,9 @@ class AdminService(Flaskless):
             ('^profiles/livesession$',              ['GET'],            self.profiles_livesession),
             ('^profiles/new$',                      ['POST'],           self.profiles_new),
             ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
+            ('^profiles/props/(?P<uid>[-\w\.]+)$',  ['POST'],           self.profiles_props),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
-            ('^profiles/(?P<profile_id>[-\w\.]+)$', ['GET'],            self.profiles_id),
+            ('^profiles/(?P<uid>[-\w\.]+)$',        ['GET'],            self.profiles_id),
             ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['GET', 'POST'],    self.profiles_apps),
             ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],           self.changes_submit_name),
             ('^changes/select$',                    ['POST'],           self.changes_select),
@@ -273,8 +274,72 @@ class AdminService(Flaskless):
         self.check_for_applies()
         return self.serve_static(request, 'applies.json', basedir=self.custom_args['profiles_dir'])
 
-    def profiles_id(self, request, profile_id):
-        return self.serve_static(request, profile_id + '.json', basedir=self.custom_args['profiles_dir'])
+    def profiles_props(self, request, uid):
+        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'],  uid+'.json')
+
+        if not os.path.isfile(PROFILE_FILE):
+            return JSONResponse({'status': 'profile %s does not exist' % uid}, 403)
+
+        try:
+            payload = request.get_json ()
+        except:
+            return JSONResponse ({'status': 'request data was not a valid JSON object'}, 403)
+
+        if not isinstance(payload, dict):
+            return JSONResponse ({'status': 'request data wast not a valid JSON dictionary'}, 403)
+
+
+        if 'profile-name' in payload or 'profile-desc' in payload:
+            profile = None
+            try:
+                profile = json.loads(open(PROFILE_FILE).read())
+            except:
+                return JSONResponse({'status': 'could not parse profile %s.json file' % uid}, 500)
+
+            if not isinstance(profile, dict):
+                return JSONResponse({'status': 'profile %s.json does not hold a JSON object' % uid}, 500)
+
+            if 'profile-name' in payload:
+                profile['name'] = payload['profile-name']
+
+            if 'profile-desc' in payload:
+                profile['description'] = payload['profile-desc']
+
+            try:
+                open(PROFILE_FILE, 'w+').write(json.dumps(profile))
+            except:
+                return JSONResponse({'status': 'could not write profile %s.json' % uid}, 500)
+
+        if 'users' in payload or 'groups' in payload:
+            APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'],  'applies.json')
+            applies = None
+            try:
+                applies = json.loads(open(APPLIES_FILE).read())
+            except:
+                return JSONResponse({'status': 'could not parse applies.json file'}, 500)
+
+            if not isinstance(applies, dict):
+                return JSONResponse({'status': 'applies.json does not hold a JSON object'}, 500)
+
+            if 'users' in payload:
+                users = [u.strip() for u in payload['users'].split(",")]
+                users = filter(None, users)
+                applies[uid]['users'] = users
+
+            if 'groups' in payload:
+                groups = [g.strip() for g in payload['groups'].split(",")]
+                groups = filter(None, groups)
+                applies[uid]['groups'] = groups
+
+            try:
+                open(APPLIES_FILE, 'w+').write(json.dumps(applies))
+            except:
+                return JSONResponse({'status': 'could not write applies.json'}, 500)
+
+        return JSONResponse({'status': 'ok'})
+
+    def profiles_id(self, request, uid):
+        return self.serve_static(request, uid + '.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_apps(self, request, uid):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
