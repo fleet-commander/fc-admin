@@ -467,7 +467,6 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.loads(self.get_data_from_file(PROFILE_FILE))['name'], 'mynewname')
 
-        # Ammend description
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'profile-desc': 'somedesc'})
         self.assertEqual(ret.status_code, 200)
@@ -476,14 +475,12 @@ class TestAdminWSGIRef(unittest.TestCase):
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'users': 'u1,u2,u3'})
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['users'],
-                         ['u1', 'u2', 'u3'])
+        self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['users'], ['u1', 'u2', 'u3'])
 
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'groups': 'g1,g2,g3'})
         self.assertEqual(ret.status_code, 200)
-        self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['groups'],
-                         ['g1', 'g2', 'g3'])
+        self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['groups'], ['g1', 'g2', 'g3'])
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False
