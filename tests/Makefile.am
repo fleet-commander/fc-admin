@@ -6,6 +6,7 @@ EXTRA_DIST =                         \
 	libvirtmock.py                   \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.js         \
+	_01_wait_for_name.py             \
 	data/test.gschema.xml            \
 	data/libvirt_domain-orig.xml     \
 	data/libvirt_domain-modified.xml \
