@@ -6,7 +6,6 @@
 
     <script src="/static/js/index.js"></script>
     <script src="/static/js/favourites.js"></script>
-    <script src="/static/js/deploy.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/static/css/patternfly.min.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/main.css"/>
@@ -95,7 +94,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <input onclick="profileNew()" class="btn btn-primary" type="button" value="Save"/>
+            <input onclick="newProfile()" class="btn btn-primary" type="button" value="Save"/>
           </div>
         </div>
       </div>
@@ -119,7 +118,7 @@
               <input id="edit-profile-desc" type="text" placeholder="Profile description" name="edit-profile-desc" class="form-control"/>
             </div>
             <div id="edit-profile-users-group" class="form-group">
-              <label for="edit-profiles-users" class="control-label">Users</label>
+              <label for="edit-profile-users" class="control-label">Users</label>
               <input id="edit-profile-users" name="edit-profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
             </div>
             <div id="edit-profile-groups-group" class="form-group">
@@ -139,7 +138,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <input onclick="profileSave()" class="btn btn-primary" type="button" value="Save"/>
+            <input onclick="saveProfile()" class="btn btn-primary" type="button" value="Save"/>
           </div>
         </div>
       </div>

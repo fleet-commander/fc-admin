@@ -68,18 +68,6 @@ function populateProfileList() {
   });
 }
 
-function removeProfile(uid, displayName) {
-  $('#del-profile-name').text(displayName);
-  $('#del-profile-modal').modal('show');
-  $('#del-profile-confirm').click(function () {
-    $.getJSON ('/profiles/delete/' + uid)
-      .always(function () {
-        populateProfileList();
-        $('#del-profile-modal').modal('hide');
-      });
-  });
-}
-
 function configureHypervisor() {
   $.getJSON("/hypervisor/", function(data){
     $('#host').val(data.host);
@@ -172,18 +160,97 @@ function addProfile() {
   $('#add-profile-modal').modal('show');
 }
 
+function newProfile() {
+  clearModalFormErrors('add-profile-modal');
+
+  if (!$('#profile-name').val()) {
+    addFormError('profile-name', 'Profile name is required');
+    return
+  }
+
+  var data = {
+    'profile-name': $('#profile-name').val(),
+    'profile-desc': $('#profile-desc').val(),
+    'users': $('#profile-users').val(),
+    'groups': $('#profile-groups').val(),
+  }
+
+  //TODO: show spinner/progress indicator
+  $.ajax({
+    method: 'POST',
+    url: '/profiles/new',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+  }).success (function (data) {
+    $('#add-profile-modal').modal('hide');
+    // Refresh profiles
+    populateProfileList();
+  }).fail(function() {
+    showMessageDialog('Error creating profile', 'Error');
+  });
+}
+
 function editProfile(profileId) {
   // Get profile id data
   $.getJSON('/profiles/' + profileId, function(data) {
     // Load data in required fields
     $('#edit-profile-name').val(data.name);
-    $('#edit-profile-desc').val(data.desc || '');
-    $('#edit-profile-users').val(data.users || '');
-    $('#edit-profile-groups').val(data.groups || '');
-    // Set global uid
-    uid = profileId;
-    // Show dialog
-    $('#edit-profile-modal').modal('show');
+    $('#edit-profile-desc').val(data.description || '');
+
+    // Get users and groups
+    $.getJSON('/profiles/applies/' + profileId, function(data) {
+      $('#edit-profile-users').val(data.users || '');
+      $('#edit-profile-groups').val(data.groups || '');
+
+      // Set global uid
+      uid = profileId;
+      // Show dialog
+      $('#edit-profile-modal').modal('show');
+    });
+
+  });
+}
+
+// TODO: Functionality to be reviewed
+function saveProfile() {
+  clearModalFormErrors('edit-profile-modal');
+
+  if (!$('#edit-profile-name').val()) {
+    addFormError('edit-profile-name', 'Profile name is required');
+    return
+  }
+
+  var data = {
+    'profile-name': $('#edit-profile-name').val(),
+    'profile-desc': $('#edit-profile-desc').val(),
+    'users': $('#edit-profile-users').val(),
+    'groups': $('#edit-profile-groups').val(),
+  }
+
+  //TODO: show spinner/progress indicator
+  $.ajax({
+    method: 'POST',
+    url: '/profiles/props/' + uid,
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+  }).success (function (data) {
+    $('#edit-profile-modal').modal('hide');
+    // Refresh profiles
+    populateProfileList();
+  }).fail(function() {
+    showMessageDialog('Error creating profile', 'Error');
+  });
+}
+
+function removeProfile(uid, displayName) {
+  $('#del-profile-name').text(displayName);
+  $('#del-profile-modal').modal('show');
+  $('#del-profile-confirm').click(function () {
+    $.getJSON ('/profiles/delete/' + uid)
+      .always(function () {
+        populateProfileList();
+        $('#del-profile-modal').modal('hide');
+      });
   });
 }
 
