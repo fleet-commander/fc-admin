@@ -70,6 +70,7 @@ class AdminService(Flaskless):
             ('^profiles/$',                         ['GET'],            self.profiles),
             ('^profiles/livesession$',              ['GET'],            self.profiles_livesession),
             ('^profiles/new$',                      ['POST'],           self.profiles_new),
+            ('^profiles/applies/(?P<uid>[-\w\.]+)$',['GET'],            self.profiles_applies),
             ('^profiles/applies$',                  ['GET'],            self.profiles_applies),
             ('^profiles/props/(?P<uid>[-\w\.]+)$',  ['POST'],           self.profiles_props),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
@@ -271,9 +272,17 @@ class AdminService(Flaskless):
 
         return JSONResponse({'status': 'ok', 'uid': uid})
 
-    def profiles_applies(self, request):
+    def profiles_applies(self, request, uid=None):
         self.check_for_applies()
-        return self.serve_static(request, 'applies.json', basedir=self.custom_args['profiles_dir'])
+        if uid is not None:
+            APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
+            applies = json.loads(open(APPLIES_FILE).read())
+            if uid in applies:
+                return JSONResponse(applies[uid])
+            else:
+                return JSONResponse({"users": [], "groups": []})
+        else:
+            return self.serve_static(request, 'applies.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_props(self, request, uid):
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'],  uid+'.json')
