@@ -121,6 +121,11 @@ class AdminService(Flaskless):
         APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
         self.test_and_create_file (APPLIES_FILE, {})
 
+    def write_and_close(self, path, load):
+        f = open(path, 'w+')
+        f.write(load)
+        f.close()
+
     def test_and_create_file (self, filename, content):
         if os.path.isfile(filename):
             return
@@ -219,10 +224,6 @@ class AdminService(Flaskless):
         return self.serve_static(request, 'index.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_new(self, request):
-        def write_and_close(path, load):
-            f = open(path, 'w+')
-            f.write(load)
-            f.close()
 
         data = request.get_json()
         uid  = uid = str(uuid.uuid1().int)
@@ -264,9 +265,9 @@ class AdminService(Flaskless):
             return JSONResponse({"status": "%s does not contain a JSON object as root element" % APPLIES_FILE})
         applies[uid] = {"users": users, "groups": groups}
 
-        write_and_close(PROFILE_FILE, json.dumps(profile))
-        write_and_close(APPLIES_FILE, json.dumps(applies))
-        write_and_close(INDEX_FILE, json.dumps(index))
+        self.write_and_close(PROFILE_FILE, json.dumps(profile))
+        self.write_and_close(APPLIES_FILE, json.dumps(applies))
+        self.write_and_close(INDEX_FILE, json.dumps(index))
 
         return JSONResponse({'status': 'ok', 'uid': uid})
 
@@ -309,6 +310,18 @@ class AdminService(Flaskless):
                 open(PROFILE_FILE, 'w+').write(json.dumps(profile))
             except:
                 return JSONResponse({'status': 'could not write profile %s.json' % uid}, 500)
+
+            # Update profiles index
+            INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
+            if 'profile-name' in payload:
+                self.check_for_profile_index()
+                index = json.loads(open(INDEX_FILE).read())
+                if not isinstance(index, list):
+                    return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
+                for item in index:
+                    if item['url'] == '%s.json' % uid:
+                        item['displayName'] = payload['profile-name']
+                self.write_and_close(INDEX_FILE, json.dumps(index))
 
         if 'users' in payload or 'groups' in payload:
             APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'],  'applies.json')
@@ -535,10 +548,6 @@ class AdminService(Flaskless):
         return JSONResponse({'status': True})
 
     def session_save(self, request):
-        def write_and_close(path, load):
-            f = open(path, 'w+')
-            f.write(load)
-            f.close()
 
         data = request.get_json()
 
@@ -571,7 +580,7 @@ class AdminService(Flaskless):
         else:
             profile['settings'] = merge_settings (profile['settings'], settings)
 
-        write_and_close(PROFILE_FILE, json.dumps(profile))
+        self.write_and_close(PROFILE_FILE, json.dumps(profile))
 
         del(self.current_session["uid"])
 
