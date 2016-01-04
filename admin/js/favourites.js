@@ -100,7 +100,6 @@ function readFavourites () {
     url: '/clientdata/' + uid + ".json",
     contentType: 'application/json',
   }).success (function (data) {
-    console.log(data)
     try {
       var changes = data["settings"]["org.gnome.gsettings"];
       $.each (changes, function (i,e) {
