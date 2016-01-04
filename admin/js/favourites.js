@@ -25,7 +25,6 @@ function hasSuffix (haystack, needle) {
 }
 
 function populateOverrides () {
-  $('#overrides-list').html('');
   $.each (overrides, function (i, app) {
     addOverride (app);
   });
@@ -100,7 +99,8 @@ function readFavourites () {
     method: 'GET',
     url: '/clientdata/' + uid + ".json",
     contentType: 'application/json',
-  }).done (function (data) {
+  }).success (function (data) {
+    console.log(data)
     try {
       var changes = data["settings"]["org.gnome.gsettings"];
       $.each (changes, function (i,e) {
@@ -111,15 +111,13 @@ function readFavourites () {
 
               if (Array.isArray (overrides) == false) {
                 overrides = null;
-                return;
               }
 
               populateOverrides ();
               return;
+
             } catch (e) {
             }
-
-            return;
           }
         }
       })
@@ -151,6 +149,7 @@ function hideFavouritesDialog () {
 
 function showFavouritesDialog () {
   overrides = null;
+  $('#overrides-list').html('');
   $('#edit-profile-modal').modal('hide');
   $('#favourite-apps-modal').modal('show');
   readFavourites ();
