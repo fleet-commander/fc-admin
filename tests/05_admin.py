@@ -340,8 +340,15 @@ class TestAdminWSGIRef(unittest.TestCase):
         applies = json.loads(ret.data)
         self.assertTrue(isinstance(applies, dict))
         self.assertTrue(uid in applies)
-        self.assertEqual(json.dumps(applies[uid]), json.dumps({'groups': ['foo' , 'bar'], 'users': ['baz']}))
+        self.assertEqual(json.dumps(applies[uid]), json.dumps({'groups': ['foo', 'bar'], 'users': ['baz']}))
         self.assertEqual(len(applies), 1)
+
+        # Get an specific "applies"
+        ret = self.app.get("/profiles/applies/%s" % uid)
+        self.assertEqual(ret.status_code, 200)
+        appliesuid = json.loads(ret.data)
+        self.assertTrue(isinstance(appliesuid, dict))
+        self.assertEqual(json.dumps(appliesuid), json.dumps({'groups': ['foo', 'bar'], 'users': ['baz']}))
 
         # Remove profile
         ret = self.app.get("/profiles/delete/"+uid)
@@ -458,6 +465,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         profile, ret = self.create_dumb_profile()
         uid = json.loads(ret.data)['uid']
 
+        INDEX_FILE = os.path.join(self.args['profiles_dir'], 'index.json')
         APPLIES_FILE = os.path.join(self.args['profiles_dir'], 'applies.json')
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
 
@@ -467,20 +475,32 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.loads(self.get_data_from_file(PROFILE_FILE))['name'], 'mynewname')
 
+        # Check index file is being updated accordingly
+        entry = {'url': '%s.json' % uid, 'displayName': 'wrongDisplayName'}
+        for e in json.loads(self.get_data_from_file(INDEX_FILE)):
+            if e['url'] == '%s.json' % uid:
+                entry = e
+                break;
+        self.assertEqual(entry['displayName'], 'mynewname')
+
+        # Ammend description
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'profile-desc': 'somedesc'})
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.loads(self.get_data_from_file(PROFILE_FILE))['description'], 'somedesc')
 
+        # Ammend users
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'users': 'u1,u2,u3'})
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['users'], ['u1', 'u2', 'u3'])
 
+        # Ammend groups
         ret = self.app.jsonpost('/profiles/props/' + uid,
                                 data={'groups': 'g1,g2,g3'})
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(json.loads(self.get_data_from_file(APPLIES_FILE))[uid]['groups'], ['g1', 'g2', 'g3'])
+
 
 class TestAdminApache(TestAdminWSGIRef):
     test_wsgiref = False
