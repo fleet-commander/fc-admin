@@ -33,7 +33,7 @@ import copy
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse, HTTP_RESPONSE_CODES
-import libvirtcontroller
+import fcdbus
 from database import DBManager
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
@@ -136,13 +136,6 @@ class AdminService(Flaskless):
         except OSError:
             logging.error('There was an error attempting to write on %s' % filename)
 
-    def get_libvirt_controller(self, admin_host=None, admin_port=None):
-        if 'hypervisor' not in self.current_session:
-            raise Exception('hypervisor is not configured yet')
-
-        hypervisor = self.current_session['hypervisor']
-        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
-
     # Views
     def index(self, request):
         return self.serve_html_template('index.html')
@@ -158,11 +151,13 @@ class AdminService(Flaskless):
 
     def hypervisor_config(self, request):
         if request.method == 'GET':
-            # Initialize LibVirtController to create keypair if needed
-            ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system', None, None)
-            with open(ctrlr.public_key_file, 'r') as fd:
-                public_key = fd.read().strip()
-                fd.close()
+            c = fcdbus.FleetCommanderDbusClient()
+            try:
+                public_key = c.get_public_key()
+            except Exception as e:
+                logging.error(e)
+                return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
+
             # Check hypervisor configuration
             data = {
                 'pubkey': public_key,
@@ -205,11 +200,17 @@ class AdminService(Flaskless):
 
     def domains_list(self, request):
         if 'domains' not in self.current_session:
+            c = fcdbus.FleetCommanderDbusClient()
             try:
-                domains = self.get_libvirt_controller().list_domains()
+                response = c.list_domains()
             except Exception as e:
+                logging.error(e)
+                return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+
+            if response['status']:
+                domains = response['domains']
+            else:
                 return JSONResponse({'status': False, 'error': 'Error retrieving domains'})
-                logging.debug(e)
         else:
             domains = self.current_session['domains']
         return JSONResponse({'status': True, 'domains': domains})
@@ -517,19 +518,24 @@ class AdminService(Flaskless):
             admin_host = data['admin_host']
             admin_port = data['admin_port']
 
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(data['domain'])
+            response = c.session_start(data['domain'], admin_host, admin_port)
         except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+
+        if not response['status']:
             return JSONResponse({'status': 'Error starting session'}, 520)
-            logging.debug(e)
-        self.current_session['uuid'] = uuid
-        self.current_session['port'] = port
-        self.current_session['tunnel_pid'] = tunnel_pid
+
+        self.current_session['uuid'] = response['uuid']
+        self.current_session['port'] = response['port']
+        self.current_session['tunnel_pid'] = response['tunnel_pid']
 
         self.websocket_stop()
         self.current_session['websocket_listen_host'] = data['admin_host']
         self.current_session['websocket_target_host'] = 'localhost'
-        self.current_session['websocket_target_port'] = port
+        self.current_session['websocket_target_port'] = response['port']
         self.websocket_start()
 
         # TODO: Randomize port on websocket creation for more security
@@ -549,11 +555,16 @@ class AdminService(Flaskless):
 
         self.websocket_stop()
 
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            self.get_libvirt_controller().session_stop(uuid, tunnel_pid)
+            response = c.session_stop(uuid, tunnel_pid)
         except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+
+        if not response['status']:
             return JSONResponse({'status': 'Error stopping session'}, 520)
-            logging.debug(e)
+
         return JSONResponse({'status': True})
 
     def session_save(self, request):
