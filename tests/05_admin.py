@@ -33,28 +33,19 @@ sys.path.append(PYTHONPATH)
 from fleetcommander import admin as fleet_commander_admin
 
 
-class MockLibVirtController(object):
+class MockDbusClient(object):
 
-    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
-
-        self.data_dir = os.path.abspath(data_path)
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-
-        self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
-
-        with open(self.public_key_file, 'w') as fd:
-            fd.write('PUBLIC_KEY')
-            fd.close()
+    def get_public_key(self):
+        return 'PUBLIC KEY'
 
     def list_domains(self):
         return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
 
-    def session_start(self, uuid):
-        return ('someuuid', 0, 'tunnel_pid')
+    def session_start(self, uuid, admin_host, admin_port):
+        return {'status': True, 'uuid': 'someuuid', 'port': 0, 'tunnel_pid': 'tunnel_pid'}
 
     def session_stop(self, uuid, tunnel_pid):
-        pass
+        return {'status': True}
 
 
 class MockWebSocket:
@@ -92,8 +83,9 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         self.websocket = MockWebSocket()
 
-        # LibVirtController mocker
-        fleet_commander_admin.libvirtcontroller.LibVirtController = MockLibVirtController
+        # Fleet Commander dbus client mocker
+        fleet_commander_admin.fcdbus.FleetCommanderDbusClient = MockDbusClient
+
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.websocket)
         self.base_app.config['TESTING'] = True
         self.app = self.base_app.test_client(stateless=not self.test_wsgiref)
