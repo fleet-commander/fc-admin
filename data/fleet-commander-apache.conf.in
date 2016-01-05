@@ -5,6 +5,12 @@ Listen 8008
     Alias /clientdata/  @PROFILESDIR@/
     Alias /static/      @FCDATADIR@/
 
+    <Directory @PROFILESDIR@>
+        Order allow,deny
+        Allow from all
+        Require all granted
+    </Directory>
+
     <Directory @FCDATADIR@>
         Order allow,deny
         Allow from all
