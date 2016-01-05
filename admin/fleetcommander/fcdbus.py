@@ -70,6 +70,7 @@ class FleetCommanderDbusClient(object):
     def quit(self):
         return self.iface.Quit()
 
+
 class FleetCommanderDbusService(dbus.service.Object):
 
     """
