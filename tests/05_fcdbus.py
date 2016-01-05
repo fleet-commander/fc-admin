@@ -22,9 +22,13 @@
 
 # Python imports
 import os
+import sys
 import tempfile
 import shutil
 import unittest
+
+PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
+sys.path.append(PYTHONPATH)
 
 # Fleet commander imports
 from fleetcommander import fcdbus
