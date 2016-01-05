@@ -22,18 +22,53 @@
 
 
 # Python imports
+import json
+import logging
 
 # dbus imports
-
 import dbus
 import dbus.service
 import dbus.mainloop.glib
 
+# gobject imports
 import gobject
 
 # Fleet commander imports
 import libvirtcontroller
+from database import DBManager
 
+DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
+DBUS_OBJECT_PATH = '/org/freedesktop/fleetcommander'
+DBUS_INTERFACE_NAME = 'org.freedesktop.fleetcommander'
+
+
+class FleetCommanderDbusClient(object):
+    """
+    Fleet commander dbus client
+    """
+
+    def __init__(self):
+        """
+        Class initialization
+        """
+        self.bus = dbus.SystemBus()
+        self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
+        self.iface = dbus.Interface(self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+
+    def get_public_key(self):
+        return self.iface.GetPublicKey()
+
+    def list_domains(self):
+        return json.loads(self.iface.ListDomains())
+
+    def session_start(self, domain_uuid, admin_host, admin_port):
+        return json.loads(self.iface.SessionStart(domain_uuid, admin_host, admin_port))
+
+    def session_stop(self, domain_uuid, tunnel_pid):
+        return json.loads(self.iface.SessionStop(domain_uuid, tunnel_pid))
+
+    def quit(self):
+        return self.iface.Quit()
 
 class FleetCommanderDbusService(dbus.service.Object):
 
@@ -41,23 +76,36 @@ class FleetCommanderDbusService(dbus.service.Object):
     Fleet commander d-bus service class
     """
 
-    DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
-    DBUS_OBJECT_PATH = '/org/freedesktop/fleetcommander'
-
     def __init__(self, config):
         """
+        Class initialization
         """
         super(FleetCommanderDbusService, self).__init__()
+
+        self.config = config
+
         self.state_dir = config['state_dir']
+
+        # Initialize database
+        self.db = DBManager(config['database_path'])
+
+        self.current_session = self.db.config
 
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus_name = dbus.service.BusName(self.DBUS_BUS_NAME, dbus.SystemBus())
-        dbus.service.Object.__init__(self, bus_name, self.DBUS_OBJECT_PATH)
+        bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SystemBus())
+        dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
         self._loop = gobject.MainLoop()
         self._loop.run()
 
-    @dbus.service.method('org.freedesktop.fleetcommander', in_signature='', out_signature='s')
+    def get_libvirt_controller(self, admin_host=None, admin_port=None):
+        """
+        Get a libvirtcontroller instance
+        """
+        hypervisor = self.current_session['hypervisor']
+        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
     def GetPublicKey(self):
         # Initialize LibVirtController to create keypair if needed
         ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system', None, None)
@@ -66,20 +114,40 @@ class FleetCommanderDbusService(dbus.service.Object):
             fd.close()
         return public_key
 
-    @dbus.service.method('org.freedesktop.fleetcommander', in_signature='', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
     def ListDomains(self):
-        pass
+        try:
+            domains = self.get_libvirt_controller().list_domains()
+        except Exception as e:
+            logging.error(e)
+            return json.dumps({'status': False, 'error': 'Error retrieving domains'})
+        return json.dumps({'status': True, 'domains': domains})
 
-    @dbus.service.method('org.freedesktop.fleetcommander', in_signature='', out_signature='s')
-    def SessionStart(self):
-        pass
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='sss', out_signature='s')
+    def SessionStart(self, domain_uuid, admin_host, admin_port):
+        try:
+            new_uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(domain_uuid)
+        except Exception as e:
+            logging.error(e)
+            return json.dumps({'status': False, 'error': '%s' % e})
+        return json.dumps({
+            'status': True,
+            'uuid': new_uuid,
+            'port': port,
+            'tunnel_pid': tunnel_pid,
+        })
 
-    @dbus.service.method('org.freedesktop.fleetcommander', in_signature='', out_signature='s')
-    def SessionStop\(self):
-        pass
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='si', out_signature='s')
+    def SessionStop(self, domain_uuid, tunnel_pid):
+        try:
+            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
+        except Exception as e:
+            logging.error(e)
+            return json.dumps({'status': False, 'error': '%s' % e})
+        return json.dumps({'status': True})
 
-    @dbus.service.method('org.freedesktop.fleetcommander', in_signature='', out_signature='')
-    def quit(self):
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='')
+    def Quit(self):
         self._loop.quit()
 
 
