@@ -76,6 +76,8 @@ class FleetCommanderDbusService(dbus.service.Object):
     Fleet commander d-bus service class
     """
 
+    LIST_DOMAINS_RETRIES = 2
+
     def __init__(self, config):
         """
         Class initialization
@@ -116,12 +118,16 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
     def ListDomains(self):
-        try:
-            domains = self.get_libvirt_controller().list_domains()
-        except Exception as e:
-            logging.error(e)
-            return json.dumps({'status': False, 'error': 'Error retrieving domains'})
-        return json.dumps({'status': True, 'domains': domains})
+        tries = 0
+        while tries < self.LIST_DOMAINS_RETRIES:
+            tries += 1
+            try:
+                domains = self.get_libvirt_controller().list_domains()
+                return json.dumps({'status': True, 'domains': domains})
+            except Exception as e:
+                error = e
+        logging.error(error)
+        return json.dumps({'status': False, 'error': 'Error retrieving domains'})
 
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='sss', out_signature='s')
     def SessionStart(self, domain_uuid, admin_host, admin_port):
