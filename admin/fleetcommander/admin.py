@@ -615,25 +615,21 @@ class AdminService(Flaskless):
         self.current_session.setdefault('websocket_target_host', target_host)
         self.current_session.setdefault('websocket_target_port', target_port)
 
-        command = self.websockify_command_template % (
+        # TODO: Proper error checking for websockify execution
+        c = fcdbus.FleetCommanderDbusClient()
+        self.current_session['websockify_pid'] = c.websocket_start(
             self.current_session['websocket_listen_host'],
             self.current_session['websocket_listen_port'],
             self.current_session['websocket_target_host'],
-            self.current_session['websocket_target_port'])
-
-        process = subprocess.Popen(
-            command, shell=True,
-            stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
-
-        self.current_session['websockify_pid'] = process.pid
+            self.current_session['websocket_target_port'],
+        )
 
     def websocket_stop(self):
         if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
-            # Kill websockify command
-            try:
-                os.kill(self.current_session['websockify_pid'], signal.SIGKILL)
-            except:
-                pass
+
+            c = fcdbus.FleetCommanderDbusClient()
+            self.current_session['websockify_pid'] = c.websocket_stop(self.current_session['websockify_pid'])
+
             del(self.current_session['websockify_pid'])
 
 if __name__ == '__main__':

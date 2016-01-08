@@ -47,6 +47,12 @@ class MockDbusClient(object):
     def session_stop(self, uuid, tunnel_pid):
         return {'status': True}
 
+    def websocket_start(self, listen_host, listen_port, target_host, target_port):
+        return 0
+
+    def websocket_stop(self, websockify_pid):
+        return
+
 
 class MockWebSocket:
 

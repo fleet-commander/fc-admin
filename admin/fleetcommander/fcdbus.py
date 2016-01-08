@@ -22,8 +22,11 @@
 
 
 # Python imports
+import os
+import signal
 import json
 import logging
+import subprocess
 
 # dbus imports
 import dbus
@@ -47,6 +50,8 @@ class FleetCommanderDbusClient(object):
     Fleet commander dbus client
     """
 
+    WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
+
     def __init__(self):
         """
         Class initialization
@@ -66,6 +71,12 @@ class FleetCommanderDbusClient(object):
 
     def session_stop(self, domain_uuid, tunnel_pid):
         return json.loads(self.iface.SessionStop(domain_uuid, tunnel_pid))
+
+    def websocket_start(self, listen_host, listen_port, target_host, target_port):
+        return self.iface.WebsocketStart(listen_host, listen_port, target_host, target_port)
+
+    def websocket_stop(self, websockify_pid):
+        return self.iface.WebsocketStop(websockify_pid)
 
     def quit(self):
         return self.iface.Quit()
@@ -152,6 +163,27 @@ class FleetCommanderDbusService(dbus.service.Object):
             logging.error(e)
             return json.dumps({'status': False, 'error': '%s' % e})
         return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='sisi', out_signature='i')
+    def WebsocketStart(self, listen_host, listen_port, target_host, target_port):
+
+        command = self.WEBSOCKIFY_COMMAND_TEMPLATE % (
+            listen_host, listen_port,
+            target_host, target_port,
+        )
+
+        process = subprocess.Popen(
+            command, shell=True,
+            stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
+
+        return process.pid
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='i', out_signature='')
+    def WebsocketStop(self, websockify_pid):
+        try:
+            os.kill(websockify_pid, signal.SIGKILL)
+        except:
+            pass
 
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='')
     def Quit(self):
