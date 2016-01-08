@@ -100,7 +100,10 @@ function selectDomain() {
     $('#domain-selection-modal').modal('hide');
     sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
     sessionStorage.setItem("fc.session.profile_uid", uid);
-    location.href = "/profiles/livesession";
+    $('#spinner-modal').modal('show');
+    setTimeout(function(){
+      location.href = "/profiles/livesession";
+    }, 500)
   }
 
   // Show loading clock

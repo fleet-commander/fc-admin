@@ -172,6 +172,8 @@ function deployProfile() {
   var changeset = {"org.libreoffice.registry": libreoffice,
                    "org.gnome.gsettings":      gsettings};
 
+  $('#spinner-modal').modal('show');
+
   $.ajax({method: 'POST',
           url:    '/changes/select',
           data:   JSON.stringify(changeset),
@@ -186,7 +188,7 @@ function deployProfile() {
           dataType: 'json',
           contentType: 'application/json'
         }).success(function(){
-          location.href='/'
+            location.href='/'
         }).fail(function(){
           // TODO: Show error or something
         });
