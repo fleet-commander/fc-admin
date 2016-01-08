@@ -30,11 +30,22 @@ window.alert = function(message) {
 
 /* SPICE HTML5 */
 var sc;
+var retrying = null;
+
 
 function spiceClientConnection(host, port) {
 
   function spice_error(err) {
+
     console.error(err);
+    // Try to reconnect
+    if (!retrying && sc.state != 'ready') {
+      retrying = setTimeout(function() {
+        console.log('Trying to reconnect');
+        do_connection();
+        retrying = null;
+      }, 200);
+    }
   }
 
   function agent_connected(sc) {
@@ -53,23 +64,25 @@ function spiceClientConnection(host, port) {
     }
   }
 
-  setTimeout(function() {
-    try {
-      sc = new SpiceMainConn({
-        uri: 'ws://' + location.hostname + ':' + port,
-        screen_id: "spice-screen",
-        // dump_id: "debug-div",
-        // message_id: "message-div",
-        // password: password,
-        onerror: spice_error,
-        // onagent: agent_connected
-      });
+  function do_connection() {
+    console.log('Connecting to spice session')
+    sc = new SpiceMainConn({
+      uri: 'ws://' + location.hostname + ':' + port,
+      screen_id: "spice-screen",
+      // dump_id: "debug-div",
+      // message_id: "message-div",
+      // password: password,
+      onerror: spice_error,
+      // onagent: agent_connected
+    });
+  }
 
-    } catch (e) {
-      console.error(e.toString());
-      sessionStop();
-    }
-  },2000)
+  try {
+    do_connection();
+  } catch (e) {
+    console.error('Fatal error:' + e.toString());
+    sessionStop();
+  }
 
 }
 
