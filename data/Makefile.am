@@ -26,9 +26,9 @@ fleet_commander_apache_config_DATA     = fleet-commander-apache.conf
 fleet_commander_libreoffice_dconfdir = ${fchomedir}/.config/libreoffice
 fleet_commander_libreoffice_dconf_DATA   = dconfwrite
 
-fleet_commander_dbus_servicedir = $(systemdsystemunitdir)
-fleet_commander_dbus_service_in_files = fleet-commander-dbus.service.in
-fleet_commander_dbus_service_DATA = fleet-commander-dbus.service
+fleet_commander_dbus_servicedir = ${datarootdir}/dbus-1/system-services/
+fleet_commander_dbus_service_in_files = org.freedesktop.FleetCommander.service.in
+fleet_commander_dbus_service_DATA = org.freedesktop.FleetCommander.service
 
 fleet_commander_dbus_configdir = ${sysconfdir}/dbus-1/system.d/
 fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
