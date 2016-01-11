@@ -94,5 +94,6 @@ admin/Makefile
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin.service
+data/fleet-commander-dbus.service
 data/fleet-commander-apache.conf
 ])

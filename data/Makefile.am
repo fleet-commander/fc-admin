@@ -37,15 +37,14 @@ EXTRA_DIST = \
     $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
-	$(fleet_commander_dbus_config_DATA)            \
 	$(gnome_initial_setup_done_DATA)               \
 	$(fleet_commander_admin_service_in_files)      \
-	$(fleet_commander_dbus_service_in_files)       \
-	$(fleet_commander_dbus_service_DATA)           \
 	$(fleet_commander_logger_config_DATA)          \
 	$(fleet_commander_apache_service_in_files)     \
 	$(fleet_commander_apache_config_DATA)          \
-	$(fleet_commander_libreoffice_dconf_DATA)
+	$(fleet_commander_libreoffice_dconf_DATA)      \
+	$(fleet_commander_dbus_service_in_files)       \
+	$(fleet_commander_dbus_config_DATA)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
