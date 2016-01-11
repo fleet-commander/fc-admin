@@ -50,8 +50,6 @@ class FleetCommanderDbusClient(object):
     Fleet commander dbus client
     """
 
-    WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
-
     def __init__(self):
         """
         Class initialization
@@ -89,6 +87,8 @@ class FleetCommanderDbusService(dbus.service.Object):
     """
 
     LIST_DOMAINS_RETRIES = 2
+    WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
+    DNULL = open('/dev/null', 'w')
 
     def __init__(self, config):
         """

@@ -617,19 +617,19 @@ class AdminService(Flaskless):
 
         # TODO: Proper error checking for websockify execution
         c = fcdbus.FleetCommanderDbusClient()
-        self.current_session['websockify_pid'] = c.websocket_start(
+        pid = c.websocket_start(
             self.current_session['websocket_listen_host'],
             self.current_session['websocket_listen_port'],
             self.current_session['websocket_target_host'],
             self.current_session['websocket_target_port'],
         )
 
+        self.current_session['websockify_pid'] = int(pid)
+
     def websocket_stop(self):
         if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
-
             c = fcdbus.FleetCommanderDbusClient()
-            self.current_session['websockify_pid'] = c.websocket_stop(self.current_session['websockify_pid'])
-
+            c.websocket_stop(self.current_session['websockify_pid'])
             del(self.current_session['websockify_pid'])
 
 if __name__ == '__main__':
