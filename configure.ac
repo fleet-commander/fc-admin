@@ -51,7 +51,10 @@ fi
 ################
 
 AM_PATH_PYTHON([2.7],, [:])
-AC_PYTHON_MODULE([requests], [mandatory])
+AC_PYTHON_MODULE([Crypto], [mandatory])
+AC_PYTHON_MODULE([dbus], [mandatory])
+AC_PYTHON_MODULE([gobject], [mandatory])
+AC_PYTHON_MODULE([libvirt], [mandatory])
 
 # libexecdir expansion for .desktop file
 # TODO: Make xdgconfigdir parametric

@@ -5,8 +5,9 @@ Summary:        Fleet Commander
 
 #BuildRequires:  python3-gobject
 BuildRequires:  python
-BuildRequires:  python-requests
 BuildRequires:  dconf
+BuildRequires:  libvirt-python
+BuildRequires:  dbus-python
 BuildRequires:  systemd
 
 BuildArch: noarch
@@ -25,6 +26,7 @@ Summary: Fleet Commander web interface
 Requires: python
 Requires: python-websockify
 Requires: libvirt-python
+Requires: dbus-python
 Requires: systemd
 Requires(preun): systemd
 

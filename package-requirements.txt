@@ -1,0 +1,11 @@
+python
+autoconf
+automake
+autoconf-archive
+libvirt-python
+python-crypto
+python-dbusmock
+python-gobject
+dbus-python
+rpm-build
+pygobject2
