@@ -1,0 +1,8 @@
+[Unit]
+Description=Fleet Commander dbus service
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.FleetCommander
+Environment=PYTHONPATH=@FCPYTHONDIR@
+ExecStart=@PYTHON@ -m fleetcommander.fcdbus --configuration @XDGCONFIGDIR@/fleet-commander-admin.conf

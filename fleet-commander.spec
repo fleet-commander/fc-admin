@@ -117,6 +117,7 @@ exit 0
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %attr(644, -, -) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{systemd_dir}/fleet-commander-admin.service
+%{systemd_dir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 
 %files -n fleet-commander-logger
