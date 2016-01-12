@@ -85,6 +85,7 @@ exit 0
 
 %preun -n fleet-commander-admin
 %systemd_preun fleet-commander-admin.service
+%systemd_preun fleet-commander-dbus.service
 
 %files -n fleet-commander-admin
 %defattr(644, root, root)
