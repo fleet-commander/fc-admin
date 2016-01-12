@@ -59,6 +59,8 @@ class LibvirtModuleMocker(object):
 
     db_path = ':memory:'
 
+    VIR_DOMAIN_METADATA_TITLE = 1
+
     @classmethod
     def open(cls, connection_uri):
         # Return a LibvirtConnectionMocker
@@ -110,6 +112,7 @@ class LibvirtDomainMocker(object):
         self.xmldata = xmldata
         root = ET.fromstring(xmldata)
         self.domain_name = root.find('name').text
+        self.domain_title = root.find('title').text
         self.domain_uuid = root.find('uuid').text
         self.active = True
         self.transient = False
@@ -128,6 +131,11 @@ class LibvirtDomainMocker(object):
 
     def isPersistent(self):
         return not self.transient
+
+    def metadata(self, element, namespace):
+        if namespace is None and element == LibvirtModuleMocker.VIR_DOMAIN_METADATA_TITLE:
+            return self.domain_title
+        raise Exception()
 
     def destroy(self):
         self.active = False

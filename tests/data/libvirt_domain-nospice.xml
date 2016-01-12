@@ -1,7 +1,7 @@
 <domain type='kvm' id='4'>
   <name>fedora-unspiced</name>
   <uuid>0999a0ee-a4c4-11e5-b3a5-68f728db19d3</uuid>
-  <title>Fedora</title>
+  <title>Fedora unspiced</title>
   <metadata>
     <boxes:gnome-boxes xmlns:boxes="https://wiki.gnome.org/Apps/Boxes">
       <os-state>installed</os-state>

@@ -91,8 +91,8 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         domains = ctrlr.list_domains()
         self.assertEqual(domains, [
-            {'uuid': libvirtmock.TEST_UUID_SPICE, 'name': 'fedora-unkno'},
-            {'uuid': libvirtmock.TEST_UUID_NO_SPICE, 'name': 'fedora-unspiced'}
+            {'uuid': libvirtmock.TEST_UUID_SPICE, 'name': 'Fedora'},
+            {'uuid': libvirtmock.TEST_UUID_NO_SPICE, 'name': 'Fedora unspiced'}
         ])
 
         # Check ssh-keyscan execution and parameters:

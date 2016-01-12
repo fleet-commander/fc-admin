@@ -314,7 +314,15 @@ class LibVirtController(object):
         """
         self._connect()
         domains = self.conn.listAllDomains()
-        return [{'uuid': domain.UUIDString(), 'name': domain.name()} for domain in domains]
+
+        def domain_name(dom):
+            try:
+                return dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None)
+            except Exception as e:
+                print e
+                return dom.name()
+
+        return [{'uuid': domain.UUIDString(), 'name': domain_name(domain)} for domain in domains]
 
     def session_start(self, identifier):
         """
