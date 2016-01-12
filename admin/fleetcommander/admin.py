@@ -565,7 +565,7 @@ class AdminService(Flaskless):
         if not response['status']:
             return JSONResponse({'status': 'Error stopping session'}, 520)
 
-        return JSONResponse()
+        return JSONResponse({})
 
     def session_save(self, request):
 
