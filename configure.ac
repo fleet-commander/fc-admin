@@ -55,6 +55,8 @@ AC_PYTHON_MODULE([Crypto], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
 AC_PYTHON_MODULE([gobject], [mandatory])
 AC_PYTHON_MODULE([libvirt], [mandatory])
+AC_PYTHON_MODULE([websockify], [mandatory])
+AC_PYTHON_MODULE([dbusmock])
 
 # libexecdir expansion for .desktop file
 # TODO: Make xdgconfigdir parametric
@@ -66,7 +68,6 @@ databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
 fcdatadir='${datarootdir}'/fleet-commander-admin
 fcpythondir='${libdir}'/fleet-commander
-
 
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
