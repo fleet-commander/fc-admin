@@ -3,13 +3,18 @@ Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
-#BuildRequires:  python3-gobject
-BuildRequires:  python
-BuildRequires:  dconf
-BuildRequires:  libvirt-python
-BuildRequires:  dbus-python
-BuildRequires:  systemd
-
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: autoconf-archive
+BuildRequires: systemd
+BuildRequires: dconf
+BuildRequires: python
+BuildRequires: dbus-python
+BuildRequires: pygobject2
+BuildRequires: libvirt-python
+BuildRequires: python-websockify
+BuildRequires: python-crypto
+BuildRequires: python-dbusmock
 BuildArch: noarch
 
 License: LGPL-2.1+ and MIT and BSD-3-Clause and Apache-2.0 and OFL-1.0
@@ -23,11 +28,14 @@ Admin interface for Fleet Commander
 
 %package -n fleet-commander-admin
 Summary: Fleet Commander web interface
-Requires: python
-Requires: python-websockify
-Requires: libvirt-python
-Requires: dbus-python
 Requires: systemd
+Requires: dconf
+Requires: python
+Requires: dbus-python
+Requires: pygobject2
+Requires: libvirt-python
+Requires: python-websockify
+Requires: python-crypto
 Requires(preun): systemd
 
 %description -n fleet-commander-admin
