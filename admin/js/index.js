@@ -18,24 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-function showMessageDialog(message, title) {
-  title = title || 'Info';
-  var dialog = $('#message-dialog-modal');
-  $('#message-dialog-modal h4').html(title);
-  $('#message-dialog-modal .modal-body').html(message);
-  dialog.modal('show');
-}
-
-function clearModalFormErrors(modalId) {
-  $('#' + modalId + ' div.form-group').removeClass('has-error');
-  $('#' + modalId + ' div.form-group > .error-message').remove();
-}
-
-function addFormError(fieldId, errorMessage) {
-  $('#' + fieldId + '-group').append('<div class="help-block error-message">' + errorMessage + '</div>')
-  $('#' + fieldId + '-group').addClass('has-error');
-}
-
 function populateProfileList() {
   $.ajaxSetup({cache: false});
   $.getJSON ("/profiles/", function (data) {

@@ -523,7 +523,7 @@ class AdminService(Flaskless):
             response = c.session_start(data['domain'], admin_host, admin_port)
         except Exception as e:
             logging.error(e)
-            return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
         if not response['status']:
             return JSONResponse({'status': 'Error starting session'}, 520)
@@ -560,12 +560,12 @@ class AdminService(Flaskless):
             response = c.session_stop(uuid, tunnel_pid)
         except Exception as e:
             logging.error(e)
-            return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
         if not response['status']:
             return JSONResponse({'status': 'Error stopping session'}, 520)
 
-        return JSONResponse({'status': True})
+        return JSONResponse()
 
     def session_save(self, request):
 

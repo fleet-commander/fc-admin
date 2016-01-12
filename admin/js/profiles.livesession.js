@@ -99,21 +99,24 @@ function sessionStart() {
       url: '/session/start',
       data: JSON.stringify(data),
       contentType: 'application/json',
-      success: function(data) {
+    }).done(function(data){
         spiceClientConnection(location.hostname, data.port);
         listenChanges();
-      }
+    }).fail(function(jqXHR, textStatus, errorThrown){
+        showMessageDialog(jqXHR.responseJSON.status, 'Error');
     });
   });
 }
 
 function sessionStop (cb) {
   if (sc) sc.stop();
-  $.get("/session/stop", function() {
+  $.get("/session/stop").always(function() {
     if (!cb) {
       location.href = '/';
+    } else {
+      cb()
     }
-  }).always(cb);
+  });
 }
 
 
@@ -180,19 +183,18 @@ function deployProfile() {
           dataType: 'json',
           contentType: 'application/json'
   }).done(function (data) {
-    $.get('/session/stop').always(function () {
-      if (data.status == 'ok') {
-        $.ajax({method: 'POST',
-          url:    '/session/save',
-          data:   JSON.stringify({ uid: sessionStorage.getItem("fc.session.profile_uid")}),
-          dataType: 'json',
-          contentType: 'application/json'
-        }).success(function(){
-            location.href='/'
-        }).fail(function(){
-          // TODO: Show error or something
-        });
-      }
+    sessionStop(function () {
+      $.ajax({
+        method: 'POST',
+        url:    '/session/save',
+        data:   JSON.stringify({ uid: sessionStorage.getItem("fc.session.profile_uid")}),
+        dataType: 'json',
+        contentType: 'application/json'
+      }).done(function(){
+          location.href='/'
+      }).fail(function(jqXHR, textStatus, errorThrown){
+        showMessageDialog(jqXHR.responseJSON.status, 'Error');
+      });
     });
   });
 }
