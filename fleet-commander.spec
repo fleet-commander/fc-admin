@@ -3,14 +3,6 @@ Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
-BuildRequires: systemd
-BuildRequires: dconf
-BuildRequires: python
-BuildRequires: dbus-python
-BuildRequires: pygobject2
-BuildRequires: libvirt-python
-BuildRequires: python-websockify
-BuildRequires: python-crypto
 BuildArch: noarch
 
 License: LGPL-2.1+ and MIT and BSD-3-Clause and Apache-2.0 and OFL-1.0
@@ -119,13 +111,13 @@ exit 0
 %{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
-%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
-%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
-%attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
-%attr(644, -, -) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
+%{_sysconfdir}/xdg/fleet-commander-admin.conf
+%{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-admin.service
 %{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
+%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
+%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
 
 %files -n fleet-commander-logger
 %defattr(755, root, root)
