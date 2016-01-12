@@ -205,15 +205,15 @@ class AdminService(Flaskless):
                 response = c.list_domains()
             except Exception as e:
                 logging.error(e)
-                return JSONResponse({'status': False, 'error': 'Failed to connect to dbus service'})
+                return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
             if response['status']:
                 domains = response['domains']
             else:
-                return JSONResponse({'status': False, 'error': 'Error retrieving domains'})
+                return JSONResponse({'status': 'Error retrieving domains'}, 520)
         else:
             domains = self.current_session['domains']
-        return JSONResponse({'status': True, 'domains': domains})
+        return JSONResponse({'domains': domains})
 
     def serve_clientdata(self, request, path):
         """

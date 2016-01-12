@@ -114,7 +114,7 @@ function selectDomain() {
   list.html('');
 
   // Generate domain list
-  $.getJSON ('/hypervisor/domains/list/', function(data){
+  $.getJSON ('/hypervisor/domains/list/').done(function(data){
     // Hide loading clock
     $('#domain-selection-modal .spinner').hide();
 
@@ -126,8 +126,9 @@ function selectDomain() {
       domain.click(domainSelected);
     });
 
-  }, function(data){
-    alert(data.status)
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    $('#domain-selection-modal').modal('hide');
+    showMessageDialog(jqXHR.responseJSON.status, 'Error');
   });
 }
 
