@@ -3,9 +3,6 @@ Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
-BuildRequires: autoconf
-BuildRequires: automake
-BuildRequires: autoconf-archive
 BuildRequires: systemd
 BuildRequires: dconf
 BuildRequires: python
@@ -14,7 +11,6 @@ BuildRequires: pygobject2
 BuildRequires: libvirt-python
 BuildRequires: python-websockify
 BuildRequires: python-crypto
-BuildRequires: python-dbusmock
 BuildArch: noarch
 
 License: LGPL-2.1+ and MIT and BSD-3-Clause and Apache-2.0 and OFL-1.0
@@ -63,7 +59,7 @@ Fleet commander integration with Apache web server
 %prep
 %setup -q
 %build
-%configure --with-systemdsystemunitdir=%{systemd_dir}
+%configure --with-systemdsystemunitdir=%{_unitdir}
 make
 
 %install
@@ -126,8 +122,8 @@ exit 0
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
 %attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %attr(644, -, -) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
-%{systemd_dir}/fleet-commander-admin.service
-%{systemd_dir}/fleet-commander-dbus.service
+%{_unitdir}/fleet-commander-admin.service
+%{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 
 %files -n fleet-commander-logger
