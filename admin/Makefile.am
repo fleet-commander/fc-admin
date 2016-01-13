@@ -9,7 +9,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/utils.py
 
-fc_admin_wsgidir = @FCPYTHONDIR@
+fc_admin_wsgidir = ${libexecdir}
 fc_admin_wsgi_SCRIPTS = \
 	admin.wsgi
 

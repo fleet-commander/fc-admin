@@ -1,6 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# vi:ts=2 sw=2 sts=2
+# vi:ts=4 sw=4 sts=4
 
 # Copyright (C) 2014 Red Hat, Inc.
 #
@@ -20,7 +19,6 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
-# Python imports
 import sqlite3
 import json
 

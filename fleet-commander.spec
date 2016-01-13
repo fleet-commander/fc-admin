@@ -1,11 +1,11 @@
 Name:           fleet-commander
 Version:        0.2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
 
-License: LGPL-2.1+ and MIT and BSD-3-Clause and Apache-2.0 and OFL-1.0
+License: LGPLv2+ and MIT and BSD and ASL 2.0 and OFL
 URL: https://github.com/fleet-commander/fc-admin
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
@@ -32,8 +32,8 @@ Fleet Commander web interface to create and deploy profiles
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
 Requires: gjs
-Requires: libsoup
-Requires: json-glib
+Requires: typelib(Soup-2.4)
+Requires: typelib(Json-1.0)
 
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions
@@ -101,8 +101,8 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
-%{_sysconfdir}/xdg/fleet-commander-admin.conf
-%{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
+%config %{_sysconfdir}/xdg/fleet-commander-admin.conf
+%config %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-admin.service
 %{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
@@ -116,10 +116,12 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 
 %files -n fleet-commander-apache
 %defattr(644, root, root)
-%{_sysconfdir}/httpd/conf.d/fleet-commander-apache.conf
-%{_libdir}/fleet-commander/admin.wsgi
+%config %{_sysconfdir}/httpd/conf.d/fleet-commander-apache.conf
+%attr(755, -, -) %{_libexecdir}/admin.wsgi
 
 %post -n fleet-commander-apache
 semanage port -a -t http_port_t -p tcp 8182; semanage port -a -t http_port_t -p tcp 8989; semanage fcontext -a -t httpd_var_lib_t '/var/lib/fleet-commander-admin/database.db'; restorecon -v '/var/lib/fleet-commander-admin/database.db'
 
 %changelog
+* Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-2
+- Initial RPM release
