@@ -32,6 +32,7 @@ let RETRY_INTERVAL = 1000;
 let SUBMIT_PATH    = '/changes/submit/';
 let DEV_PATH       = '/dev/virtio-ports/';
 let DEV_PREFIX     = 'fleet-commander_';
+let HOME_DIR       = GLib.get_home_dir () + "/";
 
 //Mainloop
 const ml = imports.mainloop;
@@ -141,7 +142,6 @@ function parse_args () {
     }
   }
 }
-
 
 var ScreenSaverInhibitor = function () {
     this.proxy = Gio.DBusProxy.new_sync(Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
@@ -366,6 +366,18 @@ var GSettingsLogger = function (connmgr) {
     this.dconf_subscription_id  = 0;
 
     this.schema_source = Gio.SettingsSchemaSource.get_default();
+
+    /* Create file for LibreOffice dconf writes */
+    let dconfwrite = Gio.File.new_for_path (HOME_DIR + ".config/libreoffice/dconfwrite");
+
+    if (dconfwrite.query_exists (null) == false) {
+      GLib.mkdir_with_parents (dconfwrite.get_parent ().get_path (), 483);
+      try {
+        dconfwrite.create (Gio.FileCreateFlags.NONE, null);
+      } catch (e) {
+        printerr ("Could not create file " + dconfwrite.get_path () + ": " + e.message);
+      }
+    }
 
     /* Populate a table of paths to schema ids.  We can do this up
      * front for fixed-path schemas.  For relocatable schemas we have to

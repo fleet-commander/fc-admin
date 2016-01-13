@@ -56,12 +56,6 @@ make
 
 %install
 %make_install
-install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart
-install -m 755 data/fleet-commander-logger.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
-install -m 755 data/gnome-software-service.desktop %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
-install -m 644 data/gnome-initial-setup-done %{buildroot}/%{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
-ln -s %{_sysconfdir}/profile %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bash_profile
-ln -s %{_sysconfdir}/bashrc %{buildroot}/%{_localstatedir}/lib/fleet-commander/.bashrc
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
 
@@ -70,10 +64,6 @@ rm -rf %{buildroot}
 
 %pre -n fleet-commander-admin
 getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
-
-%pre -n fleet-commander-logger
-getent passwd fleet-commander >/dev/null || /usr/sbin/useradd -M -d %{_localstatedir}/lib/fleet-commander -s /bin/bash -c "Fleet Commander" fleet-commander
-exit 0
 
 %preun -n fleet-commander-admin
 %systemd_preun fleet-commander-admin.service
@@ -122,17 +112,7 @@ exit 0
 %files -n fleet-commander-logger
 %defattr(755, root, root)
 %{_libexecdir}/fleet_commander_logger.js
-%attr(755, fleet-commander, fleet-commander) %{_localstatedir}/lib/fleet-commander
-%attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/fleet-commander-logger.desktop
-%attr(755, root, root) %{_localstatedir}/lib/fleet-commander/.config/autostart/gnome-software-service.desktop
-%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/gnome-initial-setup-done
-%attr(644, root, root) %{_localstatedir}/lib/fleet-commander/.config/libreoffice/dconfwrite
-%exclude %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
-%exclude %{_sysconfdir}/xdg/autostart/gnome-software-service.desktop
-%exclude %{_sysconfdir}/xdg/gnome-initial-setup-done
-%{_localstatedir}/lib/fleet-commander/.bash_profile
-%{_localstatedir}/lib/fleet-commander/.bashrc
-%attr(644, -, -) %{_sysconfdir}/xdg/fleet-commander-logger.conf
+%attr(755, root, root) %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %files -n fleet-commander-apache
 %defattr(644, root, root)

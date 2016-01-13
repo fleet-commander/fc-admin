@@ -171,5 +171,22 @@ function testLibreOfficeLoggerWriteKey () {
   Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
 }
 
+function testLibreOfficeLoggerCreateDconfwrite () {
+  let home = FleetCommander.HOME_DIR;
+
+  FleetCommander.HOME_DIR = GLib.dir_make_tmp ("fcmdr-XXXXXX") + "/";
+
+  let mgr  = new MockConnectionManager();
+  let glog = new FleetCommander.GSettingsLogger(mgr);
+
+  JsUnit.assertTrue(GLib.file_test (FleetCommander.HOME_DIR + ".config/libreoffice/dconfwrite", GLib.FileTest.EXISTS));
+
+  GLib.unlink (FleetCommander.HOME_DIR + ".config/libreoffice/dconfwrite");
+  GLib.rmdir (FleetCommander.HOME_DIR + ".config/libreoffice");
+  GLib.rmdir (FleetCommander.HOME_DIR + ".config");
+  GLib.rmdir (FleetCommander.HOME_DIR);
+
+  FleetCommander.HOME_DIR = home;
+}
 
 JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);
