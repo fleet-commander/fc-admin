@@ -1,6 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# vi:ts=2 sw=2 sts=2
+# vi:ts=4 sw=4 sts=4
 
 # Copyright (C) 2015 Red Hat, Inc.
 #

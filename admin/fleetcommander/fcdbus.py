@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 
@@ -21,22 +20,18 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 
-# Python imports
 import os
 import signal
 import json
 import logging
 import subprocess
 
-# dbus imports
 import dbus
 import dbus.service
 import dbus.mainloop.glib
 
-# gobject imports
 import gobject
 
-# Fleet commander imports
 import libvirtcontroller
 from database import DBManager
 
