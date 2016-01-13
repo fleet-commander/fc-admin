@@ -1,4 +1,4 @@
-fc_admin_pydir = @FCPYTHONDIR@/fleetcommander
+fc_admin_pydir = ${fcpythondir}/fleetcommander
 fc_admin_py_SCRIPTS = \
 	fleetcommander/__init__.py   \
 	fleetcommander/admin.py      \
@@ -13,11 +13,11 @@ fc_admin_wsgidir = ${libexecdir}
 fc_admin_wsgi_SCRIPTS = \
 	admin.wsgi
 
-fc_jsdir   = @FCDATADIR@/js
+fc_jsdir   = ${fcdatadir}/js
 fc_js_DATA = \
 		$(wildcard js/*.js)
 
-fc_spicehtml5dir = @FCDATADIR@/js/spice-html5
+fc_spicehtml5dir = ${fcdatadir}/js/spice-html5
 fc_spicehtml5_DATA = \
 	js/spice-html5/cursor.js \
 	js/spice-html5/bitmap.js \
@@ -48,7 +48,7 @@ fc_spicehtml5_DATA = \
 	js/spice-html5/utils.js \
 	js/spice-html5/spicedataview.js
 
-fc_spicehtml5thirdpartydir = @FCDATADIR@/js/spice-html5/thirdparty
+fc_spicehtml5thirdpartydir = ${fcdatadir}/js/spice-html5/thirdparty
 fc_spicehtml5thirdparty_DATA = \
 	js/spice-html5/thirdparty/prng4.js \
 	js/spice-html5/thirdparty/rsa.js \
@@ -56,7 +56,7 @@ fc_spicehtml5thirdparty_DATA = \
 	js/spice-html5/thirdparty/rng.js \
 	js/spice-html5/thirdparty/jsbn.js
 
-fc_fontdir = @FCDATADIR@/fonts
+fc_fontdir = ${fcdatadir}/fonts
 fc_font_DATA = \
 	$(wildcard fonts/*.ttf) \
 	$(wildcard fonts/*.eot) \
@@ -64,7 +64,7 @@ fc_font_DATA = \
 	$(wildcard fonts/*.woff) \
 	$(wildcard fonts/*.woff2)
 
-fc_imgdir = @FCDATADIR@/img
+fc_imgdir = ${fcdatadir}/img
 fc_img_DATA = \
 	      $(wildcard img/*.png) \
 	      $(wildcard img/*.img) \
@@ -72,10 +72,10 @@ fc_img_DATA = \
       	      $(wildcard img/*.ico) \
      	      $(wildcard img/*.svg)
 
-fc_tmpldir = @FCDATADIR@/templates
+fc_tmpldir = ${fcdatadir}/templates
 fc_tmpl_DATA = $(wildcard templates/*.html)
 
-fc_cssdir = @FCDATADIR@/css
+fc_cssdir = ${fcdatadir}/css
 fc_css_DATA = $(wildcard css/*.css)
 
 EXTRA_DIST = \
