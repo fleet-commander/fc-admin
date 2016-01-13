@@ -73,44 +73,51 @@ function hideDomainSelection () {
 }
 
 function selectDomain() {
-  $('#edit-profile-modal').modal('hide');
-  $('#domain-selection-modal').modal('show');
 
-  // Function for domain selection handling
-  function domainSelected() {
-    // Once selected the domain, set it's uuid in sessionStorage and redirect
-    $('#domain-selection-modal').modal('hide');
-    sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
-    sessionStorage.setItem("fc.session.profile_uid", uid);
-    $('#spinner-modal').modal('show');
-    setTimeout(function(){
-      location.href = "/profiles/livesession";
-    }, 500)
-  }
+  checkHypervisorConfig(function(hypervdata) {
 
-  // Show loading clock
-  spinner = $('#domain-selection-modal .spinner');
-  list = $('#domain-selection-list');
+    $('#edit-profile-modal').modal('hide');
 
-  spinner.show();
-  list.html('');
+    if (!hypervdata.needcfg) {
+      $('#domain-selection-modal').modal('show');
 
-  // Generate domain list
-  $.getJSON ('/hypervisor/domains/list/').done(function(data){
-    // Hide loading clock
-    $('#domain-selection-modal .spinner').hide();
+      // Function for domain selection handling
+      function domainSelected() {
+        // Once selected the domain, set it's uuid in sessionStorage and redirect
+        $('#domain-selection-modal').modal('hide');
+        sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
+        sessionStorage.setItem("fc.session.profile_uid", uid);
+        $('#spinner-modal').modal('show');
+        setTimeout(function(){
+          location.href = "/profiles/livesession";
+        }, 500)
+      }
 
-    $.each(data.domains, function() {
-      domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
-      wrapper = $('<div></div>');
-      domain.appendTo(wrapper)
-      wrapper.appendTo(list);
-      domain.click(domainSelected);
-    });
+      // Show loading clock
+      spinner = $('#domain-selection-modal .spinner');
+      list = $('#domain-selection-list');
 
-  }).fail(function(jqXHR, textStatus, errorThrown) {
-    $('#domain-selection-modal').modal('hide');
-    showMessageDialog(jqXHR.responseJSON.status, 'Error');
+      spinner.show();
+      list.html('');
+
+      // Generate domain list
+      $.getJSON ('/hypervisor/domains/list/').done(function(data){
+        // Hide loading clock
+        $('#domain-selection-modal .spinner').hide();
+
+        $.each(data.domains, function() {
+          domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
+          wrapper = $('<div></div>');
+          domain.appendTo(wrapper)
+          wrapper.appendTo(list);
+          domain.click(domainSelected);
+        });
+
+      }).fail(function(jqXHR, textStatus, errorThrown) {
+        $('#domain-selection-modal').modal('hide');
+        showMessageDialog(jqXHR.responseJSON.status, 'Error');
+      });
+    }
   });
 }
 
@@ -240,6 +247,16 @@ function removeProfile(uid, displayName) {
   });
 }
 
+function checkHypervisorConfig(cb) {
+  // Show hypervisor dialog if not configured
+  $.getJSON ('/init/', function(data){
+    if (data.needcfg) {
+      configureHypervisor();
+    }
+    if (cb) cb(data);
+  });
+}
+
 $(document).ready (function () {
 
   $('#add-profile').click (addProfile);
@@ -247,13 +264,9 @@ $(document).ready (function () {
 
   populateProfileList();
 
-  // Show hypervisor dialog if not configured
-  $.getJSON ('/init/', function(data){
-    if (data.needcfg) {
-      configure_hypervisor();
-    }
-  });
+  checkHypervisorConfig();
 
+  // Show edit profile dialog if we were editing a profile in previous steps
   var editing = sessionStorage.getItem("fc.session.profile_uid");
   if (editing) {
     sessionStorage.removeItem("fc.session.profile_uid");
