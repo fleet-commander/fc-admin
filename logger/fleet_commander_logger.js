@@ -53,8 +53,12 @@ function hasPrefix (haystack, needle) {
   return 0 == haystack.indexOf(needle);
 }
 
-function get_options_from_devfile (options) {
+function get_options_from_devfile () {
   let dev = Gio.file_new_for_path (DEV_PATH);
+  let options = {};
+
+  if (dev.query_exists (null) == false)
+    return null;
 
   let enumerator = dev.enumerate_children ("standard::name", Gio.FileQueryInfoFlags.NONE, null);
   for (let info = enumerator.next_file (null); info != null; info = enumerator.next_file (null)) {
@@ -64,8 +68,8 @@ function get_options_from_devfile (options) {
 
       let lastdash = hostport.lastIndexOf ("-");
       if (lastdash == -1) {
-        debug (name + " file does not have '-' port separator");
-        return options;
+        printerr (name + " file does not have '-' port separator");
+        continue;
       }
 
       let host = hostport.slice (0, lastdash);
@@ -74,8 +78,8 @@ function get_options_from_devfile (options) {
       let port = parseInt(portstr);
 
       if (port.toString() !=  portstr) {
-        debug ("Could not parse admin connection port string " + portstr + " as integer");
-        return options;
+        printerr ("Could not parse admin connection port string " + portstr + " as integer");
+        continue;
       }
 
       debug ("Found server file in " + DEV_PATH + "fleet-commander_" + host + "-" + port);
@@ -94,7 +98,7 @@ function get_options_from_devfile (options) {
     }
   }
   debug ("No fleet commander file in " + DEV_PATH + " to find host and port");
-  return options;
+  return null;
 }
 
 function get_default_route () {
@@ -119,18 +123,14 @@ function get_default_route () {
   return route;
 }
 
-function parse_options () {
-  let result = {
-      'admin_server_host': 'localhost',
-      'admin_server_port': 8181
-  }
-
+function parse_args () {
   for(let i = 0; i < ARGV.length; i++) {
     switch(ARGV[i]) {
       case "--help":
       case "-h":
         printerr("--help/-h:               show this output message");
         printerr("--debug/-d/-v:           enables debugging/verbose output");
+        System.exit(0);
         break;
       case "--debug":
       case "-d":
@@ -139,9 +139,7 @@ function parse_options () {
         debug("Debugging output enabled");
         break;
     }
-    let file = null;
   }
-  return result;
 }
 
 
@@ -591,8 +589,12 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 }
 
 if (GLib.getenv('FC_TESTING') == null) {
-  let options = parse_options ();
-  options = get_options_from_devfile (options);
+  parse_args ();
+  let options = get_options_from_devfile (options);
+  if (options == null) {
+    printerr ("No file found in " + DEV_PATH);
+    System.exit(0);
+  }
 
   debug ("admin_server_host: " + options['admin_server_host'] + " - admin_server_port: " + options['admin_server_port']);
 

@@ -1,6 +1,6 @@
 DISTCHECK_CONFIGURE_FLAGS = \
 			      --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
-SUBDIRS = data tools admin tests
+SUBDIRS = data logger admin tests
 
 EXTRA_DIST = \
  	$(wildcard LICENSE.*)                  \

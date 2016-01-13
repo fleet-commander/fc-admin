@@ -92,7 +92,7 @@ AC_SUBST(SYSTEMUNITDIR)
 AC_OUTPUT([
 Makefile
 data/Makefile
-tools/Makefile
+logger/Makefile
 tests/Makefile
 admin/Makefile
 data/fleet-commander-logger.desktop
