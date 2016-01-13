@@ -36,8 +36,8 @@ import libvirtcontroller
 from database import DBManager
 
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
-DBUS_OBJECT_PATH = '/org/freedesktop/fleetcommander'
-DBUS_INTERFACE_NAME = 'org.freedesktop.fleetcommander'
+DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
+DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
 
 
 class FleetCommanderDbusClient(object):
