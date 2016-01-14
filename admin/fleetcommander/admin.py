@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 
@@ -634,19 +633,31 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     from utils import parse_config
 
+    # Fleet commander constants
+    import constants
+
     parser = ArgumentParser(description='Admin interface server')
+    parser.add_argument(
+        'host', action='store', metavar='HOST',
+        help='Listening host for admin application')
     parser.add_argument(
         '--configuration', action='store', metavar='CONFIGFILE', default=None,
         help='Provide a configuration file path for the web service')
     parser.add_argument(
-        '--host', action='store', metavar='HOST', default=None,
-        help='Listening host for admin application')
-    parser.add_argument(
-        '--port', action='store', metavar='HOST', type=int, default=None,
+        '--port', action='store', metavar='PORT', type=int, default=constants.FC_ADMIN_STANDALONE_PORT,
         help='Listening port for admin application')
+    parser.add_argument(
+        '--appdir', action='store', metavar='APPDIR', default=constants.FC_ADMIN_APP_DIR,
+        help='Directory for application data')
+    parser.add_argument(
+        '--statedir', action='store', metavar='STATEDIR', default=None,
+        help='Directory for data storage')
+
     args = parser.parse_args()
-    config = parse_config(args.configuration, args.host, args.port)
+    config = parse_config(args.configuration, args.appdir, args.statedir, args.host, args.port)
     app = AdminService(__name__, config)
-    if config['host'] in ['localhost', '127.0.0.1']:
-        print('WARNING: You are using localhost to serve admin application. This will avoid logger to send changes when using live session. Use --host to change listening host if needed.')
+
+    print('Fleet commander admin listening on http://%s:%s' % (config['host'], config['port']))
+    print('   Static data at %s' % config['data_dir'])
+    print('   Storing data at %s' % config['state_dir'])
     app.run(host=config['host'], port=config['port'], debug=True)

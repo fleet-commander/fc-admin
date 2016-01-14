@@ -24,6 +24,7 @@
 import sys
 import os
 import logging
+import tempfile
 
 # Compat between Pyhon 2 and 3
 try:
@@ -32,16 +33,26 @@ except ImportError:
     from ConfigParser import ConfigParser, ParsingError
 
 
-def parse_config(config_file, host=None, port=None):
+def parse_config(config_file, data_dir=None, state_dir=None, host=None, port=None):
     SECTION_NAME = 'admin'
+
+    if state_dir is None:
+        state_dir = os.path.join(tempfile.gettempdir(), 'fleet-commander-%s' % os.getuid())
+        if not os.path.exists(state_dir):
+            os.mkdir(state_dir)
+        if not os.path.exists(os.path.join(state_dir, 'profiles')):
+            os.mkdir(os.path.join(state_dir, 'profiles'))
+
+    if data_dir is None:
+        data_dir = state_dir
 
     args = {
         'host': host or 'localhost',
         'port': port or 8181,
-        'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
-        'data_dir': os.getcwd(),
-        'database_path': os.path.join(os.getcwd(), 'database.db'),
-        'state_dir': os.getcwd(),
+        'data_dir': data_dir,
+        'state_dir': state_dir,
+        'profiles_dir': os.path.join(state_dir, 'profiles'),
+        'database_path': os.path.join(state_dir, 'database.db'),
     }
 
     if not config_file:
@@ -75,14 +86,18 @@ def parse_config(config_file, host=None, port=None):
         args['host'] = config[SECTION_NAME].get('host', args['host'])
     if port is None:
         args['port'] = config[SECTION_NAME].get('port', args['port'])
+    if data_dir is None:
+        args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
+    if state_dir is None:
+        args['state_dir'] = config[SECTION_NAME].get('state_dir', args['state_dir'])
+
     args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
-    args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
     args['database_path'] = config[SECTION_NAME].get('database_path', args['database_path'])
 
     try:
         args['port'] = int(args['port'])
     except ValueError:
-        logging.error("Error reading configuration at %s: 'port' option must be an integer value")
+        logging.error("Error reading configuration file %s: 'port' option must be an integer value" % config_file)
         sys.exit(1)
 
     return args

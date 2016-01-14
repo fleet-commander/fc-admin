@@ -95,9 +95,10 @@ data/Makefile
 logger/Makefile
 tests/Makefile
 admin/Makefile
+admin/fleetcommander/constants.py
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-admin.service
+data/fleet-commander-standalone
 data/fleet-commander-dbus.service
 data/org.freedesktop.FleetCommander.service
 data/fleet-commander-apache.conf
