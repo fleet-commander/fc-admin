@@ -1,0 +1,16 @@
+#!/bin/bash
+
+function usage {
+    echo "Usage: $0 HOST"
+}
+
+if [ -z $1 ]; then
+    usage
+    exit 1
+fi
+
+if [ $UID != 0 ]; then
+    echo "WARNING: You need to be root in order to have access to dbus service"
+fi
+
+PYTHONPATH=@FCPYTHONDIR@ @PYTHON@ -m fleetcommander.admin --datadir @FCDATADIR@ --host $1
