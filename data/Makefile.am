@@ -6,10 +6,6 @@ fleet_commander_admin_configdir = ${sysconfdir}/xdg/
 fleet_commander_admin_config_in_files = fleet-commander-admin.conf.in
 fleet_commander_admin_config_DATA = fleet-commander-admin.conf
 
-fleet_commander_admin_servicedir = $(systemdsystemunitdir)
-fleet_commander_admin_service_in_files = fleet-commander-admin.service.in
-fleet_commander_admin_service_DATA = fleet-commander-admin.service
-
 fleet_commander_apache_configdir = ${sysconfdir}/httpd/conf.d/
 fleet_commander_apache_config_in_files = fleet-commander-apache.conf.in
 fleet_commander_apache_config_DATA     = fleet-commander-apache.conf
@@ -32,7 +28,6 @@ EXTRA_DIST = \
     $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
-	$(fleet_commander_admin_service_in_files)      \
 	$(fleet_commander_apache_service_in_files)     \
 	$(fleet_commander_apache_config_DATA)          \
 	$(fleet_commander_dbus_service_in_files)       \
@@ -42,7 +37,6 @@ EXTRA_DIST = \
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
 	$(fleet_commander_admin_config_DATA)        \
-	$(fleet_commander_admin_service_DATA)       \
 	$(fleet_commander_dbus_service_DATA)        \
 	$(fleet_commander_dbus_systemd_service_DATA)
 
