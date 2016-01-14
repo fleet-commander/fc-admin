@@ -74,7 +74,7 @@ class AdminService(Flaskless):
             ('^profiles/props/(?P<uid>[-\w\.]+)$',  ['POST'],           self.profiles_props),
             ('^profiles/delete/(?P<uid>[-\w\.]+)$', ['GET'],            self.profiles_delete),
             ('^profiles/(?P<uid>[-\w\.]+)$',        ['GET'],            self.profiles_id),
-            ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['GET', 'POST'],    self.profiles_apps),
+            ('^profiles/apps/(?P<uid>[-\w\.]+)$',   ['POST'],           self.profiles_apps),
             ('^changes/submit/(?P<name>[-\w\.]+)$', ['POST'],           self.changes_submit_name),
             ('^changes/select$',                    ['POST'],           self.changes_select),
             ('^changes$',                           ['GET'],            self.changes),
@@ -367,10 +367,6 @@ class AdminService(Flaskless):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
         PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
 
-        #TODO: return list of popular overrides
-        #if request.method == 'GET':
-        #    return self.serve_html_template('profile.favourites.html')
-
         payload = request.get_json()
 
         if not isinstance(payload, list) or \
@@ -420,7 +416,7 @@ class AdminService(Flaskless):
                                'signature': 'as'}
             gsettings.append(existing_change)
 
-        existing_change['value'] = json.dumps(payload)
+        existing_change['value'] = payload
 
         try:
             open(PROFILE_FILE, 'w+').write(json.dumps(profile))

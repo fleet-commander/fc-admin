@@ -417,7 +417,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         profile = json.loads(ret.data)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 1)
         self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["key"], "/org/gnome/software/popular-overrides")
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], favourites)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], json.loads(favourites))
 
         # Modify overrides
         favourites = json.dumps(['foo.desktop'])
@@ -426,7 +426,7 @@ class TestAdminWSGIRef(unittest.TestCase):
 
         ret = self.app.get("/clientdata/%s.json" % uid)
         profile = json.loads(ret.data)
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], favourites)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], json.loads(favourites))
 
         # Empty overrides
         favourites = json.dumps([])
