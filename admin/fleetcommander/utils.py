@@ -32,12 +32,12 @@ except ImportError:
     from ConfigParser import ConfigParser, ParsingError
 
 
-def parse_config(config_file):
+def parse_config(config_file, host=None, port=None):
     SECTION_NAME = 'admin'
 
     args = {
-        'host': '0.0.0.0',
-        'port': 8181,
+        'host': host or 'localhost',
+        'port': port or 8181,
         'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
         'data_dir': os.getcwd(),
         'database_path': os.path.join(os.getcwd(), 'database.db'),
@@ -71,8 +71,10 @@ def parse_config(config_file):
         return res
 
     config = config_to_dict(config)
-    args['host'] = config[SECTION_NAME].get('host', args['host'])
-    args['port'] = config[SECTION_NAME].get('port', args['port'])
+    if host is None:
+        args['host'] = config[SECTION_NAME].get('host', args['host'])
+    if port is None:
+        args['port'] = config[SECTION_NAME].get('port', args['port'])
     args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
     args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
     args['database_path'] = config[SECTION_NAME].get('database_path', args['database_path'])

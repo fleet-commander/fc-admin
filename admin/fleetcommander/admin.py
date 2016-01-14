@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 
@@ -627,20 +628,25 @@ class AdminService(Flaskless):
             c.websocket_stop(self.current_session['websockify_pid'])
             del(self.current_session['websockify_pid'])
 
+
 if __name__ == '__main__':
 
-    # Python import
     from argparse import ArgumentParser
-
-    # Fleet commander imports
     from utils import parse_config
 
     parser = ArgumentParser(description='Admin interface server')
     parser.add_argument(
         '--configuration', action='store', metavar='CONFIGFILE', default=None,
         help='Provide a configuration file path for the web service')
-
+    parser.add_argument(
+        '--host', action='store', metavar='HOST', default=None,
+        help='Listening host for admin application')
+    parser.add_argument(
+        '--port', action='store', metavar='HOST', type=int, default=None,
+        help='Listening port for admin application')
     args = parser.parse_args()
-    config = parse_config(args.configuration)
+    config = parse_config(args.configuration, args.host, args.port)
     app = AdminService(__name__, config)
+    if config['host'] in ['localhost', '127.0.0.1']:
+        print('WARNING: You are using localhost to serve admin application. This will avoid logger to send changes when using live session. Use --host to change listening host if needed.')
     app.run(host=config['host'], port=config['port'], debug=True)
