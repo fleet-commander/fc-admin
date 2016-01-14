@@ -1,5 +1,7 @@
 [admin]
-data_dir      = @FCDATADIR@
-profiles_dir  = @PROFILESDIR@
-database_path = @DATABASEFILE@
-state_dir     = @ADMINSTATEDIR@
+standalone_host = 'localhost'
+standalone_port = 8181
+data_dir        = @FCDATADIR@
+state_dir       = @ADMINSTATEDIR@
+profiles_dir    = @PROFILESDIR@
+database_path   = @DATABASEFILE@

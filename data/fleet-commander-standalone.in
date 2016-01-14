@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ $UID != 0 ]; then
+    echo "You need to be root in order to access the live session settings editor"
+    exit 1
+fi
+
+runuser -l fleet-commander-admin -s /usr/bin/bash -c "PYTHONPATH=@FCPYTHONDIR@ @PYTHON@ -m fleetcommander.admin $*"
