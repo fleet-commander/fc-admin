@@ -68,6 +68,7 @@ databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
 fcdatadir='${datarootdir}'/fleet-commander-admin
 fcpythondir='${libdir}'/fleet-commander
+fcconfigfile='${sysconfdir}'/xdg/fleet-commander-admin.conf
 
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
@@ -77,6 +78,7 @@ AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
 AC_SUBST(fcdatadir)
 AC_SUBST(fcpythondir)
+AC_SUBST(fcconfigfile)
 
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
@@ -86,6 +88,7 @@ AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
+AS_AC_EXPAND(FCCONFIGFILE, "$fcconfigfile")
 
 AC_SUBST(SYSTEMUNITDIR)
 
@@ -95,9 +98,10 @@ data/Makefile
 logger/Makefile
 tests/Makefile
 admin/Makefile
+admin/fleetcommander/constants.py
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-admin.service
+data/fleet-commander-standalone
 data/fleet-commander-dbus.service
 data/org.freedesktop.FleetCommander.service
 data/fleet-commander-apache.conf

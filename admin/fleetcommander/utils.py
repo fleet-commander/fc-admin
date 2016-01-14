@@ -22,7 +22,6 @@
 
 # Python imports
 import sys
-import os
 import logging
 
 # Compat between Pyhon 2 and 3
@@ -31,23 +30,37 @@ try:
 except ImportError:
     from ConfigParser import ConfigParser, ParsingError
 
+import constants
 
-def parse_config(config_file, host=None, port=None):
-    SECTION_NAME = 'admin'
+
+def config_to_dict(config):
+    """
+    Convert a configuration object into a dictionary
+    """
+    res = {}
+    for g in config.sections():
+        res[g] = {}
+        for o in config.options(g):
+            res[g][o] = config.get(g, o)
+    return res
+
+
+def parse_config(config_file=None, host=None, port=None):
 
     args = {
-        'host': host or 'localhost',
-        'port': port or 8181,
-        'profiles_dir': os.path.join(os.getcwd(), 'profiles'),
-        'data_dir': os.getcwd(),
-        'database_path': os.path.join(os.getcwd(), 'database.db'),
-        'state_dir': os.getcwd(),
+        'host': host or constants.DEFAULT_LISTEN_HOST,
+        'port': port or constants.DEFAULT_LISTEN_PORT,
+        'data_dir': constants.DEFAULT_DATA_DIR,
+        'state_dir': constants.DEFAULT_STATE_DIR,
+        'profiles_dir': constants.DEFAULT_PROFILES_DIR,
+        'database_path': constants.DEFAULT_DATABASE_PATH,
     }
 
-    if not config_file:
-        return args
+    if config_file is None:
+        config_file = constants.DEFAULT_CONFIG_FILE
 
     config = ConfigParser()
+
     try:
         config.read(config_file)
     except IOError:
@@ -59,30 +72,25 @@ def parse_config(config_file, host=None, port=None):
         logging.error('There was an unknown error parsing %s' % config_file)
         raise
 
-    if not config.has_section(SECTION_NAME):
+    if not config.has_section(constants.CONFIG_SECTION_NAME):
         return args
 
-    def config_to_dict(config):
-        res = {}
-        for g in config.sections():
-            res[g] = {}
-            for o in config.options(g):
-                res[g][o] = config.get(g, o)
-        return res
-
     config = config_to_dict(config)
+    section = config[constants.CONFIG_SECTION_NAME]
+
     if host is None:
-        args['host'] = config[SECTION_NAME].get('host', args['host'])
+        args['host'] = section.get('standalone_host', constants.DEFAULT_LISTEN_HOST)
     if port is None:
-        args['port'] = config[SECTION_NAME].get('port', args['port'])
-    args['profiles_dir'] = config[SECTION_NAME].get('profiles_dir', args['profiles_dir'])
-    args['data_dir'] = config[SECTION_NAME].get('data_dir', args['data_dir'])
-    args['database_path'] = config[SECTION_NAME].get('database_path', args['database_path'])
+        args['port'] = section.get('standalone_port', constants.DEFAULT_LISTEN_PORT)
+    args['data_dir'] = section.get('data_dir', constants.DEFAULT_DATA_DIR)
+    args['state_dir'] = section.get('state_dir', constants.DEFAULT_STATE_DIR)
+    args['profiles_dir'] = section.get('profiles_dir', constants.DEFAULT_PROFILES_DIR)
+    args['database_path'] = section.get('database_path', constants.DEFAULT_DATABASE_PATH)
 
     try:
         args['port'] = int(args['port'])
     except ValueError:
-        logging.error("Error reading configuration at %s: 'port' option must be an integer value")
+        logging.error("Error reading configuration file %s: 'port' option must be an integer value" % config_file)
         sys.exit(1)
 
     return args
