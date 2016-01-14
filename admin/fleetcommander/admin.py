@@ -644,9 +644,21 @@ if __name__ == '__main__':
     parser.add_argument(
         '--port', action='store', metavar='HOST', type=int, default=None,
         help='Listening port for admin application')
+    parser.add_argument(
+        '--datadir', action='store', metavar='DATADIR', default=None,
+        help='Directory for static admin data')
+    parser.add_argument(
+        '--statedir', action='store', metavar='STATEDIR', default=None,
+        help='Directory for data storage')
+
     args = parser.parse_args()
-    config = parse_config(args.configuration, args.host, args.port)
+    config = parse_config(args.configuration, args.datadir, args.statedir, args.host, args.port)
     app = AdminService(__name__, config)
+
     if config['host'] in ['localhost', '127.0.0.1']:
         print('WARNING: You are using localhost to serve admin application. This will avoid logger to send changes when using live session. Use --host to change listening host if needed.')
+
+    print('Fleet commander admin listening on http://%s:%s' % (config['host'], config['port']))
+    print('   Static data at %s' % config['data_dir'])
+    print('   Storing data at %s' % config['state_dir'])
     app.run(host=config['host'], port=config['port'], debug=True)

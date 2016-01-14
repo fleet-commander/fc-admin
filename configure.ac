@@ -97,7 +97,7 @@ tests/Makefile
 admin/Makefile
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-admin.service
+data/fc-admin-standalone
 data/fleet-commander-dbus.service
 data/org.freedesktop.FleetCommander.service
 data/fleet-commander-apache.conf

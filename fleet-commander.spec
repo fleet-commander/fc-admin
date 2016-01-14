@@ -103,11 +103,11 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %config %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
-%{_unitdir}/fleet-commander-admin.service
 %{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
+%attr(755, -, -) %{_prefix}/bin/fc-admin-standalone
 
 %files -n fleet-commander-logger
 %defattr(755, root, root)
