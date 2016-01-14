@@ -9,6 +9,10 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/utils.py
 
+fc_admin_constsdir = ${fcpythondir}/fleetcommander
+fc_admin_consts_in_files = fleetcommander/constants.py.in
+fc_admin_consts_DATA = fleetcommander/constants.py
+
 fc_admin_wsgidir = ${libexecdir}
 fc_admin_wsgi_SCRIPTS = \
 	admin.wsgi
@@ -87,4 +91,8 @@ EXTRA_DIST = \
 	     $(fc_img_DATA) \
 	     $(fc_tmpl_DATA) \
 	     $(fc_css_DATA)                  \
-	     $(fc_font_DATA)
+	     $(fc_font_DATA)                 \
+	     $(fc_admin_consts_in_files)
+
+CLEANFILESM = \
+	$(fc_admin_consts_DATA)

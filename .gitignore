@@ -5,6 +5,7 @@ Makefile.in
 .*.swp
 */.*.swp
 admin/profiles/*.json
+admin/fleetcommander/constants.py
 data/*.service
 INSTALL
 aclocal.m4
@@ -13,6 +14,7 @@ autom4te.cache/
 config.log
 config.status
 configure
+data/fleet-commander-standalone
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-apache.conf
