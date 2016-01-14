@@ -101,7 +101,7 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_libdir}/fleet-commander/fleetcommander/libvirtcontroller.py[co]
 %{_libdir}/fleet-commander/fleetcommander/utils.py
 %{_libdir}/fleet-commander/fleetcommander/utils.py[co]
-%config %{_sysconfdir}/xdg/fleet-commander-admin.conf
+%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %config %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-admin.service
 %{_unitdir}/fleet-commander-dbus.service
