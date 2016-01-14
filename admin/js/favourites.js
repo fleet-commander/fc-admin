@@ -106,7 +106,7 @@ function readFavourites () {
         for (key in e) {
           if (e[key] == "/org/gnome/software/popular-overrides") {
             try {
-              overrides = JSON.parse(e["value"]);
+              overrides = e["value"];
 
               if (Array.isArray (overrides) == false) {
                 overrides = null;
