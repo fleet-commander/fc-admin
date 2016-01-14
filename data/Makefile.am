@@ -10,7 +10,7 @@ fleet_commander_admin_servicedir = $(systemdsystemunitdir)
 fleet_commander_admin_service_in_files = fleet-commander-admin.service.in
 fleet_commander_admin_service_DATA = fleet-commander-admin.service
 
-fleet_commander_apache_configdir = ${sysconfdir}/httpd/conf.d/
+fleet_commander_apache_configdir = ${sysconfdir}/xdg/
 fleet_commander_apache_config_in_files = fleet-commander-apache.conf.in
 fleet_commander_apache_config_DATA     = fleet-commander-apache.conf
 

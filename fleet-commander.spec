@@ -116,7 +116,7 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 
 %files -n fleet-commander-apache
 %defattr(644, root, root)
-%config %{_sysconfdir}/httpd/conf.d/fleet-commander-apache.conf
+%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-apache.conf
 %attr(755, -, -) %{_libexecdir}/admin.wsgi
 
 %post -n fleet-commander-apache
