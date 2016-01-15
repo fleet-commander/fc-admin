@@ -1,27 +1,37 @@
-DISCLAIMER
-This project is still in early development so a lot of things are not as well integrated as we want to. Some of these steps
-are hacky and are just temporary.
+Fleet Commander
 
-SUMMARY
-The web interface provides a user session running under a special user where the sysadmin can change settings
-and then the sysadmin can select changes from the log that she/he wants included in the profile. Afterwards
-he can deploy the profile in the system.
+Fleet Commander is an application that allows you to manage the desktop
+configuration of a large network of users and workstations/laptops.
+
+It is primarily targetted to Linux systems based on the GNOME desktop.
+
+Fleet Commander consists on two components:
+
+- a web service integrated with Apache that serves the dynamic application and
+  the profile data to the network.
+- and a client side daemon that runs on every host of the network.
+
+Fleet Commander relies on libvirt and KVM to generate the profile data
+dinamically from a template VM running the same environment as the rest of the
+network.
 
 SETUP
-You must create a system user called fc-user with display name "Fleet Commander"
 
-This user will be used to create the "dumb" session that the sysadmin will see in the browser.
+These are the instructions to build and install the admin interface:
 
-BUILD AND INSTALL THE SESSION LOGGER
-fcmdr-logger.py is the service that logs session changes and submits them to the central web service
+$ ./configure --prefix=$PREFIX # where $PREFIX can be /usr or /usr/local
+$ make
+$ make install
 
-to build it enter into the logger/ directory type "make" and "make install", note that you need the development
-files for gio, libsoup and json-glib.
+You must also create a fleet-commander-admin user and grant it privileges to
+/var/lib/fleet-commander-admin and /var/lib/fleet-commander-admin/profiles
 
-Note that to "make install" you need privileges to write into fc-user's home directory.
+RUNNING IT
 
-RUNNING
-You need to run spice_session.py as root (as it needs to be able to run stuff as fc-user)
-And you need to run server.py
+You must first enable the apache configuration, in Fedora systems you must do
+the following as root (assuming you installed it in --prefix=/usr):
 
-Then go to http://localhost:8181 and you're ready to go
+# ln -s /etc/xdg/fleet-commander-apache.conf /etc/httpd/conf.d
+
+And the service must be available as a virtual host in apache, point your
+browser to it and follow the instructions.
