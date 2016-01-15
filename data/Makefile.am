@@ -22,8 +22,8 @@ fleet_commander_dbus_configdir = ${sysconfdir}/dbus-1/system.d/
 fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
 
 fleet_commander_admin_commanddir = ${prefix}/bin/
-fleet_commander_admin_command_in_files = fc-admin-standalone.in
-fleet_commander_admin_command_DATA = fc-admin-standalone
+fleet_commander_admin_command_in_files = fleet-commander-standalone.in
+fleet_commander_admin_command_DATA = fleet-commander-standalone
 
 EXTRA_DIST = \
     $(gnome_software_service_desktop_DATA)         \

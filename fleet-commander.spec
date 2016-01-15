@@ -107,7 +107,7 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
-%attr(755, -, -) %{_prefix}/bin/fc-admin-standalone
+%attr(755, -, -) %{_prefix}/bin/fleet-commander-standalone
 
 %files -n fleet-commander-logger
 %defattr(755, root, root)
