@@ -1,6 +1,6 @@
 Name:           fleet-commander
 Version:        0.2.0
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -123,5 +123,5 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 semanage port -a -t http_port_t -p tcp 8182; semanage port -a -t http_port_t -p tcp 8989; semanage fcontext -a -t httpd_var_lib_t '/var/lib/fleet-commander-admin/database.db'; restorecon -v '/var/lib/fleet-commander-admin/database.db'
 
 %changelog
-* Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-2
+* Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-1
 - Initial RPM release
