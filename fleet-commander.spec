@@ -24,6 +24,9 @@ Requires: pygobject2
 Requires: libvirt-python
 Requires: python-websockify
 Requires: python-crypto
+Requires: httpd
+Requires: mod_wsgi
+
 Requires(preun): systemd
 
 %description -n fleet-commander-admin
@@ -37,16 +40,6 @@ Requires: typelib(Json-1.0)
 
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions
-
-%package -n fleet-commander-apache
-Summary: Fleet Commander apache integration
-Requires: httpd-filesystem
-Requires: mod_wsgi
-Requires: fleet-commander-admin
-Requires(preun): systemd
-
-%description -n fleet-commander-apache
-Fleet commander integration with Apache web server
 
 %prep
 %setup -q
@@ -108,19 +101,13 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin/profiles
+%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-apache.conf
+%attr(755, -, -) %{_libexecdir}/admin.wsgi
 
 %files -n fleet-commander-logger
 %defattr(755, root, root)
 %{_libexecdir}/fleet_commander_logger.js
 %attr(755, root, root) %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
-
-%files -n fleet-commander-apache
-%defattr(644, root, root)
-%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-apache.conf
-%attr(755, -, -) %{_libexecdir}/admin.wsgi
-
-%post -n fleet-commander-apache
-semanage port -a -t http_port_t -p tcp 8182; semanage port -a -t http_port_t -p tcp 8989; semanage fcontext -a -t httpd_var_lib_t '/var/lib/fleet-commander-admin/database.db'; restorecon -v '/var/lib/fleet-commander-admin/database.db'
 
 %changelog
 * Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-1
