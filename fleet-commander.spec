@@ -1,6 +1,6 @@
 Name:           fleet-commander
 Version:        0.2.0
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -8,6 +8,15 @@ BuildArch: noarch
 License: LGPLv2+ and MIT and BSD and ASL 2.0 and OFL
 URL: https://github.com/fleet-commander/fc-admin
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
+
+BuildRequires: python-devel
+BuildRequires: dbus-python
+BuildRequires: pygobject2
+BuildRequires: libvirt-python
+BuildRequires: python-websockify
+
+BuildRequires: numpy
+BuildRequires: python-crypto
 
 %description
 Admin interface for Fleet Commander
@@ -21,7 +30,10 @@ Requires: dbus-python
 Requires: pygobject2
 Requires: libvirt-python
 Requires: python-websockify
+
 Requires: python-crypto
+Requires: numpy
+
 Requires: httpd
 Requires: mod_wsgi
 Requires(preun): systemd
@@ -109,5 +121,5 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %attr(755, root, root) %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-2
+* Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-1
 - Initial RPM release

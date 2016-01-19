@@ -37,7 +37,7 @@ fi
 # Dependencies #
 ################
 
-AM_PATH_PYTHON([2.7],, [:])
+AM_PATH_PYTHON([2],, [:])
 AC_PYTHON_MODULE([Crypto], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
 AC_PYTHON_MODULE([gobject], [mandatory])
