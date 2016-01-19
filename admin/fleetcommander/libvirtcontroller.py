@@ -25,10 +25,10 @@ import time
 import uuid
 import subprocess
 import socket
+import logging
 import xml.etree.ElementTree as ET
 
 import libvirt
-from Crypto.PublicKey import RSA
 
 
 class LibVirtControllerException(Exception):
@@ -90,19 +90,19 @@ class LibVirtController(object):
         """
         Generates SSH private and public keys
         """
-        # Key generation
-        key = RSA.generate(self.RSA_KEY_SIZE)
-        # Private key
-        privkey = key.exportKey('PEM')
-        privkeyfile = open(self.private_key_file, 'w')
-        privkeyfile.write(privkey)
-        privkeyfile.close()
-        os.chmod(self.private_key_file, 0o600)
-        # Public key
-        pubkey = key.publickey().exportKey('OpenSSH')
-        pubkeyfile = open(self.public_key_file, 'w')
-        pubkeyfile.write(pubkey)
-        pubkeyfile.close()
+        self._keygen_prog = subprocess.Popen(
+            [
+                'ssh-keygen',
+                '-b', str(self.RSA_KEY_SIZE),
+                '-t', 'rsa',
+                '-f', self.private_key_file,
+                '-q',
+                '-N', ''
+            ],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, error = self._keygen_prog.communicate()
+        if self._keygen_prog.returncode != 0:
+            raise LibVirtControllerException('Error generating keypair: %s' % error)
 
     def _check_known_host(self):
         """
@@ -318,7 +318,7 @@ class LibVirtController(object):
             try:
                 return dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None)
             except Exception as e:
-                print e
+                logging.error(e)
                 return dom.name()
 
         return [{'uuid': domain.UUIDString(), 'name': domain_name(domain)} for domain in domains]
