@@ -1,5 +1,5 @@
 Name:           fleet-commander
-Version:        0.2.0
+Version:        0.7.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -121,5 +121,8 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %attr(755, root, root) %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.org> - 0.7.0-1
+- Update package for 0.7.0 release
+
 * Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-1
 - Initial RPM release
