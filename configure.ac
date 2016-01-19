@@ -7,15 +7,13 @@ AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-
-AC_PATH_PROG([XVNC], [Xvnc])
 AC_PATH_PROG([PKILL], [pkill])
 AC_PATH_PROG([RM], [rm])
 AC_PATH_PROG([RUNUSER], [runuser])
+AC_PATH_PROG([SSH], [ssh])
+AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
+AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
 
-if test x$XVNC = x ; then
-  AC_MSG_ERROR([Could not find Xvnc])
-fi
 if test x$PKILL = x ; then
   AC_MSG_ERROR([Could not find pkill])
 fi
@@ -24,6 +22,15 @@ if test x$RM = x ; then
 fi
 if test x$RUNUSER = x ; then
   AC_MSG_ERROR([Could not find runuser])
+fi
+if test x$SSH = x ; then
+  AC_MSG_ERROR([Could not find ssh])
+fi
+if test x$SSHKEYGEN = x ; then
+  AC_MSG_ERROR([Could not find ssh-keygen])
+fi
+if test x$SSHKEYSCAN = x ; then
+  AC_MSG_ERROR([Could not find ssh-keyscan])
 fi
 
 PKG_PROG_PKG_CONFIG
@@ -51,7 +58,6 @@ fi
 ################
 
 AM_PATH_PYTHON([2.7],, [:])
-AC_PYTHON_MODULE([Crypto], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
 AC_PYTHON_MODULE([gobject], [mandatory])
 AC_PYTHON_MODULE([libvirt], [mandatory])

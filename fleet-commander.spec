@@ -16,12 +16,11 @@ Admin interface for Fleet Commander
 Summary: Fleet Commander web interface
 Requires: systemd
 Requires: dconf
-Requires: python
+Requires: python2
 Requires: dbus-python
 Requires: pygobject2
 Requires: libvirt-python
 Requires: python-websockify
-Requires: python-crypto
 Requires: httpd
 Requires: mod_wsgi
 Requires(preun): systemd
@@ -32,8 +31,8 @@ Fleet Commander web interface to create and deploy profiles
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
 Requires: gjs
-Requires: typelib(Soup-2.4)
-Requires: typelib(Json-1.0)
+Requires: typelib(soup-2.4)
+Requires: typelib(json-1.0)
 
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions
