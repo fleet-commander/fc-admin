@@ -54,15 +54,12 @@ Logs changes for Fleet Commander virtual sessions
 %setup -q
 %build
 %configure --with-systemdsystemunitdir=%{_unitdir}
-make
+%make_build
 
 %install
 %make_install
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
-
-%clean
-rm -rf %{buildroot}
 
 %pre -n fleet-commander-admin
 getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
