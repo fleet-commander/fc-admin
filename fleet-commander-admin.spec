@@ -1,5 +1,5 @@
-Name:           fleet-commander
-Version:        0.7.0
+Name:           fleet-commander-admin
+Version:        0.7.1
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -19,10 +19,8 @@ BuildRequires: numpy
 BuildRequires: python-crypto
 
 %description
-Admin interface for Fleet Commander
+Fleet Commander is an application that allows you to manage the desktop configuration of a large network of users and workstations/laptops.
 
-%package -n fleet-commander-admin
-Summary: Fleet Commander web interface
 Requires: systemd
 Requires: dconf
 Requires: python
@@ -38,9 +36,6 @@ Requires: httpd
 Requires: mod_wsgi
 Requires(preun): systemd
 
-%description -n fleet-commander-admin
-Fleet Commander web interface to create and deploy profiles
-
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
 Requires: gjs
@@ -48,7 +43,8 @@ Requires: typelib(Soup-2.4)
 Requires: typelib(Json-1.0)
 
 %description -n fleet-commander-logger
-Logs changes for Fleet Commander virtual sessions
+Logs changes for Fleet Commander virtual sessions. Fleet Commander is an application that allows you to manage the desktop configuration of a large network of users and workstations/laptops.
+
 
 %prep
 %setup -q
@@ -61,14 +57,14 @@ Logs changes for Fleet Commander virtual sessions
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
 
-%pre -n fleet-commander-admin
+%pre
 getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
 
-%preun -n fleet-commander-admin
+%preun
 %systemd_preun fleet-commander-admin.service
 %systemd_preun fleet-commander-dbus.service
 
-%files -n fleet-commander-admin
+%files
 %defattr(644, root, root)
 %{_datadir}/fleet-commander-admin/js/*js
 %{_datadir}/fleet-commander-admin/js/spice-html5/*js
