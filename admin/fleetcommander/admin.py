@@ -105,13 +105,13 @@ class AdminService(Flaskless):
         self.current_session = self.db.config
         self.custom_args = config
 
-        self.static_dir = config['data_dir']
+        # Application data dir
+        self.static_dir = os.path.join(config['data_dir'], 'static')
+        self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
-        # TODO: Change data dir
+        # Application state dir
         self.state_dir = config['state_dir']
 
-        # TODO: Change path for templates outside of static dir
-        self.templates_dir = os.path.join(config['data_dir'], 'templates')
 
     def check_for_profile_index(self):
         INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')

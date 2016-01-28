@@ -17,11 +17,11 @@ fc_admin_wsgidir = ${libexecdir}
 fc_admin_wsgi_SCRIPTS = \
 	admin.wsgi
 
-fc_jsdir   = ${fcdatadir}/js
+fc_jsdir   = ${fcdatastaticdir}/js
 fc_js_DATA = \
 		$(wildcard js/*.js)
 
-fc_spicehtml5dir = ${fcdatadir}/js/spice-html5
+fc_spicehtml5dir = ${fcdatastaticdir}/js/spice-html5
 fc_spicehtml5_DATA = \
 	js/spice-html5/cursor.js \
 	js/spice-html5/bitmap.js \
@@ -52,7 +52,7 @@ fc_spicehtml5_DATA = \
 	js/spice-html5/utils.js \
 	js/spice-html5/spicedataview.js
 
-fc_spicehtml5thirdpartydir = ${fcdatadir}/js/spice-html5/thirdparty
+fc_spicehtml5thirdpartydir = ${fcdatastaticdir}/js/spice-html5/thirdparty
 fc_spicehtml5thirdparty_DATA = \
 	js/spice-html5/thirdparty/prng4.js \
 	js/spice-html5/thirdparty/rsa.js \
@@ -60,7 +60,7 @@ fc_spicehtml5thirdparty_DATA = \
 	js/spice-html5/thirdparty/rng.js \
 	js/spice-html5/thirdparty/jsbn.js
 
-fc_fontdir = ${fcdatadir}/fonts
+fc_fontdir = ${fcdatastaticdir}/fonts
 fc_font_DATA = \
 	$(wildcard fonts/*.ttf) \
 	$(wildcard fonts/*.eot) \
@@ -68,7 +68,7 @@ fc_font_DATA = \
 	$(wildcard fonts/*.woff) \
 	$(wildcard fonts/*.woff2)
 
-fc_imgdir = ${fcdatadir}/img
+fc_imgdir = ${fcdatastaticdir}/img
 fc_img_DATA = \
 	      $(wildcard img/*.png) \
 	      $(wildcard img/*.img) \
@@ -76,10 +76,10 @@ fc_img_DATA = \
       	      $(wildcard img/*.ico) \
      	      $(wildcard img/*.svg)
 
-fc_tmpldir = ${fcdatadir}/templates
+fc_tmpldir = ${fcdatatemplatesdir}
 fc_tmpl_DATA = $(wildcard templates/*.html)
 
-fc_cssdir = ${fcdatadir}/css
+fc_cssdir = ${fcdatastaticdir}/css
 fc_css_DATA = $(wildcard css/*.css)
 
 EXTRA_DIST = \

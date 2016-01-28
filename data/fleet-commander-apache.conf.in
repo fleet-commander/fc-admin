@@ -3,7 +3,7 @@ Listen 8008
 <VirtualHost *:8008>
 
     Alias /clientdata/  @PROFILESDIR@/
-    Alias /static/      @FCDATADIR@/
+    Alias /static/      @FCDATASTATICDIR@/
 
     <Directory @PROFILESDIR@>
         Order allow,deny

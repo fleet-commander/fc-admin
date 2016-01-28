@@ -49,12 +49,14 @@ AC_PYTHON_MODULE([dbusmock])
 # TODO: Make xdgconfigdir parametric
 privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
-adminstatedir='${localstatedir}'/lib/fleet-commander-admin/
+adminstatedir='${localstatedir}'/lib/fleet-commander-admin
 profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
-fcdatadir='${datarootdir}'/fleet-commander-admin
-fcpythondir='${libdir}'/fleet-commander
+fcdatadir='${datarootdir}'/fleet-commander-admin/appdata
+fcdatastaticdir='${datarootdir}'/fleet-commander-admin/appdata/static
+fcdatatemplatesdir='${datarootdir}'/fleet-commander-admin/appdata/templates
+fcpythondir='${datarootdir}'/fleet-commander-admin/python
 fcconfigfile='${sysconfdir}'/xdg/fleet-commander-admin.conf
 
 AC_SUBST(privlibexecdir)
@@ -64,6 +66,8 @@ AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
 AC_SUBST(fcdatadir)
+AC_SUBST(fcdatastaticdir)
+AC_SUBST(fcdatatemplatesdir)
 AC_SUBST(fcpythondir)
 AC_SUBST(fcconfigfile)
 
@@ -74,6 +78,8 @@ AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
+AS_AC_EXPAND(FCDATASTATICDIR, "$fcdatastaticdir")
+AS_AC_EXPAND(FCDATATEMPLATESDIR, "$fcdatatemplatesdir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
 AS_AC_EXPAND(FCCONFIGFILE, "$fcconfigfile")
 
