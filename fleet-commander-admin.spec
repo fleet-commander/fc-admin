@@ -14,13 +14,8 @@ BuildRequires: dbus-python
 BuildRequires: pygobject2
 BuildRequires: libvirt-python
 BuildRequires: python-websockify
-
 BuildRequires: numpy
 BuildRequires: python-crypto
-
-%description
-Fleet Commander is an application that allows you to manage the desktop
-configuration of a large network of users and workstations/laptops.
 
 Requires: systemd
 Requires: dconf
@@ -29,13 +24,15 @@ Requires: dbus-python
 Requires: pygobject2
 Requires: libvirt-python
 Requires: python-websockify
-
 Requires: python-crypto
 Requires: numpy
-
 Requires: httpd
 Requires: mod_wsgi
 Requires(preun): systemd
+
+%description
+Fleet Commander is an application that allows you to manage the desktop
+configuration of a large network of users and workstations/laptops.
 
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
@@ -66,13 +63,14 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %systemd_preun fleet-commander-dbus.service
 
 %files
-%attr(755, fleet-commander-admin, -) %{_datadir}/fleet-commander-admin/
-
-%config(noreplace) %attr(644, fleet-commander-admin, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
+%{_datadir}/fleet-commander-admin/appdata
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/python/fleetcommander/*.py
+%attr(644, -, -) %{_datadir}/fleet-commander-admin/python/fleetcommander/*.py[co]
+%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %config(noreplace) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
-%attr(755, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
+%attr(-, fleet-commander-admin, -) %{_localstatedir}/lib/fleet-commander-admin
 %attr(755, -, -) %{_prefix}/bin/fleet-commander-standalone
 %config(noreplace) %{_sysconfdir}/xdg/fleet-commander-apache.conf
 %attr(755, -, -) %{_libexecdir}/admin.wsgi
