@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
-Version:        0.7.1
-Release:        2%{?dist}
+Version:        0.7.2
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -80,7 +80,7 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Thu Jan 28 2016 Oliver Gurierrez <ogutierrez@redhat.org> - 0.7.1-2
+* Thu Jan 28 2016 Oliver Gurierrez <ogutierrez@redhat.org> - 0.7.2-1
 - Fixes in spec for Fedora release
 
 * Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.org> - 0.7.1-1

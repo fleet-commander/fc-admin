@@ -1,4 +1,4 @@
-AC_INIT(fleet-commander-admin, 0.7.1, aruiz@redhat.com)
+AC_INIT(fleet-commander-admin, 0.7.2, aruiz@redhat.com)
 AC_COPYRIGHT([Copyright 2014,2015 Red Hat, Inc.])
 
 AC_PREREQ(2.64)
