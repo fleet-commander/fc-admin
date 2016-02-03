@@ -68,39 +68,6 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %files
 %attr(755, fleet-commander-admin, -) %{_datadir}/fleet-commander-admin/
 
-#%{_datadir}/fleet-commander-admin/appdata/static/js/*js
-#%{_datadir}/fleet-commander-admin/appdata/static/js/spice-html5/*js
-#%{_datadir}/fleet-commander-admin/appdata/static/js/spice-html5/thirdparty/*js
-#%{_datadir}/fleet-commander-admin/appdata/static/img/*.png
-#%{_datadir}/fleet-commander-admin/appdata/static/img/*.svg
-#%{_datadir}/fleet-commander-admin/appdata/static/img/*.ico
-#%{_datadir}/fleet-commander-admin/appdata/static/img/*.gif
-#%{_datadir}/fleet-commander-admin/appdata/static/css/*.css
-#%{_datadir}/fleet-commander-admin/appdata/templates/*.html
-#%{_datadir}/fleet-commander-admin/appdata/static/fonts/*.ttf
-#%{_datadir}/fleet-commander-admin/appdata/static/fonts/*.woff
-#%{_datadir}/fleet-commander-admin/appdata/static/fonts/*.eot
-#%{_datadir}/fleet-commander-admin/appdata/static/fonts/*.svg
-#%{_datadir}/fleet-commander-admin/appdata/static/fonts/*.woff2
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/__init__.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/__init__.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/admin.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/admin.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/collectors.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/collectors.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/database.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/database.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/fcdbus.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/fcdbus.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/flaskless.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/flaskless.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/libvirtcontroller.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/libvirtcontroller.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/utils.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/utils.py[co]
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/constants.py
-#%{_datadir}/fleet-commander-admin/python/fleetcommander/constants.py[co]
-
 %config(noreplace) %attr(644, fleet-commander-admin, -) %{_sysconfdir}/xdg/fleet-commander-admin.conf
 %config(noreplace) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-dbus.service
