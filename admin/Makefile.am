@@ -60,14 +60,6 @@ fc_spicehtml5thirdparty_DATA = \
 	js/spice-html5/thirdparty/rng.js \
 	js/spice-html5/thirdparty/jsbn.js
 
-fc_fontdir = ${fcdatastaticdir}/fonts
-fc_font_DATA = \
-	$(wildcard fonts/*.ttf) \
-	$(wildcard fonts/*.eot) \
-	$(wildcard fonts/*.svg) \
-	$(wildcard fonts/*.woff) \
-	$(wildcard fonts/*.woff2)
-
 fc_imgdir = ${fcdatastaticdir}/img
 fc_img_DATA = \
 	      $(wildcard img/*.png) \
@@ -91,7 +83,6 @@ EXTRA_DIST = \
 	     $(fc_img_DATA) \
 	     $(fc_tmpl_DATA) \
 	     $(fc_css_DATA)                  \
-	     $(fc_font_DATA)                 \
 	     $(fc_admin_consts_in_files)
 
 CLEANFILESM = \
