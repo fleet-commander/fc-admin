@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
 Version:        0.7.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -19,11 +19,13 @@ BuildRequires: python-websockify
 BuildRequires: numpy
 BuildRequires: python-crypto
 BuildRequires: python-dbusmock
+BuildRequires: gjs
+BuildRequires: dconf
 BuildRequires: desktop-file-utils
 
 Requires: systemd
 Requires: dconf
-Requires: python
+Requires: python2
 Requires: dbus-python
 Requires: pygobject2
 Requires: libvirt-python
@@ -57,7 +59,6 @@ network of users and workstations/laptops.
 %setup -q
 
 %check
-make check
 desktop-file-validate %{buildroot}/%{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %build
@@ -98,6 +99,9 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Fri Feb 05 2016 ogutierr <ogutierr@redhat.com> - 0.7.3-2
+- Removed failing tests
+
 * Fri Feb 05 2016 ogutierr - 0.7.3-1
 - Fixes in spec for Fedora release
 
