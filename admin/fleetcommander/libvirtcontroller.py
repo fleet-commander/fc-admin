@@ -246,7 +246,11 @@ class LibVirtController(object):
             mac = elem.find('mac')
             if mac is not None:
                 elem.remove(mac)
-
+        # Remove image compression tag
+        for elem in devs.findall('graphics'):
+            image = elem.find('image')
+            if image is not None:
+                elem.remove(image)
         channel = ET.SubElement(devs, 'channel')
         channel.set('type', 'pty')
         target = ET.SubElement(channel, 'target')

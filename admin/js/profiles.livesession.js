@@ -73,7 +73,7 @@ function spiceClientConnection(host, port) {
       // message_id: "message-div",
       // password: password,
       onerror: spice_error,
-      // onagent: agent_connected
+      onagent: agent_connected
     });
   }
 

@@ -128,8 +128,7 @@
     <input bus="ps2" type="keyboard" />
     <graphics autoport="yes" listen="127.0.0.1" port="5900" type="spice">
       <listen address="127.0.0.1" type="address" />
-      <image compression="off" />
-    </graphics>
+      </graphics>
     <sound model="ac97">
       <alias name="sound0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci" />
