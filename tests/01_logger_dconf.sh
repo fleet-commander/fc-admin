@@ -22,6 +22,10 @@ if [ "x$TOPSRCDIR" = "x" ] ; then
   TOPSRCDIR=`pwd`/../
 fi
 
+# We assume dbus-launch never fails
+eval `dbus-launch`
+export DBUS_SESSION_BUS_ADDRESS
+
 dconf write /org/libreoffice/registry/somepath/somekey 123
 
 export FC_TESTING=true
@@ -42,6 +46,7 @@ fi
 RET=1
 
 # We assume dbus-launch never fails
+kill $DBUS_SESSION_BUS_PID
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
