@@ -238,8 +238,11 @@ class LibVirtController(object):
         name = root.find('name').text
         root.find('name').text = '%s-fc-%s' % (name, newuuid)
         # Change domain title
-        title = root.find('title').text
-        root.find('title').text = '%s - Fleet Commander temporary session' % (title)
+        try:
+            title = root.find('title').text
+            root.find('title').text = '%s - Fleet Commander temporary session' % (title)
+        except:
+            pass
         # Remove domain MAC addresses
         devs = root.find('devices')
         for elem in devs.findall('interface'):
