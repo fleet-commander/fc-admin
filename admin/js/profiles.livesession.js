@@ -72,8 +72,8 @@ function spiceClientConnection(host, port) {
       // dump_id: "debug-div",
       // message_id: "message-div",
       // password: password,
-      onerror: spice_error,
-      onagent: agent_connected
+      // onagent: agent_connected
+      onerror: spice_error
     });
   }
 
