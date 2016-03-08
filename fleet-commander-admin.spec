@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
-Version:        0.7.3
-Release:        2%{?dist}
+Version:        0.7.4
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -99,7 +99,10 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Fri Feb 05 2016 ogutierr <ogutierr@redhat.com> - 0.7.3-2
+* Tue Mar 08 2016 ogutierr <ogutierrez@redhat.com> - 0.7.4-1
+- Update package for 0.7.4 release
+
+* Fri Feb 05 2016 ogutierr <ogutierrez@redhat.com> - 0.7.3-2
 - Removed failing tests
 
 * Fri Feb 05 2016 ogutierr - 0.7.3-1
