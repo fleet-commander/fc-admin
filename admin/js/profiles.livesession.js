@@ -18,40 +18,93 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-
 var updater;
 var submit=false;
-var tries=0;
-var MAXTRIES=5;
+var sc;
 
 window.alert = function(message) {
-  console.log('ALERT:' + message);
+  console.log('FC: Alert message:' + message);
 }
 
 /* SPICE HTML5 */
-var sc;
-var retrying = null;
-
-
 function spiceClientConnection(host, port) {
 
-  function spice_error(err) {
+  var connecting = null;
+  var conn_timeout = 15000; //ms
+  var noretry = false;
 
-    console.error(err);
-    // Try to reconnect
-    if (!retrying && sc.state != 'ready') {
-      retrying = setTimeout(function() {
-        console.log('Trying to reconnect');
-        do_connection();
-        retrying = null;
-      }, 200);
+  function set_connection_timeout() {
+    if (!connecting) {
+      connecting = setTimeout(function() {
+        if (sc) sc.stop()
+        $('#spice-screen').html('');
+        connecting = null;
+        noretry = true;
+        console.log('FC: Connection tries timed out');
+        $('#spinner-modal').modal('hide');
+        showMessageDialog('Connection error to virtual machine.', 'Connection error');
+      }, conn_timeout);
     }
+  }
+
+  function spice_connected() {
+    console.log('FC: Connected to virtual machine using SPICE');
+    $('#spinner-modal').modal('hide');
+    if (connecting) {
+      clearTimeout(connecting);
+      connecting = null;
+    }
+  }
+
+  function spice_error(err) {
+    console.log("FC: SPICE connection error:", err.message);
+
+    set_connection_timeout()
+
+    if (err.message == 'Unexpected close while ready' || err.message == 'Connection timed out.' || sc.state != 'ready')  {
+      if (!noretry) {
+        $('#spinner-modal h4').text('Connecting to virtual machine. Please wait...');
+        $('#spinner-modal').modal('show');
+        do_connection();
+      }
+    } else {
+      $('#spinner-modal').modal('hide');
+      if (connecting) {
+        clearTimeout(connecting);
+        connecting = null;
+      }
+      showMessageDialog('Connection error to virtual machine.', 'Connection error');
+    }
+
+  }
+
+  function do_connection() {
+    console.log('FC: Connecting to spice session')
+    if (sc) sc.stop()
+    $('#spice-screen').html('');
+    sc = new SpiceMainConn({
+      uri: 'ws://' + location.hostname + ':' + port,
+      screen_id: 'spice-screen',
+      onsuccess: spice_connected,
+      onerror: spice_error
+      // dump_id: "debug-div",
+      // message_id: "message-div",
+      // password: password,
+      // onagent: agent_connected,
+    });
+  }
+
+  try {
+    do_connection();
+  } catch (e) {
+    console.error('FC: Fatal error:' + e.toString());
+    sessionStop();
   }
 
   function agent_connected(sc) {
     window.addEventListener('resize', handle_resize);
-    window.spice_connection = this;
-    resize_helper(this);
+    window.spice_connection = sc;
+    resize_helper(sc);
     if (window.File && window.FileReader && window.FileList && window.Blob) {
       var spice_xfer_area = document.createElement("div");
       spice_xfer_area.setAttribute('id', 'spice-xfer-area');
@@ -62,26 +115,6 @@ function spiceClientConnection(host, port) {
     else {
       console.log("File API is not supported");
     }
-  }
-
-  function do_connection() {
-    console.log('Connecting to spice session')
-    sc = new SpiceMainConn({
-      uri: 'ws://' + location.hostname + ':' + port,
-      screen_id: "spice-screen",
-      // dump_id: "debug-div",
-      // message_id: "message-div",
-      // password: password,
-      // onagent: agent_connected
-      onerror: spice_error
-    });
-  }
-
-  try {
-    do_connection();
-  } catch (e) {
-    console.error('Fatal error:' + e.toString());
-    sessionStop();
   }
 
 }
@@ -175,6 +208,7 @@ function deployProfile() {
   var changeset = {"org.libreoffice.registry": libreoffice,
                    "org.gnome.gsettings":      gsettings};
 
+  $('#spinner-modal h4').text('Saving settings');
   $('#spinner-modal').modal('show');
 
   $.ajax({method: 'POST',
