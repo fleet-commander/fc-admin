@@ -23,6 +23,7 @@ var updater;
 var submit=false;
 var tries=0;
 var MAXTRIES=5;
+var noretry=false;
 
 window.alert = function(message) {
   console.log('ALERT:' + message);
@@ -32,20 +33,33 @@ window.alert = function(message) {
 var sc;
 var retrying = null;
 
-
 function spiceClientConnection(host, port) {
 
   function spice_error(err) {
-
     console.error(err);
-    // Try to reconnect
-    if (!retrying && sc.state != 'ready') {
-      retrying = setTimeout(function() {
-        console.log('Trying to reconnect');
-        do_connection();
-        retrying = null;
-      }, 200);
+
+    console.log("ERROR MESSAGE: " +  err);
+    if (!retrying && !noretry) {
+      console.log("Not retrying. Try to connect: " + tries);
+      // Try to reconnect
+      if (err == 'Error: Unexpected close while ready' || err == 'Error: Connection timed out.' || sc.state != 'ready')  {
+
+
+        if (tries > MAXTRIES) {
+          console.log('Max reconnect tries reached. Aborting');
+          showMessageDialog('Connection error to virtual machine', 'Connection error')
+          noretry = true;
+        } else {
+          retrying = setTimeout(function() {
+            console.log('Trying to reconnect');
+            tries += 1
+            do_connection();
+            retrying = null;
+          }, 200);
+        }
+      }
     }
+
   }
 
   function agent_connected(sc) {
