@@ -21,9 +21,6 @@
 
 var updater;
 var submit=false;
-var tries=0;
-var MAXTRIES=5;
-var noretry=false;
 
 window.alert = function(message) {
   console.log('ALERT:' + message);
@@ -31,31 +28,31 @@ window.alert = function(message) {
 
 /* SPICE HTML5 */
 var sc;
-var retrying = null;
+var connecting = null;
+var tries=0;
+var maxtries=5;
+var noretry=false;
+var retrying=null;
 
 function spiceClientConnection(host, port) {
 
   function spice_error(err) {
-    console.error(err);
+    console.log("SPICE ERROR: ", err);
 
-    console.log("ERROR MESSAGE: " +  err);
     if (!retrying && !noretry) {
-      console.log("Not retrying. Try to connect: " + tries);
-      // Try to reconnect
       if (err == 'Error: Unexpected close while ready' || err == 'Error: Connection timed out.' || sc.state != 'ready')  {
-
-
-        if (tries > MAXTRIES) {
-          console.log('Max reconnect tries reached. Aborting');
-          showMessageDialog('Connection error to virtual machine', 'Connection error')
+        if (tries >= maxtries) {
+          console.log('Max reconnect tries (' + maxtries + ') reached');
+          showMessageDialog('Connection error to virtual machine.', 'Connection error');
           noretry = true;
         } else {
+          // Try to reconnect
           retrying = setTimeout(function() {
-            console.log('Trying to reconnect');
             tries += 1
+            console.log('Reconnecting (' + tries + ')');
+            $('canvas').remove();
             do_connection();
-            retrying = null;
-          }, 200);
+          }, 1000);
         }
       }
     }
@@ -80,6 +77,8 @@ function spiceClientConnection(host, port) {
 
   function do_connection() {
     console.log('Connecting to spice session')
+    $('#spinner-modal h4').text('Connection lost. Trying to reconnect');
+    $('#spinner-modal').modal('show');
     sc = new SpiceMainConn({
       uri: 'ws://' + location.hostname + ':' + port,
       screen_id: "spice-screen",
@@ -89,6 +88,8 @@ function spiceClientConnection(host, port) {
       // onagent: agent_connected
       onerror: spice_error
     });
+    $('#spinner-modal').modal('hide');
+    connecting = null;
   }
 
   try {
@@ -189,6 +190,7 @@ function deployProfile() {
   var changeset = {"org.libreoffice.registry": libreoffice,
                    "org.gnome.gsettings":      gsettings};
 
+  $('#spinner-modal h4').text('Saving settings');
   $('#spinner-modal').modal('show');
 
   $.ajax({method: 'POST',
