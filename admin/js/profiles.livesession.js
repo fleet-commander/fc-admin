@@ -18,51 +18,68 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-
 var updater;
 var submit=false;
+var sc;
 
 window.alert = function(message) {
-  console.log('ALERT:' + message);
+  console.log('FC: Alert message:' + message);
 }
 
 /* SPICE HTML5 */
-var sc;
-var connecting = null;
-var tries=0;
-var maxtries=5;
-var noretry=false;
-var retrying=null;
-
 function spiceClientConnection(host, port) {
 
-  function spice_error(err) {
-    console.log("SPICE ERROR: ", err);
+  var connecting = null;
+  var reconnecting = null;
+  var noretry = false;
 
-    if (!retrying && !noretry) {
-      if (err == 'Error: Unexpected close while ready' || err == 'Error: Connection timed out.' || sc.state != 'ready')  {
-        if (tries >= maxtries) {
-          console.log('Max reconnect tries (' + maxtries + ') reached');
-          showMessageDialog('Connection error to virtual machine.', 'Connection error');
-          noretry = true;
-        } else {
-          // Try to reconnect
-          retrying = setTimeout(function() {
-            tries += 1
-            console.log('Reconnecting (' + tries + ')');
-            $('canvas').remove();
-            do_connection();
-          }, 1000);
-        }
-      }
+  function spice_connected() {
+    console.log('FC: Connected to virtual machine using SPICE');
+    if (reconnecting != null) {
+      clearTimeout(reconnecting);
+      reconnecting = null;
+      $('#spinner-modal').modal('hide');
     }
+  }
 
+  function show_connecting_spinner() {
+    $('#spinner-modal h4').text('Connecting to virtual machine... Please wait');
+    $('#spinner-modal').modal('show');
+    reconnecting = setTimeout(function() {
+      $('#spinner-modal').modal('hide');
+      console.log('FC: Connection tries timed out');
+      showMessageDialog('Connection error to virtual machine.', 'Connection error');
+      noretry = true;
+    }, 10000);
+  }
+
+  function spice_error(err) {
+    console.log("FC: SPICE connection error: ", err.message);
+
+    if (!noretry) {
+
+      if (reconnecting === null) {
+        show_connecting_spinner();
+      }
+
+      if (connecting === null) {
+        // Try to reconnect
+        $('#spice-screen').html('');
+        connecting = setTimeout(function() {
+          do_connection();
+          connecting = null;
+        }, 200);
+      }
+
+    }
+      //if (err.message == 'Error: Unexpected close while ready' || err.message == 'Error: Connection timed out.' || sc.state != 'ready')  {
+      //}
   }
 
   function agent_connected(sc) {
     window.addEventListener('resize', handle_resize);
-    window.spice_connection = this;
-    resize_helper(this);
+    window.spice_connection = sc;
+    resize_helper(sc);
     if (window.File && window.FileReader && window.FileList && window.Blob) {
       var spice_xfer_area = document.createElement("div");
       spice_xfer_area.setAttribute('id', 'spice-xfer-area');
@@ -76,26 +93,24 @@ function spiceClientConnection(host, port) {
   }
 
   function do_connection() {
-    console.log('Connecting to spice session')
-    $('#spinner-modal h4').text('Connection lost. Trying to reconnect');
-    $('#spinner-modal').modal('show');
+    console.log('FC: Connecting to spice session')
     sc = new SpiceMainConn({
       uri: 'ws://' + location.hostname + ':' + port,
       screen_id: "spice-screen",
       // dump_id: "debug-div",
       // message_id: "message-div",
       // password: password,
-      // onagent: agent_connected
+      // onagent: agent_connected,
+      onsuccess: spice_connected,
       onerror: spice_error
     });
-    $('#spinner-modal').modal('hide');
-    connecting = null;
   }
 
   try {
+    show_connecting_spinner();
     do_connection();
   } catch (e) {
-    console.error('Fatal error:' + e.toString());
+    console.error('FC: Fatal error:' + e.toString());
     sessionStop();
   }
 
