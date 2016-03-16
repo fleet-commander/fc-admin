@@ -34,11 +34,8 @@ function spiceClientConnection(host, port) {
   var noretry = false;
 
   function set_connection_timeout() {
-    console.log('trying to set timeout')
     if (!connecting) {
-      console.log('setting timeout')
       connecting = setTimeout(function() {
-        console.log('timeout reached')
         if (sc) sc.stop()
         $('#spice-screen').html('');
         connecting = null;
