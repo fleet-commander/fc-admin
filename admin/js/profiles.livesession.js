@@ -30,50 +30,78 @@ window.alert = function(message) {
 function spiceClientConnection(host, port) {
 
   var connecting = null;
-  var reconnecting = null;
+  var conn_timeout = 15000; //ms
   var noretry = false;
+
+  function set_connection_timeout() {
+    console.log('trying to set timeout')
+    if (!connecting) {
+      console.log('setting timeout')
+      connecting = setTimeout(function() {
+        console.log('timeout reached')
+        if (sc) sc.stop()
+        $('#spice-screen').html('');
+        connecting = null;
+        noretry = true;
+        console.log('FC: Connection tries timed out');
+        $('#spinner-modal').modal('hide');
+        showMessageDialog('Connection error to virtual machine.', 'Connection error');
+      }, conn_timeout);
+    }
+  }
 
   function spice_connected() {
     console.log('FC: Connected to virtual machine using SPICE');
-    if (reconnecting != null) {
-      clearTimeout(reconnecting);
-      reconnecting = null;
-      $('#spinner-modal').modal('hide');
+    $('#spinner-modal').modal('hide');
+    if (connecting) {
+      clearTimeout(connecting);
+      connecting = null;
     }
-  }
-
-  function show_connecting_spinner() {
-    $('#spinner-modal h4').text('Connecting to virtual machine... Please wait');
-    $('#spinner-modal').modal('show');
-    reconnecting = setTimeout(function() {
-      $('#spinner-modal').modal('hide');
-      console.log('FC: Connection tries timed out');
-      showMessageDialog('Connection error to virtual machine.', 'Connection error');
-      noretry = true;
-    }, 10000);
   }
 
   function spice_error(err) {
-    console.log("FC: SPICE connection error: ", err.message);
+    console.log("FC: SPICE connection error:", err.message);
 
-    if (!noretry) {
+    set_connection_timeout()
 
-      if (reconnecting === null) {
-        show_connecting_spinner();
+    if (err.message == 'Unexpected close while ready' || err.message == 'Connection timed out.' || sc.state != 'ready')  {
+      if (!noretry) {
+        $('#spinner-modal h4').text('Connecting to virtual machine. Please wait...');
+        $('#spinner-modal').modal('show');
+        do_connection();
       }
-
-      if (connecting === null) {
-        // Try to reconnect
-        $('#spice-screen').html('');
-        connecting = setTimeout(function() {
-          do_connection();
-          connecting = null;
-        }, 200);
+    } else {
+      $('#spinner-modal').modal('hide');
+      if (connecting) {
+        clearTimeout(connecting);
+        connecting = null;
       }
-
+      showMessageDialog('Connection error to virtual machine.', 'Connection error');
     }
-      //if (err.message == 'Error: Unexpected close while ready' || err.message == 'Error: Connection timed out.' || sc.state != 'ready')  {
-      //}
+
+  }
+
+  function do_connection() {
+    console.log('FC: Connecting to spice session')
+    if (sc) sc.stop()
+    $('#spice-screen').html('');
+    sc = new SpiceMainConn({
+      uri: 'ws://' + location.hostname + ':' + port,
+      screen_id: 'spice-screen',
+      onsuccess: spice_connected,
+      onerror: spice_error
+      // dump_id: "debug-div",
+      // message_id: "message-div",
+      // password: password,
+      // onagent: agent_connected,
+    });
+  }
+
+  try {
+    do_connection();
+  } catch (e) {
+    console.error('FC: Fatal error:' + e.toString());
+    sessionStop();
   }
 
   function agent_connected(sc) {
@@ -90,28 +118,6 @@ function spiceClientConnection(host, port) {
     else {
       console.log("File API is not supported");
     }
-  }
-
-  function do_connection() {
-    console.log('FC: Connecting to spice session')
-    sc = new SpiceMainConn({
-      uri: 'ws://' + location.hostname + ':' + port,
-      screen_id: "spice-screen",
-      // dump_id: "debug-div",
-      // message_id: "message-div",
-      // password: password,
-      // onagent: agent_connected,
-      onsuccess: spice_connected,
-      onerror: spice_error
-    });
-  }
-
-  try {
-    show_connecting_spinner();
-    do_connection();
-  } catch (e) {
-    console.error('FC: Fatal error:' + e.toString());
-    sessionStop();
   }
 
 }
