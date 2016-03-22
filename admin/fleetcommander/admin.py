@@ -149,49 +149,21 @@ class AdminService(Flaskless):
             return JSONResponse({'needcfg': False})
 
     def hypervisor_config(self, request):
+        c = fcdbus.FleetCommanderDbusClient()
+
         if request.method == 'GET':
-            c = fcdbus.FleetCommanderDbusClient()
             try:
-                public_key = c.get_public_key()
+                data = c.get_hypervisor_config()
+                return JSONResponse(data)
             except Exception as e:
                 logging.error(e)
                 return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-            # Check hypervisor configuration
-            data = {
-                'pubkey': public_key,
-            }
-            if 'hypervisor' not in self.current_session:
-                data.update({
-                    'host': '',
-                    'username': '',
-                    'mode': 'system',
-                    'needcfg': True,
-                    'adminhost': '',
-                })
-            else:
-                data.update(self.current_session['hypervisor'])
-            return JSONResponse(data)
         elif request.method == 'POST':
             data = request.get_json()
-            errors = {}
-            # Check username
-            if not re.match(SYSTEM_USER_REGEX, data['username']):
-                errors['username'] = 'Invalid username specified'
-            # Check hostname
-            if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
-                errors['host'] = 'Invalid hostname specified'
-            # Check libvirt mode
-            if data['mode'] not in ('system', 'session'):
-                errors['mode'] = 'Invalid session type'
-            # Check admin host
-            if 'adminhost' in data and data['adminhost'] != '':
-                if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
-                    errors['adminhost'] = 'Invalid hostname specified'
-            if errors:
-                return JSONResponse({'errors': errors})
-            # Save hypervisor configuration
-            self.current_session['hypervisor'] = data
+            resp = c.set_hypervisor_config(data)
+            if not resp['status']:
+                return JSONResponse({'errors': resp['errors']})
             return JSONResponse({})
         else:
             # This should never happen because flaskless should did this before us
@@ -502,7 +474,9 @@ class AdminService(Flaskless):
 
         self.db.sessionsettings.clear_settings()
 
-        hypervisor = self.current_session['hypervisor']
+        c = fcdbus.FleetCommanderDbusClient()
+        hypervisor = c.get_hypervisor_config()
+
         forcedadminhost = hypervisor.get('adminhost', None)
         if forcedadminhost:
             forcedadminhostdata = forcedadminhost.split(':')

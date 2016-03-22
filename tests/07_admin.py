@@ -20,6 +20,7 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+import re
 import os
 import sys
 import json
@@ -31,12 +32,56 @@ PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
 
 from fleetcommander import admin as fleet_commander_admin
+from fleetcommander.database import DBManager
+
+
+SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
+IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
+HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
 
 
 class MockDbusClient(object):
 
+    def __init__(self):
+        self.hypervisor_config = {
+            'pubkey': 'PUBLIC_KEY',
+            'host': '',
+            'username': '',
+            'mode': 'system',
+            'needcfg': True,
+            'adminhost': '',
+        }
+        self.db = DBManager(self.database_path)
+
     def get_public_key(self):
         return 'PUBLIC KEY'
+
+    def get_hypervisor_config(self):
+        if 'hypervisor' in self.db.config:
+            return self.db.config['hypervisor']
+        else:
+            return self.hypervisor_config
+
+    def set_hypervisor_config(self, data):
+        errors = {}
+        # Check username
+        if not re.match(SYSTEM_USER_REGEX, data['username']):
+            errors['username'] = 'Invalid username specified'
+        # Check hostname
+        if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
+            errors['host'] = 'Invalid hostname specified'
+        # Check libvirt mode
+        if data['mode'] not in ('system', 'session'):
+            errors['mode'] = 'Invalid session type'
+        # Check admin host
+        if 'adminhost' in data and data['adminhost'] != '':
+            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
+                errors['adminhost'] = 'Invalid hostname specified'
+        if errors:
+            return {'status': False, 'errors': errors}
+        # Save hypervisor configuration
+        self.db.config['hypervisor'] = data
+        return {'status': True}
 
     def list_domains(self):
         return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
@@ -74,12 +119,14 @@ class TestAdminWSGIRef(unittest.TestCase):
     def setUp(self):
         self.test_directory = tempfile.mkdtemp()
 
+        database_path = os.path.join(self.test_directory, 'database.db')
+
         self.args = {
             'host': 'localhost',
             'port': 8777,
             'data_dir': self.test_directory,
             'state_dir': self.test_directory,
-            'database_path': os.path.join(self.test_directory, 'database.db'),
+            'database_path': database_path,
         }
 
         os.environ['FC_TEST_DIRECTORY'] = self.test_directory
@@ -90,6 +137,8 @@ class TestAdminWSGIRef(unittest.TestCase):
         self.websocket = MockWebSocket()
 
         # Fleet Commander dbus client mocker
+        MockDbusClient.database_path = database_path
+
         fleet_commander_admin.fcdbus.FleetCommanderDbusClient = MockDbusClient
 
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.websocket)
@@ -204,6 +253,7 @@ class TestAdminWSGIRef(unittest.TestCase):
     def test_04_hypervisor_configuration(self):
         # Hypervisor nor configured yet
         ret = self.app.get('/hypervisor/')
+        print ret.content
         self.assertEqual(ret.status_code, 200)
         self.assertTrue(ret.jsondata['needcfg'])
         self.assertEqual(ret.jsondata['host'], '')

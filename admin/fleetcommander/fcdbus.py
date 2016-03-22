@@ -19,12 +19,12 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
-
 import os
 import signal
 import json
 import logging
 import subprocess
+import re
 
 import dbus
 import dbus.service
@@ -34,6 +34,10 @@ import gobject
 
 import libvirtcontroller
 from database import DBManager
+
+SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
+IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
+HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
 
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
@@ -55,6 +59,12 @@ class FleetCommanderDbusClient(object):
 
     def get_public_key(self):
         return self.iface.GetPublicKey()
+
+    def get_hypervisor_config(self):
+        return json.loads(self.iface.GetHypervisorConfig())
+
+    def set_hypervisor_config(self, data):
+        return json.loads(self.iface.SetHypervisorConfig(json.dumps(data)))
 
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
@@ -98,8 +108,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Initialize database
         self.db = DBManager(config['database_path'])
 
-        self.current_session = self.db.config
-
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SystemBus())
@@ -111,17 +119,63 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Get a libvirtcontroller instance
         """
-        hypervisor = self.current_session['hypervisor']
+        hypervisor = self.db.config['hypervisor']
         return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
-    def GetPublicKey(self):
+    def get_public_key(self):
         # Initialize LibVirtController to create keypair if needed
         ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system', None, None)
         with open(ctrlr.public_key_file, 'r') as fd:
             public_key = fd.read().strip()
             fd.close()
         return public_key
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    def GetPublicKey(self):
+        return self.get_public_key()
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    def GetHypervisorConfig(self):
+        public_key = self.get_public_key()
+        # Check hypervisor configuration
+        data = {
+            'pubkey': public_key,
+        }
+        if 'hypervisor' not in self.db.config:
+            data.update({
+                'host': '',
+                'username': '',
+                'mode': 'system',
+                'needcfg': True,
+                'adminhost': '',
+            })
+        else:
+            data.update(self.db.config['hypervisor'])
+
+        return json.dumps(data)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='s', out_signature='s')
+    def SetHypervisorConfig(self, jsondata):
+        data = json.loads(jsondata)
+        errors = {}
+        # Check username
+        if not re.match(SYSTEM_USER_REGEX, data['username']):
+            errors['username'] = 'Invalid username specified'
+        # Check hostname
+        if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
+            errors['host'] = 'Invalid hostname specified'
+        # Check libvirt mode
+        if data['mode'] not in ('system', 'session'):
+            errors['mode'] = 'Invalid session type'
+        # Check admin host
+        if 'adminhost' in data and data['adminhost'] != '':
+            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
+                errors['adminhost'] = 'Invalid hostname specified'
+        if errors:
+            return json.dumps({'status': False, 'errors': errors})
+        # Save hypervisor configuration
+        self.db.config['hypervisor'] = data
+        return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
     def ListDomains(self):
