@@ -23,6 +23,7 @@
 # Python imports
 import sys
 import logging
+import copy
 
 # Compat between Pyhon 2 and 3
 try:
@@ -94,3 +95,23 @@ def parse_config(config_file=None, host=None, port=None):
         sys.exit(1)
 
     return args
+
+
+def merge_settings(a, b):
+    result = copy.deepcopy(a)
+    for domain in b:
+        if domain not in result:
+            result[domain] = b[domain]
+            continue
+
+        index = {}
+        for change in a[domain]:
+            index[change["key"]] = change
+
+        for change in b[domain]:
+            key = change["key"]
+            index[key] = change
+
+        result[domain] = [index[key] for key in index]
+
+    return result

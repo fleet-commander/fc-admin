@@ -22,42 +22,15 @@
 # Python imports
 import os
 import re
-import signal
 import json
 import uuid
 import logging
-import subprocess
-import copy
 
 # Fleet commander imports
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 from flaskless import Flaskless, HttpResponse, JSONResponse, HTTP_RESPONSE_CODES
 import fcdbus
 from database import DBManager
-
-SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
-IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
-HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
-
-
-def merge_settings(a, b):
-    result = copy.deepcopy (a)
-    for domain in b:
-        if domain not in result:
-            result[domain] = b[domain]
-            continue
-
-        index = {}
-        for change in a[domain]:
-            index[change["key"]] = change
-
-        for change in b[domain]:
-            key = change["key"]
-            index[key] = change
-
-        result[domain] = [index[key] for key in index]
-
-    return result
 
 class AdminService(Flaskless):
 
@@ -143,10 +116,12 @@ class AdminService(Flaskless):
         return self.serve_html_template('profiles.livesession.html')
 
     def webapp_init(self, request):
-        if 'hypervisor' not in self.current_session:
-            return JSONResponse({'needcfg': True})
-        else:
-            return JSONResponse({'needcfg': False})
+        c = fcdbus.FleetCommanderDbusClient()
+        try:
+            return JSONResponse({'needcfg': c.check_needs_configuration()})
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
     def hypervisor_config(self, request):
         c = fcdbus.FleetCommanderDbusClient()
@@ -466,67 +441,24 @@ class AdminService(Flaskless):
     def session_start(self, request):
         data = request.get_json()
 
-        if self.current_session.get('port', None) is not None:
-            return JSONResponse({"status": "Session already started"}, 400)
-
         if not data or 'domain' not in data or 'admin_host' not in data or 'admin_port' not in data:
             return JSONResponse({"status": "Invalid data received"}, 400)
 
-        self.db.sessionsettings.clear_settings()
-
-        c = fcdbus.FleetCommanderDbusClient()
-        hypervisor = c.get_hypervisor_config()
-
-        forcedadminhost = hypervisor.get('adminhost', None)
-        if forcedadminhost:
-            forcedadminhostdata = forcedadminhost.split(':')
-            if len(forcedadminhostdata) < 2:
-                forcedadminhostdata.append(data['admin_port'])
-            admin_host, admin_port = forcedadminhostdata
-        else:
-            admin_host = data['admin_host']
-            admin_port = data['admin_port']
-
         c = fcdbus.FleetCommanderDbusClient()
         try:
-            response = c.session_start(data['domain'], admin_host, admin_port)
-        except Exception as e:
-            logging.error(e)
+            response = c.session_start(data['domain'], data['admin_host'], data['admin_port'])
+        except:
             return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
         if not response['status']:
             return JSONResponse({'status': 'Error starting session'}, 520)
 
-        self.current_session['uuid'] = response['uuid']
-        self.current_session['port'] = response['port']
-        self.current_session['tunnel_pid'] = response['tunnel_pid']
-
-        self.websocket_stop()
-        self.current_session['websocket_listen_host'] = data['admin_host']
-        self.current_session['websocket_target_host'] = 'localhost'
-        self.current_session['websocket_target_port'] = response['port']
-        self.websocket_start()
-
-        # TODO: Randomize port on websocket creation for more security
-        return JSONResponse({'port': 8989})
+        return JSONResponse({'port': response['port']})
 
     def session_stop(self, request):
-
-        if 'uuid' not in self.current_session or 'tunnel_pid' not in self.current_session or 'port' not in self.current_session:
-            return JSONResponse({'status': 'There was no session started'}, 520)
-
-        uuid = self.current_session['uuid']
-        tunnel_pid = self.current_session['tunnel_pid']
-
-        del(self.current_session['uuid'])
-        del(self.current_session['tunnel_pid'])
-        del(self.current_session['port'])
-
-        self.websocket_stop()
-
         c = fcdbus.FleetCommanderDbusClient()
         try:
-            response = c.session_stop(uuid, tunnel_pid)
+            response = c.session_stop()
         except Exception as e:
             logging.error(e)
             return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
@@ -542,7 +474,7 @@ class AdminService(Flaskless):
 
         if not isinstance(data, dict):
             return JSONResponse({"status": "JSON request is not an object"}, 403)
-        if not 'uid' in data:
+        if 'uid' not in data:
             return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
 
         uid = data['uid']
@@ -550,56 +482,29 @@ class AdminService(Flaskless):
         if not uid:
             return JSONResponse({"status": "nonexistinguid"}, 403)
 
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
-
-        settings = {}
-
-        for name, collector in self.collectors_by_name.items():
-            settings[name] = collector.get_settings()
-
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            profile = json.loads(open(PROFILE_FILE).read())
+            resp = c.session_save(uid)
         except:
-            return JSONResponse ({'status': 'could not parse profile %s' % uid}, 500)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        if not profile.get('settings', False) or \
-                not isinstance(profile['settings'], dict) or \
-                profile['settings'] == {}:
-            profile['settings'] = settings
-        else:
-            profile['settings'] = merge_settings (profile['settings'], settings)
-
-        self.write_and_close(PROFILE_FILE, json.dumps(profile))
-
-        del(self.current_session["uid"])
+        if not resp['status']:
+            return JSONResponse({'status': resp['error']}, 520)
 
         return JSONResponse({'status': 'ok'})
 
     def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
-        if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
-            return
-
-        self.current_session.setdefault('websocket_listen_host', listen_host)
-        self.current_session.setdefault('websocket_listen_port', listen_port)
-        self.current_session.setdefault('websocket_target_host', target_host)
-        self.current_session.setdefault('websocket_target_port', target_port)
-
-        # TODO: Proper error checking for websockify execution
         c = fcdbus.FleetCommanderDbusClient()
-        pid = c.websocket_start(
-            self.current_session['websocket_listen_host'],
-            self.current_session['websocket_listen_port'],
-            self.current_session['websocket_target_host'],
-            self.current_session['websocket_target_port'],
+        c.websocket_start(
+            listen_host,
+            listen_port,
+            target_host,
+            target_port,
         )
 
-        self.current_session['websockify_pid'] = int(pid)
-
     def websocket_stop(self):
-        if 'websockify_pid' in self.current_session and self.current_session['websockify_pid']:
-            c = fcdbus.FleetCommanderDbusClient()
-            c.websocket_stop(self.current_session['websockify_pid'])
-            del(self.current_session['websockify_pid'])
+        c = fcdbus.FleetCommanderDbusClient()
+        c.websocket_stop()
 
 
 if __name__ == '__main__':

@@ -23,9 +23,10 @@
 # Python imports
 import os
 import sys
-import tempfile
 import shutil
 import unittest
+
+import dbus
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -34,38 +35,10 @@ sys.path.append(PYTHONPATH)
 from fleetcommander import fcdbus
 
 
-class MockLibVirtController(object):
-
-    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
-
-        self.data_dir = os.path.abspath(data_path)
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-
-        self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
-
-        with open(self.public_key_file, 'w') as fd:
-            fd.write('PUBLIC_KEY')
-            fd.close()
-
-    def list_domains(self):
-        return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
-
-    def session_start(self, uuid):
-        return ('someuuid', 0, 'tunnel_pid')
-
-    def session_stop(self, uuid, tunnel_pid):
-        pass
-
-
 class TestDbusService(unittest.TestCase):
 
     def setUp(self):
-
-        # Mock libvirt controller
-        fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
-
-        self.test_directory = tempfile.mkdtemp()
+        self.test_directory = os.environ['FC_TEST_DIRECTORY']
 
         self.args = {
             'data_dir': self.test_directory,
@@ -79,18 +52,31 @@ class TestDbusService(unittest.TestCase):
         shutil.rmtree(self.test_directory)
 
     def test_00_dbus(self):
-        # TEST_UUID = '42c91942-a496-4816-8e54-99175ecd2eae'
+        c = fcdbus.FleetCommanderDbusClient(bus=dbus.SessionBus())
+        print c.get_public_key()
+        raise ZeroDivisionError()
 
-        # c = fcdbus.FleetCommanderDbusClient()
-        # print c.get_public_key()
+    def test_11_merge_settings(self):
 
-        # print c.list_domains()
+        a = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": False, "signature": "b"}]}
+        b = {"org.libreoffice.registry": [{"key": "/org/libreoffice/registry/foo", "value": "asd", "signature": "string"}]}
+        c = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"}]}
+        d = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"},
+                                     {"key": "/foo/bleh", "value": True, "signature": "b"}]}
+        ab = fcdbus.merge_settings(a, b)
+        ac = fcdbus.merge_settings(a, c)
+        aa = fcdbus.merge_settings(a, a)
+        ad = fcdbus.merge_settings(a, d)
+        an = fcdbus.merge_settings(a, {})
 
-        # data = c.session_start(TEST_UUID, 'localhost', '8181')
-        # print data
+        self.assertEqual(len(ab), 2)
+        self.assertTrue("org.gnome.gsettings" in ab)
+        self.assertTrue("org.libreoffice.registry" in ab)
+        self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
+        self.assertTrue(ac["org.gnome.gsettings"][0]["value"] is True)
+        self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
+        self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
+        self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
 
-        # time.sleep(10)
-
-        # print c.session_stop(data['uuid'], data['tunnel_pid'])
-        pass
-
+if __name__ == '__main__':
+    unittest.main()

@@ -87,16 +87,24 @@ class MockDbusClient(object):
         return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
 
     def session_start(self, uuid, admin_host, admin_port):
+        self.db.config['port'] = 0
+        self.db.config['uuid'] = 'someuuid'
+        self.db.config['tunnel_pid'] = 'tunnel_pid'
+        self.db.config['websockify_pid'] = 0
+        self.db.config['websocket_target_host'] = admin_host
         return {'status': True, 'uuid': 'someuuid', 'port': 0, 'tunnel_pid': 'tunnel_pid'}
 
-    def session_stop(self, uuid, tunnel_pid):
+    def session_stop(self):
+        if 'uuid' not in self.db.config or 'tunnel_pid' not in self.db.config or 'port' not in self.db.config:
+            return {'status': False, 'error': 'There was no session started'}
+        del(self.db.config['port'])
+        del(self.db.config['uuid'])
+        del(self.db.config['tunnel_pid'])
+        del(self.db.config['websockify_pid'])
         return {'status': True}
 
-    def websocket_start(self, listen_host, listen_port, target_host, target_port):
-        return 0
-
-    def websocket_stop(self, websockify_pid):
-        return
+    def session_save(self, uid):
+        return {'status': True}
 
 
 class MockWebSocket:
@@ -253,7 +261,6 @@ class TestAdminWSGIRef(unittest.TestCase):
     def test_04_hypervisor_configuration(self):
         # Hypervisor nor configured yet
         ret = self.app.get('/hypervisor/')
-        print ret.content
         self.assertEqual(ret.status_code, 200)
         self.assertTrue(ret.jsondata['needcfg'])
         self.assertEqual(ret.jsondata['host'], '')
@@ -487,29 +494,7 @@ class TestAdminWSGIRef(unittest.TestCase):
         profile = json.loads(ret.data)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
 
-    def test_11_merge_settings(self):
-        a = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": False, "signature": "b"}]}
-        b = {"org.libreoffice.registry": [{"key": "/org/libreoffice/registry/foo", "value": "asd", "signature": "string"}]}
-        c = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"}]}
-        d = {"org.gnome.gsettings": [{"key": "/foo/bar", "value": True, "signature": "b"},
-                                     {"key": "/foo/bleh", "value": True, "signature": "b"}]}
-
-        ab = fleet_commander_admin.merge_settings(a, b)
-        ac = fleet_commander_admin.merge_settings(a, c)
-        aa = fleet_commander_admin.merge_settings(a, a)
-        ad = fleet_commander_admin.merge_settings(a, d)
-        an = fleet_commander_admin.merge_settings(a, {})
-
-        self.assertEqual(len(ab), 2)
-        self.assertTrue("org.gnome.gsettings" in ab)
-        self.assertTrue("org.libreoffice.registry" in ab)
-        self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
-        self.assertTrue(ac["org.gnome.gsettings"][0]["value"] == True)
-        self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
-        self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
-        self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
-
-    def test_12_profiles_props(self):
+    def test_11_profiles_props(self):
         profile, ret = self.create_dumb_profile()
         uid = json.loads(ret.data)['uid']
 
