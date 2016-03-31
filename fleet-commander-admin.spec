@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.7.4
+Version:        0.7.5
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -99,6 +99,10 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Thu Mar 31 2016 ogutierr <ogutierr@redhat.com> - 0.7.5-1
+- Fixed spice reconnection problems
+- Updated package for 0.7.5 release
+
 * Tue Mar 08 2016 ogutierr <ogutierrez@redhat.com> - 0.7.4-1
 - Update package for 0.7.4 release
 
