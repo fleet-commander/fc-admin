@@ -236,7 +236,7 @@ class LibVirtController(object):
         root.find('uuid').text = newuuid
         # Change domain name
         name = root.find('name').text
-        root.find('name').text = '%s-fc-%s' % (name, newuuid)
+        root.find('name').text = '%s-fc-%s' % (name, newuuid[:8])
         # Change domain title
         try:
             title = root.find('title').text
