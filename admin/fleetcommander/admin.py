@@ -172,52 +172,25 @@ class AdminService(Flaskless):
         return self.serve_static(request, 'index.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_new(self, request):
-
+        c = fcdbus.FleetCommanderDbusClient()
         data = request.get_json()
-        uid  = uid = str(uuid.uuid1().int)
-
-        INDEX_FILE   = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-        APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'], 'applies.json')
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'],  uid+'.json')
-
 
         if not isinstance(data, dict):
-            return JSONResponse({"status": "JSON request is not an object"}, 403)
+            return JSONResponse({'status': 'JSON request is not an object'}, 400)
         if not all([key in data for key in ['profile-name', 'profile-desc', 'groups', 'users']]):
-            return JSONResponse({"status": "missing key(s) in profile settings request JSON object"}, 403)
-        #TODO: return which fields were empty
+            # TODO: return which fields were empty
+            return JSONResponse({'status': 'Missing key(s) in profile settings request JSON object'}, 400)
 
-        profile = {}
-        groups = []
-        users = []
+        try:
+            resp = c.new_profile(data)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        groups = [g.strip() for g in data['groups'].split(",")]
-        users = [u.strip() for u in data['users'].split(",")]
-        groups = filter(None, groups)
-        users = filter(None, users)
-
-        profile["uid"] = uid
-        profile["name"] = data["profile-name"]
-        profile["description"] = data["profile-desc"]
-        profile["settings"]    = {}
-
-        self.check_for_profile_index()
-        index = json.loads(open(INDEX_FILE).read())
-        if not isinstance(index, list):
-            return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
-        index.append({"url": uid + ".json", "displayName": data["profile-name"]})
-
-        self.check_for_applies()
-        applies = json.loads(open(APPLIES_FILE).read())
-        if not isinstance(applies, dict):
-            return JSONResponse({"status": "%s does not contain a JSON object as root element" % APPLIES_FILE})
-        applies[uid] = {"users": users, "groups": groups}
-
-        self.write_and_close(PROFILE_FILE, json.dumps(profile))
-        self.write_and_close(APPLIES_FILE, json.dumps(applies))
-        self.write_and_close(INDEX_FILE, json.dumps(index))
-
-        return JSONResponse({'status': 'ok', 'uid': uid})
+        if resp['status']:
+            return JSONResponse({'status': 'ok', 'uid': resp['uid']})
+        else:
+            return JSONResponse({'status': resp['error']}, 520)
 
     def profiles_applies(self, request, uid=None):
         self.check_for_applies()
@@ -232,208 +205,90 @@ class AdminService(Flaskless):
             return self.serve_static(request, 'applies.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_props(self, request, uid):
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'],  uid+'.json')
-
-        if not os.path.isfile(PROFILE_FILE):
-            return JSONResponse({'status': 'profile %s does not exist' % uid}, 403)
-
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            payload = request.get_json ()
-        except:
-            return JSONResponse ({'status': 'request data was not a valid JSON object'}, 403)
+            resp = c.profile_props(request.get_json(), uid)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        if not isinstance(payload, dict):
-            return JSONResponse ({'status': 'request data wast not a valid JSON dictionary'}, 403)
-
-
-        if 'profile-name' in payload or 'profile-desc' in payload:
-            profile = None
-            try:
-                profile = json.loads(open(PROFILE_FILE).read())
-            except:
-                return JSONResponse({'status': 'could not parse profile %s.json file' % uid}, 500)
-
-            if not isinstance(profile, dict):
-                return JSONResponse({'status': 'profile %s.json does not hold a JSON object' % uid}, 500)
-
-            if 'profile-name' in payload:
-                profile['name'] = payload['profile-name']
-
-            if 'profile-desc' in payload:
-                profile['description'] = payload['profile-desc']
-
-            try:
-                open(PROFILE_FILE, 'w+').write(json.dumps(profile))
-            except:
-                return JSONResponse({'status': 'could not write profile %s.json' % uid}, 500)
-
-            # Update profiles index
-            INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-            if 'profile-name' in payload:
-                self.check_for_profile_index()
-                index = json.loads(open(INDEX_FILE).read())
-                if not isinstance(index, list):
-                    return JSONResponse({"status": "%s does not contain a JSON list as root element" % INDEX_FILE}, 403)
-                for item in index:
-                    if item['url'] == '%s.json' % uid:
-                        item['displayName'] = payload['profile-name']
-                self.write_and_close(INDEX_FILE, json.dumps(index))
-
-        if 'users' in payload or 'groups' in payload:
-            APPLIES_FILE = os.path.join(self.custom_args['profiles_dir'],  'applies.json')
-            applies = None
-            try:
-                applies = json.loads(open(APPLIES_FILE).read())
-            except:
-                return JSONResponse({'status': 'could not parse applies.json file'}, 500)
-
-            if not isinstance(applies, dict):
-                return JSONResponse({'status': 'applies.json does not hold a JSON object'}, 500)
-
-            if 'users' in payload:
-                users = [u.strip() for u in payload['users'].split(",")]
-                users = filter(None, users)
-                applies[uid]['users'] = users
-
-            if 'groups' in payload:
-                groups = [g.strip() for g in payload['groups'].split(",")]
-                groups = filter(None, groups)
-                applies[uid]['groups'] = groups
-
-            try:
-                open(APPLIES_FILE, 'w+').write(json.dumps(applies))
-            except:
-                return JSONResponse({'status': 'could not write applies.json'}, 500)
-
-        return JSONResponse({'status': 'ok'})
+        if resp['status']:
+            return JSONResponse({'status': 'ok'})
+        else:
+            return JSONResponse({'status': resp['error']}, 520)
 
     def profiles_id(self, request, uid):
         return self.serve_static(request, uid + '.json', basedir=self.custom_args['profiles_dir'])
 
     def profiles_apps(self, request, uid):
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
-
-        payload = request.get_json()
-
-        if not isinstance(payload, list) or \
-           len(set(map(lambda x: x is unicode, payload))) > 1:
-            return JSONResponse({'status': 'application list is not a list of strings'}, 420)
-
-        if not os.path.isfile (INDEX_FILE) or not os.path.isfile (PROFILE_FILE):
-            return JSONResponse({'status': 'there are no profiles in the database'}, 500)
-
-        profile = None
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            profile = json.loads(open(PROFILE_FILE).read())
-        except:
-            return JSONResponse({'status': 'could not read profile data'}, 500)
+            resp = c.popular_apps(request.get_json(), uid)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        if not isinstance(profile, dict):
-            return JSONResponse({'status': 'profile object %s is not a dictionary' % uid}, 500)
-
-        if not profile.get('settings', False):
-            profile['settings'] = {}
-
-        if not isinstance(profile['settings'], dict):
-            return JSONResponse({'status': 'settings value in %s is not a list' % uid}, 500)
-
-        if not profile['settings'].get('org.gnome.gsettings', False):
-            profile['settings']['org.gnome.gsettings'] = []
-
-        gsettings = profile['settings']['org.gnome.gsettings']
-
-        if not isinstance(gsettings, list):
-            return JSONResponse({'status': 'settings/org.gnome.gsettings value in %s is not a list' % uid}, 500)
-
-        existing_change = None
-        for change in gsettings:
-            if 'key' not in change:
-                continue
-
-            if change['key'] != '/org/gnome/software/popular-overrides':
-                continue
-
-            existing_change = change
-
-        if existing_change and payload == []:
-            gsettings.remove (existing_change)
-        elif not existing_change:
-            existing_change = {'key': '/org/gnome/software/popular-overrides',
-                               'signature': 'as'}
-            gsettings.append(existing_change)
-
-        existing_change['value'] = payload
-
-        try:
-            open(PROFILE_FILE, 'w+').write(json.dumps(profile))
-        except:
-            return JSONResponse({'status': 'could not write profile %s' % uid}, 500)
-
-        return JSONResponse({'status': 'ok'})
+        if resp['status']:
+            return JSONResponse({'status': 'ok'})
+        else:
+            return JSONResponse({'status': resp['error']}, 520)
 
     def profiles_add(self, request):
         return self.serve_html_template('profile.add.html')
 
     def profiles_delete(self, request, uid):
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
-
+        c = fcdbus.FleetCommanderDbusClient()
         try:
-            os.remove(PROFILE_FILE)
-        except:
-            pass
+            resp = c.delete_profile(uid)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        index = json.loads(open(INDEX_FILE).read())
-        for profile in index:
-            if (profile["url"] == uid + ".json"):
-                index.remove(profile)
-
-        open(INDEX_FILE, 'w+').write(json.dumps(index))
-        return JSONResponse({'status': 'ok'})
+        if resp['status']:
+            return JSONResponse({'status': 'ok'})
+        else:
+            return JSONResponse({'status': resp['error']}, 520)
 
     def changes(self, request):
-        response = {}
-
-        for db in ['org.gnome.gsettings', 'org.libreoffice.registry']:
-            collector = self.collectors_by_name.get(db, None)
-            if not collector:
-                continue
-
-            changes = collector.dump_changes()
-            if not changes:
-                continue
-
-            response[db] = changes
-
-        return JSONResponse(response)
+        c = fcdbus.FleetCommanderDbusClient()
+        try:
+            resp = c.get_changes()
+            return JSONResponse(resp)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
     def changes_select(self, request):
         data = request.get_json()
 
         if not isinstance(data, dict):
-            return JSONResponse({"status": "bad JSON data"}, 403)
+            return JSONResponse({"status": "bad JSON data"}, 400)
 
-        if self.current_session.get('port', None) is None:
-            return JSONResponse({"status": "session was not started"}, 403)
+        c = fcdbus.FleetCommanderDbusClient()
+        try:
+            resp = c.select_changes(data)
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
-        for key in data:
-            selection = data[key]
-
-            if not isinstance(selection, list):
-                return JSONResponse({"status": "bad JSON format for " + key}, 403)
-
-            self.collectors_by_name[key].remember_selected(selection)
-
-        return JSONResponse({"status": "ok"})
+        if resp['status']:
+            return JSONResponse({"status": "ok"})
+        else:
+            return JSONResponse({'status': resp['error']}, 520)
 
     # Add a configuration change to a session
     def changes_submit_name(self, request, name):
-        if name in self.collectors_by_name:
-            self.collectors_by_name[name].handle_change(request)
+        c = fcdbus.FleetCommanderDbusClient()
+        try:
+            resp = c.submit_change(name, request.get_json())
+        except Exception as e:
+            logging.error(e)
+            return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
+
+        if resp['status']:
             return JSONResponse({"status": "ok"})
         else:
-            return JSONResponse({"status": "namespace %s not supported or session not started"} % name, 403)
+            return JSONResponse({'status': resp['error']}, 520)
 
     def deploy(self, request, uid):
         return self.serve_html_template('deploy.html')
@@ -446,7 +301,7 @@ class AdminService(Flaskless):
 
         c = fcdbus.FleetCommanderDbusClient()
         try:
-            response = c.session_start(data['domain'], data['admin_host'], data['admin_port'])
+            response = c.session_start(data['domain'], data['admin_host'], str(data['admin_port']))
         except:
             return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)
 
@@ -492,20 +347,6 @@ class AdminService(Flaskless):
             return JSONResponse({'status': resp['error']}, 520)
 
         return JSONResponse({'status': 'ok'})
-
-    def websocket_start(self, listen_host='localhost', listen_port=8989, target_host='localhost', target_port=5900):
-        c = fcdbus.FleetCommanderDbusClient()
-        c.websocket_start(
-            listen_host,
-            listen_port,
-            target_host,
-            target_port,
-        )
-
-    def websocket_stop(self):
-        c = fcdbus.FleetCommanderDbusClient()
-        c.websocket_stop()
-
 
 if __name__ == '__main__':
 

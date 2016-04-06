@@ -25,6 +25,8 @@ import json
 import logging
 import subprocess
 import re
+import uuid
+import time
 
 import dbus
 import dbus.service
@@ -35,6 +37,7 @@ import gobject
 import libvirtcontroller
 from database import DBManager
 from utils import merge_settings
+from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -46,21 +49,32 @@ DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
 
 
 class FleetCommanderDbusClient(object):
+
     """
     Fleet commander dbus client
     """
 
     DEFAULT_BUS = dbus.SystemBus
+    CONNECTION_TIMEOUT = 2
 
     def __init__(self, bus=None):
         """
         Class initialization
         """
         if bus is None:
-            bus = dbus.SystemBus()
+            bus = self.DEFAULT_BUS()
         self.bus = bus
-        self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
-        self.iface = dbus.Interface(self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+
+        t = time.time()
+        while time.time() - t < self.CONNECTION_TIMEOUT:
+            try:
+                self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
+                self.iface = dbus.Interface(self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+                return
+            except:
+                pass
+        raise Exception('Timed out trying to connect to fleet commander dbus service')
+
 
     def check_needs_configuration(self):
         return self.iface.CheckNeedsConfiguration()
@@ -74,11 +88,33 @@ class FleetCommanderDbusClient(object):
     def set_hypervisor_config(self, data):
         return json.loads(self.iface.SetHypervisorConfig(json.dumps(data)))
 
+    def new_profile(self, profiledata):
+        return json.loads(self.iface.NewProfile(json.dumps(profiledata)))
+
+    def delete_profile(self, uid):
+        return json.loads(self.iface.DeleteProfile(uid))
+
+    def profile_props(self, data, uid):
+        return json.loads(self.iface.ProfileProps(json.dumps(data), uid))
+
+    def submit_change(self, name, change):
+        return json.loads(self.iface.SubmitChange(name, json.dumps(change)))
+
+    def get_changes(self):
+        return json.loads(self.iface.GetChanges())
+
+    def select_changes(self, data):
+        return json.loads(self.iface.SelectChanges(json.dumps(data)))
+
+    def popular_apps(self, data, uid):
+        return json.loads(self.iface.PopularApps(json.dumps(data), uid))
+
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
     def session_start(self, domain_uuid, admin_host, admin_port):
-        return json.loads(self.iface.SessionStart(domain_uuid, admin_host, admin_port))
+        return json.loads(
+            self.iface.SessionStart(domain_uuid, admin_host, admin_port))
 
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
@@ -106,12 +142,27 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         super(FleetCommanderDbusService, self).__init__()
 
-        self.args = args
+        if 'profiles_dir' not in args:
+            args['profiles_dir'] = os.path.join(args['state_dir'], 'profiles')
+            if not os.path.exists(args['profiles_dir']):
+                os.mkdir(args['profiles_dir'])
 
+        self.args = args
         self.state_dir = args['state_dir']
+        self.profiles_dir = args['profiles_dir']
+
+        self.INDEX_FILE = os.path.join(args['profiles_dir'], 'index.json')
+        self.APPLIES_FILE = os.path.join(args['profiles_dir'], 'applies.json')
 
         # Initialize database
         self.db = DBManager(args['database_path'])
+
+        # Initialize collectors
+        self.collectors_by_name = {
+            'org.gnome.gsettings': GSettingsCollector(self.db),
+            # 'org.gnome.online-accounts': GoaCollector(),
+            'org.libreoffice.registry': LibreOfficeCollector(self.db),
+        }
 
     def run(self, sessionbus=False):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -125,8 +176,10 @@ class FleetCommanderDbusService(dbus.service.Object):
         self._loop.run()
 
     def check_for_profile_index(self):
-        INDEX_FILE = os.path.join(self.custom_args['profiles_dir'], 'index.json')
-        self.test_and_create_file(INDEX_FILE, [])
+        self.test_and_create_file(self.INDEX_FILE, [])
+
+    def check_for_applies(self):
+        self.test_and_create_file(self.APPLIES_FILE, {})
 
     def test_and_create_file(self, filename, content):
         if os.path.isfile(filename):
@@ -136,6 +189,11 @@ class FleetCommanderDbusService(dbus.service.Object):
             open(filename, 'w+').write(json.dumps(content))
         except OSError:
             logging.error('There was an error attempting to write on %s' % filename)
+
+    def write_and_close(self, path, load):
+        f = open(path, 'w+')
+        f.write(load)
+        f.close()
 
     def get_libvirt_controller(self, admin_host=None, admin_port=None):
         """
@@ -170,14 +228,9 @@ class FleetCommanderDbusService(dbus.service.Object):
             data.update(self.db.config['hypervisor'])
         return data
 
-    def websocket_start(self, listen_host, listen_port, target_host, target_port):
+    def websocket_start(self):
         if 'websockify_pid' in self.db.config and self.db.config['websockify_pid']:
             return
-
-        self.db.config.setdefault('websocket_listen_host', listen_host)
-        self.db.config.setdefault('websocket_listen_port', listen_port)
-        self.db.config.setdefault('websocket_target_host', target_host)
-        self.db.config.setdefault('websocket_target_port', target_port)
 
         command = self.WEBSOCKIFY_COMMAND_TEMPLATE % (
             self.db.config['websocket_listen_host'],
@@ -200,22 +253,27 @@ class FleetCommanderDbusService(dbus.service.Object):
                 pass
             del(self.db.config['websockify_pid'])
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='b')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='b')
     def CheckNeedsConfiguration(self):
         return 'hypervisor' not in self.db.config
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
     def GetPublicKey(self):
         return self.get_public_key()
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
     def GetHypervisorConfig(self):
-        return json.dumps(self.get_hypervisor_config)
+        return json.dumps(self.get_hypervisor_config())
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='s', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
     def SetHypervisorConfig(self, jsondata):
         data = json.loads(jsondata)
         errors = {}
+
         # Check username
         if not re.match(SYSTEM_USER_REGEX, data['username']):
             errors['username'] = 'Invalid username specified'
@@ -235,7 +293,291 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def NewProfile(self, profiledata):
+        data = json.loads(profiledata)
+        uid = str(uuid.uuid1().int)
+
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid+'.json')
+
+        profile = {}
+        groups = []
+        users = []
+
+        groups = [g.strip() for g in data['groups'].split(",")]
+        users = [u.strip() for u in data['users'].split(",")]
+        groups = filter(None, groups)
+        users = filter(None, users)
+
+        profile["uid"] = uid
+        profile["name"] = data["profile-name"]
+        profile["description"] = data["profile-desc"]
+        profile["settings"] = {}
+
+        self.check_for_profile_index()
+        index = json.loads(open(self.INDEX_FILE).read())
+        if not isinstance(index, list):
+            return json.dumps({
+                'status': False,
+                'error': '%s does not contain a JSON list as root element' % self.INDEX_FILE})
+        index.append({"url": uid + ".json", "displayName": data["profile-name"]})
+
+        self.check_for_applies()
+        applies = json.loads(open(self.APPLIES_FILE).read())
+        if not isinstance(applies, dict):
+            return json.dumps({
+                'status': False,
+                'error': '%s does not contain a JSON object as root element' % self.APPLIES_FILE})
+        applies[uid] = {"users": users, "groups": groups}
+
+        self.write_and_close(PROFILE_FILE, json.dumps(profile))
+        self.write_and_close(self.APPLIES_FILE, json.dumps(applies))
+        self.write_and_close(self.INDEX_FILE, json.dumps(index))
+
+        return json.dumps({'status': True, 'uid': uid})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def DeleteProfile(self, uid):
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
+
+        try:
+            os.remove(PROFILE_FILE)
+        except:
+            pass
+
+        self.check_for_profile_index()
+        index = json.loads(open(self.INDEX_FILE).read())
+
+        for profile in index:
+            if (profile["url"] == uid + ".json"):
+                index.remove(profile)
+
+        open(self.INDEX_FILE, 'w+').write(json.dumps(index))
+        return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='s')
+    def ProfileProps(self, data, uid):
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid+'.json')
+
+        if not os.path.isfile(PROFILE_FILE):
+            return json.dumps({'status': False, 'error': 'profile %s does not exist' % uid})
+
+        try:
+            payload = json.loads(data)
+        except:
+            return json.dumps ({
+                'status': False,
+                'error': 'request data was not a valid JSON object'})
+
+        if not isinstance(payload, dict):
+            return json.dumps ({
+                'status': False,
+                'error': 'request data was not a valid JSON dictionary'})
+
+
+        if 'profile-name' in payload or 'profile-desc' in payload:
+            profile = None
+            try:
+                profile = json.loads(open(PROFILE_FILE).read())
+            except:
+                return json.dumps({
+                    'status': False,
+                    'error': 'could not parse profile %s.json file' % uid})
+
+            if not isinstance(profile, dict):
+                return json.dumps({
+                    'status': False,
+                    'error': 'profile %s.json does not hold a JSON object' % uid})
+
+            if 'profile-name' in payload:
+                profile['name'] = payload['profile-name']
+
+            if 'profile-desc' in payload:
+                profile['description'] = payload['profile-desc']
+
+            try:
+                open(PROFILE_FILE, 'w+').write(json.dumps(profile))
+            except:
+                return json.dumps({
+                    'status': False,
+                    'error': 'could not write profile %s.json' % uid})
+
+            # Update profiles index
+            if 'profile-name' in payload:
+                self.check_for_profile_index()
+                index = json.loads(open(self.INDEX_FILE).read())
+                if not isinstance(index, list):
+                    return json.dumps({
+                        'status': False,
+                        'error': '%s does not contain a JSON list as root element' % INDEX_FILE})
+                for item in index:
+                    if item['url'] == '%s.json' % uid:
+                        item['displayName'] = payload['profile-name']
+                self.write_and_close(self.INDEX_FILE, json.dumps(index))
+
+        if 'users' in payload or 'groups' in payload:
+            applies = None
+            try:
+                applies = json.loads(open(self.APPLIES_FILE).read())
+            except:
+                return json.dumps({
+                    'status': False,
+                    'error': 'could not parse applies.json file'})
+
+            if not isinstance(applies, dict):
+                return json.dumps({'status': False, 'error': 'applies.json does not hold a JSON object'})
+
+            if 'users' in payload:
+                users = [u.strip() for u in payload['users'].split(",")]
+                users = filter(None, users)
+                applies[uid]['users'] = users
+
+            if 'groups' in payload:
+                groups = [g.strip() for g in payload['groups'].split(",")]
+                groups = filter(None, groups)
+                applies[uid]['groups'] = groups
+
+            try:
+                open(self.APPLIES_FILE, 'w+').write(json.dumps(applies))
+            except:
+                return json.dumps({
+                    'status': False,
+                    'error': 'could not write applies.json'})
+
+        return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetChanges(self):
+        response = {}
+
+        for namespace, collector in self.collectors_by_name.items():
+            if not collector:
+                continue
+
+            changes = collector.dump_changes()
+            if not changes:
+                continue
+
+            response[namespace] = changes
+
+        return json.dumps(response)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='s')
+    def SubmitChange(self, name, change):
+        if name in self.collectors_by_name:
+            self.collectors_by_name[name].handle_change(json.loads(change))
+            return json.dumps({'status': True})
+        else:
+            return json.dumps({
+                'status': False,
+                'error': 'Namespace %s not supported or session not started' % name})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def SelectChanges(self, data):
+        changes = json.loads(data)
+
+        if self.db.config.get('port', None) is None:
+            return json.dumps({
+                'status': False, 'error': 'session was not started'})
+
+        for key in changes:
+            selection = changes[key]
+
+            if not isinstance(selection, list):
+                return json.dumps({
+                    'status': False, 'error': 'bad JSON format for %s' % key})
+
+            self.collectors_by_name[key].remember_selected(selection)
+
+        return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='s')
+    def PopularApps(self, payload, uid):
+
+        data = json.loads(payload)
+
+        PROFILE_FILE = os.path.join(
+            self.args['profiles_dir'], uid+'.json')
+
+        if not isinstance(data, list) or \
+           len(set(map(lambda x: x is unicode, data))) > 1:
+            return json.dumps({
+                'status': False,
+                'error': 'application list is not a list of strings'})
+
+        if not os.path.isfile(self.INDEX_FILE) or not os.path.isfile(PROFILE_FILE):
+            return json.dumps({
+                'status': False,
+                'error': 'there are no profiles in the database'})
+
+        profile = None
+        try:
+            profile = json.loads(open(PROFILE_FILE).read())
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'could not read profile data'})
+
+        if not isinstance(profile, dict):
+            return json.dumps({
+                'status': False,
+                'error': 'profile object %s is not a dictionary' % uid})
+
+        if not profile.get('settings', False):
+            profile['settings'] = {}
+
+        if not isinstance(profile['settings'], dict):
+            return json.dumps({
+                'status': False,
+                'error': 'settings value in %s is not a list' % uid})
+
+        if not profile['settings'].get('org.gnome.gsettings', False):
+            profile['settings']['org.gnome.gsettings'] = []
+
+        gsettings = profile['settings']['org.gnome.gsettings']
+
+        if not isinstance(gsettings, list):
+            return json.dumps({
+                'status': False,
+                'error': 'settings/org.gnome.gsettings value in %s is not a list' % uid})
+
+        existing_change = None
+        for change in gsettings:
+            if 'key' not in change:
+                continue
+
+            if change['key'] != '/org/gnome/software/popular-overrides':
+                continue
+
+            existing_change = change
+
+        if existing_change and data == []:
+            gsettings.remove(existing_change)
+        elif not existing_change:
+            existing_change = {'key': '/org/gnome/software/popular-overrides',
+                               'signature': 'as'}
+            gsettings.append(existing_change)
+
+        existing_change['value'] = data
+
+        try:
+            open(PROFILE_FILE, 'w+').write(json.dumps(profile))
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'could not write profile %s' % uid})
+
+        return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
     def ListDomains(self):
         tries = 0
         while tries < self.LIST_DOMAINS_RETRIES:
@@ -246,13 +588,19 @@ class FleetCommanderDbusService(dbus.service.Object):
             except Exception as e:
                 error = e
         logging.error(error)
-        return json.dumps({'status': False, 'error': 'Error retrieving domains'})
+        return json.dumps({
+            'status': False,
+            'error': 'Error retrieving domains'
+        })
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='sss', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='sss', out_signature='s')
     def SessionStart(self, domain_uuid, admin_host, admin_port):
-
         if self.db.config.get('port', None) is not None:
-            return json.dumps({'status': 'Session already started'})
+            return json.dumps({
+                'status': False,
+                'error': 'Session already started'
+            })
 
         self.db.sessionsettings.clear_settings()
 
@@ -269,7 +617,9 @@ class FleetCommanderDbusService(dbus.service.Object):
             new_uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(domain_uuid)
         except Exception as e:
             logging.error(e)
-            return json.dumps({'status': False, 'error': 'Error starting session'})
+            return json.dumps({
+                'status': False,
+                'error': 'Error starting session'})
 
         self.db.config['uuid'] = new_uuid
         self.db.config['port'] = port
@@ -277,17 +627,22 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.websocket_stop()
 
-        self.db.config['websocket_listen_host'] = admin_host
+        self.db.config['websocket_listen_host'] = unicode(admin_host)
+        self.db.config['websocket_listen_port'] = 8989
         self.db.config['websocket_target_host'] = 'localhost'
         self.db.config['websocket_target_port'] = port
+
         self.websocket_start()
 
-        return json.dumps({'port': 8989})
+        return json.dumps({'status': True, 'port': 8989})
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
     def SessionStop(self):
         if 'uuid' not in self.db.config or 'tunnel_pid' not in self.db.config or 'port' not in self.db.config:
-            return json.dumps({'status': False, 'error': 'There was no session started'})
+            return json.dumps({
+                'status': False,
+                'error': 'There was no session started'})
 
         domain_uuid = self.db.config['uuid']
         tunnel_pid = self.db.config['tunnel_pid']
@@ -302,13 +657,16 @@ class FleetCommanderDbusService(dbus.service.Object):
             self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
         except Exception as e:
             logging.error(e)
-            return json.dumps({'status': False, 'error': 'Error stopping session: %s' % e})
+            return json.dumps({
+                'status': False,
+                'error': 'Error stopping session: %s' % e})
 
         return json.dumps({'status': True})
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='s', out_signature='s')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
     def SessionSave(self, uid):
-        PROFILE_FILE = os.path.join(self.custom_args['profiles_dir'], uid+'.json')
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
 
         settings = {}
 
@@ -318,7 +676,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             profile = json.loads(open(PROFILE_FILE).read())
         except:
-            return json.dumps({'status': False, 'error': 'Could not parse profile %s' % uid})
+            return json.dumps({
+                'status': False,
+                'error': 'Could not parse profile %s' % uid})
 
         if not profile.get('settings', False) or \
                 not isinstance(profile['settings'], dict) or \
@@ -329,11 +689,13 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.write_and_close(PROFILE_FILE, json.dumps(profile))
 
-        del(self.current_session["uid"])
+        # TODO: Check if this is really needed
+        del(self.db.config['uid'])
 
         return json.dumps({'status': True})
 
-    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature='', out_signature='')
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='')
     def Quit(self):
         self._loop.quit()
 

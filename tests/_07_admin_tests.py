@@ -27,6 +27,9 @@ import json
 import unittest
 import shutil
 import tempfile
+import subprocess
+
+import dbus
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -38,74 +41,6 @@ from fleetcommander.database import DBManager
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
 HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
-
-
-class MockDbusClient(object):
-
-    def __init__(self):
-        self.hypervisor_config = {
-            'pubkey': 'PUBLIC_KEY',
-            'host': '',
-            'username': '',
-            'mode': 'system',
-            'needcfg': True,
-            'adminhost': '',
-        }
-        self.db = DBManager(self.database_path)
-
-    def get_public_key(self):
-        return 'PUBLIC KEY'
-
-    def get_hypervisor_config(self):
-        if 'hypervisor' in self.db.config:
-            return self.db.config['hypervisor']
-        else:
-            return self.hypervisor_config
-
-    def set_hypervisor_config(self, data):
-        errors = {}
-        # Check username
-        if not re.match(SYSTEM_USER_REGEX, data['username']):
-            errors['username'] = 'Invalid username specified'
-        # Check hostname
-        if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
-            errors['host'] = 'Invalid hostname specified'
-        # Check libvirt mode
-        if data['mode'] not in ('system', 'session'):
-            errors['mode'] = 'Invalid session type'
-        # Check admin host
-        if 'adminhost' in data and data['adminhost'] != '':
-            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
-                errors['adminhost'] = 'Invalid hostname specified'
-        if errors:
-            return {'status': False, 'errors': errors}
-        # Save hypervisor configuration
-        self.db.config['hypervisor'] = data
-        return {'status': True}
-
-    def list_domains(self):
-        return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
-
-    def session_start(self, uuid, admin_host, admin_port):
-        self.db.config['port'] = 0
-        self.db.config['uuid'] = 'someuuid'
-        self.db.config['tunnel_pid'] = 'tunnel_pid'
-        self.db.config['websockify_pid'] = 0
-        self.db.config['websocket_target_host'] = admin_host
-        return {'status': True, 'uuid': 'someuuid', 'port': 0, 'tunnel_pid': 'tunnel_pid'}
-
-    def session_stop(self):
-        if 'uuid' not in self.db.config or 'tunnel_pid' not in self.db.config or 'port' not in self.db.config:
-            return {'status': False, 'error': 'There was no session started'}
-        del(self.db.config['port'])
-        del(self.db.config['uuid'])
-        del(self.db.config['tunnel_pid'])
-        del(self.db.config['websockify_pid'])
-        return {'status': True}
-
-    def session_save(self, uid):
-        return {'status': True}
-
 
 class MockWebSocket:
 
@@ -138,23 +73,31 @@ class TestAdminWSGIRef(unittest.TestCase):
         }
 
         os.environ['FC_TEST_DIRECTORY'] = self.test_directory
+
         if 'profiles_dir' not in self.args:
             self.args['profiles_dir'] = os.path.join(self.test_directory, 'profiles')
-            os.mkdir(self.args['profiles_dir'])
+            if not os.path.exists(self.args['profiles_dir']):
+                 os.mkdir(self.args['profiles_dir'])
 
         self.websocket = MockWebSocket()
-
-        # Fleet Commander dbus client mocker
-        MockDbusClient.database_path = database_path
-
-        fleet_commander_admin.fcdbus.FleetCommanderDbusClient = MockDbusClient
 
         self.base_app = fleet_commander_admin.AdminService('__test__', self.args, self.websocket)
         self.base_app.config['TESTING'] = True
         self.app = self.base_app.test_client(stateless=not self.test_wsgiref)
 
+        # Open dbus service
+        self.dbus_service = subprocess.Popen([
+            os.path.join(
+                os.environ['TOPSRCDIR'],
+                'tests/test_fcdbus_service.py'),
+            self.test_directory,
+        ])
+
+        fleet_commander_admin.fcdbus.FleetCommanderDbusClient.DEFAULT_BUS = dbus.SessionBus
+
     def tearDown(self):
         shutil.rmtree(self.test_directory)
+        self.dbus_service.kill()
 
     def get_data_from_file(self, path):
         return open(path).read()

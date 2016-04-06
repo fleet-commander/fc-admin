@@ -30,12 +30,12 @@ export PYTHONPATH=$TOPSRCDIR/_build/sub/admin/fleetcommander
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
-# Execute fleet commander dbus service tests
-$TOPSRCDIR/tests/_05_fcdbus_tests.py
+# Execute fleet commander admin tests
+$TOPSRCDIR/tests/_07_admin_tests.py
 RET=$?
 
 kill $DBUS_SESSION_BUS_PID
 
-rm $TOPSRCDIR/_build/sub/admin/fleetcommander/constants.pyc > /dev/null 2>&1
+rm $TOPSRCDIR/_build/sub/admin/fleetcommander/constants.pyc
 
 exit $RET

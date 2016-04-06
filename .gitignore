@@ -28,6 +28,7 @@ test-driver
 tests/data/gschemas.compiled
 build-rpm.sh
 install-rpm.sh
+full-install-rpm.sh
 check-full.sh
 check.sh
 fc-admin.sublime-project

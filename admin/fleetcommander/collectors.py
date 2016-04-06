@@ -22,6 +22,7 @@
 
 import json
 
+
 class GoaCollector(object):
 
     """
@@ -31,8 +32,8 @@ class GoaCollector(object):
     def __init__(self):
         self.json = {}
 
-    def handle_change(self, request):
-        self.json = dict(request.get_json())
+    def handle_change(self, change):
+        self.json = change
 
     def get_settings(self):
         return self.json
@@ -52,12 +53,11 @@ class BaseCollector(object):
         self.db = db
         self.settings = self.db.sessionsettings
 
-    def handle_change(self, request):
+    def handle_change(self, change):
         """
         Handle a change and store it
         """
-        data = request.get_json()
-        self.settings.update_setting(self.COLLECTOR_NAME, data['key'], request.content)
+        self.settings.update_setting(self.COLLECTOR_NAME, change['key'], json.dumps(change))
 
     def dump_changes(self):
         """

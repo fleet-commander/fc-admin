@@ -24,8 +24,6 @@
 import os
 import sys
 
-import dbus
-
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
 
@@ -35,7 +33,15 @@ from fleetcommander import fcdbus
 
 class MockLibVirtController(object):
 
-    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
+    DOMAINS_LIST = [
+        {
+            'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81',
+            'name': 'fedora-unkno'
+        }
+    ]
+
+    def __init__(self, data_path, username, hostname,
+                 mode, admin_hostname, admin_port):
 
         self.data_dir = os.path.abspath(data_path)
         if not os.path.exists(self.data_dir):
@@ -48,7 +54,7 @@ class MockLibVirtController(object):
             fd.close()
 
     def list_domains(self):
-        return [{'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81', 'name': 'fedora-unkno'}]
+        return self.DOMAINS_LIST
 
     def session_start(self, uuid):
         return ('someuuid', 0, 'tunnel_pid')
@@ -63,9 +69,7 @@ fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
 
 class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
-    def __init__(self):
-        test_directory = os.environ['FC_TEST_DIRECTORY']
-
+    def __init__(self, test_directory):
         args = {
             'data_dir': test_directory,
             'state_dir': test_directory,
@@ -75,5 +79,4 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         super(TestFleetCommanderDbusService, self).__init__(args)
 
 if __name__ == '__main__':
-    svc = TestFleetCommanderDbusService()
-    svc.run(sessionbus=True)
+    TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)
