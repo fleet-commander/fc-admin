@@ -1,5 +1,5 @@
 <domain xmlns:ns0="https://wiki.gnome.org/Apps/Boxes" id="4" type="kvm" xmlns:qemu="http://libvirt.org/schemas/domain/qemu/1.0">
-  <name>fedora-unkno-fc-%(uuid)s</name>
+  <name>fc-%(name-uuid)s</name>
   <uuid>%(uuid)s</uuid>
   <title>Fedora - Fleet Commander temporary session</title>
   <metadata>

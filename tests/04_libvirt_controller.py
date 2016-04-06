@@ -134,7 +134,8 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         # Test new domain XML generation
         new_domain = ctrlr._last_started_domain
-        self.assertEqual(new_domain.XMLDesc(), libvirtmock.XML_MODIF % {'uuid': new_domain.UUIDString()})
+
+        self.assertEqual(new_domain.XMLDesc(), libvirtmock.XML_MODIF % {'name-uuid': new_domain.UUIDString()[:8], 'uuid': new_domain.UUIDString()})
 
         # Test SSH tunnel opening
         ctrlr._ssh_tunnel_prog.wait()  # Wait for process to finish
