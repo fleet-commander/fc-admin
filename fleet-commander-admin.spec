@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.7.5
+Version:        0.7.6
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -99,20 +99,24 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Thu Mar 31 2016 ogutierr <ogutierr@redhat.com> - 0.7.5-1
+* Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.6-1
+- Created workaround for libvirt bug dealing with too large qemu monitor paths
+- Updated package for 0.7.6 release
+
+* Thu Mar 31 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.5-1
 - Fixed spice reconnection problems
 - Updated package for 0.7.5 release
 
-* Tue Mar 08 2016 ogutierr <ogutierrez@redhat.com> - 0.7.4-1
+* Tue Mar 08 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.4-1
 - Update package for 0.7.4 release
 
-* Fri Feb 05 2016 ogutierr <ogutierrez@redhat.com> - 0.7.3-2
+* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.3-2
 - Removed failing tests
 
-* Fri Feb 05 2016 ogutierr - 0.7.3-1
+* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.3-1
 - Fixes in spec for Fedora release
 
-* Thu Jan 28 2016 Oliver Gurierrez <ogutierrez@redhat.org> - 0.7.2-1
+* Thu Jan 28 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.2-1
 - Fixes in spec for Fedora release
 
 * Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.org> - 0.7.1-1
