@@ -329,7 +329,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
         # Select change for profile
         resp = c.select_changes({'org.gnome.gsettings': [data['key']]})
-        print resp
         self.assertTrue(resp['status'])
 
     def test_11_popular_apps(self):
@@ -402,7 +401,6 @@ class TestDbusService(unittest.TestCase):
         # Submit a change
         change = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
         resp = c.submit_change('org.gnome.gsettings', change)
-        print resp
         self.assertTrue(resp['status'])
 
         # Select change
@@ -437,6 +435,41 @@ class TestDbusService(unittest.TestCase):
             'displayName': 'foo'
         }])
 
+    def test_15_get_profile(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Create a profile
+        resp = c.new_profile(self.DUMMY_PROFILE)
+        uid = resp['uid']
+
+        # Get profiles data
+        resp = c.get_profile(uid)
+
+        # Check profiles data
+        self.assertTrue(resp['status'])
+        self.assertEqual(resp['data'], {
+            'settings': {},
+            'uid': uid,
+            'name': 'foo',
+            'description': 'bar'
+        })
+
+    def test_16_get_profile_applies(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Create a profile
+        resp = c.new_profile(self.DUMMY_PROFILE)
+        uid = resp['uid']
+
+        # Get profiles data
+        resp = c.get_profile_applies(uid)
+
+        # Check profiles data
+        self.assertTrue(resp['status'])
+        self.assertEqual(resp['data'], {
+            'users': ['user1', 'user2', 'user3'],
+            'groups': ['group1', 'group2']
+        })
 
 if __name__ == '__main__':
     unittest.main()

@@ -91,6 +91,12 @@ class FleetCommanderDbusClient(object):
     def get_profiles(self):
         return json.loads(self.iface.GetProfiles())
 
+    def get_profile(self, uid):
+        return json.loads(self.iface.GetProfile(uid))
+
+    def get_profile_applies(self, uid):
+        return json.loads(self.iface.GetProfileApplies(uid))
+
     def new_profile(self, profiledata):
         return json.loads(self.iface.NewProfile(json.dumps(profiledata)))
 
@@ -312,6 +318,36 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({
                 'status': False,
                 'error': 'Error reading profiles data from %s' % self.INDEX_FILE
+            })
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def GetProfile(self, uid):
+        try:
+            PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
+            return json.dumps({
+                'status': True,
+                'data': json.loads(self.get_data_from_file(PROFILE_FILE))
+            })
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Error reading profile with UID %s' % uid
+            })
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def GetProfileApplies(self, uid):
+        try:
+            data = json.loads(self.get_data_from_file(self.APPLIES_FILE))
+            return json.dumps({
+                'status': True,
+                'data': data[uid]
+            })
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Error reading profile with UID %s' % uid
             })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
