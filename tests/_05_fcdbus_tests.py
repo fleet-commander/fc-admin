@@ -420,6 +420,23 @@ class TestDbusService(unittest.TestCase):
 
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
+    def test_14_get_profiles(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Create a profile
+        resp = c.new_profile(self.DUMMY_PROFILE)
+        uid = resp['uid']
+
+        # Get profiles data
+        resp = c.get_profiles()
+
+        # Check profiles data
+        self.assertTrue(resp['status'])
+        self.assertEqual(resp['data'], [{
+            'url': '%s.json' % uid,
+            'displayName': 'foo'
+        }])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -88,6 +88,9 @@ class FleetCommanderDbusClient(object):
     def set_hypervisor_config(self, data):
         return json.loads(self.iface.SetHypervisorConfig(json.dumps(data)))
 
+    def get_profiles(self):
+        return json.loads(self.iface.GetProfiles())
+
     def new_profile(self, profiledata):
         return json.loads(self.iface.NewProfile(json.dumps(profiledata)))
 
@@ -195,6 +198,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         f.write(load)
         f.close()
 
+    def get_data_from_file(self, path):
+        return open(path).read()
+
     def get_libvirt_controller(self, admin_host=None, admin_port=None):
         """
         Get a libvirtcontroller instance
@@ -292,6 +298,21 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Save hypervisor configuration
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetProfiles(self):
+        try:
+            self.check_for_profile_index()
+            return json.dumps({
+                'status': True,
+                'data': json.loads(self.get_data_from_file(self.INDEX_FILE))
+            })
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Error reading profiles data from %s' % self.INDEX_FILE
+            })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
