@@ -1,0 +1,10 @@
+{
+    "version": 0,
+
+    "tools": {
+        "fleet-commander": {
+            "label": "Fleet Commander",
+            "path": "index.html"
+        }
+    }
+}

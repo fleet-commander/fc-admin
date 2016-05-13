@@ -223,7 +223,7 @@ class AdminService(Flaskless):
     def profiles_apps(self, request, uid):
         c = fcdbus.FleetCommanderDbusClient()
         try:
-            resp = c.popular_apps(request.get_json(), uid)
+            resp = c.highlighted_apps(request.get_json(), uid)
         except Exception as e:
             logging.error(e)
             return JSONResponse({'status': 'Failed to connect to dbus service'}, 520)

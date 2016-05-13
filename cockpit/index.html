@@ -1,0 +1,270 @@
+<!doctype html>
+<html>
+  <head>
+      <title translatable="yes">Fleet Commander</title>
+      <meta charset="utf-8">
+      <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
+      <script src="../base1/jquery.js"></script>
+      <script src="../base1/cockpit.js"></script>
+
+      <script src="js/base.js"></script>
+      <script src="js/fcdbusclient.js"></script>
+      <script src="js/index.js"></script>
+  </head>
+  <body class="page">
+
+    <!-- Modal dialog for hypervisor configuration -->
+    <div id="hypervisor-config-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
+          </div>
+
+          <div class="modal-body">
+            <div id="host-group" class="form-group">
+              <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
+              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control" value="HOLA">
+            </div>
+            <div id="username-group" class="form-group">
+              <label for="username" class="control-label" translatable="yes">Username for connection</label>
+              <input id="username" name="pubkey" placeholder="enter username" type="text" class="form-control">
+            </div>
+            <div id="mode-group" class="form-group">
+              <label for="mode" class="control-label" translatable="yes">Libvirt mode</label>
+              <select id="mode" name="mode" class="form-control">
+                <option value="system" selected translatable="yes">System</option>
+                <option value="session" translatable="yes">Session</option>
+              </select>
+            </div>
+            <div id="adminhost-group" class="form-group">
+              <label for="adminhost" class="control-label"translatable="yes" >Fleet Commander admin host (Optional)</label>
+              <input id="adminhost" name="adminhost" type="hostname" class="form-control">
+            </div>
+            <div id="pubkey-group" class="form-group">
+              <label for="pubkey" class="control-label" translatable="yes">Public key</label>
+              <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
+              <p translatable="yes">Add this key to the SSH authorized_keys file in $HOME/.ssh/ for the user you want to use to connect to the hypervisor machine.</p>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="add-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Add profile</h4>
+          </div>
+
+          <div id="profile-data" class="modal-body">
+            <div id="profile-name-group" class="form-group">
+              <label for="profile-name" class="control-label" translatable="yes">Name</label>
+              <input id="profile-name" type="text" placeholder="Profile name" name="profile-name" class="form-control"/>
+            </div>
+            <div id="profile-desc-group" class="form-group">
+              <label for="profile-desc" class="control-label" translatable="yes">Description</label>
+              <input id="profile-desc" type="text" placeholder="Profile description" name="profile-desc" class="form-control"/>
+            </div>
+            <div id="profile-users-group" class="form-group">
+              <label for="users" class="control-label" translatable="yes">Users</label>
+              <input id="profile-users" name="profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
+            </div>
+            <div id="profile-groups-group" class="form-group">
+              <label for="groups" class="control-label" translatable="yes">Groups</label>
+              <input id="profile-groups" name="profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id="save-new-profile" class="btn btn-primary" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="edit-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Edit profile</h4>
+          </div>
+
+          <div id="edit-profile-data" class="modal-body">
+            <div id="edit-profile-name-group" class="form-group">
+              <label for="edit-profile-name" class="control-label" translatable="yes">Name</label>
+              <input id="edit-profile-name" type="text" placeholder="Profile name" name="edit-profile-name" class="form-control"/>
+            </div>
+            <div id="edit-profile-desc-group" class="form-group">
+              <label for="edit-profile-desc" class="edit-control-label" translatable="yes">Description</label>
+              <input id="edit-profile-desc" type="text" placeholder="Profile description" name="edit-profile-desc" class="form-control"/>
+            </div>
+            <div id="edit-profile-users-group" class="form-group">
+              <label for="edit-profile-users" class="control-label" translatable="yes">Users</label>
+              <input id="edit-profile-users" name="edit-profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
+            </div>
+            <div id="edit-profile-groups-group" class="form-group">
+              <label for="edit-profile-groups" class="control-label" translatable="yes">Groups</label>
+              <input id="edit-profile-groups" name="edit-profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
+            </div>
+            <hr>
+            <div id="edit-profile-further-group" class="form-group text-center">
+              <label translatable="yes">Edit profile settings</label>
+              <div class="">
+                <button id="show-domain-selection" class="btn btn-default" translatable="yes">Live session</button>
+                <button id="show-highlighted-apps" class="btn btn-default" translatable="yes">Highlighted apps</button>
+               </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id="save-existing-profile" class="btn btn-primary" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="del-profile-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Delete Profile Confirmation</h4>
+          </div>
+
+          <div class="modal-body" translatable="yes">Are you sure you want to delete profile "<span id="del-profile-name"></span>"?</div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id='del-profile-confirm' class="btn btn-danger" translatable="yes">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="domain-selection-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Select domain</h4>
+          </div>
+
+          <div class="modal-body">
+            <div class="spinner"></div>
+            <div id="domain-selection-list" style="max-height: 200px; overflow: auto;">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="highlighted-apps-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title" translatable="yes">Highlighted apps</h4>
+          </div>
+
+          <div class="modal-body">
+            <div id="app-name-group" class="form-group">
+              <label for="app-name" class="control-label" translatable="yes">Introduce a XDG .desktop application id</label>
+              <div class="input-group">
+                <input id="app-name" type="text" class="form-control" name="app-name" />
+                <span class="input-group-btn">
+                  <button id="add-highlighted-app" class="btn btn-primary" translatable="yes">Add application</button>
+                </span>
+              </div>
+            </div>
+
+            <ul class="list-group" id="highlighted-apps-list">
+            </ul>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id="save-highlighted-apps" class="btn btn-primary" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Message dialog modal -->
+    <div id="message-dialog-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title"></h4>
+          </div>
+
+          <div class="modal-body">
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spinner modal -->
+    <div id="spinner-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h4 class="modal-title" translatable="yes">Starting live session</h4>
+          </div>
+
+          <div class="modal-body">
+            <div class="spinner"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Main plugin body -->
+    <div class="container-fluid">
+
+      <button id="show-add-profile" class="btn btn-default" type="button" translatable="yes">Add Profile</button>
+      <button id="show-hypervisor-config" class="btn btn-default" type="button" translatable="yes">Settings</button>
+
+      <div>
+        <table class="table">
+          <thead>
+            <tr>
+              <td translatable="yes">Name</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          </thead>
+          <tbody id="profile-list">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </body>
+</html>

@@ -115,8 +115,8 @@ class FleetCommanderDbusClient(object):
     def select_changes(self, data):
         return json.loads(self.iface.SelectChanges(json.dumps(data)))
 
-    def popular_apps(self, data, uid):
-        return json.loads(self.iface.PopularApps(json.dumps(data), uid))
+    def highlighted_apps(self, data, uid):
+        return json.loads(self.iface.HighlightedApps(json.dumps(data), uid))
 
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
@@ -556,7 +556,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
-    def PopularApps(self, payload, uid):
+    def HighlightedApps(self, payload, uid):
 
         data = json.loads(payload)
 

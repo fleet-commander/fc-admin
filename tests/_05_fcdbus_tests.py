@@ -331,7 +331,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.select_changes({'org.gnome.gsettings': [data['key']]})
         self.assertTrue(resp['status'])
 
-    def test_11_popular_apps(self):
+    def test_11_highlighted_apps(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -341,24 +341,24 @@ class TestDbusService(unittest.TestCase):
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
 
 #        # Add GNOME Software overrides
-        favourites = ['foo.desktop', 'bar.desktop', 'baz.desktop']
-        resp = c.popular_apps(favourites, uid)
+        highlightedapps = ['foo.desktop', 'bar.desktop', 'baz.desktop']
+        resp = c.highlighted_apps(highlightedapps, uid)
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 1)
         self.assertEqual(profile['settings']['org.gnome.gsettings'][0]['key'], '/org/gnome/software/popular-overrides')
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]['value'], favourites)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]['value'], highlightedapps)
 
         # Modify overrides
-        favourites = ['foo.desktop']
-        resp = c.popular_apps(favourites, uid)
+        highlightedapps = ['foo.desktop']
+        resp = c.highlighted_apps(highlightedapps, uid)
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], favourites)
+        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], highlightedapps)
 
         # Empty overrides
-        favourites = []
-        resp = c.popular_apps(favourites, uid)
+        highlightedapps = []
+        resp = c.highlighted_apps(highlightedapps, uid)
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
