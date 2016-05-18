@@ -137,4 +137,45 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
+  this.SessionStart = safe_dbus(function(uuid, host, port, cb, errcb) {
+    self._proxy.SessionStart(uuid, host, port).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  this.SessionStop = safe_dbus(function(cb, errcb) {
+    self._proxy.SessionStop().done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  this.SessionSave = safe_dbus(function(uid, cb, errcb) {
+    self._proxy.SessionSave(uid).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  // Changes methods
+  this.GetChanges = safe_dbus(function(cb, errcb) {
+    self._proxy.GetChanges().done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  this.SelectChanges = safe_dbus(function(data, cb, errcb) {
+    self._proxy.SelectChanges(JSON.stringify(data)).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
 }

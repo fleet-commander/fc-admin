@@ -1,0 +1,122 @@
+<html>
+  <head>
+    <title translatable="yes">Fleet Commander - Live session</title>
+    <meta charset="utf-8">
+    <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
+    <script src="../base1/jquery.js"></script>
+    <script src="../base1/cockpit.js"></script>
+
+    <!-- spice-html5 -->
+    <script src="js/spice-html5/spicearraybuffer.js"></script>
+    <script src="js/spice-html5/enums.js"></script>
+    <script src="js/spice-html5/atKeynames.js"></script>
+    <script src="js/spice-html5/utils.js"></script>
+    <script src="js/spice-html5/png.js"></script>
+    <script src="js/spice-html5/lz.js"></script>
+    <script src="js/spice-html5/quic.js"></script>
+    <script src="js/spice-html5/bitmap.js"></script>
+    <script src="js/spice-html5/spicedataview.js"></script>
+    <script src="js/spice-html5/spicetype.js"></script>
+    <script src="js/spice-html5/spicemsg.js"></script>
+    <script src="js/spice-html5/wire.js"></script>
+    <script src="js/spice-html5/spiceconn.js"></script>
+    <script src="js/spice-html5/display.js"></script>
+    <script src="js/spice-html5/main.js"></script>
+    <script src="js/spice-html5/inputs.js"></script>
+    <script src="js/spice-html5/webm.js"></script>
+    <script src="js/spice-html5/playback.js"></script>
+    <script src="js/spice-html5/simulatecursor.js"></script>
+    <script src="js/spice-html5/cursor.js"></script>
+    <script src="js/spice-html5/thirdparty/jsbn.js"></script>
+    <script src="js/spice-html5/thirdparty/rsa.js"></script>
+    <script src="js/spice-html5/thirdparty/prng4.js"></script>
+    <script src="js/spice-html5/thirdparty/rng.js"></script>
+    <script src="js/spice-html5/thirdparty/sha1.js"></script>
+    <script src="js/spice-html5/ticket.js"></script>
+    <script src="js/spice-html5/resize.js"></script>
+    <script src="js/spice-html5/filexfer.js"></script>
+
+    <link href="css/main.css" type="text/css" rel="stylesheet">
+    <script src="js/spice_debug_bypass.js"></script>
+    <script src="js/base.js"></script>
+    <script src="js/fcdbusclient.js"></script>
+    <script src="js/fcspiceclient.js"></script>
+    <script src="js/livesession.js"></script>
+  </head>
+  <body class="page">
+
+    <div id="event-logs" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button id="close-review" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" translatable="yes">Profile Changes</h4>
+          </div>
+          <div class="modal-body">
+            <form id="selected-changes-form">
+              <div class="form-group">
+                <ul id="gsettings-event-list">
+                </ul>
+                <ul id="libreoffice-event-list">
+                </ul>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button id="back-review" onclick="listenChanges()" data-dismiss="modal" translatable="yes">Back</button>
+            <button id="deploy-profile" class="btn-default" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="message-dialog-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title"></h4>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="spinner-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" translatable="yes">Saving settings</h4>
+          </div>
+          <div class="modal-body">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <span translatable="yes">Virtual Session</span>
+          <span class="pull-right">
+            <button id="close-live-session" class="btn" translatable="yes">Close session</button>
+            <button id="review-changes" class="btn btn-primary" translatable="yes">Review and submit</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <div id="spice-area">
+              <div id="spice-screen" class="spice-screen"></div>
+          </div>
+          <div id="message-div" class="spice-message"></div>
+          <div id="debug-div">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

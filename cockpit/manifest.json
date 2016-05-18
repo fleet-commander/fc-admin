@@ -6,5 +6,7 @@
             "label": "Fleet Commander",
             "path": "index.html"
         }
-    }
+    },
+
+    "content-security-policy": "default-src 'self'; media-src 'self' blob:; img-src 'self' data:;"
 }
