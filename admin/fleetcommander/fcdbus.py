@@ -32,7 +32,9 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 
-import gobject
+import gi
+gi.require_version('Soup', '2.4')
+from gi.repository import GObject, Soup
 
 import libvirtcontroller
 from database import DBManager
@@ -74,7 +76,6 @@ class FleetCommanderDbusClient(object):
             except:
                 pass
         raise Exception('Timed out trying to connect to fleet commander dbus service')
-
 
     def check_needs_configuration(self):
         return self.iface.CheckNeedsConfiguration()
@@ -121,7 +122,7 @@ class FleetCommanderDbusClient(object):
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
-    def session_start(self, domain_uuid, admin_host, admin_port):
+    def session_start(self, domain_uuid, admin_host):
         return json.loads(
             self.iface.SessionStart(domain_uuid, admin_host, admin_port))
 
@@ -181,8 +182,67 @@ class FleetCommanderDbusService(dbus.service.Object):
             bus = dbus.SessionBus()
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, bus)
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
-        self._loop = gobject.MainLoop()
+        self._loop = GObject.MainLoop()
+
+
+
+        # Prepare changes listener
+        self.changeslistener_port = self.get_free_port()
+        self.changeslistener = Soup.Server()
+        self.changeslistener.listen_all(
+            self.changeslistener_port, Soup.ServerListenOptions.IPV4_ONLY)
+        self.changeslistener.add_handler(
+            '/changes/submit/', self.changes_listener_callback)
+
+        # Enter main loop
         self._loop.run()
+
+    def changes_listener_callback(self, server, message, path, query, client,
+                                  **kwargs):
+
+        logging.debug('[%s] Request at %s' % (message.method, path))
+        # Get changes name
+        pathsplit = path[1:].split('/')
+        if len(path) >= 3:
+            name = pathsplit[2]
+            logging.debug('Changes submitted for %s' % name)
+            # Get data in message
+            try:
+                logging.debug('Data received: %s' % message.request_body.data)
+                if name in self.collectors_by_name:
+                    self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
+                    response = {'status': 'ok'}
+                    status_code = Soup.Status.OK
+                else:
+                    logging.error('Unknown settings name: %s' % name)
+                    response = {'status': 'unknown settings name'}
+                    status_code = 520
+            except Exception, e:
+                logging.error('Error saving changes: %s' % e)
+                response = {'status': 'error saving changes'}
+                status_code = 520
+        else:
+            logging.error('No settings key name specified')
+            response = {'status': 'error no name'}
+            status_code = 520
+
+        message.set_status(status_code)
+        message.set_response(
+            'application/json',
+            Soup.MemoryUse(Soup.MemoryUse.COPY),
+            json.dumps(response))
+
+    def get_free_port(self):
+        """
+        Get a free random local port
+        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('', 0))
+        addr = s.getsockname()
+        local_port = addr[1]
+        s.close()
+        return local_port
+
 
     def check_for_profile_index(self):
         self.test_and_create_file(self.INDEX_FILE, [])
@@ -193,7 +253,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     def test_and_create_file(self, filename, content):
         if os.path.isfile(filename):
             return
-
         try:
             open(filename, 'w+').write(json.dumps(content))
         except OSError:
@@ -651,8 +710,8 @@ class FleetCommanderDbusService(dbus.service.Object):
         })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='sss', out_signature='s')
-    def SessionStart(self, domain_uuid, admin_host, admin_port):
+                         in_signature='ss', out_signature='s')
+    def SessionStart(self, domain_uuid, admin_host):
         if self.db.config.get('port', None) is not None:
             return json.dumps({
                 'status': False,
@@ -663,6 +722,8 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         hypervisor = self.get_hypervisor_config()
 
+        # By default the admin port will be the one we use to listen changes
+        admin_port = self.changeslistener_port
         forcedadminhost = hypervisor.get('adminhost', None)
         if forcedadminhost:
             forcedadminhostdata = forcedadminhost.split(':')

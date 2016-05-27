@@ -29,6 +29,7 @@ import subprocess
 import time
 import unittest
 import json
+import urllib2
 
 import dbus
 
@@ -470,6 +471,36 @@ class TestDbusService(unittest.TestCase):
             'users': ['user1', 'user2', 'user3'],
             'groups': ['group1', 'group2']
         })
+
+    def test_17_changes_listener(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Configure hypervisor
+        self.configure_hypervisor(c)
+        # Start a session
+        c.session_start('uuid', 'host', '0')
+        # Check for empty changes
+        resp = c.get_changes()
+        self.assertEqual(resp, {})
+
+        # Submit changes via changes listener
+        data = {
+            'key': '/foo/bar',
+            'schema': 'foo',
+            'value': True,
+            'signature': 'b'
+        }
+        jsondata = json.dumps(data)
+        req = urllib2.Request('http://localhost:8009/changes/submit/org.gnome.gsettings', jsondata, {'Content-Type': 'application/json', 'Content-Length': len(jsondata)})
+        f = urllib2.urlopen(req)
+        response = f.read()
+        f.close()
+        self.assertEqual(response, json.dumps({'status': 'ok'}))
+
+        # Check submitted changes
+        resp = c.get_changes()
+        self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
+
 
 if __name__ == '__main__':
     unittest.main()
