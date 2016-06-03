@@ -137,8 +137,8 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
-  this.SessionStart = safe_dbus(function(uuid, host, port, cb, errcb) {
-    self._proxy.SessionStart(uuid, host, port).done(
+  this.SessionStart = safe_dbus(function(uuid, host, cb, errcb) {
+    self._proxy.SessionStart(uuid, host).done(
       function(resp) {
         cb(JSON.parse(resp));
       }

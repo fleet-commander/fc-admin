@@ -483,6 +483,9 @@ class TestDbusService(unittest.TestCase):
         resp = c.get_changes()
         self.assertEqual(resp, {})
 
+        # Obtain change listener port
+        port = c.get_change_listener_port()
+
         # Submit changes via changes listener
         data = {
             'key': '/foo/bar',
@@ -491,7 +494,7 @@ class TestDbusService(unittest.TestCase):
             'signature': 'b'
         }
         jsondata = json.dumps(data)
-        req = urllib2.Request('http://localhost:8009/changes/submit/org.gnome.gsettings', jsondata, {'Content-Type': 'application/json', 'Content-Length': len(jsondata)})
+        req = urllib2.Request('http://localhost:%s/changes/submit/org.gnome.gsettings' % port, jsondata, {'Content-Type': 'application/json', 'Content-Length': len(jsondata)})
         f = urllib2.urlopen(req)
         response = f.read()
         f.close()

@@ -32,8 +32,7 @@ function startLiveSession() {
   stopLiveSession(function(){
     var domain = sessionStorage.getItem("fc.session.domain")
     var admin_host = location.hostname
-    var admin_port = location.port || 80
-    fc.SessionStart(domain, admin_host, admin_port, function(resp){
+    fc.SessionStart(domain, admin_host,function(resp){
       if (resp.status) {
         fcsc = new FleetCommanderSpiceClient(admin_host, resp.port, stopLiveSession);
         listenForChanges();
@@ -61,15 +60,14 @@ function listenForChanges() {
 
 function readChanges() {
   fc.GetChanges(function(resp){
-    if(resp.status) {
-      $("#gsettings-event-list").html("");
-      $("#libreoffice-event-list").html("");
+    console.log('READ CHANGES:',resp)
+    $('#gsettings-event-list').html('');
+    $('#libreoffice-event-list').html('');
 
-      if ("org.libreoffice.registry" in resp.data)
-        populateChanges("#libreoffice-event-list", resp.data["org.libreoffice.registry"]);
-      if ("org.gnome.gsettings" in resp.data)
-        populateChanges("#gsettings-event-list", resp.data["org.gnome.gsettings"]);
-    }
+    if ('org.libreoffice.registry' in resp)
+      populateChanges('#libreoffice-event-list', resp['org.libreoffice.registry']);
+    if ('org.gnome.gsettings' in resp)
+      populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
   });
 }
 

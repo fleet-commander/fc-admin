@@ -27,6 +27,7 @@ import subprocess
 import re
 import uuid
 import time
+import socket
 
 import dbus
 import dbus.service
@@ -122,15 +123,19 @@ class FleetCommanderDbusClient(object):
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
-    def session_start(self, domain_uuid, admin_host):
+    def session_start(self, domain_uuid, admin_host, admin_port):
+        # Admin port is ignored
         return json.loads(
-            self.iface.SessionStart(domain_uuid, admin_host, admin_port))
+            self.iface.SessionStart(domain_uuid, admin_host))
 
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
 
     def session_save(self, uid):
         return json.loads(self.iface.SessionSave(uid))
+
+    def get_change_listener_port(self):
+        return self.iface.GetChangeListenerPort()
 
     def quit(self):
         return self.iface.Quit()
@@ -184,8 +189,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
         self._loop = GObject.MainLoop()
 
-
-
         # Prepare changes listener
         self.changeslistener_port = self.get_free_port()
         self.changeslistener = Soup.Server()
@@ -200,19 +203,20 @@ class FleetCommanderDbusService(dbus.service.Object):
     def changes_listener_callback(self, server, message, path, query, client,
                                   **kwargs):
 
-        logging.debug('[%s] Request at %s' % (message.method, path))
+        logging.error('[%s] Request at %s' % (message.method, path))
         # Get changes name
         pathsplit = path[1:].split('/')
         if len(path) >= 3:
             name = pathsplit[2]
-            logging.debug('Changes submitted for %s' % name)
+            logging.error('Changes submitted for %s' % name)
             # Get data in message
             try:
-                logging.debug('Data received: %s' % message.request_body.data)
+                logging.error('Data received: %s' % message.request_body.data)
                 if name in self.collectors_by_name:
                     self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
                     response = {'status': 'ok'}
                     status_code = Soup.Status.OK
+                    logging.error('ALL IS OK')
                 else:
                     logging.error('Unknown settings name: %s' % name)
                     response = {'status': 'unknown settings name'}
@@ -811,6 +815,11 @@ class FleetCommanderDbusService(dbus.service.Object):
         del(self.db.config['uid'])
 
         return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='i')
+    def GetChangeListenerPort(self):
+        return self.changeslistener_port
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='')
