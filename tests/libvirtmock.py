@@ -109,11 +109,22 @@ class LibvirtDomainMocker(object):
     Class for mocking libvirt domain
     """
     def __init__(self, xmldata):
-        self.xmldata = xmldata
         root = ET.fromstring(xmldata)
+        devs = root.find('devices')
+        for elem in devs.findall('graphics'):
+            devs.remove(elem)
+        graphics = ET.SubElement(devs, 'graphics')
+        graphics.set('type', 'spice')
+        graphics.set('port', '5900')
+        graphics.set('autoport', 'yes')
+        graphics.set('listen', '127.0.0.1')
+        listen = ET.SubElement(graphics, 'listen')
+        listen.set('type', 'address')
+        listen.set('address', '127.0.0.1')
         self.domain_name = root.find('name').text
         self.domain_title = root.find('title').text
         self.domain_uuid = root.find('uuid').text
+        self.xmldata = ET.tostring(root)
         self.active = True
         self.transient = False
 

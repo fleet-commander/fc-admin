@@ -248,11 +248,12 @@ class LibVirtController(object):
             mac = elem.find('mac')
             if mac is not None:
                 elem.remove(mac)
-        # Remove image compression tag
+        # Remove all graphics adapters and create our own
         for elem in devs.findall('graphics'):
-            image = elem.find('image')
-            if image is not None:
-                elem.remove(image)
+            devs.remove(elem)
+        graphics = ET.SubElement(devs, 'graphics')
+        graphics.set('type', 'spice')
+        graphics.set('autoport', 'yes')
         channel = ET.SubElement(devs, 'channel')
         channel.set('type', 'pty')
         target = ET.SubElement(channel, 'target')
@@ -374,4 +375,3 @@ class LibVirtController(object):
 
         # Undefine domain
         self._undefine_domain(self._last_stopped_domain)
-

@@ -135,7 +135,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         # Test new domain XML generation
         new_domain = ctrlr._last_started_domain
 
-        self.assertEqual(new_domain.XMLDesc(), libvirtmock.XML_MODIF % {'name-uuid': new_domain.UUIDString()[:8], 'uuid': new_domain.UUIDString()})
+        self.assertEqual(new_domain.XMLDesc(), libvirtmock.XML_MODIF.strip() % {'name-uuid': new_domain.UUIDString()[:8], 'uuid': new_domain.UUIDString()})
 
         # Test SSH tunnel opening
         ctrlr._ssh_tunnel_prog.wait()  # Wait for process to finish
@@ -149,11 +149,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             'port': port,
         })
 
-    def test_03_start_no_spice_domain(self):
-        ctrlr = self.get_controller(self.config)
-        self.assertRaises(libvirtcontroller.LibVirtControllerException, ctrlr.session_start, libvirtmock.TEST_UUID_NO_SPICE)
-
-    def test_04_start_stop(self):
+    def test_03_start_stop(self):
         ctrlr = self.get_controller(self.config)
         uuid, port, pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
         ctrlr._prepare_remote_env_prog.wait()  # Wait for process to finish

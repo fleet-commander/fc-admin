@@ -1,4 +1,4 @@
-<domain xmlns:ns0="https://wiki.gnome.org/Apps/Boxes" id="4" type="kvm" xmlns:qemu="http://libvirt.org/schemas/domain/qemu/1.0">
+<domain xmlns:ns0="https://wiki.gnome.org/Apps/Boxes" xmlns:ns1="http://libvirt.org/schemas/domain/qemu/1.0" id="4" type="kvm">
   <name>fc-%(name-uuid)s</name>
   <uuid>%(uuid)s</uuid>
   <title>Fedora - Fleet Commander temporary session</title>
@@ -126,9 +126,6 @@
     </input>
     <input bus="ps2" type="mouse" />
     <input bus="ps2" type="keyboard" />
-    <graphics autoport="yes" listen="127.0.0.1" port="5900" type="spice">
-      <listen address="127.0.0.1" type="address" />
-      </graphics>
     <sound model="ac97">
       <alias name="sound0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci" />
@@ -154,5 +151,5 @@
       <alias name="balloon0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci" />
     </memballoon>
-  <channel type="pty"><target name="fleet-commander_localhost-8008" type="virtio" /></channel></devices>
-<qemu:commandline><qemu:arg value="-snapshot" /></qemu:commandline></domain>
+  <channel type="pty"><target name="fleet-commander_localhost-8008" type="virtio" /></channel><graphics autoport="yes" listen="127.0.0.1" port="5900" type="spice"><listen address="127.0.0.1" type="address" /></graphics></devices>
+<ns1:commandline><ns1:arg value="-snapshot" /></ns1:commandline></domain>
