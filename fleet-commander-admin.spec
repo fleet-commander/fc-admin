@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.7.6
+Version:        0.7.7
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -99,6 +99,9 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Thu Jun 30 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.7-1
+- Bugfix for spice port detection on VMs with autoport disabled
+
 * Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.6-1
 - Created workaround for libvirt bug dealing with too large qemu monitor paths
 - Updated package for 0.7.6 release
