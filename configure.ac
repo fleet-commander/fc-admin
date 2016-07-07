@@ -1,5 +1,5 @@
-AC_INIT(fleet-commander-admin, 0.7.6, aruiz@redhat.com)
-AC_COPYRIGHT([Copyright 2014,2015 Red Hat, Inc.])
+AC_INIT(fleet-commander-admin, 0.8.0, aruiz@redhat.com)
+AC_COPYRIGHT([Copyright 2014,2015,2016 Red Hat, Inc.])
 
 AC_PREREQ(2.64)
 AM_INIT_AUTOMAKE([no-dist-gzip dist-xz])
@@ -53,9 +53,8 @@ adminstatedir='${localstatedir}'/lib/fleet-commander-admin
 profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
-fcdatadir='${datarootdir}'/fleet-commander-admin/appdata
-fcdatastaticdir='${datarootdir}'/fleet-commander-admin/appdata/static
-fcdatatemplatesdir='${datarootdir}'/fleet-commander-admin/appdata/templates
+fcadmindir='${datarootdir}'/fleet-commander-admin
+fccockpitdir='${datarootdir}'/fleet-commander-admin/cockpit
 fcpythondir='${datarootdir}'/fleet-commander-admin/python
 fcconfigfile='${sysconfdir}'/xdg/fleet-commander-admin.conf
 
@@ -65,9 +64,8 @@ AC_SUBST(adminstatedir)
 AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
-AC_SUBST(fcdatadir)
-AC_SUBST(fcdatastaticdir)
-AC_SUBST(fcdatatemplatesdir)
+AC_SUBST(fcadmindir)
+AC_SUBST(fccockpitdir)
 AC_SUBST(fcpythondir)
 AC_SUBST(fcconfigfile)
 
@@ -77,9 +75,8 @@ AS_AC_EXPAND(ADMINSTATEDIR, "$adminstatedir")
 AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
-AS_AC_EXPAND(FCDATADIR, "$fcdatadir")
-AS_AC_EXPAND(FCDATASTATICDIR, "$fcdatastaticdir")
-AS_AC_EXPAND(FCDATATEMPLATESDIR, "$fcdatatemplatesdir")
+AS_AC_EXPAND(FCADMINDIR, "$fcadmindir")
+AS_AC_EXPAND(FCCOCKPITDIR, "$fccockpitdir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
 AS_AC_EXPAND(FCCONFIGFILE, "$fcconfigfile")
 
@@ -94,8 +91,6 @@ admin/Makefile
 admin/fleetcommander/constants.py
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-standalone
 data/fleet-commander-dbus.service
 data/org.freedesktop.FleetCommander.service
-data/fleet-commander-apache.conf
 ])

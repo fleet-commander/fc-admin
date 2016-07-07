@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.7.6
+Version:        0.8.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -79,10 +79,10 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %files
 %license
 %dir %{_datadir}/%{name}
-%dir %{_datadir}/%{name}/appdata
+%dir %{_datadir}/%{name}/cockpit
 %dir %{_datadir}/%{name}/python
 %dir %{_datadir}/%{name}/python/fleetcommander
-%{_datadir}/%{name}/appdata
+%{_datadir}/%{name}/cockpit
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/%{name}.conf
@@ -90,15 +90,16 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_unitdir}/fleet-commander-dbus.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 %attr(-, fleet-commander-admin, -) %{_localstatedir}/lib/%{name}
-%attr(755, -, -) %{_prefix}/bin/fleet-commander-standalone
-%config(noreplace) %{_sysconfdir}/xdg/fleet-commander-apache.conf
-%attr(755, -, -) %{_libexecdir}/admin.wsgi
 
 %files -n fleet-commander-logger
 %attr(755, root, root) %{_libexecdir}/fleet_commander_logger.js
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Thu Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.8.0-1
+- Fleet Commander admin migrated to Cockpit plugin
+- Updated package for 0.8.0 release
+
 * Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.6-1
 - Created workaround for libvirt bug dealing with too large qemu monitor paths
 - Updated package for 0.7.6 release
