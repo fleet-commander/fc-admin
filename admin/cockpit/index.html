@@ -19,7 +19,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
           </div>
 
@@ -51,7 +51,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
@@ -62,7 +62,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Add profile</h4>
           </div>
 
@@ -86,7 +86,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id="save-new-profile" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
@@ -97,7 +97,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Edit profile</h4>
           </div>
 
@@ -124,13 +124,14 @@
               <div class="">
                 <button id="show-domain-selection" class="btn btn-default" translatable="yes">Live session</button>
                 <button id="show-highlighted-apps" class="btn btn-default" translatable="yes">Highlighted apps</button>
+                <button id="show-goa-accounts" class="btn btn-default" translatable="yes">GNOME Online accounts</button>
                </div>
             </div>
 
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id="save-existing-profile" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
@@ -141,14 +142,14 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Delete Profile Confirmation</h4>
           </div>
 
           <div class="modal-body" translatable="yes">Are you sure you want to delete profile "<span id="del-profile-name"></span>"?</div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id='del-profile-confirm' class="btn btn-danger" translatable="yes">Delete</button>
           </div>
         </div>
@@ -159,7 +160,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Select domain</h4>
           </div>
 
@@ -170,7 +171,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
           </div>
         </div>
       </div>
@@ -180,7 +181,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
             <h4 class="modal-title" translatable="yes">Highlighted apps</h4>
           </div>
 
@@ -207,6 +208,67 @@
       </div>
     </div>
 
+    <div id="goa-accounts-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title" translatable="yes">GNOME Online Accounts</h4>
+          </div>
+
+          <div class="modal-body">
+
+            <div id="app-name-group" class="form-group">
+              <button id="show-goa-account-edit" class="btn btn-primary" translatable="yes">Add account</button>
+            </div>
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <td translatable="yes">Identifier</td>
+                  <td translatable="yes">Provider</td>
+                  <td></td>
+                </tr>
+              </thead>
+              <tbody id="goa-accounts-list">
+              </tbody>
+            </table>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="goa-account-edit-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title" translatable="yes">GNOME Online account</h4>
+          </div>
+
+          <div class="modal-body">
+            <div id="app-name-group" class="form-group">
+              <div class="input-group">
+                <select id="goa-provider" name="goa-provider"></select>
+              </div>
+
+              <div id="goa-services" class="input-group"></div>
+
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Back</button>
+            <button id="save-goa-account" class="btn btn-primary" translatable="yes">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- Message dialog modal -->
     <div id="message-dialog-modal" class="modal fade">
@@ -220,6 +282,7 @@
           </div>
 
           <div class="modal-footer">
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
           </div>
         </div>
       </div>
@@ -245,8 +308,8 @@
     <!-- Main plugin body -->
     <div class="container-fluid">
 
-      <button id="show-add-profile" class="btn btn-default" type="button" translatable="yes">Add Profile</button>
-      <button id="show-hypervisor-config" class="btn btn-default" type="button" translatable="yes">Settings</button>
+      <button id="show-add-profile" class="btn btn-default" translatable="yes">Add Profile</button>
+      <button id="show-hypervisor-config" class="btn btn-default" translatable="yes">Settings</button>
 
       <div>
         <table class="table">

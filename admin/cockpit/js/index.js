@@ -381,6 +381,129 @@ function showDomainSelection() {
 
 
 /*******************************************************************************
+ * GNOME Online Accounts
+ ******************************************************************************/
+
+TEST_PROVIDERS = {"windows_live": {"services": {"mail": {"enabled": true, "name": "Mail"}, "documents": {"enabled": true, "name": "Documents"}}, "name": "Windows Live"}, "google": {"services": {"files": {"enabled": true, "name": "Files"}, "documents": {"enabled": true, "name": "Documents"}, "contacts": {"enabled": true, "name": "Contacts"}, "photos": {"enabled": true, "name": "Photos"}, "chat": {"enabled": true, "name": "Chat"}, "printers": {"enabled": true, "name": "Printers"}, "mail": {"enabled": true, "name": "Mail"}, "calendar": {"enabled": true, "name": "Calendar"}}, "name": "Google"}, "imap_smtp": {"services": {"": {"enabled": true, "name": ""}}, "name": "Imap Smtp"}, "exchange": {"services": {"mail": {"enabled": true, "name": "Mail"}, "calendar": {"enabled": true, "name": "Calendar"}, "contacts": {"enabled": true, "name": "Contacts"}}, "name": "Exchange"}, "telepathy/jabber": {"services": {"chat": {"enabled": true, "name": "Chat"}}, "name": "Telepathy/Jabber"}, "kerberos": {"services": {"ticketing": {"enabled": true, "name": "Ticketing"}}, "name": "Kerberos"}, "owncloud": {"services": {"files": {"enabled": true, "name": "Files"}, "calendar": {"enabled": true, "name": "Calendar"}, "documents": {"enabled": true, "name": "Documents"}, "contacts": {"enabled": true, "name": "Contacts"}}, "name": "Owncloud"}, "pocket": {"services": {"readlater": {"enabled": true, "name": "Readlater"}}, "name": "Pocket"}, "foursquare": {"services": {"maps": {"enabled": true, "name": "Maps"}}, "name": "Foursquare"}, "facebook": {"services": {"photos": {"enabled": true, "name": "Photos"}, "maps": {"enabled": true, "name": "Maps"}}, "name": "Facebook"}, "lastfm": {"services": {"music": {"enabled": true, "name": "Music"}}, "name": "Lastfm"}, "flickr": {"services": {"photos": {"enabled": true, "name": "Photos"}}, "name": "Flickr"}}
+
+TEST_ACCOUNT = {
+  id: 'account_fc_149473733_0',
+  provider: 'google',
+  services: {
+    mail: true,
+    files: true,
+    printers: true
+  }
+}
+
+TEST_ACCOUNTS = [ TEST_ACCOUNT ]
+
+function showGOAAccounts() {
+  // Populate GOA accounts list
+  populateGOAAccounts();
+  $('#edit-profile-modal').modal('hide');
+  $('#goa-accounts-modal').modal('show');
+}
+
+function populateGOAAccounts() {
+  console.log('TODO: Get GOA accounts')
+  data = TEST_ACCOUNTS
+  $('#goa-accounts-list').html('')
+  $(data).each(function(){
+    addGOAAccountItem(this);
+  })
+}
+
+function addGOAAccountItem(val) {
+  var tr = $('<tr></tr>');
+  $('<td></td>', { text: val.id }).appendTo(tr);
+  $('<td></td>', { text: val.provider }).appendTo(tr);
+
+  var actions_col = $('<td></td>');
+  actions_col.appendTo(tr);
+
+  var actions_container = $('<span></span>', { class: 'pull-right' });
+  actions_container.appendTo(actions_col)
+
+  $('<button></button>', {"class": "btn btn-default", text: _('Edit')})
+    .click(function () { showGOAAccountEdit(val.id); })
+    .appendTo(actions_container);
+
+  $('<button></button>', {"class": "btn btn-danger", text: _('Delete')})
+    .click(function () { removeGOAAccount (val.id); })
+    .appendTo(actions_container);
+
+  tr.appendTo('#goa-accounts-list');
+}
+
+function showGOAAccountEdit(account_id) {
+  combo = $('#goa-provider');
+  combo.html('');
+  console.log('TODO: Get providers data')
+  providers = TEST_PROVIDERS
+  $.each(providers, function(key, element) {
+      combo.append('<option value="' + key + '">' + element.name + '</option>')
+  });
+
+  if (typeof(account_id) == 'string') {
+    console.log('TODO: Get account data')
+    account = TEST_ACCOUNT
+    combo.val(account.provider);
+    updateProviderServices();
+    // Set selected services
+    $('#goa-services input[type=checkbox]').each(function(){
+      service = $(this).attr('data-service')
+      $(this).prop('checked', account.services[service] == true);
+    })
+  } else {
+    updateProviderServices();
+  }
+  $('#goa-accounts-modal').modal('hide');
+  $('#goa-account-edit-modal').modal('show');
+}
+
+function removeGOAAccount() {
+  alert('TODO: Remove GOA Account')
+}
+
+function updateProviderServices() {
+  provider = $('#goa-provider').val();
+  services = TEST_PROVIDERS[provider].services;
+  serviceblock = $('#goa-services');
+  serviceblock.html('');
+  $.each(services, function(key, element) {
+    if (services[key].enabled) {
+      service = '<div class="checkbox"><label>' +
+        '<input type="checkbox" ' +
+          'id="goa-service' + key + '" ' +
+          'name="goa-service-' + key + '" ' +
+          'data-service="' + key + '" /> ' +
+        '<span>' + services[key].name + '</span></label></div>';
+      serviceblock.append(service);
+    }
+  });
+}
+
+function saveGOAAccount() {
+  data = getProviderServicesData();
+  console.log(data)
+  // TODO: Save account
+  // TODO: If already have an account of this provider, show warning?
+  $('#goa-account-edit-modal').modal('hide');
+}
+
+function getProviderServicesData() {
+  provider = $('#goa-provider').val()
+  services = {}
+  $('#goa-services input[type=checkbox]').each(function(elem){
+    service = $(this).attr('data-service').split('-')[2]
+    enabled = $(this).is(':checked')
+    services[service] = enabled
+  })
+  return { provider: provider, services: services }
+}
+
+/*******************************************************************************
  * Initialization
  ******************************************************************************/
 $(document).ready (function () {
@@ -394,8 +517,16 @@ $(document).ready (function () {
   $('#add-highlighted-app').click(addHighlightedAppFromEntry);
   $('#save-highlighted-apps').click(saveHighlightedApps);
   $('#show-domain-selection').click(showDomainSelection);
+  $('#show-goa-accounts').click(showGOAAccounts);
+  $('#show-goa-account-edit').click(showGOAAccountEdit);
+  $('#goa-provider').change(updateProviderServices);
+  $('#save-goa-account').click(saveGOAAccount);
 
-  // Set placeholder for admin port in hypervisor configuration dialog
+  $('#goa-account-edit-modal').on('hide.bs.modal', function () {
+    showGOAAccounts()
+  });
+
+    // Set placeholder for admin port in hypervisor configuration dialog
   var adminhost = location.hostname;
   var adminport = location.port || 80
   $('#adminhost').attr('placeholder', adminhost + ':' + adminport);
