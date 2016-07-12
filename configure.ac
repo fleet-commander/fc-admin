@@ -8,9 +8,21 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PATH_PROG([RUNUSER], [runuser])
+AC_PATH_PROG([SSH], [ssh])
+AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
+AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
 
 if test x$RUNUSER = x ; then
   AC_MSG_ERROR([Could not find runuser])
+fi
+if test x$SSH = x ; then
+  AC_MSG_ERROR([Could not find ssh])
+fi
+if test x$SSHKEYGEN = x ; then
+  AC_MSG_ERROR([Could not find ssh-keygen])
+fi
+if test x$SSHKEYSCAN = x ; then
+  AC_MSG_ERROR([Could not find ssh-keyscan])
 fi
 
 PKG_PROG_PKG_CONFIG
@@ -33,12 +45,12 @@ if test "x$with_systemdsystemunitdir" = "xno"; then
   AC_MSG_ERROR([systemd support is mandatory])
 fi
 
+
 ################
 # Dependencies #
 ################
 
 AM_PATH_PYTHON([2],, [:])
-AC_PYTHON_MODULE([Crypto], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
 AC_PYTHON_MODULE([gobject], [mandatory])
 AC_PYTHON_MODULE([libvirt], [mandatory])

@@ -17,7 +17,6 @@ BuildRequires: pygobject2
 BuildRequires: libvirt-python
 BuildRequires: python-websockify
 BuildRequires: numpy
-BuildRequires: python-crypto
 BuildRequires: python-dbusmock
 BuildRequires: gjs
 BuildRequires: dconf
@@ -30,7 +29,6 @@ Requires: dbus-python
 Requires: pygobject2
 Requires: libvirt-python
 Requires: python-websockify
-Requires: python-crypto
 Requires: numpy
 Requires: cockpit
 Requires(preun): systemd

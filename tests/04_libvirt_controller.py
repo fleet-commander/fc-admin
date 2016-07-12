@@ -76,6 +76,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         # Check data path creation
         self.assertTrue(os.path.isdir(self.test_directory))
         # Check key files has been created
+        ctrlr._keygen_prog.wait()
         self.assertTrue(os.path.exists(ctrlr.private_key_file))
         self.assertTrue(os.path.exists(ctrlr.public_key_file))
 
