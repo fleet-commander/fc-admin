@@ -6,6 +6,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/fcdbus.py            \
 	fleetcommander/flaskless.py \
 	fleetcommander/libvirtcontroller.py \
+	fleetcommander/sshcontroller.py \
 	fleetcommander/utils.py
 
 fc_admin_constsdir = ${fcpythondir}/fleetcommander

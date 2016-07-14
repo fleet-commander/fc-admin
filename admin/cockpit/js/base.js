@@ -22,13 +22,37 @@
  * Utility functions
  ******************************************************************************/
 
-function showMessageDialog(message, title) {
+function showMessageDialog(message, title, closecb) {
   title = title || 'Info';
   var dialog = $('#message-dialog-modal');
+  closecb = closecb || function() { dialog.modal('hide') }
   $('#message-dialog-modal h4').html(title);
   $('#message-dialog-modal .modal-body').html(message);
+  var modal_footer = $('#message-dialog-modal .modal-footer');
+  modal_footer.html('');
+  var closebutton =  $('<button></button>', {"class": "btn btn-primary", text: _('Close')})
+    .click(closecb)
+    .appendTo(modal_footer);
   dialog.modal('show');
 }
+
+function showQuestionDialog(message, title, acceptcb, cancelcb) {
+  title = title || 'Question';
+  var dialog = $('#message-dialog-modal');
+  cancelcb = cancelcb || function() { dialog.modal('hide') }
+  $('#message-dialog-modal h4').html(title);
+  $('#message-dialog-modal .modal-body').html(message);
+  var modal_footer = $('#message-dialog-modal .modal-footer');
+  modal_footer.html('');
+  var acceptbutton =  $('<button></button>', {"class": "btn btn-primary", text: _('Ok')})
+    .click(acceptcb)
+    .appendTo(modal_footer);
+  var cancelbutton =  $('<button></button>', {"class": "btn btn-default", text: _('Cancel')})
+    .click(cancelcb)
+    .appendTo(modal_footer);
+  dialog.modal('show');
+}
+
 
 function clearModalFormErrors(modalId) {
   $('#' + modalId + ' div.form-group').removeClass('has-error');

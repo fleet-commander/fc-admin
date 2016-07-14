@@ -62,6 +62,14 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
+  this.CheckHypervisorConfig = safe_dbus(function(data, cb, errcb) {
+    self._proxy.CheckHypervisorConfig(JSON.stringify(data)).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
   this.SetHypervisorConfig = safe_dbus(function(data, cb, errcb) {
     self._proxy.SetHypervisorConfig(JSON.stringify(data)).done(
       function(resp) {

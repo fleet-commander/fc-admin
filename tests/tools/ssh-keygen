@@ -1,0 +1,6 @@
+#!/bin/bash
+echo $@ > $FC_TEST_DIRECTORY/ssh-keygen-parms
+
+if [ $1 = '-l' ]; then
+  echo "2048 SHA256:HASH localhost (RSA)"
+fi

@@ -75,8 +75,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'state_dir': test_directory,
             'database_path': os.path.join(test_directory, 'database.db'),
         }
-
         super(TestFleetCommanderDbusService, self).__init__(args)
+        self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)

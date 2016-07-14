@@ -37,6 +37,7 @@ import gi
 gi.require_version('Soup', '2.4')
 from gi.repository import GObject, Soup
 
+import sshcontroller
 import libvirtcontroller
 from database import DBManager
 from utils import merge_settings
@@ -83,6 +84,9 @@ class FleetCommanderDbusClient(object):
 
     def get_public_key(self):
         return self.iface.GetPublicKey()
+
+    def check_hypervisor_config(self, data):
+        return json.loads(self.iface.CheckHypervisorConfig(json.dumps(data)))
 
     def get_hypervisor_config(self):
         return json.loads(self.iface.GetHypervisorConfig())
@@ -178,6 +182,10 @@ class FleetCommanderDbusService(dbus.service.Object):
             # 'org.gnome.online-accounts': GoaCollector(),
             'org.libreoffice.registry': LibreOfficeCollector(self.db),
         }
+
+        # Initialize SSH controller
+        self.ssh = sshcontroller.SSHController()
+        self.known_hosts_file = '/root/.ssh/known_hosts'
 
     def run(self, sessionbus=False):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -339,13 +347,8 @@ class FleetCommanderDbusService(dbus.service.Object):
         return self.get_public_key()
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='', out_signature='s')
-    def GetHypervisorConfig(self):
-        return json.dumps(self.get_hypervisor_config())
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
-    def SetHypervisorConfig(self, jsondata):
+    def CheckHypervisorConfig(self, jsondata):
         data = json.loads(jsondata)
         errors = {}
 
@@ -364,6 +367,63 @@ class FleetCommanderDbusService(dbus.service.Object):
                 errors['adminhost'] = 'Invalid hostname specified'
         if errors:
             return json.dumps({'status': False, 'errors': errors})
+
+        hostdata = data['host'].split()
+        if len(hostdata) == 2:
+            hostname, port = hostdata
+        else:
+            hostname = hostdata[0]
+            port = self.ssh.DEFAULT_SSH_PORT
+
+        # Check if hypervisor is a known host
+        known = self.ssh.check_known_host(
+            self.known_hosts_file, hostname)
+
+        if not known:
+            # Obtain SSH fingerprint for host
+            try:
+                key_data = self.ssh.scan_host_keys(hostname, port)
+                fprint = self.ssh.get_fingerprint_from_key_data(key_data)
+                return json.dumps({
+                    'status': False,
+                    'fprint': fprint,
+                    'keys': key_data,
+                })
+            except Exception, e:
+                logging.error(
+                    'Error getting hypervisor fingerprint: %s' % e)
+                return json.dumps({
+                    'status': False,
+                    'error': 'Error getting hypervisor fingerprint %s' % e
+                })
+        else:
+            return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetHypervisorConfig(self):
+        return json.dumps(self.get_hypervisor_config())
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def SetHypervisorConfig(self, jsondata):
+        data = json.loads(jsondata)
+
+        # Add hypervisor as a known host
+        known = self.ssh.check_known_host(
+            self.known_hosts_file, data['host'])
+        if not known:
+            try:
+                self.ssh.add_keys_to_known_hosts(self.known_hosts_file, data['keys'])
+                del(data['keys'])
+            except Exception, e:
+                logging.error(
+                    'Error adding hypervisor host to known hosts: %s' % e)
+                return json.dumps({
+                    'status': False,
+                    'error': 'Error adding hypervisor host to known hosts'
+                })
+
         # Save hypervisor configuration
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})

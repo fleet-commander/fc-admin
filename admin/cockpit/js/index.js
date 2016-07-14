@@ -39,6 +39,7 @@ function checkHypervisorConfig(cb) {
 
 function showHypervisorConfig() {
   fc.GetHypervisorConfig(function(resp) {
+    clearModalFormErrors('hypervisor-config-modal')
     $('#host').val(resp.host);
     $('#username').val(resp.username);
     $('#mode option[value="' + resp.mode + '"]').prop('selected', true);
@@ -59,15 +60,42 @@ function saveHypervisorConfig() {
     domains: {}
   }
 
-  fc.SetHypervisorConfig(data, function(resp) {
+  function saveHypervisorFinal(data) {
+    fc.SetHypervisorConfig(data, function(resp) {
+      if (resp.status) {
+        $('#hypervisor-config-modal').modal('hide');
+      } else {
+        showMessageDialog(resp.error, _('Error'))
+      }
+    });
+  }
+
+  fc.CheckHypervisorConfig(data, function(resp) {
     if (resp.status) {
-      $('#hypervisor-config-modal').modal('hide');
-    } else {
+      saveHypervisorFinal(data);
+    } else if (resp.error != undefined) {
+      // We have an error
+      showMessageDialog(resp.error, _('Error'))
+    } else if (resp.fprint != undefined) {
+      showQuestionDialog(
+        _('Do you want to add this host to known hosts?') +
+          '<p>' + _('Fingerprint data') + ':</p>' +
+          '<p>' + resp.fprint + '</p>',
+        _('Hypervisor host verification'),
+        function(event, dialog) {
+          data['keys'] = resp.keys;
+          saveHypervisorFinal(data);
+          $('#message-dialog-modal').modal('hide');
+        }
+      );
+    } else if (resp.errors != undefined) {
       $.each(resp.errors, function( key, value ) {
         addFormError(key, value);
       });
     }
   });
+
+
 }
 
 

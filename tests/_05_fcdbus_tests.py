@@ -38,6 +38,7 @@ sys.path.append(PYTHONPATH)
 
 # Fleet commander imports
 from fleetcommander import fcdbus
+from fleetcommander import sshcontroller
 
 # Tests imports
 from test_fcdbus_service import MockLibVirtController
@@ -93,6 +94,10 @@ class TestDbusService(unittest.TestCase):
                         'Test error: ' +
                         'DBUS Service is getting too much to start')
 
+        self.ssh = sshcontroller.SSHController()
+        self.known_hosts_file = os.path.join(
+            self.args['state_dir'], 'known_hosts')
+
     def tearDown(self):
         # Kill service
         self.service.kill()
@@ -111,6 +116,7 @@ class TestDbusService(unittest.TestCase):
             'username': 'valid_user',
             'mode': 'session',
             'adminhost': '',
+            'keys': 'myhost ssh-rsa KEY'
         })
 
     def test_00_merge_settings(self):
@@ -155,30 +161,20 @@ class TestDbusService(unittest.TestCase):
             'adminhost': '',
         })
 
-    def test_03_set_hypervisor_config(self):
+    def test_03_check_hypervisor_config(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         data = {
-            'host': 'myhost',
+            'host': 'localhost',
             'username': 'valid_user',
             'mode': 'session',
             'adminhost': '',
         }
 
-        dataresp = data.copy()
-        dataresp['pubkey'] = 'PUBLIC_KEY'
-
-        # Set valid data
-        resp = c.set_hypervisor_config(data)
-        self.assertTrue(resp['status'])
-
-        # Retrieve configuration and compare
-        self.assertEqual(c.get_hypervisor_config(), dataresp)
-
         # Set invalid host data
         idata = data.copy()
         idata['host'] = 'invalid_host'
-        resp = c.set_hypervisor_config(idata)
+        resp = c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(
             resp['errors'], {'host': 'Invalid hostname specified'})
@@ -186,7 +182,7 @@ class TestDbusService(unittest.TestCase):
         # Set invalid username data
         idata = data.copy()
         idata['username'] = 'invalid#username'
-        resp = c.set_hypervisor_config(idata)
+        resp = c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(
             resp['errors'], {'username': 'Invalid username specified'})
@@ -194,9 +190,44 @@ class TestDbusService(unittest.TestCase):
         # Set invalid session data
         idata = data.copy()
         idata['mode'] = 'invalidmode'
-        resp = c.set_hypervisor_config(idata)
+        resp = c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
+
+        # Set valid data with not known host
+        resp = c.check_hypervisor_config(data)
+        self.assertFalse(resp['status'])
+        self.assertEqual(resp['fprint'], '2048 SHA256:HASH localhost (RSA)\n')
+        self.assertEqual(resp['keys'], 'localhost ssh-rsa KEY\n')
+
+        # Set valid data with known host
+        self.ssh.add_keys_to_known_hosts(
+            self.known_hosts_file, 'localhost ssh-rsa KEY\n')
+        resp = c.check_hypervisor_config(data)
+        self.assertTrue(resp['status'])
+
+    def test_03_set_hypervisor_config(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        data = {
+            'host': 'localhost',
+            'username': 'valid_user',
+            'mode': 'session',
+            'adminhost': '',
+            'keys': 'myhost ssh-rsa KEY'
+        }
+
+        dataresp = data.copy()
+        dataresp['pubkey'] = 'PUBLIC_KEY'
+        del(dataresp['keys'])
+
+        # Set data
+        resp = c.set_hypervisor_config(data)
+        self.assertTrue(resp['status'])
+
+        # Retrieve configuration and compare
+        self.assertEqual(c.get_hypervisor_config(), dataresp)
+        # TODO: Check host added to known_hosts
 
     def test_04_new_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
