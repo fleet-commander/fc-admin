@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.8.0
+Version:        0.7.99
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -32,8 +32,7 @@ Requires: libvirt-python
 Requires: python-websockify
 Requires: python-crypto
 Requires: numpy
-Requires: httpd
-Requires: mod_wsgi
+Requires: cockpit
 Requires(preun): systemd
 
 Provides: bundled(jquery) = 1.11.1
@@ -73,8 +72,15 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
 
 %preun
-%systemd_preun fleet-commander-admin.service
 %systemd_preun fleet-commander-dbus.service
+rm %{_datadir}/cockpit/fleet-commander-admin
+
+%post
+systemctl daemon-reload
+systemctl enable fleet-commander-dbus.service
+systemctl daemon-reload
+systemctl start fleet-commander-dbus.service >/dev/null 2>&1
+ln -s %{_datadir}/%{name}/cockpit %{_datadir}/cockpit/fleet-commander-admin
 
 %files
 %license
@@ -96,9 +102,9 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Thu Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.8.0-1
+* Thu Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.99-1
 - Fleet Commander admin migrated to Cockpit plugin
-- Updated package for 0.8.0 release
+- Updated package for 0.7.99 release
 
 * Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.6-1
 - Created workaround for libvirt bug dealing with too large qemu monitor paths
