@@ -55,6 +55,8 @@ class TestDbusService(unittest.TestCase):
         "groups":       "group1,group2"
     }
 
+    MAX_DBUS_CHECKS = 10
+
     def setUp(self):
         self.test_directory = tempfile.mkdtemp()
 
@@ -75,6 +77,21 @@ class TestDbusService(unittest.TestCase):
                 'tests/test_fcdbus_service.py'),
             self.test_directory,
         ])
+
+        checks = 0
+        while True:
+            try:
+                c = fcdbus.FleetCommanderDbusClient()
+                c.get_public_key()
+                break
+            except:
+                checks += 1
+                if checks < self.MAX_DBUS_CHECKS:
+                    time.sleep(0.1)
+                else:
+                    raise Exception(
+                        'Test error: ' +
+                        'DBUS Service is getting too much to start')
 
     def tearDown(self):
         # Kill service
