@@ -19,6 +19,7 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+import sys
 import os
 import signal
 import json
@@ -27,7 +28,6 @@ import subprocess
 import re
 import uuid
 import time
-import socket
 
 import dbus
 import dbus.service
@@ -154,6 +154,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     LIST_DOMAINS_RETRIES = 2
     WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
     DNULL = open('/dev/null', 'w')
+    DEFAULT_WEBSERVICE_PORT = 9989
 
     def __init__(self, args):
         """
@@ -198,12 +199,19 @@ class FleetCommanderDbusService(dbus.service.Object):
         self._loop = GObject.MainLoop()
 
         # Prepare changes listener
-        self.changeslistener_port = self.get_free_port()
-        self.changeslistener = Soup.Server()
-        self.changeslistener.listen_all(
-            self.changeslistener_port, Soup.ServerListenOptions.IPV4_ONLY)
-        self.changeslistener.add_handler(
+        self.webservice_port = self.DEFAULT_WEBSERVICE_PORT
+        self.webservice = Soup.Server()
+        try:
+            self.webservice.listen_all(
+                self.webservice_port, Soup.ServerListenOptions.IPV4_ONLY)
+        except Exception, e:
+            logging.error('Error starting webservice: %s' % e)
+            sys.exit(1)
+        self.webservice.add_handler(
             '/changes/submit/', self.changes_listener_callback)
+
+        self.webservice.add_handler(
+            '/clientdata/', self.client_data_callback)
 
         # Enter main loop
         self._loop.run()
@@ -211,12 +219,11 @@ class FleetCommanderDbusService(dbus.service.Object):
     def changes_listener_callback(self, server, message, path, query, client,
                                   **kwargs):
 
-        logging.error('[%s] Request at %s' % (message.method, path))
+        logging.debug('[%s] changes_listener: Request at %s' % (message.method, path))
         # Get changes name
         pathsplit = path[1:].split('/')
-        if len(path) >= 3:
+        if len(pathsplit) >= 3:
             name = pathsplit[2]
-            logging.error('Changes submitted for %s' % name)
             # Get data in message
             try:
                 logging.error('Data received: %s' % message.request_body.data)
@@ -224,17 +231,18 @@ class FleetCommanderDbusService(dbus.service.Object):
                     self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
                     response = {'status': 'ok'}
                     status_code = Soup.Status.OK
-                    logging.error('ALL IS OK')
                 else:
-                    logging.error('Unknown settings name: %s' % name)
+                    logging.error(
+                        'Change submitted for unknown settings name: %s' % name)
                     response = {'status': 'unknown settings name'}
                     status_code = 520
             except Exception, e:
-                logging.error('Error saving changes: %s' % e)
+                logging.error(
+                    'Error saving changes for setting name %s: %s' % (name, e))
                 response = {'status': 'error saving changes'}
                 status_code = 520
         else:
-            logging.error('No settings key name specified')
+            logging.error('Change submited with no settings key name')
             response = {'status': 'error no name'}
             status_code = 520
 
@@ -244,17 +252,39 @@ class FleetCommanderDbusService(dbus.service.Object):
             Soup.MemoryUse(Soup.MemoryUse.COPY),
             json.dumps(response))
 
-    def get_free_port(self):
-        """
-        Get a free random local port
-        """
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('', 0))
-        addr = s.getsockname()
-        local_port = addr[1]
-        s.close()
-        return local_port
+    def client_data_callback(self, server, message, path, query, client,
+                             **kwargs):
+        logging.error('[%s] clientdata: Request at %s' % (message.method, path))
+        # Get changes name
+        pathsplit = path[1:].split('/')
+        if len(pathsplit) == 3 and path.startswith('/clientdata/profiles/'):
+            # Requesting a profile
+            filename = pathsplit[2]
+            # Check file exists
+            logging.error('Requesting profile %s' % filename)
+            response = 'Requesting profile %s' % filename
+            status_code = 200
+        elif len(pathsplit) == 2:
+            # Requesting index or applies
+            filename = pathsplit[1]
+            logging.error('Requesting %s' % filename)
+            if filename not in ['index.json', 'applies.json']:
+                response = ''
+                status_code = 404
+            else:
+                # Serve requested file
+                logging.error('Requesting %s' % filename)
+                response = 'Requesting %s' % filename
+                status_code = 200
+        else:
+            response = ''
+            status_code = 404
 
+        message.set_status(status_code)
+        message.set_response(
+            'application/json',
+            Soup.MemoryUse(Soup.MemoryUse.COPY),
+            response)
 
     def check_for_profile_index(self):
         self.test_and_create_file(self.INDEX_FILE, [])
@@ -787,7 +817,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         hypervisor = self.get_hypervisor_config()
 
         # By default the admin port will be the one we use to listen changes
-        admin_port = self.changeslistener_port
+        admin_port = self.webservice_port
         forcedadminhost = hypervisor.get('adminhost', None)
         if forcedadminhost:
             forcedadminhostdata = forcedadminhost.split(':')
@@ -879,7 +909,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='i')
     def GetChangeListenerPort(self):
-        return self.changeslistener_port
+        return self.webservice_port
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='')

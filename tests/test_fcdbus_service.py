@@ -29,6 +29,7 @@ sys.path.append(PYTHONPATH)
 
 # Fleet commander imports
 from fleetcommander import fcdbus
+from fleetcommander.utils import get_free_port
 
 
 class MockLibVirtController(object):
@@ -76,7 +77,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'database_path': os.path.join(test_directory, 'database.db'),
         }
         super(TestFleetCommanderDbusService, self).__init__(args)
-        self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
+        self.DEFAULT_WEBSERVICE_PORT = get_free_port()
+	self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)
