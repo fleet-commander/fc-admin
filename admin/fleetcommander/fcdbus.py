@@ -215,7 +215,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug('[%s] changes_listener: Request at %s' % (message.method, path))
         # Get changes name
         pathsplit = path[1:].split('/')
-        if len(pathsplit) >= 3:
+        if len(pathsplit) == 3:
             name = pathsplit[2]
             # Get data in message
             try:
