@@ -46,6 +46,7 @@ from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
 HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
+CLIENTDATA_REGEX = re.compile(r'^/clientdata/(?P<filename>(index|applies|[0-9]+)\.json)')
 
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
@@ -254,31 +255,19 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     def client_data_callback(self, server, message, path, query, client,
                              **kwargs):
-        logging.error('[%s] clientdata: Request at %s' % (message.method, path))
-        # Get changes name
-        pathsplit = path[1:].split('/')
-        if len(pathsplit) == 3 and path.startswith('/clientdata/profiles/'):
-            # Requesting a profile
-            filename = pathsplit[2]
-            # Check file exists
-            logging.error('Requesting profile %s' % filename)
-            response = 'Requesting profile %s' % filename
-            status_code = 200
-        elif len(pathsplit) == 2:
-            # Requesting index or applies
-            filename = pathsplit[1]
-            logging.error('Requesting %s' % filename)
-            if filename not in ['index.json', 'applies.json']:
-                response = ''
-                status_code = 404
-            else:
-                # Serve requested file
-                logging.error('Requesting %s' % filename)
-                response = 'Requesting %s' % filename
+        # Default response and status code
+        response = ''
+        status_code = 404
+        match = re.match(CLIENTDATA_REGEX, path)
+        if match:
+            filename = match.groupdict()['filename']
+            filepath = os.path.join(self.args['profiles_dir'], filename)
+            logging.error('%s %s' % (filename, filepath))
+            try:
+                response = self.get_data_from_file(filepath)
                 status_code = 200
-        else:
-            response = ''
-            status_code = 404
+            except Exception, e:
+                logging.error('clientdata: %s' % e)
 
         message.set_status(status_code)
         message.set_response(
