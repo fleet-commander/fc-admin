@@ -227,7 +227,8 @@ class TestDbusService(unittest.TestCase):
 
         # Retrieve configuration and compare
         self.assertEqual(c.get_hypervisor_config(), dataresp)
-        # TODO: Check host added to known_hosts
+        # Check host added to known_hosts
+        self.ssh.check_known_host(self.known_hosts_file, data['host'])
 
     def test_04_new_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
