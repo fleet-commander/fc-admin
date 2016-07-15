@@ -90,8 +90,17 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         domains = ctrlr.list_domains()
         self.assertEqual(domains, [
-            {'uuid': libvirtmock.TEST_UUID_SPICE, 'name': 'Fedora'},
-            {'uuid': libvirtmock.TEST_UUID_NO_SPICE, 'name': 'Fedora unspiced'}
+            {
+                'uuid': libvirtmock.TEST_UUID_SPICE,
+                'name': 'Fedora',
+                'active': True
+            },
+
+            {
+                'uuid': libvirtmock.TEST_UUID_NO_SPICE,
+                'name': 'Fedora unspiced',
+                'active': True
+            },
         ])
 
         # Check remote machine environment preparation

@@ -359,11 +359,16 @@ function showDomainSelection() {
       if (resp.status) {
         $('#domain-selection-modal .spinner').hide();
         $.each(resp.domains, function() {
-          domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
-          wrapper = $('<div></div>');
-          domain.appendTo(wrapper)
-          wrapper.appendTo(list);
+          var wrapper = $('<div></div>', {'class': 'list-group-item'});
+          var text = this.name;
+          if (this.active) {
+            var text = this.name + ' (' + _('running') + ')';
+            wrapper.addClass('grayed')
+          }
+          domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
           domain.click(selectDomain);
+          domain.appendTo(wrapper);
+          wrapper.appendTo(list);
         });
       } else {
         $('#domain-selection-modal').modal('hide');

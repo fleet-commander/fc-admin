@@ -23,6 +23,11 @@
   overflow: auto;
 }
 
+.grayed {
+  background-color: lightgray;
+
+}
+
 #goa-current-provider-icon {
   width: 96px;
   height: 96px;
