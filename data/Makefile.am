@@ -17,12 +17,16 @@ fleet_commander_dbus_systemd_service_DATA = fleet-commander-dbus.service
 fleet_commander_dbus_configdir = ${sysconfdir}/dbus-1/system.d/
 fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
 
+fleet_commander_goa_providersdir = ${adminstatedir}
+fleet_commander_goa_providers_DATA = fc-goa-providers.conf
+
 EXTRA_DIST = \
   $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
 	$(fleet_commander_dbus_service_in_files)       \
 	$(fleet_commander_dbus_config_DATA)            \
+	$(fleet_commander_goa_providers_DATA)            \
 	$(fleet_commander_dbus_systemd_service_in_files)
 
 CLEANFILES = \

@@ -20,7 +20,6 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 import sys
-import json
 from ConfigParser import RawConfigParser, ParsingError
 import logging
 
@@ -34,10 +33,10 @@ class GOAProvidersLoader(object):
         Class initialization
         """
         self.path = providers_file
-        self.providers = {}
-        self.configparser = RawConfigParser()
+        self._providers = {}
+        self._configparser = RawConfigParser()
         try:
-            self.configparser.read(providers_file)
+            self._configparser.read(providers_file)
         except IOError, e:
             logging.error(
                 'Could not find GOA providers file %s' % providers_file)
@@ -53,20 +52,21 @@ class GOAProvidersLoader(object):
         self.read_data()
 
     def read_data(self):
-        for section in self.configparser.sections():
+        for section in self._configparser.sections():
             if section.startswith('Provider '):
                 provider = section.split()[1]
-                self.providers[provider] = {
+                self._providers[provider] = {
                     'name': self.generate_readable_name(provider),
                     'services': {}
                 }
-                for option in self.configparser.options(section):
+                for option in self._configparser.options(section):
                     if option.endswith('enabled'):
                         service = option[:-7]
                         name = self.generate_readable_name(service)
-                        enabled = self.configparser.getboolean(section, option)
+                        enabled = self._configparser.getboolean(
+                            section, option)
                         # Generate readable name
-                        self.providers[provider]['services'][service] = {
+                        self._providers[provider]['services'][service] = {
                             'name': name,
                             'enabled': enabled
                         }
@@ -77,8 +77,5 @@ class GOAProvidersLoader(object):
         """
         return identifier.title().replace('_', ' ')
 
-    def to_json(self):
-        return json.dumps(self.providers)
-
-if __name__ == '__main__':
-    print(GOAProvidersLoader('../../data/goa-providers.conf').to_json())
+    def get_providers(self):
+        return self._providers
