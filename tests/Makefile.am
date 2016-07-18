@@ -13,6 +13,7 @@ EXTRA_DIST =                       \
 	data/libvirt_domain-orig.xml     \
 	data/libvirt_domain-modified.xml \
 	data/libvirt_domain-nospice.xml  \
+	data/fc_goa_providers_test.conf  \
 	tools/websockify                 \
 	tools/systemctl                  \
 	tools/ssh                        \

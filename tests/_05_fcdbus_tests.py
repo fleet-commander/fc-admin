@@ -58,6 +58,24 @@ class TestDbusService(unittest.TestCase):
 
     MAX_DBUS_CHECKS = 10
 
+    DUMMY_GOA_PROVIDERS_DATA = {
+        'provider': {
+            'name': 'Provider',
+            'services': {
+                'mail': {'enabled': True, 'name': 'Mail'},
+                'documents': {'enabled': True, 'name': 'Documents'}
+            }
+        },
+        'pizza_provider': {
+            'name': 'Pizza Provider',
+            'services': {
+                'chat': {'enabled': True, 'name': 'Chat'},
+                'pizza': {'enabled': True, 'name': 'Pizza'},
+                'pepperoni_pizza': {'enabled': True, 'name': 'Pepperoni Pizza'}
+            }
+        },
+    }
+
     def setUp(self):
         self.test_directory = tempfile.mkdtemp()
 
@@ -642,6 +660,13 @@ class TestDbusService(unittest.TestCase):
             }
         )
 
+    def test_19_get_goa_providers(self):
+        c = fcdbus.FleetCommanderDbusClient()
+        resp = c.get_goa_providers()
+        self.assertTrue(resp['status'])
+        print self.DUMMY_GOA_PROVIDERS_DATA
+        print resp['providers']
+        self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
 if __name__ == '__main__':
     unittest.main()

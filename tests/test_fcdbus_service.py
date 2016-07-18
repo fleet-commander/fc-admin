@@ -77,8 +77,14 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'database_path': os.path.join(test_directory, 'database.db'),
             'client_data_url': '/'
         }
+
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
+
+        self.GOA_PROVIDERS_FILE = os.path.join(
+            os.environ['TOPSRCDIR'],
+            'tests/data/fc_goa_providers_test.conf')
+
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)

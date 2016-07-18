@@ -42,6 +42,7 @@ import libvirtcontroller
 from database import DBManager
 from utils import merge_settings, get_ip_address
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
+from goa import GOAProvidersLoader
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -142,6 +143,9 @@ class FleetCommanderDbusClient(object):
     def get_change_listener_port(self):
         return self.iface.GetChangeListenerPort()
 
+    def get_goa_providers(self):
+        return json.loads(self.iface.GetGOAProviders())
+
     def quit(self):
         return self.iface.Quit()
 
@@ -173,6 +177,8 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.INDEX_FILE = os.path.join(args['profiles_dir'], 'index.json')
         self.APPLIES_FILE = os.path.join(args['profiles_dir'], 'applies.json')
+        self.GOA_PROVIDERS_FILE = os.path.join(
+            args['state_dir'], 'goa-providers.conf')
 
         # Initialize database
         self.db = DBManager(args['database_path'])
@@ -908,6 +914,22 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='', out_signature='i')
     def GetChangeListenerPort(self):
         return self.webservice_port
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetGOAProviders(self):
+        try:
+            loader = GOAProvidersLoader(self.GOA_PROVIDERS_FILE)
+            return json.dumps({
+                'status': True,
+                'providers': loader.get_providers()
+            })
+        except Exception, e:
+            logging.error('Error getting GOA providers data: %s' % e)
+            return json.dumps({
+                'status': False,
+                'error': 'Error getting GOA providers data'
+            })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='')
