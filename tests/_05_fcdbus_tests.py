@@ -62,16 +62,22 @@ class TestDbusService(unittest.TestCase):
         'provider': {
             'name': 'Provider',
             'services': {
-                'mail': {'enabled': True, 'name': 'Mail'},
-                'documents': {'enabled': True, 'name': 'Documents'}
+                'MailEnabled': {'enabled': True, 'name': 'Mail'},
+                'DocumentsEnabled': {'enabled': True, 'name': 'Documents'}
             }
         },
         'pizza_provider': {
             'name': 'Pizza Provider',
             'services': {
-                'chat': {'enabled': True, 'name': 'Chat'},
-                'pizza': {'enabled': True, 'name': 'Pizza'},
-                'pepperoni_pizza': {'enabled': True, 'name': 'Pepperoni Pizza'}
+                'HotdogEnabled': {'enabled': False, 'name': 'Hotdog'},
+                'PizzaEnabled': {'enabled': True, 'name': 'Pizza'},
+                'PepperoniEnabled': {'enabled': True, 'name': 'Pepperoni'}
+            }
+        },
+        'special_provider': {
+            'name': 'Special Provider',
+            'services': {
+                'Enabled': {'enabled': True, 'name': 'Enabled'},
             }
         },
     }
@@ -664,9 +670,63 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
         resp = c.get_goa_providers()
         self.assertTrue(resp['status'])
-        print self.DUMMY_GOA_PROVIDERS_DATA
         print resp['providers']
+        print self.DUMMY_GOA_PROVIDERS_DATA
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
+
+    def test_20_goa_accounts(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Create a profile
+        resp = c.new_profile(self.DUMMY_PROFILE)
+        uid = resp['uid']
+
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
+
+        account1 = {
+            'Account account_fc_1432373432_0': {
+                'Provider': 'provider',
+                'MailEnabled': False,
+                'DocumentsEnabled': True,
+                'ContactsEnabled': False
+            }
+        }
+
+        account2 = {
+            'Account account_fc_1432883432_0': {
+                'Provider': 'pizza_provider',
+                'PepperoniEnabled': False,
+                'CheeseEnabled': True,
+                'HotdogEnabled': False
+            }
+        }
+
+        # Add GOA accounts
+        accounts = [account1, account2]
+        resp = c.goa_accounts(accounts, uid)
+        self.assertTrue(resp['status'])
+        profile = self.get_data_from_file(PROFILE_FILE)
+        goa_accounts = profile['settings']['org.gnome.online-accounts']
+        self.assertEqual(len(goa_accounts), 2)
+        self.assertEqual(goa_accounts[0], account1)
+        self.assertEqual(goa_accounts[1], account2)
+
+        # Modify accounts
+        accounts = [account2]
+        resp = c.goa_accounts(accounts, uid)
+        self.assertTrue(resp['status'])
+        profile = self.get_data_from_file(PROFILE_FILE)
+        goa_accounts = profile['settings']['org.gnome.online-accounts']
+        self.assertEqual(len(goa_accounts), 1)
+        self.assertEqual(goa_accounts[0], account2)
+
+        # Empty accounts
+        accounts = []
+        resp = c.goa_accounts(accounts, uid)
+        self.assertTrue(resp['status'])
+        profile = self.get_data_from_file(PROFILE_FILE)
+        goa_accounts = profile['settings']['org.gnome.online-accounts']
+        self.assertEqual(len(goa_accounts), 0)
 
 if __name__ == '__main__':
     unittest.main()

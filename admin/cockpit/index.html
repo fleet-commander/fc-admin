@@ -11,6 +11,7 @@
       <script src="js/base.js"></script>
       <script src="js/fcdbusclient.js"></script>
       <script src="js/index.js"></script>
+      <script src="js/goa.js"></script>
   </head>
   <body class="page">
 
@@ -236,7 +237,8 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            <button id="save-goa-accounts" class="btn btn-primary" translatable="yes">Save</button>
           </div>
         </div>
       </div>
@@ -252,6 +254,7 @@
 
           <div class="modal-body">
             <div id="app-name-group" class="form-group">
+              <img id="goa-current-provider-icon" class="pull-right" src="" alt="Provider icon">
               <div class="input-group">
                 <select id="goa-provider" name="goa-provider"></select>
               </div>
@@ -263,7 +266,7 @@
 
           <div class="modal-footer">
             <button class="btn btn-default" data-dismiss="modal" translatable="yes">Back</button>
-            <button id="save-goa-account" class="btn btn-primary" translatable="yes">Add</button>
+            <button id="update-add-goa-account" class="btn btn-primary" translatable="yes">Ok</button>
           </div>
         </div>
       </div>

@@ -146,6 +146,9 @@ class FleetCommanderDbusClient(object):
     def get_goa_providers(self):
         return json.loads(self.iface.GetGOAProviders())
 
+    def goa_accounts(self, data, uid):
+        return json.loads(self.iface.GOAAccounts(json.dumps(data), uid))
+
     def quit(self):
         return self.iface.Quit()
 
@@ -178,7 +181,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.INDEX_FILE = os.path.join(args['profiles_dir'], 'index.json')
         self.APPLIES_FILE = os.path.join(args['profiles_dir'], 'applies.json')
         self.GOA_PROVIDERS_FILE = os.path.join(
-            args['state_dir'], 'goa-providers.conf')
+            args['state_dir'], 'fc-goa-providers.conf')
 
         # Initialize database
         self.db = DBManager(args['database_path'])
@@ -311,6 +314,59 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     def get_data_from_file(self, path):
         return open(path).read()
+
+    def read_profile(self, uid):
+        """
+        Read a profile given its UID
+        """
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid + '.json')
+        if not os.path.isfile(self.INDEX_FILE) or \
+           not os.path.isfile(PROFILE_FILE):
+            return (False, 'there are no profiles in the database')
+
+        try:
+            profile = json.loads(
+                self.get_data_from_file(PROFILE_FILE))
+        except:
+            return (False, 'could not read profile data')
+
+        if not isinstance(profile, dict):
+            return (False, 'profile object %s is not a dictionary' % uid)
+
+        if profile.get('settings', False):
+
+            if not isinstance(profile['settings'], dict):
+                return (
+                    False,
+                    'settings value in %s is not a dictionary' % uid)
+
+            if profile['settings'].get('org.gnome.gsettings', False):
+                gsettings = profile['settings']['org.gnome.gsettings']
+
+                if not isinstance(gsettings, list):
+                    return (
+                        False,
+                        'settings/org.gnome.gsettings value in %s is not a list' % uid
+                    )
+
+            if profile['settings'].get('org.gnome.online-accounts', False):
+
+                goa = profile['settings']['org.gnome.online-accounts']
+
+                if not isinstance(goa, list):
+                    return (
+                        False,
+                        'settings/org.gnome.online-accounts value in %s is not a list' % uid
+                    )
+
+        return(True, profile)
+
+    def write_profile(self, uid, data):
+        """
+        Writes a profile into corresponding file
+        """
+        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid + '.json')
+        open(PROFILE_FILE, 'w+').write(json.dumps(data))
 
     def get_libvirt_controller(self, admin_host=None, admin_port=None):
         """
@@ -920,6 +976,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetGOAProviders(self):
         try:
             loader = GOAProvidersLoader(self.GOA_PROVIDERS_FILE)
+            logging.error('LOADED PROVIDERS: %s - %s' % (self.GOA_PROVIDERS_FILE, loader.get_providers()))
             return json.dumps({
                 'status': True,
                 'providers': loader.get_providers()
@@ -930,6 +987,52 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': False,
                 'error': 'Error getting GOA providers data'
             })
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='s')
+    def GOAAccounts(self, payload, uid):
+
+        data = json.loads(payload)
+
+        def check_account(account):
+            if isinstance(account, dict):
+                keys = account.keys()
+                if len(keys) > 2 and 'Account' in keys and 'Provider in keys':
+                    for key, value in account.items():
+                        if key not in ['Account', 'Provider']:
+                            if not key.endswith('Enabled'):
+                                return False
+                    return True
+            return False
+
+        if not isinstance(data, list) or \
+           len(set(map(check_account, data))) > 1:
+            return json.dumps({
+                'status': False,
+                'error': 'account list is not a list of account dicts',
+            })
+
+        status, resp = self.read_profile(uid)
+        if not status:
+            return json.dumps({
+                'status': False,
+                'error': resp,
+            })
+
+        profile = resp
+        if 'settings' not in profile:
+            profile['settings'] = {}
+        profile['settings']['org.gnome.online-accounts'] = data
+
+        try:
+            self.write_profile(uid, profile)
+        except Exception, e:
+            return json.dumps({
+                'status': False,
+                'error': 'could not write profile %s: %s' % (uid, e)
+            })
+
+        return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='')
