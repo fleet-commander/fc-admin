@@ -558,7 +558,9 @@ class TestDbusService(unittest.TestCase):
         port = c.get_change_listener_port()
 
         # Request empty index
-        with self.assertRaises(urllib2.HTTPError):
+        with self.assertRaisesRegexp(
+          urllib2.HTTPError,
+          'HTTP Error 404: Not Found'):
             req = urllib2.Request(
                 'http://localhost:%s/clientdata/index.json' % port)
             f = urllib2.urlopen(req)
@@ -566,7 +568,9 @@ class TestDbusService(unittest.TestCase):
             f.close()
 
         # Request empty applies
-        with self.assertRaises(urllib2.HTTPError):
+        with self.assertRaisesRegexp(
+          urllib2.HTTPError,
+          'HTTP Error 404: Not Found'):
             req = urllib2.Request(
                 'http://localhost:%s/clientdata/applies.json' % port)
             f = urllib2.urlopen(req)
@@ -574,7 +578,9 @@ class TestDbusService(unittest.TestCase):
             f.close()
 
         # Request non existent profile
-        with self.assertRaises(urllib2.HTTPError):
+        with self.assertRaisesRegexp(
+          urllib2.HTTPError,
+          'HTTP Error 404: Not Found'):
             inexistentuid = '94484425290563468736752948271916980692'
             req = urllib2.Request(
                 'http://localhost:%s/clientdata/%s.json' % (
