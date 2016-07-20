@@ -553,6 +553,88 @@ class TestDbusService(unittest.TestCase):
         resp = c.get_changes()
         self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
 
+    def test_18_clientdata_serving(self):
+        c = fcdbus.FleetCommanderDbusClient()
+        port = c.get_change_listener_port()
+
+        # Request empty index
+        with self.assertRaises(urllib2.HTTPError):
+            req = urllib2.Request(
+                'http://localhost:%s/clientdata/index.json' % port)
+            f = urllib2.urlopen(req)
+            response = f.read()
+            f.close()
+
+        # Request empty applies
+        with self.assertRaises(urllib2.HTTPError):
+            req = urllib2.Request(
+                'http://localhost:%s/clientdata/applies.json' % port)
+            f = urllib2.urlopen(req)
+            response = f.read()
+            f.close()
+
+        # Request non existent profile
+        with self.assertRaises(urllib2.HTTPError):
+            inexistentuid = '94484425290563468736752948271916980692'
+            req = urllib2.Request(
+                'http://localhost:%s/clientdata/%s.json' % (
+                    port, inexistentuid))
+            f = urllib2.urlopen(req)
+            response = f.read()
+            f.close()
+
+        # Create profile
+        resp = c.new_profile(self.DUMMY_PROFILE)
+        uid = resp['uid']
+
+        # Request index
+        req = urllib2.Request(
+            'http://localhost:%s/clientdata/index.json' % port)
+        f = urllib2.urlopen(req)
+        response = f.read()
+        f.close()
+        self.assertEqual(
+            json.loads(response),
+            [
+                {
+                    'url': '%s.json' % uid,
+                    'displayName': 'foo'
+                }
+            ]
+        )
+
+        # Request applies
+        req = urllib2.Request(
+            'http://localhost:%s/clientdata/applies.json' % port)
+        f = urllib2.urlopen(req)
+        response = f.read()
+        f.close()
+        self.assertEqual(
+            json.loads(response),
+            {
+                uid: {
+                    'users': ['user1', 'user2', 'user3'],
+                    'groups': ['group1', 'group2']
+                }
+            }
+        )
+
+        # Request profile
+        req = urllib2.Request(
+            'http://localhost:%s/clientdata/%s.json' % (port, uid))
+        f = urllib2.urlopen(req)
+        response = f.read()
+        f.close()
+        self.assertEqual(
+            json.loads(response),
+            {
+                'name': 'foo',
+                'uid': uid,
+                'description': 'bar',
+                'settings': {}
+            }
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

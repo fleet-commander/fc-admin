@@ -78,7 +78,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         }
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.DEFAULT_WEBSERVICE_PORT = get_free_port()
-	self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
+        self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)
