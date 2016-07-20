@@ -186,4 +186,30 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
+  // GOA methods
+  this.GetGOAProviders = safe_dbus(function(cb, errcb) {
+    self._proxy.GetGOAProviders().done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  // GOA methods
+  this.GOAAccounts = safe_dbus(function(data, uid, cb, errcb) {
+    self._proxy.GOAAccounts(JSON.stringify(data), uid).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
 }
+
+
+$(document).ready (function () {
+  // Create a Fleet Commander dbus client instance
+  fc = new FleetCommanderDbusClient(function(){
+    showMessageDialog(
+      _('There has been an error communicating with dbus service'), _('Error'))
+  });
+});

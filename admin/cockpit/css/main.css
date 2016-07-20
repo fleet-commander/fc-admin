@@ -22,3 +22,15 @@
   max-height: 200px;
   overflow: auto;
 }
+
+#goa-current-provider-icon {
+  width: 96px;
+  height: 96px;
+  margin: 2px;
+}
+
+.goa-provider-icon {
+  width: 2.5em;
+  height: 2.5em;
+  margin: 0 2px;
+}
