@@ -27,6 +27,8 @@ const Gio  = imports.gi.Gio;
 const Soup = imports.gi.Soup;
 const Json = imports.gi.Json;
 
+let NM   = imports.gi.NM;
+
 //Global constants
 let RETRY_INTERVAL = 1000;
 let SUBMIT_PATH    = '/changes/submit/';
@@ -189,6 +191,7 @@ var ConnectionManager = function (host, port) {
     this.queue = [];
     this.timeout = 0;
 }
+
 ConnectionManager.prototype._perform_submits = function () {
     if (this.queue.length < 1)
         return false;
@@ -263,92 +266,73 @@ var FileMonitor = function(path, callback) {
     this.monitor.connect ('changed', callback);
 }
 
-// This clas logs changes in the GNOME Online Accounts configuration file
-var GoaLogger = function (connmgr) {
-    debug("Constructing GoaLogger");
+var NMLogger = function (connmgr) {
+    debug("Constructing NetworkManager logger");
     this.connmgr = connmgr;
-    this.path = [GLib.get_user_config_dir(), 'goa-1.0', 'accounts.conf'].join('/');
-    this.update();
-    this.monitor = new FileMonitor (this.path, function (monitor, this_file, other_file, event_type) {
-        debug("GFileMonitor::changed " + [this.path, event_type.value_nick].join(" "));
-
-        switch (event_type) {
-            case Gio.FileMonitorEvent.CHANGED:
-            case Gio.FileMonitorEvent.CREATED:
-            case Gio.FileMonitorEvent.DELETED:
-                this.update();
-                break;
-            default:
-                break;
-        }
-    }.bind(this));
+    this.nmclient = NM.Client.new (null);
+    this.nmclient.connect ('connection-added', this.connection_added_cb.bind(this));
 }
 
-GoaLogger.prototype.update = function () {
-    debug("Updating GOA configuration data");
+NMLogger.prototype.submit_connection = function (conn) {
+    debug ("Submitting Network Manager connection");
+    let conf = conn.to_dbus (NM.ConnectionSerializationFlags.ALL);
 
-    // If file doesn't exist we send empty content
-    if (GLib.file_test (this.path, GLib.FileTest.EXISTS) == false) {
-        this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify({}));
-        this.connmgr.finish_changes();
+    let type = conn.get_connection_type ();
+    let secrets = new GLib.Variant ("a{sv}", []);
+
+    debug ("Added connection of type " + type);
+
+    if (type == "802-11-wireless") {
+        /* Looks like this triggers an infinite loop */
+        secrets = conn.get_secrets ("802-11-wireless-security", null);
+    } else if (type == "vpn") {
+        secrets = conn.get_secrets ("vpn", null);
+    } else if (type == "802-3-ethernet")  {
+        secrets = conn.get_secrets ("802-1x", null);
+    } else {
+        debug ("Network Connection discarded as type " + type + " is not supported");
         return;
     }
 
-    let kf = new GLib.KeyFile();
-    try {
-        kf.load_from_file(this.path, GLib.KeyFileFlags.NONE);
-    } catch (e) {
-        debug(e);
-        printerr("ERROR: Could not parse configuration file " + this.path);
+    let merge = this.merge_confs (this.deep_unpack(conf), this.deep_unpack(secrets));
 
-        // Send empty content
-        this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify({}));
-        this.connmgr.finish_changes();
-        return;
-    }
-
-    //TODO: Test this and consider whether the *Enabled keys are worth ignoring
-    /*kf.get_groups().forEach (function(group) {
-        kf.get_keys(group).every (function (key) {
-            if (key == 'IsTemporary' && kf.get_boolean(group, key)) {
-                debug ("Removing group " + group + " as it is temporary");
-                kf.remove_group(group);
-                return false;
-            }
-
-            if (hasSuffix(key, "Enabled"))
-                kf.remove_key(group, key);
-
-            return true;
-        });
-    });*/
-
-    //TODO: figure out how reliable this parametrization method is
-    /* if (key == 'Identity') {
-                val = ['${username}', val.split('@').pop()].join("@");
-            }
-     */
-
-    let result = {};
-    kf.get_groups()[0].forEach(function(group) {
-        if (group.indexOf(" ") == -1)
-          return;
-        let split = group.split(" ");
-        if (split.length != 2)
-          return;
-        if (split[0] != "Account")
-          return;
-        let fcmdr_group = "fcmdr_" + split[1];
-        let fcmdr_obj = {};
-        result[fcmdr_group] = fcmdr_obj;
-        kf.get_keys(group)[0].forEach(function(key) {
-            fcmdr_obj[key] = kf.get_value(group, key);
-        });
-    });
-
-    this.connmgr.submit_change("org.gnome.online-accounts", JSON.stringify(result));
+    this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (merge));
     this.connmgr.finish_changes();
-    return;
+}
+
+//This is a workaround for the broken deep_unpack behaviour
+NMLogger.prototype.deep_unpack = function (variant) {
+    let result = variant.deep_unpack ();
+
+    for (let group in result) {
+        for (let key in result[group]) {
+            let v = result[group][key];
+            if (v instanceof GLib.Variant) {
+                result[group][key] = this.deep_unpack (result[group][key]);
+            }
+        }
+    }
+
+    return result;
+}
+
+NMLogger.prototype.merge_confs = function (conf, secrets) {
+    for (let group in secrets) {
+        if (!(group in conf)) {
+            conf[group] = {};
+        }
+        for (let key in secrets[group]) {
+            debug("KEY " + key);
+            conf[group][key] = secrets[group][key];
+        }
+    }
+
+    return conf;
+}
+
+NMLogger.prototype.connection_added_cb = function (client, connection) {
+    debug("Network Manager connection added");
+    this.submit_connection (connection);
 }
 
 var GSettingsLogger = function (connmgr) {
@@ -612,8 +596,8 @@ if (GLib.getenv('FC_TESTING') == null) {
 
   let inhibitor = new ScreenSaverInhibitor();
   let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
-  //let goalogger = new GoaLogger(connmgr);
   let gsetlogger = new GSettingsLogger(connmgr);
+  let nmlogger = new NMLogger (connmgr);
 
   ml.run();
 }
