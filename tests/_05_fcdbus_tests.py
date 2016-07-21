@@ -596,7 +596,7 @@ class TestDbusService(unittest.TestCase):
 
         # Request index
         req = urllib2.Request(
-            'http://localhost:%s/clientdata/index.json' % port)
+            'http://localhost:%s/myclientdata/index.json' % port)
         f = urllib2.urlopen(req)
         response = f.read()
         f.close()
@@ -612,7 +612,7 @@ class TestDbusService(unittest.TestCase):
 
         # Request applies
         req = urllib2.Request(
-            'http://localhost:%s/clientdata/applies.json' % port)
+            'http://localhost:%s/myclientdata/applies.json' % port)
         f = urllib2.urlopen(req)
         response = f.read()
         f.close()
@@ -628,7 +628,7 @@ class TestDbusService(unittest.TestCase):
 
         # Request profile
         req = urllib2.Request(
-            'http://localhost:%s/clientdata/%s.json' % (port, uid))
+            'http://localhost:%s/myclientdata/%s.json' % (port, uid))
         f = urllib2.urlopen(req)
         response = f.read()
         f.close()

@@ -59,9 +59,11 @@ def parse_config(config_file=None):
     except ParsingError:
         logging.error('There was an error parsing %s' % config_file)
         sys.exit(1)
-    except:
-        logging.error('There was an unknown error parsing %s' % config_file)
-        raise
+    except Exception, e:
+        logging.error(
+            'There was an unknown error parsing %s: %s' %
+            config_file, e)
+        sys.exit(1)
 
     if config.has_section(constants.CONFIG_SECTION_NAME):
         config = config_to_dict(config)
@@ -80,7 +82,14 @@ def parse_config(config_file=None):
             'profiles_dir', constants.DEFAULT_PROFILES_DIR),
         'database_path': section.get(
             'database_path', constants.DEFAULT_DATABASE_PATH),
+        'client_data_url': section.get(
+            'client_data_url', constants.DEFAULT_CLIENT_DATA_URL),
     }
+
+    if not args['client_data_url'][-1] == args['client_data_url'][0] == '/':
+        logging.error('Client data URL must start and end with /')
+        sys.exit(1)
+
     return args
 
 

@@ -46,7 +46,7 @@ from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
 HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
-CLIENTDATA_REGEX = re.compile(r'^/clientdata/(?P<filename>(index|applies|[0-9]+)\.json)')
+CLIENTDATA_REGEX = re.compile(r'^(?P<filename>(index|applies|[0-9]+)\.json)')
 
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
@@ -190,6 +190,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.webservice_host = args['webservice_host']
         self.webservice_port = int(args['webservice_port'])
+        self.client_data_url = args['client_data_url']
 
     def run(self, sessionbus=False):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -215,11 +216,12 @@ class FleetCommanderDbusService(dbus.service.Object):
         except Exception, e:
             logging.error('Error starting webservice: %s' % e)
             sys.exit(1)
+
         self.webservice.add_handler(
             '/changes/submit/', self.changes_listener_callback)
 
         self.webservice.add_handler(
-            '/clientdata/', self.client_data_callback)
+            self.client_data_url, self.client_data_callback)
 
         # Enter main loop
         self._loop.run()
@@ -265,7 +267,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Default response and status code
         response = ''
         status_code = 404
-        match = re.match(CLIENTDATA_REGEX, path)
+        match = re.match(CLIENTDATA_REGEX, path[len(self.client_data_url):])
         if match:
             filename = match.groupdict()['filename']
             filepath = os.path.join(self.args['profiles_dir'], filename)
