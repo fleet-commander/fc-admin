@@ -1,10 +1,9 @@
 fc_admin_pydir = ${fcpythondir}/fleetcommander
 fc_admin_py_SCRIPTS = \
-	fleetcommander/__init__.py   \
+	fleetcommander/__init__.py \
 	fleetcommander/collectors.py \
 	fleetcommander/database.py \
-	fleetcommander/fcdbus.py            \
-	fleetcommander/flaskless.py \
+	fleetcommander/fcdbus.py \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/sshcontroller.py \
 	fleetcommander/utils.py

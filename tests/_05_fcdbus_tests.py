@@ -62,7 +62,8 @@ class TestDbusService(unittest.TestCase):
         self.test_directory = tempfile.mkdtemp()
 
         self.args = {
-            'data_dir': self.test_directory,
+            'webservice_host': 'localhost',
+            'webservice_port': '0',
             'state_dir': self.test_directory,
             'profiles_dir': os.path.join(self.test_directory, 'profiles'),
             'database_path': os.path.join(self.test_directory, 'database.db'),

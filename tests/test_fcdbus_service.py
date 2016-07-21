@@ -72,7 +72,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
     def __init__(self, test_directory):
         args = {
-            'data_dir': test_directory,
+            'webservice_host': 'localhost',
+            'webservice_port': '0',
             'state_dir': test_directory,
             'database_path': os.path.join(test_directory, 'database.db'),
         }

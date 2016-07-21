@@ -1,7 +1,6 @@
 [admin]
-standalone_host = 'localhost'
-standalone_port = 8181
-data_dir        = @FCDATADIR@
+webservice_host = 'localhost'
+webservice_port = 9989
 state_dir       = @ADMINSTATEDIR@
 profiles_dir    = @PROFILESDIR@
 database_path   = @DATABASEFILE@
