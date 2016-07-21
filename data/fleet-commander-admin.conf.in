@@ -1,5 +1,5 @@
 [admin]
-webservice_host = localhost
+webservice_host = 0.0.0.0
 webservice_port = 9989
 state_dir       = @ADMINSTATEDIR@
 profiles_dir    = @PROFILESDIR@
