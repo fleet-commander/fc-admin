@@ -35,12 +35,12 @@ import dbus.mainloop.glib
 
 import gi
 gi.require_version('Soup', '2.4')
-from gi.repository import GObject, Soup
+from gi.repository import GObject, Gio, Soup
 
 import sshcontroller
 import libvirtcontroller
 from database import DBManager
-from utils import merge_settings
+from utils import merge_settings, get_ip_address
 from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
@@ -155,7 +155,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     LIST_DOMAINS_RETRIES = 2
     WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
     DNULL = open('/dev/null', 'w')
-    DEFAULT_WEBSERVICE_PORT = 9989
 
     def __init__(self, args):
         """
@@ -189,6 +188,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.ssh = sshcontroller.SSHController()
         self.known_hosts_file = '/root/.ssh/known_hosts'
 
+        self.webservice_host = args['webservice_host']
+        self.webservice_port = int(args['webservice_port'])
+
     def run(self, sessionbus=False):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         if not sessionbus:
@@ -200,11 +202,16 @@ class FleetCommanderDbusService(dbus.service.Object):
         self._loop = GObject.MainLoop()
 
         # Prepare changes listener
-        self.webservice_port = self.DEFAULT_WEBSERVICE_PORT
         self.webservice = Soup.Server()
         try:
-            self.webservice.listen_all(
-                self.webservice_port, Soup.ServerListenOptions.IPV4_ONLY)
+            address = Gio.InetSocketAddress.new_from_string(
+                get_ip_address(self.webservice_host),
+                self.webservice_port)
+            self.webservice.listen(address, 0)
+            if self.webservice_port == 0:
+                listeners = self.webservice.get_listeners()
+                inetsocket = listeners[0].get_local_address()
+                self.webservice_port = inetsocket.get_port()
         except Exception, e:
             logging.error('Error starting webservice: %s' % e)
             sys.exit(1)

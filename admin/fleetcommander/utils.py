@@ -47,22 +47,11 @@ def config_to_dict(config):
     return res
 
 
-def parse_config(config_file=None, host=None, port=None):
-
-    args = {
-        'host': host or constants.DEFAULT_LISTEN_HOST,
-        'port': port or constants.DEFAULT_LISTEN_PORT,
-        'data_dir': constants.DEFAULT_DATA_DIR,
-        'state_dir': constants.DEFAULT_STATE_DIR,
-        'profiles_dir': constants.DEFAULT_PROFILES_DIR,
-        'database_path': constants.DEFAULT_DATABASE_PATH,
-    }
-
+def parse_config(config_file=None):
     if config_file is None:
         config_file = constants.DEFAULT_CONFIG_FILE
 
     config = ConfigParser()
-
     try:
         config.read(config_file)
     except IOError:
@@ -74,27 +63,26 @@ def parse_config(config_file=None, host=None, port=None):
         logging.error('There was an unknown error parsing %s' % config_file)
         raise
 
-    if not config.has_section(constants.CONFIG_SECTION_NAME):
-        return args
+    if config.has_section(constants.CONFIG_SECTION_NAME):
+        config = config_to_dict(config)
+        section = config[constants.CONFIG_SECTION_NAME]
+    else:
+        section = {}
 
-    config = config_to_dict(config)
-    section = config[constants.CONFIG_SECTION_NAME]
-
-    if host is None:
-        args['host'] = section.get('standalone_host', constants.DEFAULT_LISTEN_HOST)
-    if port is None:
-        args['port'] = section.get('standalone_port', constants.DEFAULT_LISTEN_PORT)
-    args['data_dir'] = section.get('data_dir', constants.DEFAULT_DATA_DIR)
-    args['state_dir'] = section.get('state_dir', constants.DEFAULT_STATE_DIR)
-    args['profiles_dir'] = section.get('profiles_dir', constants.DEFAULT_PROFILES_DIR)
-    args['database_path'] = section.get('database_path', constants.DEFAULT_DATABASE_PATH)
-
-    try:
-        args['port'] = int(args['port'])
-    except ValueError:
-        logging.error("Error reading configuration file %s: 'port' option must be an integer value" % config_file)
-        sys.exit(1)
-
+    args = {
+        'webservice_host': section.get(
+            'webservice_host', constants.DEFAULT_WEBSERVICE_HOST),
+        'webservice_port': section.get(
+            'webservice_port', constants.DEFAULT_WEBSERVICE_PORT),
+        'data_dir': section.get(
+            'data_dir', constants.DEFAULT_DATA_DIR),
+        'state_dir': section.get(
+            'state_dir', constants.DEFAULT_STATE_DIR),
+        'profiles_dir': section.get(
+            'profiles_dir', constants.DEFAULT_PROFILES_DIR),
+        'database_path': section.get(
+            'database_path', constants.DEFAULT_DATABASE_PATH),
+    }
     return args
 
 
@@ -128,3 +116,11 @@ def get_free_port():
     port = addr[1]
     s.close()
     return port
+
+
+def get_ip_address(hostname):
+    """
+    Returns first IP address for given hostname
+    """
+    data = socket.gethostbyname(hostname)
+    return unicode(data)
