@@ -14,6 +14,7 @@ Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version
 BuildRequires: python2-devel
 BuildRequires: dbus-python
 BuildRequires: pygobject2
+BuildRequires: python-gobject
 BuildRequires: libvirt-python
 BuildRequires: python-websockify
 BuildRequires: numpy
@@ -27,6 +28,7 @@ Requires: dconf
 Requires: python2
 Requires: dbus-python
 Requires: pygobject2
+Requires: python-gobject
 Requires: libvirt-python
 Requires: python-websockify
 Requires: numpy
