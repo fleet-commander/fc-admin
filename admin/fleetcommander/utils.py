@@ -113,18 +113,6 @@ def merge_settings(a, b):
     return result
 
 
-def get_free_port():
-    """
-    Get a free random local port
-    """
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 0))
-    addr = s.getsockname()
-    port = addr[1]
-    s.close()
-    return port
-
-
 def get_ip_address(hostname):
     """
     Returns first IP address for given hostname
