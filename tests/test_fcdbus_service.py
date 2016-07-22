@@ -75,7 +75,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'webservice_port': '0',
             'state_dir': test_directory,
             'database_path': os.path.join(test_directory, 'database.db'),
-            'client_data_url': '/myclientdata/'
+            'client_data_url': '/'
         }
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')

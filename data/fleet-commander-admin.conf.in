@@ -4,4 +4,4 @@ webservice_port = 9989
 state_dir       = @ADMINSTATEDIR@
 profiles_dir    = @PROFILESDIR@
 database_path   = @DATABASEFILE@
-client_data_url = /clientdata/
+client_data_url = /
