@@ -30,7 +30,7 @@ function checkHypervisorConfig(cb) {
   // Show hypervisor dialog if not configured
   fc.GetHypervisorConfig(function(data) {
     if (data.needcfg) {
-      configureHypervisor();
+      showHypervisorConfig();
     } else {
       if (cb) cb()
     }
