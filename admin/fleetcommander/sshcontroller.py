@@ -78,6 +78,10 @@ class SSHController(object):
                 'Error getting host keys: %s' % error)
 
     def add_keys_to_known_hosts(self, known_hosts_file, key_data):
+        # First create path if does not exists
+        directory = os.path.dirname(known_hosts_file)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         with open(known_hosts_file, 'a') as fd:
             fd.write(key_data)
             fd.close()
