@@ -5,3 +5,4 @@ state_dir       = @ADMINSTATEDIR@
 profiles_dir    = @PROFILESDIR@
 database_path   = @DATABASEFILE@
 client_data_url = /
+tmp_session_destroy_timeout = 60

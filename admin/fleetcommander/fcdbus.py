@@ -53,7 +53,6 @@ DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
 DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
 
-
 class FleetCommanderDbusClient(object):
 
     """
@@ -201,6 +200,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.webservice_port = int(args['webservice_port'])
         self.client_data_url = args['client_data_url']
 
+        self.tmp_session_destroy_timeout = float(
+            args['tmp_session_destroy_timeout'])
+
     def run(self, sessionbus=False):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         if not sessionbus:
@@ -232,6 +234,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.webservice.add_handler(
             self.client_data_url, self.client_data_callback)
 
+        # Start session checking
+        self.start_session_checking()
+
         # Enter main loop
         self._loop.run()
 
@@ -245,7 +250,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             name = pathsplit[2]
             # Get data in message
             try:
-                logging.error('Data received: %s' % message.request_body.data)
+                logging.debug('Data received: %s' % message.request_body.data)
                 if name in self.collectors_by_name:
                     self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
                     response = {'status': 'ok'}
@@ -280,7 +285,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         if match:
             filename = match.groupdict()['filename']
             filepath = os.path.join(self.args['profiles_dir'], filename)
-            logging.error('%s %s' % (filename, filepath))
+            logging.debug('%s %s' % (filename, filepath))
             try:
                 response = self.get_data_from_file(filepath)
                 status_code = 200
@@ -423,6 +428,77 @@ class FleetCommanderDbusService(dbus.service.Object):
             except:
                 pass
             del(self.db.config['websockify_pid'])
+
+    def get_domains(self, only_temporary=False):
+        tries = 0
+        while tries < self.LIST_DOMAINS_RETRIES:
+            tries += 1
+            try:
+                domains = self.get_libvirt_controller().list_domains()
+                if only_temporary:
+                    return [d for d in domains if d['temporary']]
+                return domains
+            except Exception as e:
+                error = e
+                logging.debug('Getting domain try %s: %s' % (tries, error))
+        logging.error('Error retrieving domains %s' % error)
+        return None
+
+    def stop_current_session(self):
+        if 'uuid' not in self.db.config or \
+           'tunnel_pid' not in self.db.config or \
+           'port' not in self.db.config:
+            return False, 'There was no session started'
+
+        domain_uuid = self.db.config['uuid']
+        tunnel_pid = self.db.config['tunnel_pid']
+
+        del(self.db.config['uuid'])
+        del(self.db.config['tunnel_pid'])
+        del(self.db.config['port'])
+
+        self.websocket_stop()
+
+        try:
+            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
+        except Exception as e:
+            logging.error(e)
+            return False, 'Error stopping session: %s' % e
+
+        return True, None
+
+    def start_session_checking(self):
+        self._last_changes_request = time.time()
+        # Add callback for temporary sessions check
+        GObject.timeout_add(1000, self.check_running_sessions)
+
+    def check_running_sessions(self):
+        """
+        Checks currently running sessions and destroy temporary ones on timeout
+        """
+        logging.debug('Checking running sessions')
+        time_passed = time.time() - self._last_changes_request
+        if time_passed > self.tmp_session_destroy_timeout:
+            logging.debug('Checking currently active temporary sessions')
+            domains = self.get_domains(only_temporary=True)
+            if domains:
+                logging.info('Destroying stalled sessions')
+                # Stop current session
+                current_uuid = self.db.config.get('uuid', False)
+                if current_uuid:
+                    self.stop_current_session()
+                for domain in domains:
+                    ctrlr = self.get_libvirt_controller()
+                    domain_uuid = domain['uuid']
+                    if current_uuid != domain_uuid:
+                        try:
+                            ctrlr.session_stop(domain_uuid)
+                        except Exception, e:
+                            logging.error(
+                                'Error destroying session with UUID %s: %s' %
+                                (domain_uuid, e))
+            return False
+        return True
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
@@ -720,6 +796,9 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetChanges(self):
+        # Update last changes request time
+        self._last_changes_request = time.time()
+
         response = {}
 
         for namespace, collector in self.collectors_by_name.items():
@@ -847,23 +926,20 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def ListDomains(self):
-        tries = 0
-        while tries < self.LIST_DOMAINS_RETRIES:
-            tries += 1
-            try:
-                domains = self.get_libvirt_controller().list_domains()
-                return json.dumps({'status': True, 'domains': domains})
-            except Exception as e:
-                error = e
-        logging.error(error)
-        return json.dumps({
-            'status': False,
-            'error': 'Error retrieving domains'
-        })
+        domains = self.get_domains()
+        if domains is not None:
+            return json.dumps({'status': True, 'domains': domains})
+        else:
+            return json.dumps({
+                'status': False,
+                'error': 'Error retrieving domains'
+            })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
     def SessionStart(self, domain_uuid, admin_host):
+        self.start_session_checking()
+
         if self.db.config.get('port', None) is not None:
             return json.dumps({
                 'status': False,
@@ -909,29 +985,11 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def SessionStop(self):
-        if 'uuid' not in self.db.config or 'tunnel_pid' not in self.db.config or 'port' not in self.db.config:
-            return json.dumps({
-                'status': False,
-                'error': 'There was no session started'})
-
-        domain_uuid = self.db.config['uuid']
-        tunnel_pid = self.db.config['tunnel_pid']
-
-        del(self.db.config['uuid'])
-        del(self.db.config['tunnel_pid'])
-        del(self.db.config['port'])
-
-        self.websocket_stop()
-
-        try:
-            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
-        except Exception as e:
-            logging.error(e)
-            return json.dumps({
-                'status': False,
-                'error': 'Error stopping session: %s' % e})
-
-        return json.dumps({'status': True})
+        status, msg = self.stop_current_session()
+        if status:
+            return json.dumps({'status': True})
+        else:
+            return json.dumps({'status': False, 'error': msg})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')

@@ -75,7 +75,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'webservice_port': '0',
             'state_dir': test_directory,
             'database_path': os.path.join(test_directory, 'database.db'),
-            'client_data_url': '/'
+            'client_data_url': '/',
+            'tmp_session_destroy_timeout': 60,
         }
 
         super(TestFleetCommanderDbusService, self).__init__(args)

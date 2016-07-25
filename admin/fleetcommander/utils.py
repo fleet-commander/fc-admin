@@ -84,6 +84,9 @@ def parse_config(config_file=None):
             'database_path', constants.DEFAULT_DATABASE_PATH),
         'client_data_url': section.get(
             'client_data_url', constants.DEFAULT_CLIENT_DATA_URL),
+        'tmp_session_destroy_timeout': section.get(
+            'tmp_session_destroy_timeout',
+            constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT),
     }
 
     if not args['client_data_url'][-1] == args['client_data_url'][0] == '/':

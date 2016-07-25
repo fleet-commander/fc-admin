@@ -303,15 +303,17 @@ class LibVirtController(object):
         # Return identifier and spice URI for the new domain
         return (self._last_started_domain.UUIDString(), connection_port, tunnel_pid)
 
-    def session_stop(self, identifier, tunnel_pid):
+    def session_stop(self, identifier, tunnel_pid=None):
         """
         Stops session in virtual machine
         """
-        # Kill ssh tunnel FIXME: Test pid belonging to ssh
-        try:
-            os.kill(tunnel_pid, signal.SIGKILL)
-        except:
-            pass
+        if tunnel_pid is not None:
+            # Kill ssh tunnel
+            # FIXME: Test pid belonging to ssh
+            try:
+                os.kill(tunnel_pid, signal.SIGKILL)
+            except:
+                pass
         self._connect()
         # Get machine by its uuid
         self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)

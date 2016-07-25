@@ -91,6 +91,7 @@ class TestDbusService(unittest.TestCase):
             'state_dir': self.test_directory,
             'profiles_dir': os.path.join(self.test_directory, 'profiles'),
             'database_path': os.path.join(self.test_directory, 'database.db'),
+            'tmp_session_destroy_timeout': 60,
         }
 
         self.INDEX_FILE = os.path.join(self.args['profiles_dir'], 'index.json')
