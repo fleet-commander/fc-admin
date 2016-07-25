@@ -58,7 +58,7 @@ class SSHController(object):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, error = prog.communicate()
         if prog.returncode != 0:
-            raise LibVirtControllerException(
+            raise SSHControllerException(
                 'Error generating keypair: %s' % error)
 
     def scan_host_keys(self, hostname, port=DEFAULT_SSH_PORT):
