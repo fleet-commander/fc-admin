@@ -67,9 +67,9 @@ profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
 fcadmindir='${datarootdir}'/fleet-commander-admin
-fccockpitdir='${datarootdir}'/fleet-commander-admin/cockpit
 fcpythondir='${datarootdir}'/fleet-commander-admin/python
 fcconfigfile='${sysconfdir}'/xdg/fleet-commander-admin.conf
+cockpitdir='${datarootdir}'/cockpit
 
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
@@ -78,7 +78,7 @@ AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
 AC_SUBST(fcadmindir)
-AC_SUBST(fccockpitdir)
+AC_SUBST(cockpitdir)
 AC_SUBST(fcpythondir)
 AC_SUBST(fcconfigfile)
 
@@ -89,7 +89,7 @@ AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCADMINDIR, "$fcadmindir")
-AS_AC_EXPAND(FCCOCKPITDIR, "$fccockpitdir")
+AS_AC_EXPAND(COCKPITDIR, "$cockpitdir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
 AS_AC_EXPAND(FCCONFIGFILE, "$fcconfigfile")
 

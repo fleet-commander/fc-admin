@@ -73,22 +73,20 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 
 %preun
 %systemd_preun fleet-commander-dbus.service
-rm %{_datadir}/cockpit/fleet-commander-admin
 
 %post
-systemctl daemon-reload
-systemctl enable fleet-commander-dbus.service
-systemctl daemon-reload
-systemctl start fleet-commander-dbus.service >/dev/null 2>&1
-ln -s %{_datadir}/%{name}/cockpit %{_datadir}/cockpit/fleet-commander-admin
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable fleet-commander-dbus.service >/dev/null 2>&1
+systemctl daemon-reload >/dev/null 2>&1
+systemctl restart fleet-commander-dbus.service >/dev/null 2>&1
 
 %files
 %license
 %dir %{_datadir}/%{name}
-%dir %{_datadir}/%{name}/cockpit
+%dir %{_datadir}/cockpit/fleet-commander-admin
 %dir %{_datadir}/%{name}/python
 %dir %{_datadir}/%{name}/python/fleetcommander
-%{_datadir}/%{name}/cockpit
+%{_datadir}/cockpit/fleet-commander-admin
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/%{name}.conf
@@ -102,7 +100,7 @@ ln -s %{_datadir}/%{name}/cockpit %{_datadir}/cockpit/fleet-commander-admin
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
-* Thu Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.99-1
+* Mon Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.99-1
 - Fleet Commander admin migrated to Cockpit plugin
 - Updated package for 0.7.99 release
 

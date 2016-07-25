@@ -18,18 +18,19 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
- function showGOAAccounts() {
-   console.log(currentprofile)
-   curent_goa_accounts = currentprofile['settings']['org.gnome.online-accounts']
-   // Populate GOA accounts list
-   populateGOAAccounts();
-   $('#edit-profile-modal').modal('hide');
-   $('#goa-accounts-modal').modal('show');
- }
+var current_goa_accounts = null;
+var current_goa_account_id = null;
+
+function showGOAAccounts() {
+  // Populate GOA accounts list
+  populateGOAAccounts();
+  $('#edit-profile-modal').modal('hide');
+  $('#goa-accounts-modal').modal('show');
+}
 
 function getGOAAccount(account_id) {
   var account;
-  $.each(curent_goa_accounts, function(index, element) {
+  $.each(current_goa_accounts, function(index, element) {
     if (element[account_id]) account = element[account_id];
   });
   return account;
@@ -46,9 +47,8 @@ function getGOAAccountId(account) {
 }
 
 function populateGOAAccounts() {
-  curent_goa_accounts = curent_goa_accounts || [];
   $('#goa-accounts-list').html('')
-  $(curent_goa_accounts).each(function(){
+  $(current_goa_accounts).each(function(){
     addGOAAccountItem(this);
   })
 }
@@ -113,31 +113,34 @@ function showGOAAccountEdit(account_id) {
 function removeGOAAccount(account_id, no_ask, replace) {
   function remove() {
     var remove_index = null;
-    $.each(curent_goa_accounts, function(index, element) {
+    $.each(current_goa_accounts, function(index, element) {
       if (element[account_id]) remove_index = index;
     });
     if (remove_index != null) {
       if (replace) {
-        curent_goa_accounts.splice(remove_index, 1, replace);
+        current_goa_accounts.splice(remove_index, 1, replace);
       } else {
-        curent_goa_accounts.splice(remove_index, 1);
+        current_goa_accounts.splice(remove_index, 1);
       }
     }
+    populateGOAAccounts();
   }
 
   if (no_ask) {
     remove();
   } else {
-    // TODO: Add question dialog
-    // showQuestionDialog(remove);
-    remove()
+    showQuestionDialog(
+      _('Do you want remove this account?'),
+      _('Remove GOA account'),function() {
+        remove()
+        $('#message-dialog-modal').modal('hide');
+      });
   }
-  populateGOAAccounts();
 }
 
 function updateProviderServices() {
   var provider = $('#goa-provider').val();
-  $('#goa-provider-icon').attr('src', 'img/goa/' + provider + '.png');
+  $('#goa-current-provider-icon').attr('src', 'img/goa/' + provider + '.png');
   var services = GOA_PROVIDERS[provider].services;
   var serviceblock = $('#goa-services');
   serviceblock.html('');
@@ -158,7 +161,7 @@ function updateOrAddGOAAccount() {
   data = getAccountProviderServicesData();
   // Check for repeated accounts
   var repeated = false;
-  $.each(curent_goa_accounts, function(index, elem) {
+  $.each(current_goa_accounts, function(index, elem) {
     var cur_account_id = getGOAAccountId(elem);
     var account = elem[cur_account_id];
     if (account.Provider == data.Provider) {
@@ -187,7 +190,8 @@ function updateOrAddGOAAccount() {
       if (!getGOAAccount(account_id)) break;
     }
     account_data[account_id] = data;
-    curent_goa_accounts.push(account_data)
+    current_goa_accounts.push(account_data)
+    populateGOAAccounts();
   } else {
     account_data[current_goa_account_id] = data;
     removeGOAAccount(current_goa_account_id, true, account_data);
@@ -207,9 +211,10 @@ function getAccountProviderServicesData() {
 }
 
 function saveGOAAccounts() {
-  // TODO: Save current profile data
-  fc.GOAAccounts(curent_goa_accounts, currentuid, function(resp) {
+  fc.GOAAccounts(current_goa_accounts, currentuid, function(resp) {
     if (resp.status) {
+      currentprofile['settings']['org.gnome.online-accounts'] =
+        current_goa_accounts
       $('#goa-accounts-modal').modal('hide');
       $('#edit-profile-modal').modal('show');
     } else {
@@ -227,14 +232,18 @@ $(document).ready (function () {
     if(resp.status) {
       GOA_PROVIDERS = resp.providers;
       // Bind GOA related events
-      $('#show-goa-accounts').click(showGOAAccounts);
+      $('#show-goa-accounts').click(function () {
+        current_goa_accounts =
+          currentprofile['settings']['org.gnome.online-accounts'] || [];
+        showGOAAccounts();
+      });
       $('#show-goa-account-edit').click(showGOAAccountEdit);
       $('#goa-provider').change(updateProviderServices);
       $('#update-add-goa-account').click(updateOrAddGOAAccount);
       $('#save-goa-accounts').click(saveGOAAccounts);
 
       $('#goa-account-edit-modal').on('hide.bs.modal', function () {
-        showGOAAccounts()
+        showGOAAccounts(current_goa_accounts);
       });
     } else {
       showMessageDialog(

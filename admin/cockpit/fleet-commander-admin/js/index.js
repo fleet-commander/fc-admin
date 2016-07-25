@@ -22,8 +22,6 @@ var _ = cockpit.gettext
 var fc = null;
 var currentuid = null;
 var currentprofile = null;
-var curent_goa_accounts = null;
-var current_goa_account_id = null;
 
 /*******************************************************************************
  * Hypervisor configuration
