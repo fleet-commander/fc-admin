@@ -93,13 +93,20 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             {
                 'uuid': libvirtmock.TEST_UUID_SPICE,
                 'name': 'Fedora',
-                'active': True
+                'active': True,
+                'temporary': False
             },
-
             {
                 'uuid': libvirtmock.TEST_UUID_NO_SPICE,
                 'name': 'Fedora unspiced',
-                'active': True
+                'active': True,
+                'temporary': False
+            },
+            {
+                'uuid': libvirtmock.TEST_UUID_TEMPORARY,
+                'name': 'Fedora - Fleet Commander temporary session',
+                'active': True,
+                'temporary': True
             },
         ])
 

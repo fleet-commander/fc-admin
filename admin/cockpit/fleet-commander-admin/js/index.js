@@ -365,17 +365,30 @@ function showDomainSelection() {
             var text = this.name + ' (' + _('running') + ')';
             wrapper.addClass('grayed')
           }
+          if (this.temporary) wrapper.addClass('tmpSession');
           domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
           domain.click(selectDomain);
           domain.appendTo(wrapper);
           wrapper.appendTo(list);
         });
+        toggleTemporarySessions();
       } else {
         $('#domain-selection-modal').modal('hide');
         showMessageDialog(_('Error getting domain list'), _('Error'));
       }
     });
   });
+}
+
+function toggleTemporarySessions() {
+  var showTemporary = $('#toggle-fc-temporary-sessions').is(':checked');
+  if (showTemporary) {
+    $('#toggle-fc-temporary-sessions-label').html(_('Hide Fleet Commander temporary sessions'));
+    $('#domain-selection-list > div.tmpSession').show();
+  } else {
+    $('#toggle-fc-temporary-sessions-label').html(_('Show Fleet Commander temporary sessions'));
+    $('#domain-selection-list > div.tmpSession').hide();
+  }
 }
 
 /*******************************************************************************
@@ -392,8 +405,9 @@ $(document).ready (function () {
   $('#add-highlighted-app').click(addHighlightedAppFromEntry);
   $('#save-highlighted-apps').click(saveHighlightedApps);
   $('#show-domain-selection').click(showDomainSelection);
+  $('#toggle-fc-temporary-sessions').change(toggleTemporarySessions);
 
-    // Set placeholder for admin port in hypervisor configuration dialog
+  // Set placeholder for admin port in hypervisor configuration dialog
   var adminhost = location.hostname;
   var adminport = location.port || 80
   $('#adminhost').attr('placeholder', adminhost + ':' + adminport);
