@@ -270,7 +270,11 @@ class LibVirtController(object):
                 print e
                 return dom.name()
 
-        return [{'uuid': domain.UUIDString(), 'name': domain_name(domain)} for domain in domains]
+        return [{
+            'uuid': domain.UUIDString(),
+            'name': domain_name(domain),
+            'active': domain.isActive()
+        } for domain in domains]
 
     def session_start(self, identifier):
         """

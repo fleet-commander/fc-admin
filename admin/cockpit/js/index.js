@@ -365,11 +365,19 @@ function showDomainSelection() {
       if (resp.status) {
         $('#domain-selection-modal .spinner').hide();
         $.each(resp.domains, function() {
-          domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
-          wrapper = $('<div></div>');
+          wrapper = $('<div></div>', {'class': 'list-group-item'});
+          if (this.active) {
+            domain = $('<span></span>', {
+              text: this.name + ' (' + _('running') + ')',
+              href: '#',
+            });
+            wrapper.addClass('disabled')
+          } else {
+            domain = $('<a></a>', { text: this.name, href: '#', 'data-uuid': this.uuid});
+            domain.click(selectDomain);
+          }
           domain.appendTo(wrapper)
           wrapper.appendTo(list);
-          domain.click(selectDomain);
         });
       } else {
         $('#domain-selection-modal').modal('hide');
