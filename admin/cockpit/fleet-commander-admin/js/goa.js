@@ -235,6 +235,9 @@ $(document).ready (function () {
       $('#show-goa-accounts').click(function () {
         current_goa_accounts =
           currentprofile['settings']['org.gnome.online-accounts'] || [];
+        var typestring = Object.prototype.toString.call(current_goa_accounts);
+        if (typestring != '[Object array]')
+          current_goa_accounts = []
         showGOAAccounts();
       });
       $('#show-goa-account-edit').click(showGOAAccountEdit);
