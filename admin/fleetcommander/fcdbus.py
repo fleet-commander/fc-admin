@@ -41,7 +41,7 @@ import sshcontroller
 import libvirtcontroller
 from database import DBManager
 from utils import merge_settings, get_ip_address
-from collectors import GoaCollector, GSettingsCollector, LibreOfficeCollector
+import collectors
 from goa import GOAProvidersLoader
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
@@ -188,9 +188,12 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         # Initialize collectors
         self.collectors_by_name = {
-            'org.gnome.gsettings': GSettingsCollector(self.db),
-            # 'org.gnome.online-accounts': GoaCollector(),
-            'org.libreoffice.registry': LibreOfficeCollector(self.db),
+            'org.gnome.gsettings':
+                collectors.GSettingsCollector(self.db),
+            'org.libreoffice.registry':
+                collectors.LibreOfficeCollector(self.db),
+            'org.freedesktop.NetworkManager':
+                collectors.NetworkManagerCollector(self.db),
         }
 
         # Initialize SSH controller

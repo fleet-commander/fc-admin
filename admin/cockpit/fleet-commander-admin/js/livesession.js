@@ -63,11 +63,14 @@ function readChanges() {
     console.log('READ CHANGES:',resp)
     $('#gsettings-event-list').html('');
     $('#libreoffice-event-list').html('');
+    $('#networkmanager-event-list').html('');
 
     if ('org.libreoffice.registry' in resp)
       populateChanges('#libreoffice-event-list', resp['org.libreoffice.registry']);
     if ('org.gnome.gsettings' in resp)
       populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
+    if ('org.freedesktop.NetworkManager' in resp)
+      populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager']);
   });
 }
 
@@ -94,6 +97,7 @@ function reviewAndSubmit() {
 function deployProfile() {
   var gsettings = [];
   var libreoffice = [];
+  var networkmanager = [];
 
   $.each($('#gsettings-event-list input[data-id]:checked'), function (i,e) {
     gsettings.push($(this).attr('data-id'));
@@ -103,8 +107,15 @@ function deployProfile() {
     libreoffice.push($(this).attr('data-id'));
   });
 
-  var changeset = {"org.libreoffice.registry": libreoffice,
-                   "org.gnome.gsettings":      gsettings};
+  $.each($('#networkmanager-event-list input[data-id]:checked'), function (i,e) {
+    networkmanager.push($(this).attr('data-id'));
+  });
+
+  var changeset = {
+    "org.gnome.gsettings": gsettings,
+    "org.libreoffice.registry": libreoffice,
+    "org.freedesktop.NetworkManager": networkmanager
+  };
 
   $('#spinner-modal h4').text(_('Saving settings'));
   $('#spinner-modal').modal('show');
