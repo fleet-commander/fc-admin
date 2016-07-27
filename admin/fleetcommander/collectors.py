@@ -21,22 +21,40 @@
 #
 
 import json
+import logging
 
 
-class GoaCollector(object):
-
+class DummyCollector:
     """
-    Gnome Online Accounts collector class
+    Dummy collector class
     """
 
-    def __init__(self):
-        self.json = {}
+    def __init__(self, *args, **kwargs):
+        pass
 
     def handle_change(self, change):
-        self.json = change
+        """
+        Handle a change and store it
+        """
+        pass
+
+    def dump_changes(self):
+        """
+        Dump all changes in a sorted list
+        """
+        return []
+
+    def remember_selected(self, selected_keys):
+        """
+        Mark given changes as selected
+        """
+        pass
 
     def get_settings(self):
-        return self.json
+        """
+        Return a list of selected changes
+        """
+        return []
 
 
 class BaseCollector(object):
@@ -53,11 +71,36 @@ class BaseCollector(object):
         self.db = db
         self.settings = self.db.sessionsettings
 
+    def get_key_from_change(self, change):
+        """
+        Return change key identifier
+        """
+        if 'key' in change:
+            return change['key']
+
+    def get_value_from_change(self, change):
+        """
+        Return change human readable value
+        """
+        if 'value' in change:
+            return change['value']
+        return 'Undefined'
+
     def handle_change(self, change):
         """
         Handle a change and store it
         """
-        self.settings.update_setting(self.COLLECTOR_NAME, change['key'], json.dumps(change))
+        key = self.get_key_from_change(change)
+        if key is not None:
+            self.settings.update_setting(
+                self.COLLECTOR_NAME,
+                key,
+                json.dumps(change))
+        else:
+            logging.error('%s: Given change is invalid: %s' % (
+                self.COLLECTOR_NAME,
+                self. json.dumps(change)
+            ))
 
     def dump_changes(self):
         """
@@ -66,7 +109,8 @@ class BaseCollector(object):
         data = []
         changes = self.settings.get_for_collector(self.COLLECTOR_NAME)
         for key, change in sorted(changes.items()):
-            data.append([key, json.loads(change)['value']])
+            value = self.get_value_from_change(json.loads(change))
+            data.append([key, value])
         return data
 
     def remember_selected(self, selected_keys):
@@ -86,7 +130,8 @@ class BaseCollector(object):
         """
         Return a list of selected changes
         """
-        changes = self.settings.get_for_collector(self.COLLECTOR_NAME, only_selected=True)
+        changes = self.settings.get_for_collector(
+            self.COLLECTOR_NAME, only_selected=True)
         keys = sorted(changes.keys())
         return [json.loads(changes[key]) for key in keys]
 
@@ -97,8 +142,31 @@ class GSettingsCollector(BaseCollector):
     """
     COLLECTOR_NAME = 'org.gnome.gsettings'
 
+
 class LibreOfficeCollector(BaseCollector):
     """
     LibreOffice collector class
     """
     COLLECTOR_NAME = 'org.libreoffice.registry'
+
+
+class NetworkManagerCollector(BaseCollector):
+    """
+    Network manager collector class
+    """
+    COLLECTOR_NAME = 'org.freedesktop.NetworkManager'
+
+    def get_key_from_change(self, change):
+        """
+        Return change key identifier for NM connection
+        """
+        if 'connection' in change and 'uuid' in change['connection']:
+            return change['connection']['uuid']
+
+    def get_value_from_change(self, change):
+        """
+        Return change human readable value for NM connection
+        """
+        if 'connection' in change and 'id' in change['connection']:
+            return change['connection']['id']
+        return 'Undefined'
