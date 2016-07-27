@@ -168,5 +168,11 @@ class NetworkManagerCollector(BaseCollector):
         Return change human readable value for NM connection
         """
         if 'connection' in change and 'id' in change['connection']:
-            return change['connection']['id']
+            if 'type' in change['connection']:
+                return '%s - %s' % (
+                    change['connection']['type'],
+                    change['connection']['id'],
+                )
+            else:
+                return change['connection']['id']
         return 'Undefined'
