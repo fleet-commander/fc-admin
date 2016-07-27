@@ -282,19 +282,25 @@ NMLogger.prototype.submit_connection = function (conn) {
 
     debug ("Added connection of type " + type);
 
-    if (type == "802-11-wireless") {
-        /* Looks like this triggers an infinite loop */
-        secrets = conn.get_secrets ("802-11-wireless-security", null);
-    } else if (type == "vpn") {
-        secrets = conn.get_secrets ("vpn", null);
-    } else if (type == "802-3-ethernet")  {
-        secrets = conn.get_secrets ("802-1x", null);
-    } else {
-        debug ("Network Connection discarded as type " + type + " is not supported");
-        return;
-    }
+    let merge = {};
 
-    let merge = this.merge_confs (this.deep_unpack(conf), this.deep_unpack(secrets));
+    try {
+        if (type == "802-11-wireless") {
+            /* Looks like this triggers an infinite loop */
+            secrets = conn.get_secrets ("802-11-wireless-security", null);
+        } else if (type == "vpn") {
+            secrets = conn.get_secrets ("vpn", null);
+        } else if (type == "802-3-ethernet")  {
+            secrets = conn.get_secrets ("802-1x", null);
+        } else {
+            debug ("Network Connection discarded as type " + type + " is not supported");
+            return;
+        }
+    } catch (e) {
+        debug ("There was an error trying to fetch secrets, skipping secrets: " + e);
+    } finally {
+        merge = this.merge_confs (this.deep_unpack(conf), this.deep_unpack(secrets));
+    }
 
     this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (merge));
     this.connmgr.finish_changes();
