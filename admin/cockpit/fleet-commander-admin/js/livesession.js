@@ -70,13 +70,18 @@ function readChanges() {
     if ('org.gnome.gsettings' in resp)
       populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
     if ('org.freedesktop.NetworkManager' in resp)
-      populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager']);
+      populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager'], true);
   });
 }
 
-function populateChanges(section, data) {
+function populateChanges(section, data, only_value) {
   $.each (data, function (i, item) {
-    var row = item.join (" ");
+    if (only_value) {
+      var row = item[1];
+    } else {
+      var row = item.join (" ");
+    }
+
     var li = $('<li></li>');
     var p  = $('<div></div>', {text: row}).appendTo(li);
     li.appendTo($(section));
