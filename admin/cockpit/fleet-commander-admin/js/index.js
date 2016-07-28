@@ -144,6 +144,11 @@ function refreshProfileList() {
 }
 
 function showAddProfile() {
+  // Clear form data before show
+  $('#profile-name').val('');
+  $('#profile-desc').val('');
+  $('#profile-users').val('');
+  $('#profile-groups').val('');
   $('#add-profile-modal').modal('show');
 }
 
