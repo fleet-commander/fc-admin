@@ -41,6 +41,7 @@ const ml = imports.mainloop;
 
 //Global settings
 var _debug = false;
+var _use_devfile = true;
 
 function debug (msg) {
   if (!_debug)
@@ -60,8 +61,10 @@ function get_options_from_devfile () {
   let dev = Gio.file_new_for_path (DEV_PATH);
   let options = {};
 
-  if (dev.query_exists (null) == false)
+  if (dev.query_exists (null) == false) {
+    printerr ("No file found in " + DEV_PATH);
     return null;
+  }
 
   let enumerator = dev.enumerate_children ("standard::name", Gio.FileQueryInfoFlags.NONE, null);
   for (let info = enumerator.next_file (null); info != null; info = enumerator.next_file (null)) {
@@ -129,8 +132,12 @@ function get_default_route () {
 function parse_args () {
   for(let i = 0; i < ARGV.length; i++) {
     switch(ARGV[i]) {
+      case "--no-devfile":
+        _use_devfile = false;
+        break;
       case "--help":
       case "-h":
+        printerr("--no-devfile:            don't use /dev/ file for options");
         printerr("--help/-h:               show this output message");
         printerr("--debug/-d/-v:           enables debugging/verbose output");
         System.exit(0);
@@ -586,10 +593,14 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 
 if (GLib.getenv('FC_TESTING') == null) {
   parse_args ();
-  let options = get_options_from_devfile (options);
-  if (options == null) {
-    printerr ("No file found in " + DEV_PATH);
-    System.exit(0);
+  let options = null;
+  if (_use_devfile) {
+    options = get_options_from_devfile (options);
+    if (options == null) {
+      System.exit(0);
+    }
+  } else {
+    options = {admin_server_port: 9999, admin_server_host: 'localhost'};
   }
 
   debug ("admin_server_host: " + options['admin_server_host'] + " - admin_server_port: " + options['admin_server_port']);
