@@ -232,14 +232,15 @@ function saveExistingProfile() {
 }
 
 function removeProfile(uid, displayName) {
-  $('#del-profile-name').text(displayName);
-  $('#del-profile-modal').modal('show');
-  $('#del-profile-confirm').click(function () {
-    fc.DeleteProfile(uid, function(resp){
-      refreshProfileList();
-      $('#del-profile-modal').modal('hide');
-    });
-  });
+  showQuestionDialog(
+    _('Are you sure you want to delete profile') + ' "' + displayName + '"?',
+    _('Delete profile confirmation'),
+    function(){
+      fc.DeleteProfile(uid, function(resp){
+        refreshProfileList();
+        $('#message-dialog-modal').modal('hide');
+      });
+    })
 }
 
 /*******************************************************************************
