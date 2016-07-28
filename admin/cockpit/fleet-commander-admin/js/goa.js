@@ -28,37 +28,14 @@ function showGOAAccounts() {
   $('#goa-accounts-modal').modal('show');
 }
 
-function getGOAAccount(account_id) {
-  var account;
-  $.each(current_goa_accounts, function(index, element) {
-    if (element[account_id]) account = element[account_id];
-  });
-  return account;
-}
-
-function getGOAAccountId(account) {
-  var account_id = null;
-  $.each(account, function(key, value) {
-    if (/^Account account_/.test(key)) {
-      account_id = key;
-    }
-  })
-  return account_id
-}
-
 function populateGOAAccounts() {
   $('#goa-accounts-list').html('')
-  $(current_goa_accounts).each(function(){
-    addGOAAccountItem(this);
+  $.each(current_goa_accounts, function(key, account){
+    addGOAAccountItem(key, account);
   })
 }
 
-function addGOAAccountItem(val) {
-  var account_id = getGOAAccountId(val);
-  if (!account_id) return
-
-  var account_data = val[account_id]
-
+function addGOAAccountItem(account_id, account_data) {
   var tr = $('<tr></tr>');
   $('<td></td>', { text: account_id }).appendTo(tr);
   var provider = $('<td></td>', { text: account_data.Provider });
@@ -92,7 +69,7 @@ function showGOAAccountEdit(account_id) {
   });
 
   if (typeof(account_id) == 'string') {
-    var account = getGOAAccount(account_id);
+    var account = current_goa_accounts[account_id];
     combo.val(account.Provider);
     updateProviderServices();
     // Set selected services
@@ -110,32 +87,14 @@ function showGOAAccountEdit(account_id) {
 
 }
 
-function removeGOAAccount(account_id, no_ask, replace) {
-  function remove() {
-    var remove_index = null;
-    $.each(current_goa_accounts, function(index, element) {
-      if (element[account_id]) remove_index = index;
+function removeGOAAccount(account_id) {
+  showQuestionDialog(
+    _('Are you sure you want remove "' + account_id + '"?'),
+    _('Remove GOA account confirmation'),function() {
+      delete current_goa_accounts[account_id];
+      $('#message-dialog-modal').modal('hide');
+      populateGOAAccounts();
     });
-    if (remove_index != null) {
-      if (replace) {
-        current_goa_accounts.splice(remove_index, 1, replace);
-      } else {
-        current_goa_accounts.splice(remove_index, 1);
-      }
-    }
-    populateGOAAccounts();
-  }
-
-  if (no_ask) {
-    remove();
-  } else {
-    showQuestionDialog(
-      _('Do you want remove this account?'),
-      _('Remove GOA account'),function() {
-        remove()
-        $('#message-dialog-modal').modal('hide');
-      });
-  }
 }
 
 function updateProviderServices() {
@@ -161,12 +120,10 @@ function updateOrAddGOAAccount() {
   data = getAccountProviderServicesData();
   // Check for repeated accounts
   var repeated = false;
-  $.each(current_goa_accounts, function(index, elem) {
-    var cur_account_id = getGOAAccountId(elem);
-    var account = elem[cur_account_id];
+  $.each(current_goa_accounts, function(account_id , account) {
     if (account.Provider == data.Provider) {
       if (current_goa_account_id) {
-        if (current_goa_account_id != cur_account_id)
+        if (current_goa_account_id != account_id)
           repeated = true;
       } else {
         repeated = true;
@@ -181,21 +138,18 @@ function updateOrAddGOAAccount() {
       return
   }
 
-  var account_data = {};
+  var account_id;
   if (!current_goa_account_id) {
-    var account_id;
     while (true) {
       account_id = 'Account account_fc_' +
                     Math.floor(new Date() / 1000).toString() + '_0';
-      if (!getGOAAccount(account_id)) break;
+      if (!current_goa_accounts[account_id]) break;
     }
-    account_data[account_id] = data;
-    current_goa_accounts.push(account_data)
-    populateGOAAccounts();
   } else {
-    account_data[current_goa_account_id] = data;
-    removeGOAAccount(current_goa_account_id, true, account_data);
+    account_id = current_goa_account_id;
   }
+  current_goa_accounts[account_id] = data;
+  populateGOAAccounts();
   $('#goa-account-edit-modal').modal('hide');
 }
 
@@ -234,10 +188,10 @@ $(document).ready (function () {
       // Bind GOA related events
       $('#show-goa-accounts').click(function () {
         current_goa_accounts =
-          currentprofile['settings']['org.gnome.online-accounts'] || [];
-        var typestring = Object.prototype.toString.call(current_goa_accounts);
-        if (typestring != '[object Array]')
-          current_goa_accounts = []
+          currentprofile['settings']['org.gnome.online-accounts'] || {};
+        var typestring = Object.prototype.toString.call({});
+        if (Object.prototype.toString.call(current_goa_accounts) != typestring)
+          current_goa_accounts = {}
         showGOAAccounts();
       });
       $('#show-goa-account-edit').click(showGOAAccountEdit);
@@ -246,7 +200,7 @@ $(document).ready (function () {
       $('#save-goa-accounts').click(saveGOAAccounts);
 
       $('#goa-account-edit-modal').on('hide.bs.modal', function () {
-        showGOAAccounts(current_goa_accounts);
+        showGOAAccounts();
       });
     } else {
       showMessageDialog(

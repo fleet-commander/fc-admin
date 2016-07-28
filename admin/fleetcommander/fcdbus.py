@@ -344,20 +344,18 @@ class FleetCommanderDbusService(dbus.service.Object):
                 gsettings = profile['settings']['org.gnome.gsettings']
 
                 if not isinstance(gsettings, list):
-                    return (
-                        False,
-                        'settings/org.gnome.gsettings value in %s is not a list' % uid
-                    )
+                    logging.error('settings/org.gnome.gsettings value in \
+                                   %s.json is not a list. Sanitizing' % uid)
+                    profile['settings']['org.gnome.gsettings'] = []
 
             if profile['settings'].get('org.gnome.online-accounts', False):
 
                 goa = profile['settings']['org.gnome.online-accounts']
 
-                if not isinstance(goa, list):
-                    return (
-                        False,
-                        'settings/org.gnome.online-accounts value in %s is not a list' % uid
-                    )
+                if not isinstance(goa, dict):
+                    logging.error('settings/org.gnome.online-accounts value in \
+                                   %s.json is not a dict. Sanitizing' % uid)
+                    profile['settings']['org.gnome.online-accounts'] = {}
 
         return(True, profile)
 
@@ -1005,12 +1003,27 @@ class FleetCommanderDbusService(dbus.service.Object):
                     return True
             return False
 
-        if not isinstance(data, list) or \
-           len(set(map(check_account, data))) > 1:
+        if not isinstance(data, dict):
             return json.dumps({
                 'status': False,
-                'error': 'account list is not a list of account dicts',
+                'error': 'accounts data is not a dictionary',
             })
+
+        for account_id, account in data.items():
+            invalid = True
+            if isinstance(account, dict) and 'Provider' in account.keys():
+                for key, value in account.items():
+                    if key != 'Provider':
+                        if key.endswith('Enabled'):
+                            if type(value) != bool:
+                                invalid = False
+                    else:
+                        invalid = False
+            if invalid:
+                return json.dumps({
+                    'status': False,
+                    'error': 'malformed goa accounts data received',
+                })
 
         status, resp = self.read_profile(uid)
         if not status:

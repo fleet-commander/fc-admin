@@ -670,8 +670,6 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
         resp = c.get_goa_providers()
         self.assertTrue(resp['status'])
-        print resp['providers']
-        print self.DUMMY_GOA_PROVIDERS_DATA
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
     def test_20_goa_accounts(self):
@@ -683,46 +681,51 @@ class TestDbusService(unittest.TestCase):
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
 
+        account1_id = 'Account account_fc_1432373432_0'
         account1 = {
-            'Account account_fc_1432373432_0': {
-                'Provider': 'provider',
-                'MailEnabled': False,
-                'DocumentsEnabled': True,
-                'ContactsEnabled': False
-            }
+            'Provider': 'provider',
+            'MailEnabled': False,
+            'DocumentsEnabled': True,
+            'ContactsEnabled': False
         }
 
+        account2_id = 'Account account_fc_1432883432_0'
         account2 = {
-            'Account account_fc_1432883432_0': {
-                'Provider': 'pizza_provider',
-                'PepperoniEnabled': False,
-                'CheeseEnabled': True,
-                'HotdogEnabled': False
-            }
+            'Provider': 'pizza_provider',
+            'PepperoniEnabled': False,
+            'CheeseEnabled': True,
+            'HotdogEnabled': False
+        }
+
+        accounts = {
+            account1_id: account1,
+            account2_id: account2
         }
 
         # Add GOA accounts
-        accounts = [account1, account2]
         resp = c.goa_accounts(accounts, uid)
+        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
         self.assertEqual(len(goa_accounts), 2)
-        self.assertEqual(goa_accounts[0], account1)
-        self.assertEqual(goa_accounts[1], account2)
+        self.assertEqual(goa_accounts[account1_id], account1)
+        self.assertEqual(goa_accounts[account2_id], account2)
 
         # Modify accounts
-        accounts = [account2]
+        del accounts[account1_id]
         resp = c.goa_accounts(accounts, uid)
+        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
         self.assertEqual(len(goa_accounts), 1)
-        self.assertEqual(goa_accounts[0], account2)
+        self.assertEqual(goa_accounts[account2_id], account2)
 
         # Empty accounts
-        accounts = []
+        accounts = {}
         resp = c.goa_accounts(accounts, uid)
+        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
