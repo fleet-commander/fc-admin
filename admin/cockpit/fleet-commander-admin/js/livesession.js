@@ -135,4 +135,11 @@ $(document).ready (function () {
 
   fc = new FleetCommanderDbusClient();
   startLiveSession();
+
+  // Error catchall to workarount "oops" message in cockpit
+  window.onerror = function(message, url, lineNumber) {
+    console.log('Live session error: (', lineNumber, ' ', url, ') ', message);
+    return true;
+  };
+
 });
