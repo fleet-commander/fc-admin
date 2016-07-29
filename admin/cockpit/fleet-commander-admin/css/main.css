@@ -18,14 +18,27 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-#domain-selection-list {
-  max-height: 200px;
+#event-logs-dialog {
+  width: 90%;
   overflow: auto;
+}
+
+#domain-selection-list {
+  max-height: 600px;
+  overflow: auto;
+}
+
+#selected-changes-form {
+  max-height: 600px;
+  overflow: auto;
+}
+
+#change-item-template {
+  display: none;
 }
 
 .grayed {
   background-color: lightgray;
-
 }
 
 #goa-current-provider-icon {
@@ -38,4 +51,14 @@
   width: 2.5em;
   height: 2.5em;
   margin: 0 2px;
+}
+
+.list-view-pf-checkbox {
+  padding: 0 3px;
+  margin: 0;
+  margin-right: 15px;
+}
+
+.list-view-pf-main-info {
+  padding: 0;
 }

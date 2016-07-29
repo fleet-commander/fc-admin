@@ -46,21 +46,41 @@
   <body class="page-ct">
 
     <div id="event-logs" class="modal fade">
-      <div class="modal-dialog">
+      <div id="event-logs-dialog" class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <button id="close-review" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title" translatable="yes">Profile Changes</h4>
           </div>
           <div class="modal-body">
+            <div id="change-item-template">
+              <div class="list-view-item">
+                <div class="list-view-pf-checkbox">
+                  <input class="change-checkbox" type="checkbox">
+                </div>
+                <div class="list-view-pf-main-info">
+                  <div class="list-view-pf-body">
+                    <div class="list-view-pf-description">
+                      <div class="changekey list-group-item-heading">
+                        Key
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <form id="selected-changes-form">
               <div class="form-group">
-                <ul id="gsettings-event-list">
-                </ul>
-                <ul id="libreoffice-event-list">
-                </ul>
-                <ul id="networkmanager-event-list">
-                </ul>
+                <h4 translatable="yes">GSettings changes</h4>
+                <div id="gsettings-event-list" class="list-view">
+                </div>
+                <h4 translatable="yes">LibreOffice changes</h4>
+                <div id="libreoffice-event-list" class="list-view">
+                </div>
+                <h4 translatable="yes">NetworkManager changes</h4>
+                <div id="networkmanager-event-list" class="list-view">
+                </div>
               </div>
             </form>
           </div>

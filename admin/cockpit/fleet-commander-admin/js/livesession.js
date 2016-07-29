@@ -60,7 +60,6 @@ function listenForChanges() {
 
 function readChanges() {
   fc.GetChanges(function(resp){
-    console.log('READ CHANGES:',resp)
     $('#gsettings-event-list').html('');
     $('#libreoffice-event-list').html('');
     $('#networkmanager-event-list').html('');
@@ -81,15 +80,11 @@ function populateChanges(section, data, only_value) {
     } else {
       var row = item.join (" ");
     }
-
-    var li = $('<li></li>');
-    var p  = $('<div></div>', {text: row}).appendTo(li);
-    li.appendTo($(section));
-    $('<input/>', {type:  'checkbox', class: 'change-checkbox', 'data-id': item[0]})
-      .click (function (e) {
-        e.stopImmediatePropagation();
-      })
-      .prependTo(li);
+    var citem = $($('#change-item-template').html());
+    citem.appendTo($(section));
+    checkbox = citem.find('input[type=checkbox]');
+    checkbox.attr('data-id', item[0]);
+    citem.find('.changekey').html(row);
   });
 }
 
