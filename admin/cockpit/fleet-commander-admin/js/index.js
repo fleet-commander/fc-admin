@@ -50,7 +50,7 @@ function showHypervisorConfig() {
   });
 }
 
-function saveHypervisorConfig() {
+function saveHypervisorConfig(cb) {
   clearModalFormErrors('configure-hypervisor-modal');
 
   var data = {
@@ -64,7 +64,11 @@ function saveHypervisorConfig() {
   function saveHypervisorFinal(data) {
     fc.SetHypervisorConfig(data, function(resp) {
       if (resp.status) {
-        $('#hypervisor-config-modal').modal('hide');
+        if (typeof(cb) === 'function') {
+          cb();
+        } else {
+          $('#hypervisor-config-modal').modal('hide');
+        }
       } else {
         showMessageDialog(resp.error, _('Error'))
       }
@@ -95,10 +99,47 @@ function saveHypervisorConfig() {
       });
     }
   });
-
-
 }
 
+function showPubkeyInstall() {
+  $('#pubkey-install-modal .spinner').hide();
+  $('#pubkey-install-credentials-group').show();
+  $('#pubkey-install-modal .modal-footer').show();
+  $('#pubkey-install-password').val('');
+  $('#hypervisor-config-modal').modal('hide');
+  $('#pubkey-install-modal').modal('show');
+}
+
+function cancelPubkeyInstall() {
+  $('#message-dialog-modal').modal('hide');
+  $('#pubkey-install-modal').modal('hide');
+  $('#hypervisor-config-modal').modal('show');
+}
+
+function installPubkey() {
+  saveHypervisorConfig(function(){
+    $('#pubkey-install-modal .spinner').show();
+    $('#pubkey-install-credentials-group').hide();
+    $('#pubkey-install-modal .modal-footer').hide();
+
+    var host = $('#host').val();
+    var user = $('#username').val();
+    var pass = $('#pubkey-install-password').val();
+
+    fc.InstallPubkey(host, user, pass, function(resp) {
+      $('#pubkey-install-modal').modal('hide');
+      $('#pubkey-install-password').val('');
+      if (resp.status) {
+        showMessageDialog(
+          _('Publick key has been installed succesfuly'),
+          _('Public key installed'),
+          cancelPubkeyInstall);
+      } else {
+        showMessageDialog(resp.error, _('Error'), cancelPubkeyInstall);
+      }
+    });
+  })
+}
 
 /*******************************************************************************
  * Profiles
@@ -400,6 +441,10 @@ $(document).ready (function () {
   $('#add-highlighted-app').click(addHighlightedAppFromEntry);
   $('#save-highlighted-apps').click(saveHighlightedApps);
   $('#show-domain-selection').click(showDomainSelection);
+  $('#show-pubkey-install').click(showPubkeyInstall);
+  $('#cancel-pubkey-install').click(cancelPubkeyInstall);
+  $('#install-pubkey').click(installPubkey);
+
 
   // Set placeholder for admin port in hypervisor configuration dialog
   var adminhost = location.hostname;

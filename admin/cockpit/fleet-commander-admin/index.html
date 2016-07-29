@@ -27,7 +27,7 @@
           <div class="modal-body">
             <div id="host-group" class="form-group">
               <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
-              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control" value="HOLA">
+              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control">
             </div>
             <div id="username-group" class="form-group">
               <label for="username" class="control-label" translatable="yes">Username for connection</label>
@@ -45,15 +45,42 @@
               <input id="adminhost" name="adminhost" type="hostname" class="form-control">
             </div>
             <div id="pubkey-group" class="form-group">
-              <label for="pubkey" class="control-label" translatable="yes">Public key</label>
+              <label for="pubkey" class="control-label" translatable="yes">
+                Public key
+              </label>
               <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
               <p translatable="yes">Add this key to the SSH authorized_keys file in $HOME/.ssh/ for the user you want to use to connect to the hypervisor machine.</p>
+              <button id="show-pubkey-install" class="btn btn-success pull-right" translatable="yes">Install public key</button>
+
             </div>
           </div>
 
           <div class="modal-footer">
             <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
             <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pubkey-install-modal" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" translatable="yes">Public key installation</h4>
+          </div>
+
+          <div class="modal-body">
+            <div class="spinner"></div>
+            <div id="pubkey-install-credentials-group" class="form-group">
+              <label for="pubkey-install-password" class="control-label" translatable="yes">Password</label>
+              <input id="pubkey-install-password" name="pubkey-install-password" type="password" class="form-control">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button id="install-pubkey" class="btn btn-primary" t ranslatable="yes">Install</button>
+            <button id="cancel-pubkey-install" class="btn btn-default" translatable="yes">Cancel</button>
           </div>
         </div>
       </div>

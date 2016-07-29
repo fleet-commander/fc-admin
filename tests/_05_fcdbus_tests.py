@@ -43,9 +43,12 @@ from fleetcommander import sshcontroller
 # Tests imports
 from test_fcdbus_service import MockLibVirtController
 
-# Set session bus for tests
-fcdbus.FleetCommanderDbusClient.DEFAULT_BUS = dbus.SessionBus
 
+class TestDbusClient(fcdbus.FleetCommanderDbusClient):
+    DEFAULT_BUS = dbus.SessionBus
+
+# Mock dbus client
+fcdbus.FleetCommanderDbusClient = TestDbusClient
 
 class TestDbusService(unittest.TestCase):
 
@@ -255,6 +258,42 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(c.get_hypervisor_config(), dataresp)
         # Check host added to known_hosts
         self.ssh.check_known_host(self.known_hosts_file, data['host'])
+
+    def test_03_check_known_host(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Check not known host
+        resp = c.check_known_host('localhost')
+        self.assertFalse(resp['status'])
+        self.assertEqual(resp['fprint'], '2048 SHA256:HASH localhost (RSA)\n')
+        self.assertEqual(resp['keys'], 'localhost ssh-rsa KEY\n')
+
+        # Add host to known hosts
+        self.ssh.add_keys_to_known_hosts(
+            self.known_hosts_file, 'localhost ssh-rsa KEY\n')
+
+        # Check already known host
+        resp = c.check_known_host('localhost')
+        self.assertTrue(resp['status'])
+
+    def test_03_install_public_key(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Test install with bad credentials
+        resp = c.install_pubkey(
+            'localhost',
+            'username',
+            'badpassword',
+        )
+        self.assertFalse(resp['status'])
+
+        # Test install with correct credentials
+        resp = c.install_pubkey(
+            'localhost',
+            'username',
+            'password',
+        )
+        self.assertTrue(resp['status'])
 
     def test_04_new_profile(self):
         c = fcdbus.FleetCommanderDbusClient()

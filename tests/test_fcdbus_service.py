@@ -23,6 +23,7 @@
 # Python imports
 import os
 import sys
+import subprocess
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -86,6 +87,14 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             os.environ['TOPSRCDIR'],
             'tests/data/fc_goa_providers_test.conf')
 
+        self.ssh.install_pubkey = self.ssh_install_pubkey_mock
+
+    def ssh_install_pubkey_mock(self, pubkey, user, password, host, port):
+        """
+        Just mock ssh command execution
+        """
+        if password != 'password':
+            raise ssh.SSHControllerException('Invalid credentials')
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)

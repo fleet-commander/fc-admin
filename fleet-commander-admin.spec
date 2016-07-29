@@ -22,6 +22,12 @@ BuildRequires: python-dbusmock
 BuildRequires: gjs
 BuildRequires: dconf
 BuildRequires: desktop-file-utils
+%if 0%{?rhel}
+BuildRequires: pexpect
+%endif
+%if 0%{?fedora}
+BuildRequires: python2-pexpect
+%endif
 
 Requires: systemd
 Requires: dconf
@@ -34,6 +40,12 @@ Requires: python-websockify
 Requires: numpy
 Requires: cockpit
 Requires(preun): systemd
+%if 0%{?rhel}
+Requires: pexpect
+%endif
+%if 0%{?fedora} >= 21
+Requires: python2-pexpect
+%endif
 
 Provides: bundled(jquery) = 1.11.1
 Provides: bundled(patternfly)

@@ -95,6 +95,14 @@ class FleetCommanderDbusClient(object):
     def set_hypervisor_config(self, data):
         return json.loads(self.iface.SetHypervisorConfig(json.dumps(data)))
 
+    def check_known_host(self, host):
+        return json.loads(self.iface.CheckKnownHost(host))
+
+    def install_pubkey(self, host, user, passwd):
+        return json.loads(self.iface.InstallPubkey(
+            host, user, passwd
+        ))
+
     def get_profiles(self):
         return json.loads(self.iface.GetProfiles())
 
@@ -472,6 +480,15 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Add callback for temporary sessions check
         GObject.timeout_add(1000, self.check_running_sessions)
 
+    def parse_hypervisor_hostname(self, hostname):
+        hostdata = hostname.split()
+        if len(hostdata) == 2:
+            host, port = hostdata
+        else:
+            host = hostdata[0]
+            port = self.ssh.DEFAULT_SSH_PORT
+        return host, port
+
     def check_running_sessions(self):
         """
         Checks currently running sessions and destroy temporary ones on timeout
@@ -532,12 +549,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         if errors:
             return json.dumps({'status': False, 'errors': errors})
 
-        hostdata = data['host'].split()
-        if len(hostdata) == 2:
-            hostname, port = hostdata
-        else:
-            hostname = hostdata[0]
-            port = self.ssh.DEFAULT_SSH_PORT
+        hostname, port = self.parse_hypervisor_hostname(data['host'])
 
         # Check if hypervisor is a known host
         known = self.ssh.check_known_host(
@@ -591,6 +603,52 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Save hypervisor configuration
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def CheckKnownHost(self, hostname):
+        host, port = self.parse_hypervisor_hostname(hostname)
+
+        # Check if hypervisor is a known host
+        known = self.ssh.check_known_host(
+            self.known_hosts_file, host)
+
+        if not known:
+            # Obtain SSH fingerprint for host
+            try:
+                key_data = self.ssh.scan_host_keys(host, port)
+                fprint = self.ssh.get_fingerprint_from_key_data(key_data)
+                return json.dumps({
+                    'status': False,
+                    'fprint': fprint,
+                    'keys': key_data,
+                })
+            except Exception, e:
+                logging.error(
+                    'Error getting hypervisor fingerprint: %s' % e)
+                return json.dumps({
+                    'status': False,
+                    'error': 'Error getting hypervisor fingerprint %s' % e
+                })
+        else:
+            return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='sss', out_signature='s')
+    def InstallPubkey(self, hostname, user, passwd):
+        host, port = self.parse_hypervisor_hostname(hostname)
+        pubkey = self.get_public_key()
+        try:
+            self.ssh.install_pubkey(
+                pubkey, user, passwd, host, port)
+            return json.dumps({'status': True})
+        except Exception, e:
+            logging.error(
+                'Error installing public key: %s' % e)
+            return json.dumps({
+                'status': False,
+                'error': 'Error installing public key: %s' % e
+            })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
@@ -1032,7 +1090,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetGOAProviders(self):
         try:
             loader = GOAProvidersLoader(self.GOA_PROVIDERS_FILE)
-            logging.error('LOADED PROVIDERS: %s - %s' % (self.GOA_PROVIDERS_FILE, loader.get_providers()))
             return json.dumps({
                 'status': True,
                 'providers': loader.get_providers()

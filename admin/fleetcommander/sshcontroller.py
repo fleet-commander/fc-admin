@@ -22,6 +22,8 @@
 import os
 import subprocess
 import tempfile
+import logging
+import pexpect
 
 
 class SSHControllerException(Exception):
@@ -35,6 +37,9 @@ class SSHController(object):
 
     RSA_KEY_SIZE = 2048
     DEFAULT_SSH_PORT = 22
+    SSH_COMMAND = 'ssh'
+    SSH_KEYGEN_COMMAND = 'ssh-keygen'
+    SSH_KEYSCAN_COMMAND = 'ssh-keyscan'
 
     def __init__(self):
         """
@@ -48,7 +53,7 @@ class SSHController(object):
         """
         prog = subprocess.Popen(
             [
-                'ssh-keygen',
+                self.SSH_KEYGEN_COMMAND,
                 '-b', unicode(key_size),
                 '-t', 'rsa',
                 '-f', private_key_file,
@@ -64,7 +69,7 @@ class SSHController(object):
     def scan_host_keys(self, hostname, port=DEFAULT_SSH_PORT):
         prog = subprocess.Popen(
             [
-                'ssh-keyscan',
+                self.SSH_KEYSCAN_COMMAND,
                 '-p', unicode(port),
                 hostname,
             ],
@@ -115,7 +120,7 @@ class SSHController(object):
             fd.close()
         prog = subprocess.Popen(
             [
-                'ssh-keygen',
+                self.SSH_KEYGEN_COMMAND,
                 '-l',
                 '-f', tmpfile,
             ],
@@ -146,7 +151,7 @@ class SSHController(object):
         Executes a program remotely
         """
         ssh_command_start = [
-            'ssh',
+            self.SSH_COMMAND,
         ]
         ssh_command_end = [
             '%s@%s' % (username, hostname),
@@ -181,7 +186,7 @@ class SSHController(object):
         Open a tunnel with given ports and return SSH PID
         """
         ssh_command_start = [
-            'ssh',
+            self.SSH_COMMAND,
         ]
         ssh_command_end = [
             '%s@%s' % (username, hostname),
@@ -210,21 +215,46 @@ class SSHController(object):
             raise SSHControllerException(
                 'Error opening tunnel: %s' % e)
 
-    def install_pubkey(self, public_key_file, username, password,
-                       hostname, port=DEFAULT_SSH_PORT, **kwargs):
+    def install_pubkey(self, pub_key, username, password,
+                       hostname, port=DEFAULT_SSH_PORT,
+                       password_prompt='.*password:',
+                       command_prompt='.+\$',
+                       **kwargs):
         """
         Install a public key in a remote host
-
-        Possible Options
-
-        #!/usr/bin/expect
-        eval spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no usr@$myhost.example.com
-        #use correct prompt
-        set prompt ":|#|\\\$"
-        interact -o -nobuffer -re $prompt return
-        send "my_password\r"
-        interact
-
-        /usr/bin/expect -c 'expect "\n" { eval spawn ssh -oStrictHostKeyChecking=no -oCheckHostIP=no usr@$myhost.example.com; interact }
         """
-        raise NotImplemented('Public key install is not ready yet!')
+        try:
+            # Open connection to given host and simulate a session
+            ssh = pexpect.spawn('%s %s@%s -p %s' % (
+                self.SSH_COMMAND,
+                username,
+                hostname,
+                port
+            ))
+
+            def execute_command(command, final=False):
+                logging.debug('Executing command: "%s"' % command)
+                ssh.sendline(command)
+                if not final:
+                    ssh.expect(command_prompt)
+
+            prompts = [password_prompt, command_prompt]
+            result = ssh.expect(prompts)
+            if result == 0:
+                ssh.sendline(password)
+                result = ssh.expect(prompts)
+                if result == 0:
+                    # Bad credentials
+                    raise SSHControllerException(
+                        'Invalid credentials')
+
+            execute_command('mkdir -p ~/.ssh/')
+            execute_command('chmod 700 ~/.ssh/')
+            execute_command('echo "%s" >> ~/.ssh/authorized_keys2' % pub_key)
+            execute_command('chmod 600 ~/.ssh/authorized_keys2')
+            execute_command('exit', final=True)
+        except SSHControllerException, e:
+            raise e
+        except Exception, e:
+            raise SSHControllerException(
+                'Error installing SSH public key: %s' % e)

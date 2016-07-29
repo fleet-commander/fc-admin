@@ -19,4 +19,5 @@ EXTRA_DIST =                       \
 	tools/ssh                        \
 	tools/ssh-keygen                 \
 	tools/ssh-keyscan                \
+	tools/ssh-session-mock           \
 	tools/ip

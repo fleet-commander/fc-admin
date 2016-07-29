@@ -78,6 +78,22 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
+  this.CheckKnownHost = safe_dbus(function(hostname, cb, errcb) {
+    self._proxy.InstallPubkey(hostname).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  this.InstallPubkey = safe_dbus(function(hostname, user, pass, cb, errcb) {
+    self._proxy.InstallPubkey(hostname, user, pass).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
   // Profile management methods
   this.GetProfiles = safe_dbus(function(cb, errcb) {
     self._proxy.GetProfiles().done(
@@ -195,7 +211,6 @@ function FleetCommanderDbusClient(errorcb) {
     ).fail(errcb || self._errorhandler);
   });
 
-  // GOA methods
   this.GOAAccounts = safe_dbus(function(data, uid, cb, errcb) {
     self._proxy.GOAAccounts(JSON.stringify(data), uid).done(
       function(resp) {

@@ -223,5 +223,30 @@ class TestSSHController(unittest.TestCase):
             'known_hosts_file': self.known_hosts_file,
         })
 
+    def test_08_install_pubkey(self):
+        ssh = sshcontroller.SSHController()
+        # Change ssh command for session mocking
+        ssh.SSH_COMMAND = 'ssh-session-mock'
+        # Use bad credentials
+        with self.assertRaisesRegexp(
+          sshcontroller.SSHControllerException,
+          'Invalid credentials'):
+            ssh.install_pubkey(
+                'PUBKEY',
+                'username',
+                'badpassword',
+                'localhost',
+                22
+            )
+
+        # Use correct credentials (no exception raising)
+        ssh.install_pubkey(
+            'PUBKEY',
+            'username',
+            'password',
+            'localhost',
+            22
+        )
+
 if __name__ == '__main__':
     unittest.main()
