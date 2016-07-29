@@ -21,6 +21,7 @@
 
 const GLib           = imports.gi.GLib;
 const Gio            = imports.gi.Gio;
+const Json           = imports.gi.Json;
 const JsUnit         = imports.jsUnit;
 const System         = imports.system;
 const FleetCommander = imports.fleet_commander_logger;
@@ -60,14 +61,14 @@ let NMConnectionMock = function (type, settings, secrets) {
 }
 
 NMConnectionMock.prototype.to_dbus = function (flag) {
-    return new GLib.Variant ('a{sa{ss}}', this.settings);
+    return Json.gvariant_deserialize_data (JSON.stringify (this.settings), -1, null);
 }
 
 NMConnectionMock.prototype.get_connection_type = function () {
     return this.type;
 }
 NMConnectionMock.prototype.get_secrets = function (setting, cancellable) {
-    return new GLib.Variant ('a{sa{ss}}', this.secrets);
+    return Json.gvariant_deserialize_data (JSON.stringify (this.secrets), -1, null);
 }
 
 FleetCommander.NM = {
@@ -120,6 +121,48 @@ function testNMWifi () {
     let item = connmgr.pop ();
     JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
     JsUnit.assertEquals (item[1], JSON.stringify ({"802-11-wireless-security": {user: "foo", passwd: "asd"}}));
+}
+
+function testFilters () {
+  let secrets = {
+    "802-11-wireless-security": {"leap-password": "somepassword"},
+    "802-1x": {password: "somepassword"},
+    vpn: {data: {secrets: {
+      password: "somepassword",
+      'Xauth password': 'somepassword'
+    }}}
+  };
+
+  //VPN
+  let connmgr = setupNetworkConnection ("vpn", {}, secrets);
+  let item = connmgr.pop ();
+  JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
+
+  let vpnout = JSON.parse(item[1]);
+  JsUnit.assertTrue  (vpnout instanceof Object);
+  JsUnit.assertFalse ("password" in vpnout.vpn.data.secrets);
+  JsUnit.assertFalse ("Xauth password" in vpnout.vpn.data.secrets);
+
+  //Ethernet
+  connmgr = setupNetworkConnection ("802-3-ethernet", {}, secrets);
+  item = connmgr.pop ();
+
+  JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
+
+  let ethout = JSON.parse(item[1]);
+  JsUnit.assertTrue  (ethout instanceof Object);
+  JsUnit.assertFalse ("password" in ethout["802-1x"]);
+
+  //Wifi
+  connmgr = setupNetworkConnection ("802-11-wireless", {}, secrets);
+  item = connmgr.pop ();
+
+  JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
+  let wifiout = JSON.parse(item[1]);
+
+  JsUnit.assertTrue  (wifiout instanceof Object);
+  JsUnit.assertFalse ("password" in wifiout["802-1x"]);
+  JsUnit.assertFalse ("leap-password" in wifiout["802-11-wireless-security"])
 }
 
 // Run test suite //
