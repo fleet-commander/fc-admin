@@ -95,10 +95,10 @@ systemctl restart fleet-commander-dbus.service >/dev/null 2>&1
 %files
 %license
 %dir %{_datadir}/%{name}
-%dir %{_datadir}/cockpit/fleet-commander-admin
 %dir %{_datadir}/%{name}/python
 %dir %{_datadir}/%{name}/python/fleetcommander
 %{_datadir}/cockpit/fleet-commander-admin
+%{_datadir}/%{name}/fc-goa-providers.ini
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/%{name}.conf

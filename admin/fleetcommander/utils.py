@@ -76,6 +76,8 @@ def parse_config(config_file=None):
             'webservice_host', constants.DEFAULT_WEBSERVICE_HOST),
         'webservice_port': section.get(
             'webservice_port', constants.DEFAULT_WEBSERVICE_PORT),
+        'data_dir': section.get(
+            'data_dir', constants.DEFAULT_DATA_DIR),
         'state_dir': section.get(
             'state_dir', constants.DEFAULT_STATE_DIR),
         'profiles_dir': section.get(

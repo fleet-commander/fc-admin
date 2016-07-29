@@ -188,7 +188,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.INDEX_FILE = os.path.join(args['profiles_dir'], 'index.json')
         self.APPLIES_FILE = os.path.join(args['profiles_dir'], 'applies.json')
         self.GOA_PROVIDERS_FILE = os.path.join(
-            args['state_dir'], 'fc-goa-providers.conf')
+            args['data_dir'], 'fc-goa-providers.ini')
 
         # Initialize database
         self.db = DBManager(args['database_path'])

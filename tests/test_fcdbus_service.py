@@ -73,6 +73,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         args = {
             'webservice_host': 'localhost',
             'webservice_port': '0',
+            'data_dir': test_directory,
             'state_dir': test_directory,
             'database_path': os.path.join(test_directory, 'database.db'),
             'client_data_url': '/',
@@ -84,7 +85,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
         self.GOA_PROVIDERS_FILE = os.path.join(
             os.environ['TOPSRCDIR'],
-            'tests/data/fc_goa_providers_test.conf')
+            'tests/data/fc_goa_providers_test.ini')
 
         self.ssh.install_pubkey = self.ssh_install_pubkey_mock
 
