@@ -23,7 +23,6 @@
 # Python imports
 import os
 import sys
-import subprocess
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)

@@ -1,0 +1,14 @@
+#!/bin/bash
+read -p 'password: ' -s pass
+while [ $pass != 'password' ]
+do
+  echo ''
+  read -p 'password: ' -s pass
+done
+
+echo ''
+read -p '$ ' comm
+while [ "$comm" != 'exit' ]
+do
+  read -p '$ ' comm
+done
