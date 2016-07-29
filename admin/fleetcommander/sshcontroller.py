@@ -250,8 +250,8 @@ class SSHController(object):
 
             execute_command('mkdir -p ~/.ssh/')
             execute_command('chmod 700 ~/.ssh/')
-            execute_command('echo "%s" >> ~/.ssh/authorized_keys2' % pub_key)
-            execute_command('chmod 600 ~/.ssh/authorized_keys2')
+            execute_command('echo "%s" >> ~/.ssh/authorized_keys' % pub_key)
+            execute_command('chmod 600 ~/.ssh/authorized_keys')
             execute_command('exit', final=True)
         except SSHControllerException, e:
             raise e
