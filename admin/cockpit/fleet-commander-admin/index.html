@@ -45,25 +45,22 @@
               <input id="adminhost" name="adminhost" type="hostname" class="form-control">
             </div>
             <div id="pubkey-group" class="form-group">
-              <label for="pubkey" class="control-label" translatable="yes">
-                Public key
-              </label>
-              <div class="row">
-                  <div class="form-group col-xs-9">
-                    <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
-                  </div>
-                  <div class="form-group col-xs-3">
-                    <div>
-                      <button id="copy-pubkey-to-clipboard" class="btn btn-default" translatable="yes">Copy to clipboard</button>
-                    </div>
-                    <div>
-                      <button id="show-pubkey-install" class="btn btn-success" translatable="yes">Install public key</button>
-                    </div>
-                  </div>
+              <label for="pubkey" class="control-label" translatable="yes">Public key</label> (<a role="button" data-toggle="collapse" href="#pubkey-wrapper" translatable="yes">show</a>)
+              <div id="pubkey-wrapper" class="collapse">
+                <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
               </div>
-              <p translatable="yes">You need to install Fleet Commander public key in the hypervisor machine.</p>
-              <p translatable="yes">You can install it using the "Install public key" button, or you can Add this key to the SSH authorized_keys file in $HOME/.ssh/ for the user you want to use to connect to the hypervisor machine.</p>
-              <p translatable="yes">This is a one off step task and allow a trusted connection going forward.</p>
+            </div>
+
+            <div class="form-group">
+              <button id="show-pubkey-install" class="btn btn-success" translatable="yes">Install public key</button>
+              <button id="copy-pubkey-to-clipboard" class="btn btn-default" translatable="yes">Copy to clipboard</button>
+            </div>
+
+            <div class="form-group alert alert-info" role="alert">
+              <span class="pficon pficon-info"></span>
+              <p translatable="yes">You need to install Fleet Commander's SSH public key in the libvirt host.</p>
+              <p translatable="yes">You can install it using the "Install public key" button. Your password will be prompted and the public key will be installed in the libvirt host.</p>
+              <p translatable="yes">Alternatively, you can copy this key and append it to the authorized_keys file in &tilde;/.ssh/ for the user you want to use to connect to the libvirt host.</p>
             </div>
           </div>
 
