@@ -173,7 +173,7 @@ function saveGOAAccounts() {
       $('#edit-profile-modal').modal('show');
     } else {
       showMessageDialog(
-        _('There has been an error saving GNOME online accounts'), _('Error'))
+        _('There has been an error saving GNOME Online Accounts'), _('Error'))
     }
   });
 }
