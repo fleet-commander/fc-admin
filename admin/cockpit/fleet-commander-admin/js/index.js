@@ -141,6 +141,20 @@ function installPubkey() {
   })
 }
 
+function copyPubkeyToClipboard() {
+  $('#pubkey').select();
+  document.execCommand('copy')
+  if (window.getSelection) {
+    if (window.getSelection().empty) {
+      window.getSelection().empty();
+    } else if (window.getSelection().removeAllRanges) {
+      window.getSelection().removeAllRanges();
+    }
+  } else if (document.selection) {
+    document.selection.empty();
+  }
+}
+
 /*******************************************************************************
  * Profiles
  ******************************************************************************/
@@ -444,7 +458,7 @@ $(document).ready (function () {
   $('#show-pubkey-install').click(showPubkeyInstall);
   $('#cancel-pubkey-install').click(cancelPubkeyInstall);
   $('#install-pubkey').click(installPubkey);
-
+  $('#copy-pubkey-to-clipboard').click(copyPubkeyToClipboard);
 
   // Set placeholder for admin port in hypervisor configuration dialog
   var adminhost = location.hostname;
