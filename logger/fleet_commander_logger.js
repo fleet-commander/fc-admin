@@ -308,24 +308,29 @@ NMLogger.prototype.submit_connection = function (conn) {
 
     let merge = this.merge_confs (this.deep_unpack(conf), this.deep_unpack(secrets));
 
+    this.filters[type] (merge);
+
     this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (merge));
     this.connmgr.finish_changes();
 }
 
 //This is a workaround for the broken deep_unpack behaviour
 NMLogger.prototype.deep_unpack = function (variant) {
-    let result = variant.deep_unpack ();
+    let unpack_internal = function (unpack) {
+        if (unpack instanceof GLib.Variant) {
+          return unpack_internal (unpack.deep_unpack ());
+        }
 
-    for (let group in result) {
-        for (let key in result[group]) {
-            let v = result[group][key];
-            if (v instanceof GLib.Variant) {
-                result[group][key] = this.deep_unpack (result[group][key]);
+        if ((unpack instanceof Array) || (unpack instanceof Object)) {
+            for (let e in unpack) {
+                unpack[e] = unpack_internal (unpack[e]);
             }
         }
-    }
 
-    return result;
+        return unpack;
+    }.bind (this);
+
+    return unpack_internal (variant);
 }
 
 NMLogger.prototype.merge_confs = function (conf, secrets) {
