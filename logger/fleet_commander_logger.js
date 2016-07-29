@@ -280,33 +280,60 @@ var NMLogger = function (connmgr) {
     this.nmclient.connect ('connection-added', this.connection_added_cb.bind(this));
 }
 
+NMLogger.prototype.filters = {
+  "vpn": function (conn) {
+    debug ("vpn filter");
+    try { delete conn.vpn.data.secrets['Xauth password']; }
+    catch (e) {}
+
+    try { delete conn.vpn.data.secrets.password;}
+    catch (e) {}
+  },
+  "802-3-ethernet": function (conn) {
+    debug ("ethernet filter");
+    try { delete conn['802-1x'].password; }
+    catch (e) {}
+  },
+  "802-11-wireless": function (conn) {
+    debug ("wifi filter");
+    try { delete conn['802-1x'].password; }
+    catch (e) {}
+    try { delete conn['802-11-wireless-security']['leap-password']; }
+    catch (e) {}
+  }
+}
+
 NMLogger.prototype.submit_connection = function (conn) {
     debug ("Submitting Network Manager connection");
     let conf = conn.to_dbus (NM.ConnectionSerializationFlags.ALL);
 
     let type = conn.get_connection_type ();
-    let secrets = new GLib.Variant ("a{sv}", []);
+
+    let secrets = [];
 
     debug ("Added connection of type " + type);
 
     if (type == "802-11-wireless") {
         /* Looks like this triggers an infinite loop */
-        try { secrets = conn.get_secrets ("802-11-wireless-security", null); }
+        try { secrets.push (conn.get_secrets ("802-11-wireless-security", null)); }
         catch (e) {}
-        try { secrets = conn.get_secrets ("802-1x", null); }
+        try { secrets.push (conn.get_secrets ("802-1x", null)); } // we might not want this, ever
         catch (e) {}
     } else if (type == "vpn") {
-        try { secrets = conn.get_secrets ("vpn", null); }
+        try { secrets.push (conn.get_secrets ("vpn", null)); }
         catch (e) {}
     } else if (type == "802-3-ethernet")  {
-        try { secrets = conn.get_secrets ("802-1x", null); }
+        try { secrets.push (conn.get_secrets ("802-1x", null)); } // we might not want this, ver
         catch (e) {}
     } else {
         debug ("Network Connection discarded as type " + type + " is not supported");
         return;
     }
 
-    let merge = this.merge_confs (this.deep_unpack(conf), this.deep_unpack(secrets));
+    let merge = this.deep_unpack(conf);
+    for (let i in secrets) {
+      merge = this.merge_confs (merge, this.deep_unpack(secrets[i]));
+    }
 
     this.filters[type] (merge);
 
@@ -334,12 +361,25 @@ NMLogger.prototype.deep_unpack = function (variant) {
 }
 
 NMLogger.prototype.merge_confs = function (conf, secrets) {
+    if (!(conf instanceof Object) || !(secrets instanceof Object)) {
+       printerr ("ERROR: Cannot merge two items that aren't objects: " +conf+ " " +secrets);
+       return {};
+    }
+
+    debug ("Merging " + JSON.stringify(conf) + " and " + JSON.stringify (secrets));
+
     for (let group in secrets) {
         if (!(group in conf)) {
-            conf[group] = {};
+            conf[group] = secrets[group];
+            continue;
         }
+
         for (let key in secrets[group]) {
-            debug("KEY " + key);
+            if (conf[group][key] instanceof Object) {
+                conf[group][key] = this.merge_confs(conf[group][key],
+                                                    secrets[group][key]);
+                continue;
+            }
             conf[group][key] = secrets[group][key];
         }
     }
