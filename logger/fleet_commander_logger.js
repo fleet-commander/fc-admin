@@ -152,6 +152,12 @@ function parse_args () {
   }
 }
 
+function endianness () {
+  let a32 = new Uint32Array([0x12345678]);
+  let a8 = new Uint8Array(a32.buffer);
+  return a8[1] === 0x12 && a8[2] === 0x78 ? 'MIDDLE' : (a8[0] === 0x12 ? 'BIG' : 'LITTLE');
+}
+
 var ScreenSaverInhibitor = function () {
     this.proxy = Gio.DBusProxy.new_sync(Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
                                         'org.freedesktop.ScreenSaver', '/ScreenSaver',
@@ -306,6 +312,12 @@ NMLogger.prototype.filters = {
 NMLogger.prototype.submit_connection = function (conn) {
     debug ("Submitting Network Manager connection");
     let conf = conn.to_dbus (NM.ConnectionSerializationFlags.ALL);
+    let endns = endianness ();
+
+    if (endns == 'MIDDLE') {
+      printerr ("ERROR: middle endianness not supported");
+      return;
+    }
 
     let type = conn.get_connection_type ();
 
@@ -330,15 +342,34 @@ NMLogger.prototype.submit_connection = function (conn) {
         return;
     }
 
-    let merge = this.deep_unpack(conf);
     for (let i in secrets) {
-      merge = this.merge_confs (merge, this.deep_unpack(secrets[i]));
+     
     }
 
-    this.filters[type] (merge);
+    //this.filters[type] (merge);
+    //this.filters["common"] (merge);
+    
+    let payload = {
+      data: this.variant_data_to_base64 (conf),
+      json: this.deep_unpack (conf),
+      secrets: [],
+    }
 
-    this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (merge));
+    for (let s in secrets) {
+      payload.secrets.push (this.variant_data_to_base64 (secrets[s]));
+    }
+
+    this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (payload));
     this.connmgr.finish_changes();
+}
+
+
+NMLogger.prototype.variant_data_to_base64 = function (variant) {
+    let target = variant;
+    if (endianness () != 'LITTLE')
+      target = variant.byteswap ();
+    let variant_bytes = target.get_data_as_bytes ();
+    return GLib.base64_encode (variant_bytes.get_data (null), variant_bytes.get_size ());
 }
 
 //This is a workaround for the broken deep_unpack behaviour

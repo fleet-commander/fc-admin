@@ -160,19 +160,17 @@ class NetworkManagerCollector(BaseCollector):
         """
         Return change key identifier for NM connection
         """
-        if 'connection' in change and 'uuid' in change['connection']:
-            return change['connection']['uuid']
+        try:
+            return change[u'json'][u'connection'][u'uuid']
+        except:
+            return
 
     def get_value_from_change(self, change):
         """
         Return change human readable value for NM connection
         """
-        if 'connection' in change and 'id' in change['connection']:
-            if 'type' in change['connection']:
-                return '%s - %s' % (
-                    change['connection']['type'],
-                    change['connection']['id'],
-                )
-            else:
-                return change['connection']['id']
-        return 'Undefined'
+        try:
+            conn = change[u'json'][u'connection']
+            return '%s - %s' % (conn[u'type'], conn[u'id']),
+        except:
+            return 'Undefined'
