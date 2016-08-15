@@ -156,6 +156,14 @@ class ConfigValues(SQLiteDict):
     """
     TABLE_NAME = 'config'
 
+
+class ProfilesData(SQLiteDict):
+    """
+    Configuration values database handler
+    """
+    TABLE_NAME = 'profiles'
+
+
 class SessionSettings(object):
 
     TABLE_NAME = 'sessionsettings'
@@ -278,3 +286,5 @@ class DBManager(BaseDBManager):
         self.config = ConfigValues(self)
         # Session settings initialization
         self.sessionsettings = SessionSettings(self)
+        # Profiles
+        self.profiles = ProfilesData(self)
