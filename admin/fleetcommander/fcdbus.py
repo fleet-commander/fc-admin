@@ -167,7 +167,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     """
 
     LIST_DOMAINS_RETRIES = 2
-    WEBSOCKIFY_COMMAND_TEMPLATE = 'websockify %s:%d %s:%d'
     DNULL = open('/dev/null', 'w')
 
     def __init__(self, args):
@@ -415,31 +414,6 @@ class FleetCommanderDbusService(dbus.service.Object):
             data.update(self.db.config['hypervisor'])
         return data
 
-    def websocket_start(self):
-        if 'websockify_pid' in self.db.config and self.db.config['websockify_pid']:
-            return
-
-        command = self.WEBSOCKIFY_COMMAND_TEMPLATE % (
-            self.db.config['websocket_listen_host'],
-            self.db.config['websocket_listen_port'],
-            self.db.config['websocket_target_host'],
-            self.db.config['websocket_target_port'],
-        )
-
-        process = subprocess.Popen(
-            command, shell=True,
-            stdin=self.DNULL, stdout=self.DNULL, stderr=self.DNULL)
-
-        self.db.config['websockify_pid'] = process.pid
-
-    def websocket_stop(self):
-        if 'websockify_pid' in self.db.config and self.db.config['websockify_pid']:
-            try:
-                os.kill(self.db.config['websockify_pid'], signal.SIGKILL)
-            except:
-                pass
-            del(self.db.config['websockify_pid'])
-
     def get_domains(self, only_temporary=False):
         tries = 0
         while tries < self.LIST_DOMAINS_RETRIES:
@@ -467,8 +441,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         del(self.db.config['uuid'])
         del(self.db.config['tunnel_pid'])
         del(self.db.config['port'])
-
-        self.websocket_stop()
 
         try:
             self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
@@ -1032,16 +1004,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.db.config['port'] = port
         self.db.config['tunnel_pid'] = tunnel_pid
 
-        self.websocket_stop()
-
-        self.db.config['websocket_listen_host'] = unicode(admin_host)
-        self.db.config['websocket_listen_port'] = 8989
-        self.db.config['websocket_target_host'] = 'localhost'
-        self.db.config['websocket_target_port'] = port
-
-        self.websocket_start()
-
-        return json.dumps({'status': True, 'port': 8989})
+        return json.dumps({'status': True, 'port': port})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')

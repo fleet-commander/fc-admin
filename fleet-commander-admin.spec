@@ -16,8 +16,6 @@ BuildRequires: dbus-python
 BuildRequires: pygobject2
 BuildRequires: python-gobject
 BuildRequires: libvirt-python
-BuildRequires: python-websockify
-BuildRequires: numpy
 BuildRequires: python-dbusmock
 BuildRequires: gjs
 BuildRequires: dconf
@@ -36,8 +34,6 @@ Requires: dbus-python
 Requires: pygobject2
 Requires: python-gobject
 Requires: libvirt-python
-Requires: python-websockify
-Requires: numpy
 Requires: cockpit
 Requires(preun): systemd
 %if 0%{?rhel}

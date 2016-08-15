@@ -18,6 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+var DEBUG = 0;
 var _ = cockpit.gettext
 var fc = null;
 var currentuid = null;
