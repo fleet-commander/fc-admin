@@ -11,6 +11,7 @@ AC_PATH_PROG([RUNUSER], [runuser])
 AC_PATH_PROG([SSH], [ssh])
 AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
 AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
+AC_PATH_PROG([MKDIR], [mkdir])
 
 if test x$RUNUSER = x ; then
   AC_MSG_ERROR([Could not find runuser])
