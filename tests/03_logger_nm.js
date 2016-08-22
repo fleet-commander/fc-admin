@@ -61,14 +61,14 @@ let NMConnectionMock = function (type, settings, secrets) {
 }
 
 NMConnectionMock.prototype.to_dbus = function (flag) {
-    return Json.gvariant_deserialize_data (JSON.stringify (this.settings), -1, null);
+    return this.settings;
 }
 
 NMConnectionMock.prototype.get_connection_type = function () {
     return this.type;
 }
 NMConnectionMock.prototype.get_secrets = function (setting, cancellable) {
-    return Json.gvariant_deserialize_data (JSON.stringify (this.secrets), -1, null);
+    return this.secrets;
 }
 
 FleetCommander.NM = {
@@ -78,13 +78,50 @@ FleetCommander.NM = {
     },
 };
 
+function serializeConfigObject (obj) {
+    if (!(obj instanceof Object)) {
+        return null;
+    }
+
+    let dict_top = GLib.VariantBuilder.new (new GLib.VariantType ("a{sa{sv}}"));
+    for (let key_top in obj) {
+        let dict_sub = GLib.VariantDict.new (new GLib.Variant ("a{sv}", {}));
+        if (!(obj[key_top] instanceof Object))
+           continue;
+        for (let key_sub in obj[key_top]) {
+            let item = Json.gvariant_deserialize_data (JSON.stringify (obj[key_top][key_sub]), -1, null);
+            dict_sub.insert_value (key_sub, item);
+        }
+        let entry = GLib.VariantBuilder.new (new GLib.VariantType ("{sa{sv}}"));
+        entry.add_value (new GLib.Variant ("s", key_top));
+        entry.add_value (dict_sub.end ());
+
+        dict_top.add_value (entry.end ());
+    }
+
+    return dict_top.end ();
+}
+
+function unmarshallVariant (data) {
+    let raw_data = GLib.base64_decode (data, data.length);
+    let variant_bytes = GLib.Bytes.new (raw_data, raw_data.length);
+    let variant = GLib.Variant.new_from_bytes (new GLib.VariantType ("a{sa{sv}}"),
+                                              raw_data, raw_data.length, false, null, null);
+    if (FleetCommander.endianness () != 'LITTLE')
+        variant.byteswap ();
+
+    return variant;
+}
+
 function setupNetworkConnection (type, settings, secrets) {
     let loop = GLib.MainLoop.new (null, false);
     let connmgr = new MockConnectionManager ();
 
     let nmlogger = new FleetCommander.NMLogger (connmgr);
 
-    let conn = new NMConnectionMock (type, settings, secrets);
+    let conn = new NMConnectionMock (type,
+                                     serializeConfigObject(settings),
+                                     serializeConfigObject(secrets));
 
     /* We wait for the logger to catch the bus name */
     GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, function () {
@@ -101,33 +138,67 @@ function setupNetworkConnection (type, settings, secrets) {
     return connmgr;
 }
 
+function lookupString (variant, path) {
+    return lookupValue (variant, path).get_string ()[0];
+}
+
+function lookupValue (variant, path) {
+    let sub = variant;
+    let split = path.split (".");
+    for (let i in split) {
+        sub = sub.lookup_value (split[i], null);
+    }
+    return sub;
+}
+
 // Test suite //
 function testNMVpn () {
     let connmgr = setupNetworkConnection ("vpn", {vpn: {user: "foo", passwd: ""}}, {vpn: {passwd: "asd"}});
     let item = connmgr.pop ();
     JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
-    JsUnit.assertEquals (item[1], JSON.stringify ({vpn: {user: "foo", passwd: "asd"}}));
+    let payload = JSON.parse (item[1]);
+
+    let conf = unmarshallVariant (payload.data);
+    JsUnit.assertEquals (lookupString (conf, "vpn.user"), "foo");
+    JsUnit.assertEquals (lookupString (conf, "vpn.passwd"), "");
+
+    let secrets = unmarshallVariant(payload.secrets[0]);
+    JsUnit.assertEquals (lookupString (secrets, "vpn.passwd"), "asd");
 }
 
 function testNMEthernet () {
     let connmgr = setupNetworkConnection ("802-3-ethernet", {"802-1x": {user: "foo", passwd: ""}}, {"802-1x": {passwd: "asd"}});
     let item = connmgr.pop ();
     JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
-    JsUnit.assertEquals (item[1], JSON.stringify ({"802-1x": {user: "foo", passwd: "asd"}}));
+    let payload = JSON.parse (item[1]);
+
+    let conf = unmarshallVariant (payload.data);
+    JsUnit.assertEquals (lookupString (conf, "802-1x.user"), "foo");
+    JsUnit.assertEquals (lookupString (conf, "802-1x.passwd"), "");
+    let secrets = unmarshallVariant (payload.secrets[0]);
+    JsUnit.assertEquals (lookupString (secrets, "802-1x.passwd"), "asd");
 }
 
 function testNMWifi () {
     let connmgr = setupNetworkConnection ("802-11-wireless", {"802-11-wireless-security": {user: "foo", passwd: ""}}, {"802-11-wireless-security": {passwd: "asd"}});
     let item = connmgr.pop ();
     JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
-    JsUnit.assertEquals (item[1], JSON.stringify ({"802-11-wireless-security": {user: "foo", passwd: "asd"}}));
+    let payload = JSON.parse (item[1]);
+
+    let conf = unmarshallVariant (payload.data);
+    JsUnit.assertEquals (lookupString (conf, "802-11-wireless-security.user"), "foo");
+    JsUnit.assertEquals (lookupString (conf, "802-11-wireless-security.passwd"), "");
+    let secrets = unmarshallVariant (payload.secrets[0]);
+    JsUnit.assertEquals (lookupString (secrets, "802-11-wireless-security.passwd"), "asd");
 }
+
 
 function testFilters () {
   let secrets = {
-    "802-11-wireless-security": {"leap-password": "somepassword"},
-    "802-1x": {password: "somepassword"},
+    "802-11-wireless-security": {username: "me", "leap-password": "somepassword"},
+    "802-1x": {username: "me", password: "somepassword"},
     vpn: {data: {secrets: {
+      username: "asd",
       password: "somepassword",
       'Xauth password': 'somepassword'
     }}}
@@ -140,8 +211,11 @@ function testFilters () {
 
   let vpnout = JSON.parse(item[1]);
   JsUnit.assertTrue  (vpnout instanceof Object);
-  JsUnit.assertFalse ("password" in vpnout.vpn.data.secrets);
-  JsUnit.assertFalse ("Xauth password" in vpnout.vpn.data.secrets);
+  for (let s in vpnout.secrets) {
+    let secret = unmarshallVariant (vpnout.secrets[s]);
+    JsUnit.assertEquals (lookupValue (secret, "vpn.data.secrets.password"), null);
+    JsUnit.assertEquals (lookupValue (secret, "vpn.data.secrets.Xauth password"), null);
+  }
 
   //Ethernet
   connmgr = setupNetworkConnection ("802-3-ethernet", {}, secrets);
@@ -151,7 +225,10 @@ function testFilters () {
 
   let ethout = JSON.parse(item[1]);
   JsUnit.assertTrue  (ethout instanceof Object);
-  JsUnit.assertFalse ("password" in ethout["802-1x"]);
+  for (let s in ethout.secrets) {
+    let eth_secrets = unmarshallVariant (ethout.secrets[s]);
+    JsUnit.assert (lookupValue(eth_secrets, "802-1x.password") == null);
+  }
 
   //Wifi
   connmgr = setupNetworkConnection ("802-11-wireless", {}, secrets);
@@ -159,10 +236,11 @@ function testFilters () {
 
   JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
   let wifiout = JSON.parse(item[1]);
-
-  JsUnit.assertTrue  (wifiout instanceof Object);
-  JsUnit.assertFalse ("password" in wifiout["802-1x"]);
-  JsUnit.assertFalse ("leap-password" in wifiout["802-11-wireless-security"])
+  for (let s in wifiout.secrets) {
+    let wifi_secrets = unmarshallVariant (wifiout.secrets[s]);
+    JsUnit.assert (lookupValue(wifi_secrets, "802-1x.password") == null);
+    JsUnit.assert (lookupValue(wifi_secrets, "802-11-wireless-security.leap-password") == null);
+  }
 }
 
 // Run test suite //

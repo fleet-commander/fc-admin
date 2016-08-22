@@ -286,27 +286,56 @@ var NMLogger = function (connmgr) {
     this.nmclient.connect ('connection-added', this.connection_added_cb.bind(this));
 }
 
-NMLogger.prototype.filters = {
-  "vpn": function (conn) {
-    debug ("vpn filter");
-    try { delete conn.vpn.data.secrets['Xauth password']; }
-    catch (e) {}
+NMLogger.prototype.security_filter = function (conn) {
+    conn = this.filter_variant (conn, ['vpn','data','secrets','Xauth password']);
+    conn = this.filter_variant (conn, ['vpn','data','secrets','password']);
+    conn = this.filter_variant (conn, ['802-1x','password']);
+    conn = this.filter_variant (conn, ['802-11-wireless-security','leap-password']);
+    return conn;
+}
 
-    try { delete conn.vpn.data.secrets.password;}
-    catch (e) {}
-  },
-  "802-3-ethernet": function (conn) {
-    debug ("ethernet filter");
-    try { delete conn['802-1x'].password; }
-    catch (e) {}
-  },
-  "802-11-wireless": function (conn) {
-    debug ("wifi filter");
-    try { delete conn['802-1x'].password; }
-    catch (e) {}
-    try { delete conn['802-11-wireless-security']['leap-password']; }
-    catch (e) {}
-  }
+NMLogger.prototype.filter_variant  = function (variant, filter) {
+    debug ("Filtering: " + filter);
+    let is_variant = variant.get_type_string () == "v";
+
+    if (is_variant)
+      variant = variant.get_child_value (0);
+
+    let dict_type = new GLib.VariantType ("a{s*}");
+
+    if ((filter.length < 1) ||
+        (variant.is_of_type (dict_type) == false) ||
+        (variant.n_children () < 1) ||
+        (variant.lookup_value (filter[0], null) == null)) {
+        if (is_variant)
+            return GLib.Variant ("v", variant);
+        return variant;
+    }
+
+    let dict = GLib.VariantBuilder.new (variant.get_type ());
+    for (let i = 0; i < variant.n_children (); i++) {
+        let child = variant.get_child_value (i);
+
+        let key = child.get_child_value(0).get_string ()[0];
+
+        if (key != filter[0]) {
+            dict.add_value (child);
+            continue;
+        }
+
+        if (filter.length == 1)
+            continue;
+
+        let child_builder = GLib.VariantBuilder.new (child.get_type ());
+        child_builder.add_value (child.get_child_value (0));
+        child_builder.add_value (this.filter_variant (child.get_child_value (1),
+                                                      filter.slice (1)));
+        dict.add_value (child_builder.end ());
+    }
+
+    if (is_variant)
+        return new GLib.Variant ("v", dict.end ());
+    return dict.end ();
 }
 
 NMLogger.prototype.submit_connection = function (conn) {
@@ -315,8 +344,8 @@ NMLogger.prototype.submit_connection = function (conn) {
     let endns = endianness ();
 
     if (endns == 'MIDDLE') {
-      printerr ("ERROR: middle endianness not supported");
-      return;
+        printerr ("ERROR: middle endianness not supported");
+        return;
     }
 
     let type = conn.get_connection_type ();
@@ -342,13 +371,7 @@ NMLogger.prototype.submit_connection = function (conn) {
         return;
     }
 
-    for (let i in secrets) {
-     
-    }
-
-    //this.filters[type] (merge);
-    //this.filters["common"] (merge);
-    
+    conf = this.security_filter (conf);
     let payload = {
       data: this.variant_data_to_base64 (conf),
       json: this.deep_unpack (conf),
@@ -356,6 +379,7 @@ NMLogger.prototype.submit_connection = function (conn) {
     }
 
     for (let s in secrets) {
+      secrets[s] = this.security_filter (secrets[s]);
       payload.secrets.push (this.variant_data_to_base64 (secrets[s]));
     }
 
@@ -367,7 +391,7 @@ NMLogger.prototype.submit_connection = function (conn) {
 NMLogger.prototype.variant_data_to_base64 = function (variant) {
     let target = variant;
     if (endianness () != 'LITTLE')
-      target = variant.byteswap ();
+        target = variant.byteswap ();
     let variant_bytes = target.get_data_as_bytes ();
     return GLib.base64_encode (variant_bytes.get_data (null), variant_bytes.get_size ());
 }
