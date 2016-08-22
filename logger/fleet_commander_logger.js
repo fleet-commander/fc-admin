@@ -308,7 +308,7 @@ NMLogger.prototype.filter_variant  = function (variant, filter) {
         (variant.n_children () < 1) ||
         (variant.lookup_value (filter[0], null) == null)) {
         if (is_variant)
-            return GLib.Variant ("v", variant);
+            return new GLib.Variant ("v", variant);
         return variant;
     }
 
@@ -338,6 +338,67 @@ NMLogger.prototype.filter_variant  = function (variant, filter) {
     return dict.end ();
 }
 
+NMLogger.prototype.merge_variants = function (va, vb) {
+    debug ("Merging variants");
+    let are_variants = va.get_type_string () == "v" && vb.get_type_string () == "v";
+    if (are_variants) {
+        va = va.get_child_value (0);
+        vb = vb.get_child_value (0);
+    }
+
+    if (va.get_type_string () != vb.get_type_string ()) {
+        printerr ("Can't merge variants of different types");
+        if (are_variants)
+            return new GLib.Variant ("v", va);
+        return va;
+    }
+
+    let dict_type = new GLib.VariantType ("a{s*}");
+
+    if (va.is_of_type (dict_type) == false) {
+        if (are_variants)
+            return new GLib.Variant ("v", vb);
+        return vb;
+    }
+
+    let builder = GLib.VariantBuilder.new (va.get_type ());
+    for (let i = 0; i < va.n_children (); i++) {
+        let child_a = va.get_child_value (i);
+        let key = child_a.get_child_value (0).get_string ()[0];
+
+        let value_b = vb.lookup_value (key, null);
+        if (value_b == null) {
+            builder.add_value (child_a);
+            continue;
+        }
+
+        let value_a = va.lookup_value (key, null);
+        let merge = this.merge_variants (value_a, value_b);
+
+        let child_builder = GLib.VariantBuilder.new (child_a.get_type ());
+        child_builder.add_value (child_a.get_child_value (0));
+        if (child_a.get_child_value (1).get_type_string () == "v" &&
+            merge.get_type_string () != "v")
+          merge = new GLib.Variant ("v", merge);
+        child_builder.add_value (merge);
+        builder.add_value (child_builder.end ());
+    }
+
+    for (let i = 0; i < vb.n_children (); i++) {
+        let child = vb.get_child_value (i);
+        let key = child.get_child_value (0).get_string()[0];
+
+        if (va.lookup_value (key, null) != null)
+            continue;
+
+        builder.add_value (child);
+    }
+
+    if (are_variants)
+        return GLib.Variant ("v", builder.end ());
+    return builder.end ();
+}
+
 NMLogger.prototype.submit_connection = function (conn) {
     debug ("Submitting Network Manager connection");
     let conf = conn.to_dbus (NM.ConnectionSerializationFlags.ALL);
@@ -354,7 +415,7 @@ NMLogger.prototype.submit_connection = function (conn) {
 
     debug ("Added connection of type " + type);
 
-    if (type == "802-11-wireless") {
+    if (  type == "802-11-wireless") {
         /* Looks like this triggers an infinite loop */
         try { secrets.push (conn.get_secrets ("802-11-wireless-security", null)); }
         catch (e) {}
@@ -371,16 +432,15 @@ NMLogger.prototype.submit_connection = function (conn) {
         return;
     }
 
+    for (let s in secrets) {
+      conf = this.merge_variants (conf, secrets[s]);
+    }
+
     conf = this.security_filter (conf);
+
     let payload = {
       data: this.variant_data_to_base64 (conf),
       json: this.deep_unpack (conf),
-      secrets: [],
-    }
-
-    for (let s in secrets) {
-      secrets[s] = this.security_filter (secrets[s]);
-      payload.secrets.push (this.variant_data_to_base64 (secrets[s]));
     }
 
     this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (payload));

@@ -160,10 +160,7 @@ function testNMVpn () {
 
     let conf = unmarshallVariant (payload.data);
     JsUnit.assertEquals (lookupString (conf, "vpn.user"), "foo");
-    JsUnit.assertEquals (lookupString (conf, "vpn.passwd"), "");
-
-    let secrets = unmarshallVariant(payload.secrets[0]);
-    JsUnit.assertEquals (lookupString (secrets, "vpn.passwd"), "asd");
+    JsUnit.assertEquals (lookupString (conf, "vpn.passwd"), "asd");
 }
 
 function testNMEthernet () {
@@ -174,9 +171,7 @@ function testNMEthernet () {
 
     let conf = unmarshallVariant (payload.data);
     JsUnit.assertEquals (lookupString (conf, "802-1x.user"), "foo");
-    JsUnit.assertEquals (lookupString (conf, "802-1x.passwd"), "");
-    let secrets = unmarshallVariant (payload.secrets[0]);
-    JsUnit.assertEquals (lookupString (secrets, "802-1x.passwd"), "asd");
+    JsUnit.assertEquals (lookupString (conf, "802-1x.passwd"), "asd");
 }
 
 function testNMWifi () {
@@ -187,9 +182,7 @@ function testNMWifi () {
 
     let conf = unmarshallVariant (payload.data);
     JsUnit.assertEquals (lookupString (conf, "802-11-wireless-security.user"), "foo");
-    JsUnit.assertEquals (lookupString (conf, "802-11-wireless-security.passwd"), "");
-    let secrets = unmarshallVariant (payload.secrets[0]);
-    JsUnit.assertEquals (lookupString (secrets, "802-11-wireless-security.passwd"), "asd");
+    JsUnit.assertEquals (lookupString (conf, "802-11-wireless-security.passwd"), "asd");
 }
 
 
@@ -211,11 +204,9 @@ function testFilters () {
 
   let vpnout = JSON.parse(item[1]);
   JsUnit.assertTrue  (vpnout instanceof Object);
-  for (let s in vpnout.secrets) {
-    let secret = unmarshallVariant (vpnout.secrets[s]);
-    JsUnit.assertEquals (lookupValue (secret, "vpn.data.secrets.password"), null);
-    JsUnit.assertEquals (lookupValue (secret, "vpn.data.secrets.Xauth password"), null);
-  }
+  let vpnconf = unmarshallVariant (vpnout.data);
+  JsUnit.assertEquals (lookupValue (vpnconf, "vpn.data.secrets.password"), null);
+  JsUnit.assertEquals (lookupValue (vpnconf, "vpn.data.secrets.Xauth password"), null);
 
   //Ethernet
   connmgr = setupNetworkConnection ("802-3-ethernet", {}, secrets);
@@ -225,10 +216,8 @@ function testFilters () {
 
   let ethout = JSON.parse(item[1]);
   JsUnit.assertTrue  (ethout instanceof Object);
-  for (let s in ethout.secrets) {
-    let eth_secrets = unmarshallVariant (ethout.secrets[s]);
-    JsUnit.assert (lookupValue(eth_secrets, "802-1x.password") == null);
-  }
+  let ethconf = unmarshallVariant (ethout.data);
+  JsUnit.assert (lookupValue(ethconf, "802-1x.password") == null);
 
   //Wifi
   connmgr = setupNetworkConnection ("802-11-wireless", {}, secrets);
@@ -236,11 +225,10 @@ function testFilters () {
 
   JsUnit.assertEquals (item[0], "org.freedesktop.NetworkManager");
   let wifiout = JSON.parse(item[1]);
-  for (let s in wifiout.secrets) {
-    let wifi_secrets = unmarshallVariant (wifiout.secrets[s]);
-    JsUnit.assert (lookupValue(wifi_secrets, "802-1x.password") == null);
-    JsUnit.assert (lookupValue(wifi_secrets, "802-11-wireless-security.leap-password") == null);
-  }
+  JsUnit.assertTrue  (wifiout instanceof Object);
+  let wificonf = unmarshallVariant (wifiout.data);
+  JsUnit.assert (lookupValue(wificonf, "802-1x.password") == null);
+  JsUnit.assert (lookupValue(wificonf, "802-11-wireless-security.leap-password") == null);
 }
 
 // Run test suite //
