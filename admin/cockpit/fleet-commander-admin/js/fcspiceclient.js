@@ -38,7 +38,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
         $('#spice-screen').html('');
         self.connecting = null;
         self.noretry = true;
-        console.log('FC: Connection tries timed out');
+        DEBUG > 0 && console.log('FC: Connection tries timed out');
         $('#spinner-modal').modal('hide');
         showMessageDialog(_('Connection error to virtual machine.'), _('Connection error'));
       }, self.conn_timeout);
@@ -46,7 +46,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   this.spice_connected = function() {
-    console.log('FC: Connected to virtual machine using SPICE');
+    DEBUG > 0 && console.log('FC: Connected to virtual machine using SPICE');
     $('#spinner-modal').modal('hide');
     if (self.connecting) {
       clearTimeout(self.connecting);
@@ -55,7 +55,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   this.spice_error = function(err) {
-    console.log("FC: SPICE connection error:", err.message);
+    DEBUG > 0 && console.log("FC: SPICE connection error:", err.message);
 
     self.set_connection_timeout()
 
@@ -76,11 +76,23 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   this.do_connection = function() {
-    console.log('FC: Connecting to spice session')
+    DEBUG > 0 && console.log('FC: Connecting to spice session')
+
+    var query = window.btoa(JSON.stringify({
+      payload: 'stream',
+      protocol: 'binary',
+      address: location.hostname,
+      port: port,
+      binary: 'raw',
+    }));
+
+    var cockpit_uri = 'ws://' + location.hostname + ':' + location.port + '/cockpit/channel/' + cockpit.transport.csrf_token + '?' + query
+
     if (self.sc) self.sc.stop()
     $('#spice-screen').html('');
+
     self.sc = new SpiceMainConn({
-      uri: 'ws://' + location.hostname + ':' + port,
+      uri: cockpit_uri, // 'ws://' + location.hostname + ':' + port,
       screen_id: 'spice-screen',
       onsuccess: self.spice_connected,
       onerror: self.spice_error

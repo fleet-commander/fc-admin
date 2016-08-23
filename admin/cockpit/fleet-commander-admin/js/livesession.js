@@ -24,7 +24,7 @@ var fcsc = null;
 var updater = null;
 
 window.alert = function(message) {
-  console.log('FC: Alert message:' + message);
+  DEBUG > 0 && console.log('FC: Alert message:' + message);
 }
 
 function startLiveSession() {
@@ -34,7 +34,8 @@ function startLiveSession() {
     var admin_host = location.hostname
     fc.SessionStart(domain, admin_host,function(resp){
       if (resp.status) {
-        fcsc = new FleetCommanderSpiceClient(admin_host, resp.port, stopLiveSession);
+        fcsc = new FleetCommanderSpiceClient(
+          admin_host, resp.port, stopLiveSession);
         listenForChanges();
       } else {
         showMessageDialog(resp.error, _('Error'));
@@ -149,7 +150,7 @@ $(document).ready (function () {
 
   // Error catchall to workarount "oops" message in cockpit
   window.onerror = function(message, url, lineNumber) {
-    console.log('Live session error: (', lineNumber, ' ', url, ') ', message);
+    DEBUG > 0 && console.error('Live session error: (', lineNumber, ' ', url, ') ', message);
     return true;
   };
 

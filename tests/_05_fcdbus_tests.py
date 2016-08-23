@@ -391,9 +391,9 @@ class TestDbusService(unittest.TestCase):
         self.configure_hypervisor(c)
 
         # Start session
-        resp = c.session_start('uuid', 'host', '0')
+        resp = c.session_start('uuid', 'host', '5')
         self.assertTrue(resp['status'])
-        self.assertEqual(resp['port'], 8989)
+        self.assertEqual(resp['port'], 0)
 
         # Try to start another session
         resp = c.session_start('uuid', 'host', '0')
