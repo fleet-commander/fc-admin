@@ -91,7 +91,11 @@ function get_options_from_devfile () {
       debug ("Found server file in " + DEV_PATH + "fleet-commander_" + host + "-" + port);
 
       if (host == "localhost" || host == "127.0.0.1") {
-        let route = get_default_route ();
+        let route = null;
+        while (route == null) {
+          route = get_default_route ();
+          GLib.usleep (2000000);
+        }
         if (route) {
           debug ("Found " + host + " as admin host, using default route");
           host = route;
@@ -119,7 +123,10 @@ function get_default_route () {
 
   if (ipr.get_exit_status () != 0) {
     printerr ("There was an error calling ip to get the default route");
+  } else if (stdout == null) {
+    printerr ("There were no default routes, waiting for a default route to be available");
   } else {
+
     let routev = stdout.trim ().split (" ");
     if (routev.length > 2) {
       route = routev[2];
