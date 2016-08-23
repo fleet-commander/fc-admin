@@ -135,6 +135,20 @@ class SQLiteDict(object):
             self[key] = value
         return self[key]
 
+    def items(self):
+        """
+        Return list of tuples with current items
+        """
+        self.cursor.execute(
+            'SELECT key, value, type FROM %s' % self.TABLE_NAME)
+        for row in self.cursor.fetchall():
+            if row[0] != 'SCHEMA_VERSION':
+                valuetype = self._SUPPORTED_TYPES[row[2]]
+                if row[2] in self._SERIALIZED_TYPES:
+                    value = json.loads(row[1])
+                else:
+                    value = row[1]
+                yield (row[0], valuetype(value))
 
 class ConfigValues(SQLiteDict):
     """

@@ -49,35 +49,36 @@ class TestDBManager(unittest.TestCase):
 
     test_setting_json = json.dumps(test_setting)
 
+    INITIAL_VALUES = {
+        'testkeystr': 'strvalue',
+        'testkeyunicode': 'unicodevalue',
+        'testkeyint': 42,
+        'testkeylong': long(42),
+        'testkeyfloat': 42.0,
+        'testkeytuple': ('foo', 42, 'bar'),
+        'testkeylist': ['foo', 42, 'bar'],
+        'testkeydict': test_setting
+    }
+
     def setUp(self):
         # Initialize memory database
         self.db = DBManager(':memory:')
         self.settings = self.db.sessionsettings
         # Add values to config
-        self.db.config['testkeystr'] = 'strvalue'
-        self.db.config['testkeyunicode'] = 'unicodevalue'
-        self.db.config['testkeyint'] = 42
-        self.db.config['testkeylong'] = long(42)
-        self.db.config['testkeyfloat'] = 42.0
-        self.db.config['testkeytuple'] = ('foo', 42, 'bar')
-        self.db.config['testkeylist'] = ['foo', 42, 'bar']
-        self.db.config['testkeydict'] = self.test_setting
+        for k, v in self.INITIAL_VALUES.items():
+            self.db.config[k] = v
 
     def test_01_config_dictionary_setitem(self):
         # Add unsupported type to config
         self.assertRaises(ValueError, self.db.config.__setitem__, 'unsupported', UnsupportedType())
 
     def test_02_config_dictionary_getitem(self):
-        # Get data in config
-        self.assertEqual(self.db.config['testkeystr'], 'strvalue')
-        self.assertEqual(self.db.config['testkeyunicode'], 'unicodevalue')
-        self.assertEqual(self.db.config['testkeyint'], 42)
-        self.assertEqual(self.db.config['testkeylong'], long(42))
-        self.assertEqual(self.db.config['testkeyfloat'], 42.0)
-        self.assertEqual(self.db.config['testkeytuple'], ('foo', 42, 'bar'))
-        self.assertEqual(self.db.config['testkeylist'], ['foo', 42, 'bar'])
-        self.assertEqual(self.db.config['testkeydict'], self.test_setting)
+        # Get inexistent value
         self.assertRaises(KeyError,  self.db.config.__getitem__, 'unknownkey')
+        # Get existent values
+        for k, v in self.INITIAL_VALUES.items():
+            self.assertEqual(self.db.config[k], v)
+        # Get default values
         self.assertEqual(self.db.config.get('testkeystr', 'defaultvalue'), 'strvalue')
         self.assertEqual(self.db.config.get('unknownkey', 'defaultvalue'), 'defaultvalue')
 
@@ -113,6 +114,12 @@ class TestDBManager(unittest.TestCase):
         self.assertEqual(self.settings.get_for_collector('org.gnome.gsettings'), {'/foo/bar': self.test_setting_json})
         self.assertEqual(self.settings.get_for_collector('org.gnome.gsettings', only_selected=True), {})
         self.assertEqual(self.settings.get_for_collector('org.gnome.nogsettings', only_selected=True), {'/bar/baz': self.test_setting_json})
+
+    def test_07_config_dictionary_iteration(self):
+        items = self.db.config.items()
+        self.assertEqual(len([x for x in items]), 8)
+        for item in items:
+            self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])
 
 if __name__ == '__main__':
     unittest.main()
