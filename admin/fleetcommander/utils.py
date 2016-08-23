@@ -21,6 +21,7 @@
 
 
 # Python imports
+import os
 import sys
 import logging
 import copy
@@ -33,6 +34,28 @@ except ImportError:
     from ConfigParser import ConfigParser, ParsingError
 
 import constants
+
+
+def get_data_from_file(path):
+    with open(path, 'r') as fd:
+        data = fd.read()
+        fd.close()
+        return data
+
+
+def test_and_create_file(path, content):
+    if os.path.isfile(path):
+        return
+    else:
+        with open(path, 'w+') as fd:
+            fd.write(content)
+            fd.close()
+
+
+def write_and_close(path, data):
+    f = open(path, 'w+')
+    f.write(data)
+    f.close()
 
 
 def config_to_dict(config):
