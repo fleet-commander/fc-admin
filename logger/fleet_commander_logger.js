@@ -294,6 +294,7 @@ var NMLogger = function (connmgr) {
 }
 
 NMLogger.prototype.security_filter = function (conn) {
+    conn = this.filter_variant (conn, ['connection', 'permissions']);
     conn = this.filter_variant (conn, ['vpn','data','secrets','Xauth password']);
     conn = this.filter_variant (conn, ['vpn','data','secrets','password']);
     conn = this.filter_variant (conn, ['802-1x','password']);
