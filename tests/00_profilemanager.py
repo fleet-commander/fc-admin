@@ -77,7 +77,6 @@ class TestProfileManager(unittest.TestCase):
         self.test_directory = tempfile.mkdtemp(prefix='fc-profilemanager-test')
         profiles_dir = os.path.join(self.test_directory, 'profiles')
         self.profiles = profiles.ProfileManager(
-            self.test_directory,
             database_path=os.path.join(self.test_directory, 'database.db'),
             profiles_dir=profiles_dir)
         os.mkdir(profiles_dir)

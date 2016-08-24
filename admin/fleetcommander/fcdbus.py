@@ -40,9 +40,10 @@ from gi.repository import GObject, Gio, Soup
 import sshcontroller
 import libvirtcontroller
 from database import DBManager
-from utils import merge_settings, get_ip_address
+from utils import merge_settings, get_ip_address, get_data_from_file
 import collectors
 from goa import GOAProvidersLoader
+import profiles
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -182,10 +183,12 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.args = args
         self.state_dir = args['state_dir']
+
+        self.profiles = profiles.ProfileManager(
+            args['database_path'], args['profiles_dir'])
+
         self.profiles_dir = args['profiles_dir']
 
-        self.INDEX_FILE = os.path.join(args['profiles_dir'], 'index.json')
-        self.APPLIES_FILE = os.path.join(args['profiles_dir'], 'applies.json')
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
 
@@ -297,7 +300,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             filepath = os.path.join(self.args['profiles_dir'], filename)
             logging.debug('%s %s' % (filename, filepath))
             try:
-                response = self.get_data_from_file(filepath)
+                response = get_data_from_file(filepath)
                 status_code = 200
             except Exception, e:
                 logging.error('clientdata: %s' % e)
@@ -307,79 +310,6 @@ class FleetCommanderDbusService(dbus.service.Object):
             'application/json',
             Soup.MemoryUse(Soup.MemoryUse.COPY),
             response)
-
-    def check_for_profile_index(self):
-        self.test_and_create_file(self.INDEX_FILE, [])
-
-    def check_for_applies(self):
-        self.test_and_create_file(self.APPLIES_FILE, {})
-
-    def test_and_create_file(self, filename, content):
-        if os.path.isfile(filename):
-            return
-        try:
-            open(filename, 'w+').write(json.dumps(content))
-        except OSError:
-            logging.error('There was an error attempting to write on %s' % filename)
-
-    def write_and_close(self, path, load):
-        f = open(path, 'w+')
-        f.write(load)
-        f.close()
-
-    def get_data_from_file(self, path):
-        return open(path).read()
-
-    def read_profile(self, uid):
-        """
-        Read a profile given its UID
-        """
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid + '.json')
-        if not os.path.isfile(self.INDEX_FILE) or \
-           not os.path.isfile(PROFILE_FILE):
-            return (False, 'there are no profiles in the database')
-
-        try:
-            profile = json.loads(
-                self.get_data_from_file(PROFILE_FILE))
-        except:
-            return (False, 'could not read profile data')
-
-        if not isinstance(profile, dict):
-            return (False, 'profile object %s is not a dictionary' % uid)
-
-        if profile.get('settings', False):
-
-            if not isinstance(profile['settings'], dict):
-                return (
-                    False,
-                    'settings value in %s is not a dictionary' % uid)
-
-            if profile['settings'].get('org.gnome.gsettings', False):
-                gsettings = profile['settings']['org.gnome.gsettings']
-
-                if not isinstance(gsettings, list):
-                    logging.error('settings/org.gnome.gsettings value in \
-                                   %s.json is not a list. Sanitizing' % uid)
-                    profile['settings']['org.gnome.gsettings'] = []
-
-            if profile['settings'].get('org.gnome.online-accounts', False):
-
-                goa = profile['settings']['org.gnome.online-accounts']
-
-                if not isinstance(goa, dict):
-                    logging.error('settings/org.gnome.online-accounts value in \
-                                   %s.json is not a dict. Sanitizing' % uid)
-                    profile['settings']['org.gnome.online-accounts'] = {}
-
-        return(True, profile)
-
-    def write_profile(self, uid, data):
-        """
-        Writes a profile into corresponding file
-        """
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid + '.json')
-        open(PROFILE_FILE, 'w+').write(json.dumps(data))
 
     def get_libvirt_controller(self, admin_host=None, admin_port=None):
         """
@@ -629,25 +559,23 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='', out_signature='s')
     def GetProfiles(self):
         try:
-            self.check_for_profile_index()
             return json.dumps({
                 'status': True,
-                'data': json.loads(self.get_data_from_file(self.INDEX_FILE))
+                'data': self.profiles.get_index()
             })
         except:
             return json.dumps({
                 'status': False,
-                'error': 'Error reading profiles data from %s' % self.INDEX_FILE
+                'error': 'Error reading profiles index'
             })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def GetProfile(self, uid):
         try:
-            PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
             return json.dumps({
                 'status': True,
-                'data': json.loads(self.get_data_from_file(PROFILE_FILE))
+                'data': self.profiles.get_profile(uid)
             })
         except:
             return json.dumps({
@@ -659,10 +587,9 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='s', out_signature='s')
     def GetProfileApplies(self, uid):
         try:
-            data = json.loads(self.get_data_from_file(self.APPLIES_FILE))
             return json.dumps({
                 'status': True,
-                'data': data[uid]
+                'data': self.profiles.get_applies(uid)
             })
         except:
             return json.dumps({
@@ -674,100 +601,54 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='s', out_signature='s')
     def NewProfile(self, profiledata):
         data = json.loads(profiledata)
-        uid = str(uuid.uuid1().int)
 
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid+'.json')
+        profile = {
+            'name': data['profile-name'],
+            'description': data['profile-desc'],
+            'settings': {},
+            'groups': filter(
+                None, [g.strip() for g in data['groups'].split(",")]),
+            'users': filter(
+                None, [u.strip() for u in data['users'].split(",")]),
+        }
 
-        profile = {}
-        groups = []
-        users = []
-
-        groups = [g.strip() for g in data['groups'].split(",")]
-        users = [u.strip() for u in data['users'].split(",")]
-        groups = filter(None, groups)
-        users = filter(None, users)
-
-        profile["uid"] = uid
-        profile["name"] = data["profile-name"]
-        profile["description"] = data["profile-desc"]
-        profile["settings"] = {}
-
-        self.check_for_profile_index()
-        index = json.loads(open(self.INDEX_FILE).read())
-        if not isinstance(index, list):
-            return json.dumps({
-                'status': False,
-                'error': '%s does not contain a JSON list as root element' % self.INDEX_FILE})
-        index.append({"url": uid + ".json", "displayName": data["profile-name"]})
-
-        self.check_for_applies()
-        applies = json.loads(open(self.APPLIES_FILE).read())
-        if not isinstance(applies, dict):
-            return json.dumps({
-                'status': False,
-                'error': '%s does not contain a JSON object as root element' % self.APPLIES_FILE})
-        applies[uid] = {"users": users, "groups": groups}
-
-        self.write_and_close(PROFILE_FILE, json.dumps(profile))
-        self.write_and_close(self.APPLIES_FILE, json.dumps(applies))
-        self.write_and_close(self.INDEX_FILE, json.dumps(index))
+        uid = self.profiles.save_profile(profile)
 
         return json.dumps({'status': True, 'uid': uid})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def DeleteProfile(self, uid):
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
-
-        try:
-            os.remove(PROFILE_FILE)
-        except:
-            pass
-
-        self.check_for_profile_index()
-        index = json.loads(open(self.INDEX_FILE).read())
-
-        for profile in index:
-            if (profile["url"] == uid + ".json"):
-                index.remove(profile)
-
-        open(self.INDEX_FILE, 'w+').write(json.dumps(index))
+        self.profiles.remove_profile(uid)
         return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
     def ProfileProps(self, data, uid):
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'],  uid+'.json')
+        try:
+            profile = self.profiles.get_profile(uid)
+        except:
+            return json.dumps(
+                {'status': False, 'error': 'Can not get profile %s' % uid})
 
-        if not os.path.isfile(PROFILE_FILE):
-            return json.dumps({'status': False, 'error': 'profile %s does not exist' % uid})
+        if not isinstance(profile, dict):
+            return json.dumps({
+                'status': False,
+                'error': 'profile %s.json does not hold a JSON object' % uid})
 
         try:
             payload = json.loads(data)
         except:
-            return json.dumps ({
+            return json.dumps({
                 'status': False,
                 'error': 'request data was not a valid JSON object'})
 
         if not isinstance(payload, dict):
-            return json.dumps ({
+            return json.dumps({
                 'status': False,
                 'error': 'request data was not a valid JSON dictionary'})
 
-
         if 'profile-name' in payload or 'profile-desc' in payload:
-            profile = None
-            try:
-                profile = json.loads(open(PROFILE_FILE).read())
-            except:
-                return json.dumps({
-                    'status': False,
-                    'error': 'could not parse profile %s.json file' % uid})
-
-            if not isinstance(profile, dict):
-                return json.dumps({
-                    'status': False,
-                    'error': 'profile %s.json does not hold a JSON object' % uid})
 
             if 'profile-name' in payload:
                 profile['name'] = payload['profile-name']
@@ -775,54 +656,17 @@ class FleetCommanderDbusService(dbus.service.Object):
             if 'profile-desc' in payload:
                 profile['description'] = payload['profile-desc']
 
-            try:
-                open(PROFILE_FILE, 'w+').write(json.dumps(profile))
-            except:
-                return json.dumps({
-                    'status': False,
-                    'error': 'could not write profile %s.json' % uid})
+        if 'users' in payload:
+            users = [u.strip() for u in payload['users'].split(",")]
+            users = filter(None, users)
+            profile['users'] = users
 
-            # Update profiles index
-            if 'profile-name' in payload:
-                self.check_for_profile_index()
-                index = json.loads(open(self.INDEX_FILE).read())
-                if not isinstance(index, list):
-                    return json.dumps({
-                        'status': False,
-                        'error': '%s does not contain a JSON list as root element' % INDEX_FILE})
-                for item in index:
-                    if item['url'] == '%s.json' % uid:
-                        item['displayName'] = payload['profile-name']
-                self.write_and_close(self.INDEX_FILE, json.dumps(index))
+        if 'groups' in payload:
+            groups = [g.strip() for g in payload['groups'].split(",")]
+            groups = filter(None, groups)
+            profile['groups'] = groups
 
-        if 'users' in payload or 'groups' in payload:
-            applies = None
-            try:
-                applies = json.loads(open(self.APPLIES_FILE).read())
-            except:
-                return json.dumps({
-                    'status': False,
-                    'error': 'could not parse applies.json file'})
-
-            if not isinstance(applies, dict):
-                return json.dumps({'status': False, 'error': 'applies.json does not hold a JSON object'})
-
-            if 'users' in payload:
-                users = [u.strip() for u in payload['users'].split(",")]
-                users = filter(None, users)
-                applies[uid]['users'] = users
-
-            if 'groups' in payload:
-                groups = [g.strip() for g in payload['groups'].split(",")]
-                groups = filter(None, groups)
-                applies[uid]['groups'] = groups
-
-            try:
-                open(self.APPLIES_FILE, 'w+').write(json.dumps(applies))
-            except:
-                return json.dumps({
-                    'status': False,
-                    'error': 'could not write applies.json'})
+        self.profiles.save_profile(profile)
 
         return json.dumps({'status': True})
 
@@ -883,51 +727,23 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         data = json.loads(payload)
 
-        PROFILE_FILE = os.path.join(
-            self.args['profiles_dir'], uid+'.json')
-
         if not isinstance(data, list) or \
            len(set(map(lambda x: x is unicode, data))) > 1:
             return json.dumps({
                 'status': False,
                 'error': 'application list is not a list of strings'})
 
-        if not os.path.isfile(self.INDEX_FILE) or not os.path.isfile(PROFILE_FILE):
-            return json.dumps({
-                'status': False,
-                'error': 'there are no profiles in the database'})
-
-        profile = None
         try:
-            profile = json.loads(open(PROFILE_FILE).read())
+            profile = self.profiles.get_profile(uid)
         except:
             return json.dumps({
                 'status': False,
-                'error': 'could not read profile data'})
+                'error': 'Can not read profile data for profile %s' % uid})
 
-        if not isinstance(profile, dict):
-            return json.dumps({
-                'status': False,
-                'error': 'profile object %s is not a dictionary' % uid})
-
-        if not profile.get('settings', False):
-            profile['settings'] = {}
-
-        if not isinstance(profile['settings'], dict):
-            return json.dumps({
-                'status': False,
-                'error': 'settings value in %s is not a list' % uid})
-
-        if not profile['settings'].get('org.gnome.gsettings', False):
+        if 'org.gnome.gsettings' not in profile['settings']:
             profile['settings']['org.gnome.gsettings'] = []
 
         gsettings = profile['settings']['org.gnome.gsettings']
-
-        if not isinstance(gsettings, list):
-            return json.dumps({
-                'status': False,
-                'error': 'settings/org.gnome.gsettings value in %s is not a list' % uid})
-
         existing_change = None
         for change in gsettings:
             if 'key' not in change:
@@ -948,11 +764,11 @@ class FleetCommanderDbusService(dbus.service.Object):
         existing_change['value'] = data
 
         try:
-            open(PROFILE_FILE, 'w+').write(json.dumps(profile))
+            self.profiles.save_profile(profile)
         except:
             return json.dumps({
                 'status': False,
-                'error': 'could not write profile %s' % uid})
+                'error': 'Can not write profile %s' % uid})
 
         return json.dumps({'status': True})
 
@@ -1026,7 +842,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             settings[name] = collector.get_settings()
 
         try:
-            profile = json.loads(open(PROFILE_FILE).read())
+            profile = self.profiles.get_profile(uid)
         except:
             return json.dumps({
                 'status': False,
@@ -1039,7 +855,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         else:
             profile['settings'] = merge_settings(profile['settings'], settings)
 
-        self.write_and_close(PROFILE_FILE, json.dumps(profile))
+        self.profiles.save_profile(profile)
 
         # TODO: Check if this is really needed
         del(self.db.config['uid'])
@@ -1106,20 +922,21 @@ class FleetCommanderDbusService(dbus.service.Object):
                     'error': 'malformed goa accounts data received',
                 })
 
-        status, resp = self.read_profile(uid)
-        if not status:
+        try:
+            profile = self.profiles.get_profile(uid)
+        except Exception, e:
             return json.dumps({
                 'status': False,
-                'error': resp,
+                'error': unicode(e),
             })
 
-        profile = resp
         if 'settings' not in profile:
             profile['settings'] = {}
         profile['settings']['org.gnome.online-accounts'] = data
 
         try:
-            self.write_profile(uid, profile)
+            # profile['uid'] = uid
+            self.profiles.save_profile(profile)
         except Exception, e:
             return json.dumps({
                 'status': False,

@@ -50,9 +50,10 @@ class TestDbusClient(fcdbus.FleetCommanderDbusClient):
 # Mock dbus client
 fcdbus.FleetCommanderDbusClient = TestDbusClient
 
+
 class TestDbusService(unittest.TestCase):
 
-    DUMMY_PROFILE = {
+    DUMMY_PROFILE_PAYLOAD = {
         "profile-name": "foo",
         "profile-desc": "bar",
         "users":        "user1,user2,user3",
@@ -299,27 +300,10 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a new profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
         uid = self.get_data_from_file(self.INDEX_FILE)[0]['url'].split('.')[0]
         self.assertEqual(resp['uid'], uid)
-
-        # Create malformed index file
-        open(self.INDEX_FILE, 'w').write(json.dumps({}))
-        resp = c.new_profile(self.DUMMY_PROFILE)
-        self.assertFalse(resp['status'])
-        self.assertEqual(
-            resp['error'],
-            '%s does not contain a JSON list as root element' % self.INDEX_FILE)
-
-        # Create malformed applies file
-        open(self.INDEX_FILE, 'w').write(json.dumps([]))
-        open(self.APPLIES_FILE, 'w').write(json.dumps([]))
-        resp = c.new_profile(self.DUMMY_PROFILE)
-        self.assertFalse(resp['status'])
-        self.assertEqual(
-            resp['error'],
-            '%s does not contain a JSON object as root element' % self.APPLIES_FILE)
 
     def test_05_delete_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
@@ -327,7 +311,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.delete_profile('fakeuid')
         self.assertTrue(resp['status'])
         # Delete existent profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         resp = c.delete_profile(resp['uid'])
         self.assertTrue(resp['status'])
 
@@ -335,7 +319,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -450,7 +434,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -482,7 +466,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -500,7 +484,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -537,7 +521,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         # Get profiles data
@@ -554,7 +538,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         # Get profiles data
@@ -566,14 +550,17 @@ class TestDbusService(unittest.TestCase):
             'settings': {},
             'uid': uid,
             'name': 'foo',
-            'description': 'bar'
+            'description': 'bar',
+            'users': ['user1', 'user2', 'user3'],
+            'groups': ['group1', 'group2'],
+
         })
 
     def test_16_get_profile_applies(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         # Get profiles data
@@ -655,7 +642,7 @@ class TestDbusService(unittest.TestCase):
             f.close()
 
         # Create profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         # Request index
@@ -716,7 +703,7 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE)
+        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
         uid = resp['uid']
 
         PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
@@ -744,7 +731,6 @@ class TestDbusService(unittest.TestCase):
 
         # Add GOA accounts
         resp = c.goa_accounts(accounts, uid)
-        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
@@ -755,7 +741,6 @@ class TestDbusService(unittest.TestCase):
         # Modify accounts
         del accounts[account1_id]
         resp = c.goa_accounts(accounts, uid)
-        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
@@ -765,7 +750,6 @@ class TestDbusService(unittest.TestCase):
         # Empty accounts
         accounts = {}
         resp = c.goa_accounts(accounts, uid)
-        print resp
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
