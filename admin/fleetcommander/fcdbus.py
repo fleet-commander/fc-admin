@@ -184,6 +184,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.args = args
         self.state_dir = args['state_dir']
 
+        loglevel = getattr(logging, args['log_level'].upper())
+        logging.basicConfig(level=loglevel)
+
         self.profiles = profiles.ProfileManager(
             args['database_path'], args['profiles_dir'])
 
@@ -294,6 +297,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     def client_data_callback(self, server, message, path, query, client,
                              **kwargs):
+        logging.debug('[%s] client data: Request at %s' % (message.method, path))
         # Default response and status code
         response = ''
         status_code = 404
@@ -301,7 +305,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         if match:
             filename = match.groupdict()['filename']
             filepath = os.path.join(self.args['profiles_dir'], filename)
-            logging.debug('%s %s' % (filename, filepath))
+            logging.debug('Serving %s -> %s' % (filename, filepath))
             try:
                 response = get_data_from_file(filepath)
                 status_code = 200

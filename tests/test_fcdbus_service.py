@@ -23,6 +23,7 @@
 # Python imports
 import os
 import sys
+import logging
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -71,6 +72,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
     def __init__(self, test_directory):
         args = {
+            'log_level': 'debug',
+            'log_format': '\n[%(levelname)s] %(asctime)-15s %(message)s',
             'webservice_host': 'localhost',
             'webservice_port': '0',
             'data_dir': test_directory,
