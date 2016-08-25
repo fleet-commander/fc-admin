@@ -187,6 +187,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.profiles = profiles.ProfileManager(
             args['database_path'], args['profiles_dir'])
 
+        # Load previous missing profiles data for retrocompatibility
+        self.profiles.load_missing_profiles_data()
+
         self.profiles_dir = args['profiles_dir']
 
         self.GOA_PROVIDERS_FILE = os.path.join(

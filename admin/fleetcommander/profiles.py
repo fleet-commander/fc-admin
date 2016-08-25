@@ -19,8 +19,10 @@
 # Author: Oliver Gutiérrez <ogutierrez@redhat.com>
 
 import os
+import re
 import uuid
 import json
+import logging
 
 from utils import get_data_from_file, test_and_create_file, write_and_close
 from database import DBManager
@@ -60,6 +62,38 @@ class ProfileManager(object):
         # Setup database
         self.db = DBManager(database_path)
         self.profiles = self.db.profiles
+
+    def load_missing_profiles_data(self):
+        """
+        Load the profile files in profiles directory and adds them to profiles
+        database if they do not exist
+        """
+        filename_re = re.compile(r'^\d+\.json$')
+        # Get list of profiles in prodiles directory
+        file_list = os.listdir(self.PROFILES_DIR)
+        profile_list = []
+        for filename in file_list:
+            path = os.path.join(self.PROFILES_DIR, filename)
+            if os.path.isfile(path) and filename_re.match(filename):
+                profile_list.append(filename.split('.')[0])
+        # Load applies data
+        applies = self.get_applies()
+        # Process profiles
+        for uid in profile_list:
+            # Check if uid is already in database
+            if uid not in self.profiles:
+                # Read file contents
+                path = self.get_profile_path(uid)
+                profile = json.loads(get_data_from_file(path))
+                profile = self.profile_sanity_check(profile)
+                # Append applies data
+                if uid in applies:
+                    profile.update(applies[uid])
+                # Save profile data to database
+                self.profiles[uid] = profile
+
+        # Regen main files
+        self.update_main_files()
 
     def get_profile_path(self, uid):
         """

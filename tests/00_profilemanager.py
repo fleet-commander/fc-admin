@@ -37,8 +37,6 @@ from fleetcommander import profiles
 
 class TestProfileManager(unittest.TestCase):
 
-    maxDiff = None
-
     DUMMY_PROFILE = {
        u'description': u'Dummy profile for testing purproses',
        u'name': u'Dummy profile',
@@ -284,6 +282,58 @@ class TestProfileManager(unittest.TestCase):
             }
         })
 
+    def test_08_load_missing_profiles_data(self):
+        # Add profile two different profiles
+        profile_data = self.get_dummy_profile()
+        profile_data['name'] = 'Profile 1'
+        uid1 = self.profiles.save_profile(profile_data)
+
+        profile_data = self.get_dummy_profile()
+        profile_data['name'] = 'Profile 2'
+        uid2 = self.profiles.save_profile(profile_data)
+
+        # Remove them from database only
+        del(self.profiles.profiles[uid1])
+        del(self.profiles.profiles[uid2])
+
+        # Check that profiles are not in database
+        self.assertRaises(
+            profiles.ProfileNotFoundError, self.profiles.get_profile, uid1)
+        self.assertRaises(
+            profiles.ProfileNotFoundError, self.profiles.get_profile, uid2)
+
+        # Check files are written
+        self.assertTrue(os.path.isfile(self.profiles.get_profile_path(uid1)))
+        self.assertTrue(os.path.isfile(self.profiles.get_profile_path(uid2)))
+
+        # Import missing data
+        self.profiles.load_missing_profiles_data()
+
+        # Check index
+        index = self.profiles.get_index()
+        index.sort()
+        self.assertEqual(index, [
+            {
+                'url': '%s.json' % uid1,
+                'displayName': 'Profile 1',
+            },
+            {
+                'url': '%s.json' % uid2,
+                'displayName': 'Profile 2',
+            },
+        ])
+
+        # Check applies
+        self.assertEqual(self.profiles.get_applies(), {
+            uid1: {
+               'users': ['user1', 'user2'],
+               'groups': ['group1', 'group2'],
+            },
+            uid2: {
+               'users': ['user1', 'user2'],
+               'groups': ['group1', 'group2'],
+            }
+        })
 
 if __name__ == '__main__':
     unittest.main()

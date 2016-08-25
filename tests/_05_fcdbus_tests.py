@@ -609,26 +609,6 @@ class TestDbusService(unittest.TestCase):
         c = fcdbus.FleetCommanderDbusClient()
         port = c.get_change_listener_port()
 
-        # Request empty index
-        with self.assertRaisesRegexp(
-          urllib2.HTTPError,
-          'HTTP Error 404: Not Found'):
-            req = urllib2.Request(
-                'http://localhost:%s/index.json' % port)
-            f = urllib2.urlopen(req)
-            response = f.read()
-            f.close()
-
-        # Request empty applies
-        with self.assertRaisesRegexp(
-          urllib2.HTTPError,
-          'HTTP Error 404: Not Found'):
-            req = urllib2.Request(
-                'http://localhost:%s/applies.json' % port)
-            f = urllib2.urlopen(req)
-            response = f.read()
-            f.close()
-
         # Request non existent profile
         with self.assertRaisesRegexp(
           urllib2.HTTPError,
