@@ -223,6 +223,10 @@ class SSHController(object):
         """
         Install a public key in a remote host
         """
+        # Check that pub_key is a real public key by calculating fingerprint
+        logging.debug('Verifying public key')
+        self.get_fingerprint_from_key_data(pub_key)
+
         try:
             # Open connection to given host and simulate a session
             ssh = pexpect.spawn('%s %s@%s -p %s' % (
