@@ -461,6 +461,10 @@ $(document).ready (function () {
   $('#install-pubkey').click(installPubkey);
   $('#copy-pubkey-to-clipboard').click(copyPubkeyToClipboard);
 
+  $("#pubkey-install-modal").on('shown.bs.modal', function () {
+    $('#pubkey-install-password').focus();
+  });
+
   // Set placeholder for admin port in hypervisor configuration dialog
   var adminhost = location.hostname;
   var adminport = location.port || 80

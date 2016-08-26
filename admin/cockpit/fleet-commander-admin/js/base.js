@@ -44,11 +44,11 @@ function showQuestionDialog(message, title, acceptcb, cancelcb) {
   $('#message-dialog-modal .modal-body').html(message);
   var modal_footer = $('#message-dialog-modal .modal-footer');
   modal_footer.html('');
-  var acceptbutton =  $('<button></button>', {"class": "btn btn-primary", text: _('Ok')})
-    .click(acceptcb)
-    .appendTo(modal_footer);
   var cancelbutton =  $('<button></button>', {"class": "btn btn-default", text: _('Cancel')})
     .click(cancelcb)
+    .appendTo(modal_footer);
+  var acceptbutton =  $('<button></button>', {"class": "btn btn-primary", text: _('Ok')})
+    .click(acceptcb)
     .appendTo(modal_footer);
   dialog.modal('show');
 }
