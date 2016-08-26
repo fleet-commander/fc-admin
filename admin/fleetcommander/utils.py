@@ -95,6 +95,10 @@ def parse_config(config_file=None):
         section = {}
 
     args = {
+        'log_level': section.get(
+            'log_level', constants.DEFAULT_LOG_LEVEL),
+        'log_format': section.get(
+            'log_format', constants.DEFAULT_LOG_FORMAT),
         'webservice_host': section.get(
             'webservice_host', constants.DEFAULT_WEBSERVICE_HOST),
         'webservice_port': section.get(

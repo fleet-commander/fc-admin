@@ -19,6 +19,8 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+DEFAULT_LOG_LEVEL = 'warning'
+DEFAULT_LOG_FORMAT = 'FC: [%(levelname)s] %(message)s'
 DEFAULT_CONFIG_FILE = '@FCCONFIGFILE@'
 CONFIG_SECTION_NAME = 'admin'
 

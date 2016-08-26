@@ -317,10 +317,7 @@ class LibVirtController(object):
         self._connect()
         # Get machine by its uuid
         self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)
-        # Check machine status
-        if self._last_stopped_domain.isActive():
-            # Stop machine
-            self._last_stopped_domain.destroy()
-
+        # Destroy domain
+        self._last_stopped_domain.destroy()
         # Undefine domain
         self._undefine_domain(self._last_stopped_domain)
