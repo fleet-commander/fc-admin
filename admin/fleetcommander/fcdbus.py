@@ -185,7 +185,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.state_dir = args['state_dir']
 
         loglevel = getattr(logging, args['log_level'].upper())
-        logging.basicConfig(level=loglevel)
+        logging.basicConfig(level=loglevel, format=args['log_format'])
 
         self.profiles = profiles.ProfileManager(
             args['database_path'], args['profiles_dir'])
@@ -311,7 +311,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                 status_code = 200
             except Exception, e:
                 logging.error('clientdata: %s' % e)
-
         message.set_status(status_code)
         message.set_response(
             'application/json',
@@ -382,7 +381,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
         except Exception as e:
-            logging.error(e)
+            logging.error('Error stopping session: %s' % e)
             return False, 'Error stopping session: %s' % e
 
         return True, None
@@ -390,7 +389,10 @@ class FleetCommanderDbusService(dbus.service.Object):
     def start_session_checking(self):
         self._last_changes_request = time.time()
         # Add callback for temporary sessions check
-        GObject.timeout_add(1000, self.check_running_sessions)
+        self.current_session_checking = GObject.timeout_add(
+            1000, self.check_running_sessions)
+        logging.debug(
+            'Started session checking')
 
     def parse_hypervisor_hostname(self, hostname):
         hostdata = hostname.split()
@@ -405,16 +407,20 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Checks currently running sessions and destroy temporary ones on timeout
         """
-        logging.debug('Checking running sessions')
         time_passed = time.time() - self._last_changes_request
+        logging.debug(
+            'Checking running sessions. Time passed: %s' % time_passed)
         if time_passed > self.tmp_session_destroy_timeout:
-            logging.debug('Checking currently active temporary sessions')
             domains = self.get_domains(only_temporary=True)
+            logging.debug(
+                'Currently active temporary sessions: %s' % domains)
             if domains:
                 logging.info('Destroying stalled sessions')
                 # Stop current session
                 current_uuid = self.db.config.get('uuid', False)
                 if current_uuid:
+                    logging.debug(
+                        'Stopping current session: %s' % current_uuid)
                     self.stop_current_session()
                 for domain in domains:
                     ctrlr = self.get_libvirt_controller()
@@ -426,7 +432,9 @@ class FleetCommanderDbusService(dbus.service.Object):
                             logging.error(
                                 'Error destroying session with UUID %s: %s' %
                                 (domain_uuid, e))
-            return False
+            logging.debug(
+                'Resetting timer for session check')
+            self._last_changes_request = time.time()
         return True
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
@@ -682,6 +690,8 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetChanges(self):
         # Update last changes request time
         self._last_changes_request = time.time()
+        logging.debug(
+            'Changes being requested: %s' % self._last_changes_request)
 
         response = {}
 
@@ -794,7 +804,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
     def SessionStart(self, domain_uuid, admin_host):
-        self.start_session_checking()
 
         if self.db.config.get('port', None) is not None:
             return json.dumps({
