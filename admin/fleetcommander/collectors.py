@@ -161,7 +161,7 @@ class NetworkManagerCollector(BaseCollector):
         Return change key identifier for NM connection
         """
         try:
-            return change[u'json'][u'connection'][u'uuid']
+            return change[u'uuid']
         except:
             return
 
@@ -170,7 +170,6 @@ class NetworkManagerCollector(BaseCollector):
         Return change human readable value for NM connection
         """
         try:
-            conn = change[u'json'][u'connection']
-            return '%s - %s' % (conn[u'type'], conn[u'id']),
+            return '%s - %s' % (change[u'type'], change[u'id']),
         except:
             return 'Undefined'
