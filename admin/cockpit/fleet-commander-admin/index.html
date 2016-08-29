@@ -13,283 +13,15 @@
       <script src="js/index.js"></script>
       <script src="js/goa.js"></script>
   </head>
-  <body class="page-ct">
+  <body>
 
-    <!-- Modal dialog for hypervisor configuration -->
-    <div id="hypervisor-config-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
-          </div>
-
-          <div class="modal-body">
-            <div id="host-group" class="form-group">
-              <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
-              <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control">
-            </div>
-            <div id="username-group" class="form-group">
-              <label for="username" class="control-label" translatable="yes">Username for connection</label>
-              <input id="username" name="pubkey" placeholder="enter username" type="text" class="form-control">
-            </div>
-            <div id="mode-group" class="form-group">
-              <label for="mode" class="control-label" translatable="yes">Libvirt mode</label>
-              <select id="mode" name="mode" class="form-control">
-                <option value="system" selected translatable="yes">System</option>
-                <option value="session" translatable="yes">Session</option>
-              </select>
-            </div>
-            <div id="adminhost-group" class="form-group">
-              <label for="adminhost" class="control-label" translatable="yes">Fleet Commander admin host (Optional)</label>
-              <input id="adminhost" name="adminhost" type="hostname" class="form-control">
-            </div>
-            <div id="pubkey-group" class="form-group">
-              <label for="pubkey" class="control-label" translatable="yes">Public key</label> (<a role="button" data-toggle="collapse" href="#pubkey-wrapper" translatable="yes">show</a>)
-              <div id="pubkey-wrapper" class="collapse">
-                <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <button id="show-pubkey-install" class="btn btn-success" translatable="yes">Install public key</button>
-              <button id="copy-pubkey-to-clipboard" class="btn btn-default" translatable="yes">Copy to clipboard</button>
-            </div>
-
-            <div class="form-group alert alert-info" role="alert">
-              <span class="pficon pficon-info"></span>
-              <p translatable="yes">You need to install Fleet Commander's SSH public key in the libvirt host.</p>
-              <p translatable="yes">You can install it using the "Install public key" button. Your password will be prompted and the public key will be installed in the libvirt host.</p>
-              <p translatable="yes">Alternatively, you can copy this key and append it to the authorized_keys file in &tilde;/.ssh/ for the user you want to use to connect to the libvirt host.</p>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
-          </div>
-        </div>
-      </div>
+    <!-- Message curtain -->
+    <div id="curtain" class="curtains-ct blank-slate-pf">
+      <div class="blank-slate-pf-icon"></div>
+      <h1 translatable="yes"></h1>
+      <p></p>
+      <div class="blank-slate-pf-main-action"></div>
     </div>
-
-    <div id="pubkey-install-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title" translatable="yes">Public key installation</h4>
-          </div>
-
-          <div class="modal-body">
-            <div class="spinner"></div>
-            <div id="pubkey-install-credentials-group" class="form-group">
-              <label for="pubkey-install-password" class="control-label" translatable="yes">Password</label>
-              <input id="pubkey-install-password" name="pubkey-install-password" type="password" class="form-control">
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button id="install-pubkey" class="btn btn-primary" t ranslatable="yes">Install</button>
-            <button id="cancel-pubkey-install" class="btn btn-default" translatable="yes">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="add-profile-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" translatable="yes">Add profile</h4>
-          </div>
-
-          <div id="profile-data" class="modal-body">
-            <div id="profile-name-group" class="form-group">
-              <label for="profile-name" class="control-label" translatable="yes">Name</label>
-              <input id="profile-name" type="text" placeholder="Profile name" name="profile-name" class="form-control"/>
-            </div>
-            <div id="profile-desc-group" class="form-group">
-              <label for="profile-desc" class="control-label" translatable="yes">Description</label>
-              <input id="profile-desc" type="text" placeholder="Profile description" name="profile-desc" class="form-control"/>
-            </div>
-            <div id="profile-users-group" class="form-group">
-              <label for="users" class="control-label" translatable="yes">Users</label>
-              <input id="profile-users" name="profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
-            </div>
-            <div id="profile-groups-group" class="form-group">
-              <label for="groups" class="control-label" translatable="yes">Groups</label>
-              <input id="profile-groups" name="profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-new-profile" class="btn btn-primary" translatable="yes">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="edit-profile-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" translatable="yes">Edit profile</h4>
-          </div>
-
-          <div id="edit-profile-data" class="modal-body">
-            <div id="edit-profile-name-group" class="form-group">
-              <label for="edit-profile-name" class="control-label" translatable="yes">Name</label>
-              <input id="edit-profile-name" type="text" placeholder="Profile name" name="edit-profile-name" class="form-control"/>
-            </div>
-            <div id="edit-profile-desc-group" class="form-group">
-              <label for="edit-profile-desc" class="edit-control-label" translatable="yes">Description</label>
-              <input id="edit-profile-desc" type="text" placeholder="Profile description" name="edit-profile-desc" class="form-control"/>
-            </div>
-            <div id="edit-profile-users-group" class="form-group">
-              <label for="edit-profile-users" class="control-label" translatable="yes">Users</label>
-              <input id="edit-profile-users" name="edit-profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
-            </div>
-            <div id="edit-profile-groups-group" class="form-group">
-              <label for="edit-profile-groups" class="control-label" translatable="yes">Groups</label>
-              <input id="edit-profile-groups" name="edit-profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
-            </div>
-            <hr>
-            <div id="edit-profile-further-group" class="form-group text-center">
-              <label translatable="yes">Edit profile settings</label>
-              <div class="">
-                <button id="show-domain-selection" class="btn btn-default" translatable="yes">Live session</button>
-                <button id="show-highlighted-apps" class="btn btn-default" translatable="yes">Highlighted apps</button>
-                <button id="show-goa-accounts" class="btn btn-default" translatable="yes">GNOME Online Accounts</button>
-               </div>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-existing-profile" class="btn btn-primary" translatable="yes">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="domain-selection-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" translatable="yes">Select domain</h4>
-          </div>
-
-          <div class="modal-body">
-            <div class="spinner"></div>
-            <div id="domain-selection-list" class='list-group'>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="highlighted-apps-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title" translatable="yes">Highlighted apps</h4>
-          </div>
-
-          <div class="modal-body">
-            <div id="app-name-group" class="form-group">
-              <label for="app-name" class="control-label" translatable="yes">Introduce a XDG .desktop application id</label>
-              <div class="input-group">
-                <input id="app-name" type="text" class="form-control" name="app-name" />
-                <span class="input-group-btn">
-                  <button id="add-highlighted-app" class="btn btn-primary" translatable="yes">Add application</button>
-                </span>
-              </div>
-            </div>
-
-            <ul class="list-group" id="highlighted-apps-list">
-            </ul>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-highlighted-apps" class="btn btn-primary" translatable="yes">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="goa-accounts-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title" translatable="yes">GNOME Online Accounts</h4>
-          </div>
-
-          <div class="modal-body">
-
-            <div id="app-name-group" class="form-group">
-              <button id="show-goa-account-edit" class="btn btn-primary" translatable="yes">Add account</button>
-            </div>
-
-            <table class="table">
-              <thead>
-                <tr>
-                  <td translatable="yes">Identifier</td>
-                  <td translatable="yes">Provider</td>
-                  <td></td>
-                </tr>
-              </thead>
-              <tbody id="goa-accounts-list">
-              </tbody>
-            </table>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-            <button id="save-goa-accounts" class="btn btn-primary" translatable="yes">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="goa-account-edit-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title" translatable="yes">Select account type and options</h4>
-          </div>
-
-          <div class="modal-body">
-            <div id="app-name-group" class="form-group">
-              <img id="goa-current-provider-icon" class="pull-right" src="" alt="Provider icon">
-              <div class="input-group">
-                <select id="goa-provider" name="goa-provider"></select>
-              </div>
-
-              <div id="goa-services" class="input-group"></div>
-
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Back</button>
-            <button id="update-add-goa-account" class="btn btn-primary" translatable="yes">Ok</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
 
     <!-- Message dialog modal -->
     <div id="message-dialog-modal" class="modal fade" tabindex='-1'>
@@ -326,29 +58,305 @@
       </div>
     </div>
 
-    <!-- Main plugin body -->
-    <div class="container-fluid">
-      <div class="text-right">
-        <button id="show-add-profile" class="btn btn-default pull-left" translatable="yes">Add Profile</button>
-        <button id="show-hypervisor-config" class="btn btn-default" translatable="yes">Settings</button>
+    <div id="main-container" class="page-ct">
+      <!-- Modal dialog for hypervisor configuration -->
+      <div id="hypervisor-config-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
+            </div>
+
+            <div class="modal-body">
+              <div id="host-group" class="form-group">
+                <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
+                <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control">
+              </div>
+              <div id="username-group" class="form-group">
+                <label for="username" class="control-label" translatable="yes">Username for connection</label>
+                <input id="username" name="pubkey" placeholder="enter username" type="text" class="form-control">
+              </div>
+              <div id="mode-group" class="form-group">
+                <label for="mode" class="control-label" translatable="yes">Libvirt mode</label>
+                <select id="mode" name="mode" class="form-control">
+                  <option value="system" selected translatable="yes">System</option>
+                  <option value="session" translatable="yes">Session</option>
+                </select>
+              </div>
+              <div id="adminhost-group" class="form-group">
+                <label for="adminhost" class="control-label" translatable="yes">Fleet Commander admin host (Optional)</label>
+                <input id="adminhost" name="adminhost" type="hostname" class="form-control">
+              </div>
+              <div id="pubkey-group" class="form-group">
+                <label for="pubkey" class="control-label" translatable="yes">Public key</label> (<a role="button" data-toggle="collapse" href="#pubkey-wrapper" translatable="yes">show</a>)
+                <div id="pubkey-wrapper" class="collapse">
+                  <textarea id="pubkey" name="pubkey" type="publickey" class="form-control" rows="7" readonly></textarea>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <button id="show-pubkey-install" class="btn btn-success" translatable="yes">Install public key</button>
+                <button id="copy-pubkey-to-clipboard" class="btn btn-default" translatable="yes">Copy to clipboard</button>
+              </div>
+
+              <div class="form-group alert alert-info" role="alert">
+                <span class="pficon pficon-info"></span>
+                <p translatable="yes">You need to install Fleet Commander's SSH public key in the libvirt host.</p>
+                <p translatable="yes">You can install it using the "Install public key" button. Your password will be prompted and the public key will be installed in the libvirt host.</p>
+                <p translatable="yes">Alternatively, you can copy this key and append it to the authorized_keys file in &tilde;/.ssh/ for the user you want to use to connect to the libvirt host.</p>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <h2 translatable="yes">Profiles</h2>
-        <table class="table">
-          <thead>
-            <tr>
-              <td translatable="yes">Name</td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-          </thead>
-          <tbody id="profile-list">
-          </tbody>
-        </table>
+
+      <div id="pubkey-install-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" translatable="yes">Public key installation</h4>
+            </div>
+
+            <div class="modal-body">
+              <div class="spinner"></div>
+              <div id="pubkey-install-credentials-group" class="form-group">
+                <label for="pubkey-install-password" class="control-label" translatable="yes">Password</label>
+                <input id="pubkey-install-password" name="pubkey-install-password" type="password" class="form-control">
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="install-pubkey" class="btn btn-primary" t ranslatable="yes">Install</button>
+              <button id="cancel-pubkey-install" class="btn btn-default" translatable="yes">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="add-profile-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Add profile</h4>
+            </div>
+
+            <div id="profile-data" class="modal-body">
+              <div id="profile-name-group" class="form-group">
+                <label for="profile-name" class="control-label" translatable="yes">Name</label>
+                <input id="profile-name" type="text" placeholder="Profile name" name="profile-name" class="form-control"/>
+              </div>
+              <div id="profile-desc-group" class="form-group">
+                <label for="profile-desc" class="control-label" translatable="yes">Description</label>
+                <input id="profile-desc" type="text" placeholder="Profile description" name="profile-desc" class="form-control"/>
+              </div>
+              <div id="profile-users-group" class="form-group">
+                <label for="users" class="control-label" translatable="yes">Users</label>
+                <input id="profile-users" name="profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
+              </div>
+              <div id="profile-groups-group" class="form-group">
+                <label for="groups" class="control-label" translatable="yes">Groups</label>
+                <input id="profile-groups" name="profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-new-profile" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="edit-profile-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Edit profile</h4>
+            </div>
+
+            <div id="edit-profile-data" class="modal-body">
+              <div id="edit-profile-name-group" class="form-group">
+                <label for="edit-profile-name" class="control-label" translatable="yes">Name</label>
+                <input id="edit-profile-name" type="text" placeholder="Profile name" name="edit-profile-name" class="form-control"/>
+              </div>
+              <div id="edit-profile-desc-group" class="form-group">
+                <label for="edit-profile-desc" class="edit-control-label" translatable="yes">Description</label>
+                <input id="edit-profile-desc" type="text" placeholder="Profile description" name="edit-profile-desc" class="form-control"/>
+              </div>
+              <div id="edit-profile-users-group" class="form-group">
+                <label for="edit-profile-users" class="control-label" translatable="yes">Users</label>
+                <input id="edit-profile-users" name="edit-profile-users" placeholder="Comma separated list of user names" type="text" class="form-control"/>
+              </div>
+              <div id="edit-profile-groups-group" class="form-group">
+                <label for="edit-profile-groups" class="control-label" translatable="yes">Groups</label>
+                <input id="edit-profile-groups" name="edit-profile-groups" placeholder="Comma separated list of group names" type="text" class="form-control"/>
+              </div>
+              <hr>
+              <div id="edit-profile-further-group" class="form-group text-center">
+                <label translatable="yes">Edit profile settings</label>
+                <div class="">
+                  <button id="show-domain-selection" class="btn btn-default" translatable="yes">Live session</button>
+                  <button id="show-highlighted-apps" class="btn btn-default" translatable="yes">Highlighted apps</button>
+                  <button id="show-goa-accounts" class="btn btn-default" translatable="yes">GNOME Online Accounts</button>
+                 </div>
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-existing-profile" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="domain-selection-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Select domain</h4>
+            </div>
+
+            <div class="modal-body">
+              <div class="spinner"></div>
+              <div id="domain-selection-list" class='list-group'>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="highlighted-apps-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title" translatable="yes">Highlighted apps</h4>
+            </div>
+
+            <div class="modal-body">
+              <div id="app-name-group" class="form-group">
+                <label for="app-name" class="control-label" translatable="yes">Introduce a XDG .desktop application id</label>
+                <div class="input-group">
+                  <input id="app-name" type="text" class="form-control" name="app-name" />
+                  <span class="input-group-btn">
+                    <button id="add-highlighted-app" class="btn btn-primary" translatable="yes">Add application</button>
+                  </span>
+                </div>
+              </div>
+
+              <ul class="list-group" id="highlighted-apps-list">
+              </ul>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-highlighted-apps" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="goa-accounts-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title" translatable="yes">GNOME Online Accounts</h4>
+            </div>
+
+            <div class="modal-body">
+
+              <div id="app-name-group" class="form-group">
+                <button id="show-goa-account-edit" class="btn btn-primary" translatable="yes">Add account</button>
+              </div>
+
+              <table class="table">
+                <thead>
+                  <tr>
+                    <td translatable="yes">Identifier</td>
+                    <td translatable="yes">Provider</td>
+                    <td></td>
+                  </tr>
+                </thead>
+                <tbody id="goa-accounts-list">
+                </tbody>
+              </table>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-goa-accounts" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="goa-account-edit-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" aria-hidden="true" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title" translatable="yes">Select account type and options</h4>
+            </div>
+
+            <div class="modal-body">
+              <div id="app-name-group" class="form-group">
+                <img id="goa-current-provider-icon" class="pull-right" src="" alt="Provider icon">
+                <div class="input-group">
+                  <select id="goa-provider" name="goa-provider"></select>
+                </div>
+
+                <div id="goa-services" class="input-group"></div>
+
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Back</button>
+              <button id="update-add-goa-account" class="btn btn-primary" translatable="yes">Ok</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main plugin body -->
+      <div class="container-fluid">
+        <div class="text-right">
+          <button id="show-add-profile" class="btn btn-default pull-left" translatable="yes">Add Profile</button>
+          <button id="show-hypervisor-config" class="btn btn-default" translatable="yes">Settings</button>
+        </div>
+        <div>
+          <h2 translatable="yes">Profiles</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <td translatable="yes">Name</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody id="profile-list">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-
   </body>
 </html>

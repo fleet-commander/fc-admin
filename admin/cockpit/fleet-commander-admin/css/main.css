@@ -18,6 +18,10 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+#main-container, #curtain {
+  display: none;
+}
+
 #event-logs-dialog {
   width: 90%;
   overflow: auto;

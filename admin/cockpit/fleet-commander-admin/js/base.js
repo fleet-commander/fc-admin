@@ -53,6 +53,30 @@ function showQuestionDialog(message, title, acceptcb, cancelcb) {
   dialog.modal('show');
 }
 
+function showCurtain(message, title, icon, buttons) {
+  icon = icon || 'exclamation-circle'
+  buttons = buttons || {}
+  $('#curtain h1').html(title);
+  $('#curtain p').html(message);
+  var iconarea = $('#curtain .blank-slate-pf-icon');
+  if (icon != 'spinner') {
+    iconarea.html('<i class="fa fa-' + icon + '"></i>')
+  } else {
+    iconarea.html('<div class="spinner spinner-lg"></div>')
+  }
+  // TODO: Manage buttons
+  buttonsarea = $('#curtain .blank-slate-pf-main-action');
+  buttonsarea.html('');
+  $.each(buttons, function(id, data){
+    var btnclass = data.class || 'btn-default';
+    var button = $('<button id="' + id + '" class="btn btn-lg ' +
+      btnclass + '">' + data.text + '</button>');
+    button.click(data.callback);
+    buttonsarea.append(button);
+    buttonsarea.append(' ');
+  })
+  $('#curtain').show();
+}
 
 function clearModalFormErrors(modalId) {
   $('#' + modalId + ' div.form-group').removeClass('has-error');

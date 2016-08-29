@@ -45,99 +45,117 @@
   </head>
   <body class="page-ct">
 
-    <div id="event-logs" class="modal fade" tabindex='-1'>
-      <div id="event-logs-dialog" class="modal-dialog">
+    <!-- Message curtain -->
+    <div id="curtain" class="curtains-ct blank-slate-pf">
+      <div class="blank-slate-pf-icon"></div>
+      <h1 translatable="yes"></h1>
+      <p></p>
+      <div class="blank-slate-pf-main-action"></div>
+    </div>
+
+    <!-- Message dialog modal -->
+    <div id="message-dialog-modal" class="modal fade" tabindex='-1'>
+      <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button id="close-review" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" translatable="yes">Profile Changes</h4>
+            <h4 class="modal-title"></h4>
           </div>
+
           <div class="modal-body">
-            <div id="change-item-template">
-              <div class="list-view-item">
-                <div class="list-view-pf-checkbox">
-                  <input class="change-checkbox" type="checkbox">
-                </div>
-                <div class="list-view-pf-main-info">
-                  <div class="list-view-pf-body">
-                    <div class="list-view-pf-description">
-                      <div class="changekey list-group-item-heading">
-                        Key
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-default" data-dismiss="modal" translatable="yes">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spinner modal -->
+    <div id="spinner-modal" class="modal fade" tabindex='-1'>
+      <div class="modal-dialog">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h4 class="modal-title" translatable="yes">Starting live session</h4>
+          </div>
+
+          <div class="modal-body">
+            <div class="spinner"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="main-container" class="page-ct">
+
+      <div id="event-logs" class="modal fade" tabindex='-1'>
+        <div id="event-logs-dialog" class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button id="close-review" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Profile Changes</h4>
+            </div>
+            <div class="modal-body">
+              <div id="change-item-template">
+                <div class="list-view-item">
+                  <div class="list-view-pf-checkbox">
+                    <input class="change-checkbox" type="checkbox">
+                  </div>
+                  <div class="list-view-pf-main-info">
+                    <div class="list-view-pf-body">
+                      <div class="list-view-pf-description">
+                        <div class="changekey list-group-item-heading">
+                          Key
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <form id="selected-changes-form">
+                <div class="form-group">
+                  <h4 translatable="yes">GSettings changes</h4>
+                  <div id="gsettings-event-list" class="list-view">
+                  </div>
+                  <h4 translatable="yes">LibreOffice changes</h4>
+                  <div id="libreoffice-event-list" class="list-view">
+                  </div>
+                  <h4 translatable="yes">NetworkManager changes</h4>
+                  <div id="networkmanager-event-list" class="list-view">
+                  </div>
+                </div>
+              </form>
             </div>
-
-            <form id="selected-changes-form">
-              <div class="form-group">
-                <h4 translatable="yes">GSettings changes</h4>
-                <div id="gsettings-event-list" class="list-view">
-                </div>
-                <h4 translatable="yes">LibreOffice changes</h4>
-                <div id="libreoffice-event-list" class="list-view">
-                </div>
-                <h4 translatable="yes">NetworkManager changes</h4>
-                <div id="networkmanager-event-list" class="list-view">
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button id="back-review" data-dismiss="modal" translatable="yes">Back</button>
-            <button id="deploy-profile" class="btn-primary" translatable="yes">Save</button>
+            <div class="modal-footer">
+              <button id="back-review" data-dismiss="modal" translatable="yes">Back</button>
+              <button id="deploy-profile" class="btn-primary" translatable="yes">Save</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div id="message-dialog-modal" class="modal fade" tabindex='-1'>
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title"></h4>
+      <div class="container-fluid">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <span translatable="yes">Virtual Session</span>
+            <span class="pull-right">
+              <button id="close-live-session" class="btn" translatable="yes">Close session</button>
+              <button id="review-changes" class="btn btn-primary" translatable="yes">Review and submit</button>
+            </span>
           </div>
-          <div class="modal-body"></div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <div class="panel-body">
+            <div id="spice-area">
+                <div id="spice-screen" class="spice-screen"></div>
+            </div>
+            <div id="message-div" class="spice-message"></div>
+            <div id="debug-div">
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <div id="spinner-modal" class="modal fade">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title" translatable="yes">Saving settings</h4>
-          </div>
-          <div class="modal-body">
-            <div class="spinner"></div>
-          </div>
         </div>
-      </div>
-    </div>
-
-    <div class="container-fluid">
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <span translatable="yes">Virtual Session</span>
-          <span class="pull-right">
-            <button id="close-live-session" class="btn" translatable="yes">Close session</button>
-            <button id="review-changes" class="btn btn-primary" translatable="yes">Review and submit</button>
-          </span>
-        </div>
-        <div class="panel-body">
-          <div id="spice-area">
-              <div id="spice-screen" class="spice-screen"></div>
-          </div>
-          <div id="message-div" class="spice-message"></div>
-          <div id="debug-div">
-          </div>
-        </div>
-
       </div>
     </div>
   </body>
