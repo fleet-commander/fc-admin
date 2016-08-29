@@ -99,6 +99,10 @@ class FleetCommanderDbusClient(object):
     def check_known_host(self, host):
         return json.loads(self.iface.CheckKnownHost(host))
 
+    def add_known_host(self, host):
+        return json.loads(self.iface.AddKnownHost(host))
+
+
     def install_pubkey(self, host, user, passwd):
         return json.loads(self.iface.InstallPubkey(
             host, user, passwd
@@ -457,43 +461,21 @@ class FleetCommanderDbusService(dbus.service.Object):
         if not re.match(SYSTEM_USER_REGEX, data['username']):
             errors['username'] = 'Invalid username specified'
         # Check hostname
-        if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
+        if not re.match(HOSTNAME_AND_PORT_REGEX, data['host']) \
+           and not re.match(IPADDRESS_AND_PORT_REGEX, data['host']):
             errors['host'] = 'Invalid hostname specified'
         # Check libvirt mode
         if data['mode'] not in ('system', 'session'):
             errors['mode'] = 'Invalid session type'
         # Check admin host
         if 'adminhost' in data and data['adminhost'] != '':
-            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
+            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) \
+               and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
                 errors['adminhost'] = 'Invalid hostname specified'
         if errors:
             return json.dumps({'status': False, 'errors': errors})
 
-        hostname, port = self.parse_hypervisor_hostname(data['host'])
-
-        # Check if hypervisor is a known host
-        known = self.ssh.check_known_host(
-            self.known_hosts_file, hostname)
-
-        if not known:
-            # Obtain SSH fingerprint for host
-            try:
-                key_data = self.ssh.scan_host_keys(hostname, port)
-                fprint = self.ssh.get_fingerprint_from_key_data(key_data)
-                return json.dumps({
-                    'status': False,
-                    'fprint': fprint,
-                    'keys': key_data,
-                })
-            except Exception, e:
-                logging.error(
-                    'Error getting hypervisor fingerprint: %s' % e)
-                return json.dumps({
-                    'status': False,
-                    'error': 'Error getting hypervisor fingerprint %s' % e
-                })
-        else:
-            return json.dumps({'status': True})
+        return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
@@ -504,22 +486,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='s', out_signature='s')
     def SetHypervisorConfig(self, jsondata):
         data = json.loads(jsondata)
-
-        # Add hypervisor as a known host
-        known = self.ssh.check_known_host(
-            self.known_hosts_file, data['host'])
-        if not known:
-            try:
-                self.ssh.add_keys_to_known_hosts(self.known_hosts_file, data['keys'])
-                del(data['keys'])
-            except Exception, e:
-                logging.error(
-                    'Error adding hypervisor host to known hosts: %s' % e)
-                return json.dumps({
-                    'status': False,
-                    'error': 'Error adding hypervisor host to known hosts'
-                })
-
         # Save hypervisor configuration
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})
@@ -548,10 +514,33 @@ class FleetCommanderDbusService(dbus.service.Object):
                     'Error getting hypervisor fingerprint: %s' % e)
                 return json.dumps({
                     'status': False,
-                    'error': 'Error getting hypervisor fingerprint %s' % e
+                    'error': 'Error getting hypervisor fingerprint'
                 })
         else:
             return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def AddKnownHost(self, hostname):
+        host, port = self.parse_hypervisor_hostname(hostname)
+
+        # Check if hypervisor is a known host
+        known = self.ssh.check_known_host(
+            self.known_hosts_file, host)
+
+        if not known:
+            try:
+                self.ssh.add_to_known_hosts(
+                    self.known_hosts_file,
+                    host, port)
+            except Exception, e:
+                logging.error('Error adding host to known hosts: %s' % e)
+                return json.dumps({
+                    'status': False,
+                    'error': 'Error adding host to known hosts'
+                })
+
+        return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='sss', out_signature='s')

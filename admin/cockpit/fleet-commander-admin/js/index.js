@@ -34,7 +34,7 @@ function checkHypervisorConfig(cb) {
     if (data.needcfg) {
       showHypervisorConfig();
     } else {
-      if (cb) cb()
+      if (cb) cb(data)
     }
   });
 }
@@ -48,6 +48,40 @@ function showHypervisorConfig() {
     $('#adminhost').val(resp.adminhost);
     $('#pubkey').html(resp.pubkey);
     $('#hypervisor-config-modal').modal('show');
+  });
+}
+
+function checkKnownHost(hostname, cb, data) {
+  data = data || {};
+  fc.CheckKnownHost(hostname, function(resp){
+    if (resp.status) {
+      cb(data);
+    } else if (resp.error != undefined) {
+      // We have an error
+      showMessageDialog(resp.error, _('Error'));
+    } else if (resp.fprint != undefined) {
+      showQuestionDialog(
+        _('Do you want to add this host to known hosts?') +
+          '<p>' + _('Fingerprint data') + ':</p>' +
+          '<p>' + resp.fprint + '</p>',
+        _('Hypervisor host verification'),
+        function(event, dialog) {
+          // Add host to known hosts
+          $('#message-dialog-modal').modal('hide');
+          addToKnownHosts(hostname, cb, data);
+        }
+      );
+    }
+  });
+}
+
+function addToKnownHosts(hostname, cb, data) {
+  fc.AddKnownHost(hostname, function(resp){
+    if (resp.status) {
+      cb(data);
+    } else {
+      showMessageDialog(resp.error, _('Error'))
+    }
   });
 }
 
@@ -65,11 +99,7 @@ function saveHypervisorConfig(cb) {
   function saveHypervisorFinal(data) {
     fc.SetHypervisorConfig(data, function(resp) {
       if (resp.status) {
-        if (typeof(cb) === 'function') {
-          cb();
-        } else {
-          $('#hypervisor-config-modal').modal('hide');
-        }
+        $('#hypervisor-config-modal').modal('hide');
       } else {
         showMessageDialog(resp.error, _('Error'))
       }
@@ -78,23 +108,8 @@ function saveHypervisorConfig(cb) {
 
   fc.CheckHypervisorConfig(data, function(resp) {
     if (resp.status) {
-      saveHypervisorFinal(data);
-    } else if (resp.error != undefined) {
-      // We have an error
-      showMessageDialog(resp.error, _('Error'))
-    } else if (resp.fprint != undefined) {
-      showQuestionDialog(
-        _('Do you want to add this host to known hosts?') +
-          '<p>' + _('Fingerprint data') + ':</p>' +
-          '<p>' + resp.fprint + '</p>',
-        _('Hypervisor host verification'),
-        function(event, dialog) {
-          data['keys'] = resp.keys;
-          saveHypervisorFinal(data);
-          $('#message-dialog-modal').modal('hide');
-        }
-      );
-    } else if (resp.errors != undefined) {
+      checkKnownHost(data.host, saveHypervisorFinal, data);
+    } else {
       $.each(resp.errors, function( key, value ) {
         addFormError(key, value);
       });
@@ -405,40 +420,46 @@ function selectDomain() {
 
 function showDomainSelection() {
 
-  checkHypervisorConfig(function() {
-    $('#edit-profile-modal').modal('hide');
-    $('#domain-selection-modal').modal('show');
+  checkHypervisorConfig(function(data) {
 
-    // Show loading clock
-    spinner = $('#domain-selection-modal .spinner');
-    list = $('#domain-selection-list');
-    spinner.show();
+    checkKnownHost(data.host, function(){
 
-    // Generate domain list
-    list.html('');
+      $('#edit-profile-modal').modal('hide');
+      $('#domain-selection-modal').modal('show');
 
-    fc.ListDomains(function(resp) {
-      if (resp.status) {
-        $('#domain-selection-modal .spinner').hide();
-        $.each(resp.domains, function() {
-          if (!this.temporary) {
-            var wrapper = $('<div></div>', {'class': 'list-group-item'});
-            var text = this.name;
-            if (this.active) {
-              text = this.name + ' (' + _('running') + ')';
-              wrapper.addClass('grayed')
+      // Show loading clock
+      spinner = $('#domain-selection-modal .spinner');
+      list = $('#domain-selection-list');
+      spinner.show();
+
+      // Generate domain list
+      list.html('');
+
+      fc.ListDomains(function(resp) {
+        if (resp.status) {
+          $('#domain-selection-modal .spinner').hide();
+          $.each(resp.domains, function() {
+            if (!this.temporary) {
+              var wrapper = $('<div></div>', {'class': 'list-group-item'});
+              var text = this.name;
+              if (this.active) {
+                text = this.name + ' (' + _('running') + ')';
+                wrapper.addClass('grayed')
+              }
+              domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
+              domain.click(selectDomain);
+              domain.appendTo(wrapper);
+              wrapper.appendTo(list);
             }
-            domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
-            domain.click(selectDomain);
-            domain.appendTo(wrapper);
-            wrapper.appendTo(list);
-          }
-        });
-      } else {
-        $('#domain-selection-modal').modal('hide');
-        showMessageDialog(_('Error getting domain list'), _('Error'));
-      }
+          });
+        } else {
+          $('#domain-selection-modal').modal('hide');
+          showMessageDialog(_('Error getting domain list'), _('Error'));
+        }
+      });
+
     });
+
   });
 }
 

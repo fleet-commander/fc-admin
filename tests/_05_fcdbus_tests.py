@@ -224,18 +224,6 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
 
-        # Set valid data with not known host
-        resp = c.check_hypervisor_config(data)
-        self.assertFalse(resp['status'])
-        self.assertEqual(resp['fprint'], '2048 SHA256:HASH localhost (RSA)\n')
-        self.assertEqual(resp['keys'], 'localhost ssh-rsa KEY\n')
-
-        # Set valid data with known host
-        self.ssh.add_keys_to_known_hosts(
-            self.known_hosts_file, 'localhost ssh-rsa KEY\n')
-        resp = c.check_hypervisor_config(data)
-        self.assertTrue(resp['status'])
-
     def test_03_set_hypervisor_config(self):
         c = fcdbus.FleetCommanderDbusClient()
 
@@ -243,13 +231,11 @@ class TestDbusService(unittest.TestCase):
             'host': 'localhost',
             'username': 'valid_user',
             'mode': 'session',
-            'adminhost': '',
-            'keys': 'myhost ssh-rsa KEY'
+            'adminhost': ''
         }
 
         dataresp = data.copy()
         dataresp['pubkey'] = 'PUBLIC_KEY'
-        del(dataresp['keys'])
 
         # Set data
         resp = c.set_hypervisor_config(data)
@@ -257,8 +243,6 @@ class TestDbusService(unittest.TestCase):
 
         # Retrieve configuration and compare
         self.assertEqual(c.get_hypervisor_config(), dataresp)
-        # Check host added to known_hosts
-        self.ssh.check_known_host(self.known_hosts_file, data['host'])
 
     def test_03_check_known_host(self):
         c = fcdbus.FleetCommanderDbusClient()

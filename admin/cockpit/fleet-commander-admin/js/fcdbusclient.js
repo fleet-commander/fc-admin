@@ -79,7 +79,15 @@ function FleetCommanderDbusClient(errorcb) {
   });
 
   this.CheckKnownHost = safe_dbus(function(hostname, cb, errcb) {
-    self._proxy.InstallPubkey(hostname).done(
+    self._proxy.CheckKnownHost(hostname).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errcb || self._errorhandler);
+  });
+
+  this.AddKnownHost = safe_dbus(function(hostname, cb, errcb) {
+    self._proxy.AddKnownHost(hostname).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
@@ -223,8 +231,8 @@ function FleetCommanderDbusClient(errorcb) {
 
 $(document).ready (function () {
   // Create a Fleet Commander dbus client instance
-  fc = new FleetCommanderDbusClient(function(){
+  fc = new FleetCommanderDbusClient(function(error){
     showMessageDialog(
-      _('There has been an error communicating with dbus service'), _('Error'))
+      _('There has been an error communicating with dbus service: ' + error), _('Error'))
   });
 });
