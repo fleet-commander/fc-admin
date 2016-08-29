@@ -224,7 +224,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
 
-    def test_03_set_hypervisor_config(self):
+    def test_04_set_hypervisor_config(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         data = {
@@ -244,7 +244,7 @@ class TestDbusService(unittest.TestCase):
         # Retrieve configuration and compare
         self.assertEqual(c.get_hypervisor_config(), dataresp)
 
-    def test_03_check_known_host(self):
+    def test_05_check_known_host(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Check not known host
@@ -261,7 +261,21 @@ class TestDbusService(unittest.TestCase):
         resp = c.check_known_host('localhost')
         self.assertTrue(resp['status'])
 
-    def test_03_install_public_key(self):
+    def test_06_add_known_host(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Check not known host
+        resp = c.check_known_host('localhost')
+        self.assertFalse(resp['status'])
+
+        # Add host to known hosts
+        c.add_known_host('localhost')
+
+        # Check already known host
+        resp = c.check_known_host('localhost')
+        self.assertTrue(resp['status'])
+
+    def test_07_install_public_key(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Test install with bad credentials
@@ -280,7 +294,7 @@ class TestDbusService(unittest.TestCase):
         )
         self.assertTrue(resp['status'])
 
-    def test_04_new_profile(self):
+    def test_08_new_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a new profile
@@ -289,7 +303,7 @@ class TestDbusService(unittest.TestCase):
         uid = self.get_data_from_file(self.INDEX_FILE)[0]['url'].split('.')[0]
         self.assertEqual(resp['uid'], uid)
 
-    def test_05_delete_profile(self):
+    def test_09_delete_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
         # Delete unexistent profile
         resp = c.delete_profile('fakeuid')
@@ -299,7 +313,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.delete_profile(resp['uid'])
         self.assertTrue(resp['status'])
 
-    def test_06_profile_props(self):
+    def test_10_profile_props(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -336,7 +350,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         self.assertEqual(self.get_data_from_file(self.APPLIES_FILE)[uid]['groups'], ['g1', 'g2', 'g3'])
 
-    def test_07_list_domains(self):
+    def test_11_list_domains(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Try to get domains without configuring hypervisor
@@ -352,7 +366,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         self.assertEqual(resp['domains'], MockLibVirtController.DOMAINS_LIST)
 
-    def test_08_session_start(self):
+    def test_12_session_start(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Configure hypervisor
@@ -368,7 +382,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
-    def test_09_session_stop(self):
+    def test_13_session_stop(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Configure hypervisor
@@ -389,7 +403,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'There was no session started')
 
-    def test_10_get_submit_select_changes(self):
+    def test_14_get_submit_select_changes(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Configure hypervisor
@@ -414,7 +428,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.select_changes({'org.gnome.gsettings': [data['key']]})
         self.assertTrue(resp['status'])
 
-    def test_11_highlighted_apps(self):
+    def test_15_highlighted_apps(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -446,7 +460,7 @@ class TestDbusService(unittest.TestCase):
         profile = self.get_data_from_file(PROFILE_FILE)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
 
-    def test_12_empty_session_save(self):
+    def test_16_empty_session_save(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -464,7 +478,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.session_save(uid)
         self.assertTrue(resp['status'])
 
-    def test_13_session_select_save(self):
+    def test_17_session_select_save(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -501,7 +515,7 @@ class TestDbusService(unittest.TestCase):
 
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
-    def test_14_get_profiles(self):
+    def test_18_get_profiles(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -518,7 +532,7 @@ class TestDbusService(unittest.TestCase):
             'displayName': 'foo'
         }])
 
-    def test_15_get_profile(self):
+    def test_19_get_profile(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -540,7 +554,7 @@ class TestDbusService(unittest.TestCase):
 
         })
 
-    def test_16_get_profile_applies(self):
+    def test_20_get_profile_applies(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -557,7 +571,7 @@ class TestDbusService(unittest.TestCase):
             'groups': ['group1', 'group2']
         })
 
-    def test_17_changes_listener(self):
+    def test_21_changes_listener(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Configure hypervisor
@@ -589,7 +603,7 @@ class TestDbusService(unittest.TestCase):
         resp = c.get_changes()
         self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
 
-    def test_18_clientdata_serving(self):
+    def test_22_clientdata_serving(self):
         c = fcdbus.FleetCommanderDbusClient()
         port = c.get_change_listener_port()
 
@@ -657,13 +671,13 @@ class TestDbusService(unittest.TestCase):
             }
         )
 
-    def test_19_get_goa_providers(self):
+    def test_23_get_goa_providers(self):
         c = fcdbus.FleetCommanderDbusClient()
         resp = c.get_goa_providers()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
-    def test_20_goa_accounts(self):
+    def test_24_goa_accounts(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
