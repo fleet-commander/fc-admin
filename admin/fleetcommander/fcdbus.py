@@ -908,9 +908,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         def check_account(account):
             if isinstance(account, dict):
                 keys = account.keys()
-                if len(keys) > 2 and 'Account' in keys and 'Provider in keys':
+                if len(keys) > 2 and 'Template' in keys and 'Provider in keys':
                     for key, value in account.items():
-                        if key not in ['Account', 'Provider']:
+                        if key not in ['Template', 'Provider']:
                             if not key.endswith('Enabled'):
                                 return False
                     return True

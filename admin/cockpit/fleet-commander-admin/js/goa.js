@@ -141,7 +141,7 @@ function updateOrAddGOAAccount() {
   var account_id;
   if (!current_goa_account_id) {
     while (true) {
-      account_id = 'Account account_fc_' +
+      account_id = 'Template account_fc_' +
                     Math.floor(new Date() / 1000).toString() + '_0';
       if (!current_goa_accounts[account_id]) break;
     }
