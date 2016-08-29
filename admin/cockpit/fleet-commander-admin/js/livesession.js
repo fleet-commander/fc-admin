@@ -145,13 +145,26 @@ $(document).ready (function () {
   $('#deploy-profile').click(deployProfile);
   $('#close-review, #back_review').click(listenForChanges);
 
-  fc = new FleetCommanderDbusClient();
-  startLiveSession();
-
-  // Error catchall to workarount "oops" message in cockpit
-  window.onerror = function(message, url, lineNumber) {
-    DEBUG > 0 && console.error('Live session error: (', lineNumber, ' ', url, ') ', message);
-    return true;
-  };
+  // Create a Fleet Commander dbus client instance
+  fc = new FleetCommanderDbusClient(function(){
+    $('#main-container').show();
+    startLiveSession();
+    // Error catchall to workarount "oops" message in cockpit
+    window.onerror = function(message, url, lineNumber) {
+      DEBUG > 0 && console.error('Live session error: (', lineNumber, ' ', url, ') ', message);
+      return true;
+    };
+  }, function(){
+    showCurtain(
+      _('Can not connect with Fleet Commander dbus service'),
+      _('Can\'t connect to Fleet Commander'),
+      null,
+      {
+        'dbus-retry': {
+          text: 'Retry connection',
+          class: 'btn-primary',
+          callback: function(){ location.reload() }},
+      });
+  });
 
 });

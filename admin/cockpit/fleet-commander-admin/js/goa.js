@@ -181,7 +181,7 @@ function saveGOAAccounts() {
 /*******************************************************************************
  * Initialization
  ******************************************************************************/
-$(document).ready (function () {
+function initialize_goa() {
   fc.GetGOAProviders(function(resp){
     if(resp.status) {
       GOA_PROVIDERS = resp.providers;
@@ -209,4 +209,4 @@ $(document).ready (function () {
         $('#show-goa-accounts').hide();
     }
   });
-});
+}

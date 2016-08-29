@@ -18,221 +18,197 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-function FleetCommanderDbusClient(errorcb) {
+function FleetCommanderDbusClient(readycb, errorcb) {
   var self = this;
+
+  errorhandler = errorcb || function(err) {
+    console.log('FC: Error - ' + err);
+  };
 
   this._service = cockpit.dbus('org.freedesktop.FleetCommander');
   this._proxy = this._service.proxy();
 
-  this._check_dbus_loaded = function(cb) {
-    if (self._proxy.GetHypervisorConfig != undefined) {
-      cb()
-    } else {
-      setTimeout(self._check_dbus_loaded, 100, cb);
-    }
-  };
+  this._proxy.wait().done(function(resp) {
+    DEBUG > 0 && console.log('FC: Dbus service loaded')
+    readycb(resp);
+  }).fail(function(err){
+    DEBUG > 0 && console.log('FC: Failed to connect to Dbus service');
+    errorcb(err)
+  });
 
-  this._errorhandler = errorcb || function(err) {
-    console.log(err);
-  };
-
-  // Decorator for safe dbus execution
-  function safe_dbus(fn){
-    return function() {
-      var args = arguments
-      var self_dbus = this
-
-      function check_loop(func) {
-        if (self._proxy.GetHypervisorConfig != undefined) {
-          return fn.apply(self_dbus, args)
-        } else {
-          setTimeout(check_loop, 100, func);
-        }
-      }
-      check_loop(fn);
-    };
-  };
+  // TODO: Bind event in proxy status change and show connection error curtain
 
   // Hypervisor configuration methods
-  this.GetHypervisorConfig = safe_dbus(function(cb, errcb) {
+  this.GetHypervisorConfig = function(cb, errcb) {
     self._proxy.GetHypervisorConfig().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.CheckHypervisorConfig = safe_dbus(function(data, cb, errcb) {
+  this.CheckHypervisorConfig = function(data, cb, errcb) {
     self._proxy.CheckHypervisorConfig(JSON.stringify(data)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.SetHypervisorConfig = safe_dbus(function(data, cb, errcb) {
+  this.SetHypervisorConfig = function(data, cb, errcb) {
     self._proxy.SetHypervisorConfig(JSON.stringify(data)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.CheckKnownHost = safe_dbus(function(hostname, cb, errcb) {
+  this.CheckKnownHost = function(hostname, cb, errcb) {
     self._proxy.CheckKnownHost(hostname).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.AddKnownHost = safe_dbus(function(hostname, cb, errcb) {
+  this.AddKnownHost = function(hostname, cb, errcb) {
     self._proxy.AddKnownHost(hostname).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.InstallPubkey = safe_dbus(function(hostname, user, pass, cb, errcb) {
+  this.InstallPubkey = function(hostname, user, pass, cb, errcb) {
     self._proxy.InstallPubkey(hostname, user, pass).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
   // Profile management methods
-  this.GetProfiles = safe_dbus(function(cb, errcb) {
+  this.GetProfiles = function(cb, errcb) {
     self._proxy.GetProfiles().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.GetProfile = safe_dbus(function(uid, cb, errcb) {
+  this.GetProfile = function(uid, cb, errcb) {
     self._proxy.GetProfile(uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.GetProfileApplies = safe_dbus(function(uid, cb, errcb) {
+  this.GetProfileApplies = function(uid, cb, errcb) {
     self._proxy.GetProfileApplies(uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.NewProfile = safe_dbus(function(data, cb, errcb) {
+  this.NewProfile = function(data, cb, errcb) {
     self._proxy.NewProfile(JSON.stringify(data)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.DeleteProfile = safe_dbus(function(uid, cb, errcb) {
+  this.DeleteProfile = function(uid, cb, errcb) {
     self._proxy.DeleteProfile(uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.ProfileProps = safe_dbus(function(data, uid, cb, errcb) {
+  this.ProfileProps = function(data, uid, cb, errcb) {
     self._proxy.ProfileProps(JSON.stringify(data), uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
   // Favourites management methods
-  this.HighlightedApps = safe_dbus(function(data, uid, cb, errcb) {
+  this.HighlightedApps = function(data, uid, cb, errcb) {
     self._proxy.HighlightedApps(JSON.stringify(data), uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
   // Live session methods
-  this.ListDomains = safe_dbus(function(cb, errcb) {
+  this.ListDomains = function(cb, errcb) {
     self._proxy.ListDomains().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.SessionStart = safe_dbus(function(uuid, host, cb, errcb) {
+  this.SessionStart = function(uuid, host, cb, errcb) {
     self._proxy.SessionStart(uuid, host).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.SessionStop = safe_dbus(function(cb, errcb) {
+  this.SessionStop = function(cb, errcb) {
     self._proxy.SessionStop().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.SessionSave = safe_dbus(function(uid, cb, errcb) {
+  this.SessionSave = function(uid, cb, errcb) {
     self._proxy.SessionSave(uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
   // Changes methods
-  this.GetChanges = safe_dbus(function(cb, errcb) {
+  this.GetChanges = function(cb, errcb) {
     self._proxy.GetChanges().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.SelectChanges = safe_dbus(function(data, cb, errcb) {
+  this.SelectChanges = function(data, cb, errcb) {
     self._proxy.SelectChanges(JSON.stringify(data)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
   // GOA methods
-  this.GetGOAProviders = safe_dbus(function(cb, errcb) {
+  this.GetGOAProviders = function(cb, errcb) {
     self._proxy.GetGOAProviders().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 
-  this.GOAAccounts = safe_dbus(function(data, uid, cb, errcb) {
+  this.GOAAccounts = function(data, uid, cb, errcb) {
     self._proxy.GOAAccounts(JSON.stringify(data), uid).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
-    ).fail(errcb || self._errorhandler);
-  });
+    ).fail(errorhandler);
+  }
 }
-
-
-$(document).ready (function () {
-  // Create a Fleet Commander dbus client instance
-  fc = new FleetCommanderDbusClient(function(error){
-    showMessageDialog(
-      _('There has been an error communicating with dbus service: ' + error), _('Error'))
-  });
-});

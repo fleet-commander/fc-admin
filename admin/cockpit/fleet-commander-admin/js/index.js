@@ -18,7 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-var DEBUG = 0;
+var DEBUG = 1;
 var _ = cockpit.gettext
 var fc = null;
 var currentuid = null;
@@ -491,6 +491,22 @@ $(document).ready (function () {
   var adminport = location.port || 80
   $('#adminhost').attr('placeholder', adminhost + ':' + adminport);
 
-  refreshProfileList();
-  checkHypervisorConfig();
+  // Create a Fleet Commander dbus client instance
+  fc = new FleetCommanderDbusClient(function(){
+    $('#main-container').show();
+    refreshProfileList();
+    checkHypervisorConfig();
+    initialize_goa();
+  }, function(){
+    showCurtain(
+      _('Can not connect with Fleet Commander dbus service'),
+      _('Can\'t connect to Fleet Commander'),
+      null,
+      {
+        'dbus-retry': {
+          text: 'Retry connection',
+          class: 'btn-primary',
+          callback: function(){ location.reload() }},
+      });
+  });
 });
