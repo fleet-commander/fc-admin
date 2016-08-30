@@ -40,7 +40,7 @@ from gi.repository import GObject, Gio, Soup
 import sshcontroller
 import libvirtcontroller
 from database import DBManager
-from utils import merge_settings, get_ip_address, get_data_from_file
+from utils import get_ip_address, get_data_from_file
 import collectors
 from goa import GOAProvidersLoader
 import profiles
@@ -839,13 +839,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def SessionSave(self, uid):
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid+'.json')
-
-        settings = {}
-
-        for name, collector in self.collectors_by_name.items():
-            settings[name] = collector.get_settings()
-
         try:
             profile = self.profiles.get_profile(uid)
         except:
@@ -853,17 +846,14 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': False,
                 'error': 'Could not parse profile %s' % uid})
 
-        if not profile.get('settings', False) or \
-                not isinstance(profile['settings'], dict) or \
-                profile['settings'] == {}:
-            profile['settings'] = settings
-        else:
-            profile['settings'] = merge_settings(profile['settings'], settings)
+        for name, collector in self.collectors_by_name.items():
+            if name not in profile['settings']:
+                profile['settings'][name] = collector.get_settings()
+            else:
+                profile['settings'][name] = collector.merge_settings(
+                    profile['settings'][name])
 
         self.profiles.save_profile(profile)
-
-        # TODO: Check if this is really needed
-        del(self.db.config['uid'])
 
         return json.dumps({'status': True})
 

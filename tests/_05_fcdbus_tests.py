@@ -149,32 +149,32 @@ class TestDbusService(unittest.TestCase):
             'keys': 'myhost ssh-rsa KEY'
         })
 
-    def test_00_merge_settings(self):
-        a = {'org.gnome.gsettings':
-             [{'key': '/foo/bar', 'value': False, 'signature': 'b'}]}
-        b = {'org.libreoffice.registry':
-             [{'key': '/org/libreoffice/registry/foo',
-               'value': 'asd', 'signature': 'string'}]}
-        c = {'org.gnome.gsettings':
-             [{'key': '/foo/bar', 'value': True, 'signature': 'b'}]}
-        d = {'org.gnome.gsettings':
-             [{'key': '/foo/bar', 'value': True, 'signature': 'b'},
-              {'key': '/foo/bleh', 'value': True, 'signature': 'b'}]}
-
-        ab = fcdbus.merge_settings(a, b)
-        ac = fcdbus.merge_settings(a, c)
-        aa = fcdbus.merge_settings(a, a)
-        ad = fcdbus.merge_settings(a, d)
-        an = fcdbus.merge_settings(a, {})
-
-        self.assertEqual(len(ab), 2)
-        self.assertTrue("org.gnome.gsettings" in ab)
-        self.assertTrue("org.libreoffice.registry" in ab)
-        self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
-        self.assertTrue(ac["org.gnome.gsettings"][0]["value"] is True)
-        self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
-        self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
-        self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
+    # def test_00_merge_settings(self):
+    #     a = {'org.gnome.gsettings':
+    #          [{'key': '/foo/bar', 'value': False, 'signature': 'b'}]}
+    #     b = {'org.libreoffice.registry':
+    #          [{'key': '/org/libreoffice/registry/foo',
+    #            'value': 'asd', 'signature': 'string'}]}
+    #     c = {'org.gnome.gsettings':
+    #          [{'key': '/foo/bar', 'value': True, 'signature': 'b'}]}
+    #     d = {'org.gnome.gsettings':
+    #          [{'key': '/foo/bar', 'value': True, 'signature': 'b'},
+    #           {'key': '/foo/bleh', 'value': True, 'signature': 'b'}]}
+    #
+    #     ab = fcdbus.merge_settings(a, b)
+    #     ac = fcdbus.merge_settings(a, c)
+    #     aa = fcdbus.merge_settings(a, a)
+    #     ad = fcdbus.merge_settings(a, d)
+    #     an = fcdbus.merge_settings(a, {})
+    #
+    #     self.assertEqual(len(ab), 2)
+    #     self.assertTrue("org.gnome.gsettings" in ab)
+    #     self.assertTrue("org.libreoffice.registry" in ab)
+    #     self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
+    #     self.assertTrue(ac["org.gnome.gsettings"][0]["value"] is True)
+    #     self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
+    #     self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
+    #     self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
 
     def test_01_get_public_key(self):
         c = fcdbus.FleetCommanderDbusClient()

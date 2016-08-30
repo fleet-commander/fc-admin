@@ -56,6 +56,12 @@ class DummyCollector:
         """
         return []
 
+    def merge_settings(self, profile_settings):
+        """
+        Merge given settings pair
+        """
+        return []
+
 
 class BaseCollector(object):
     """
@@ -99,7 +105,7 @@ class BaseCollector(object):
         else:
             logging.error('%s: Given change is invalid: %s' % (
                 self.COLLECTOR_NAME,
-                self. json.dumps(change)
+                json.dumps(change)
             ))
 
     def dump_changes(self):
@@ -134,6 +140,17 @@ class BaseCollector(object):
             self.COLLECTOR_NAME, only_selected=True)
         keys = sorted(changes.keys())
         return [json.loads(changes[key]) for key in keys]
+
+    def merge_settings(self, profile_settings):
+        """
+        Return a list of selected changes
+        """
+        current = self.get_settings()
+        index = {}
+        for changeset in [profile_settings, current]:
+            for change in changeset:
+                index[change["key"]] = change
+        return index.values()
 
 
 class GSettingsCollector(BaseCollector):

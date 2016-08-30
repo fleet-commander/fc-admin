@@ -125,26 +125,6 @@ def parse_config(config_file=None):
     return args
 
 
-def merge_settings(a, b):
-    result = copy.deepcopy(a)
-    for domain in b:
-        if domain not in result:
-            result[domain] = b[domain]
-            continue
-
-        index = {}
-        for change in a[domain]:
-            index[change["key"]] = change
-
-        for change in b[domain]:
-            key = change["key"]
-            index[key] = change
-
-        result[domain] = [index[key] for key in index]
-
-    return result
-
-
 def get_ip_address(hostname):
     """
     Returns first IP address for given hostname
