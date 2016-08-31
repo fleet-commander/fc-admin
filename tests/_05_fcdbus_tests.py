@@ -53,6 +53,9 @@ fcdbus.FleetCommanderDbusClient = TestDbusClient
 
 class TestDbusService(unittest.TestCase):
 
+    TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
+    SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'
+
     DUMMY_PROFILE_PAYLOAD = {
         "profile-name": "foo",
         "profile-desc": "bar",
@@ -148,33 +151,6 @@ class TestDbusService(unittest.TestCase):
             'adminhost': '',
             'keys': 'myhost ssh-rsa KEY'
         })
-
-    # def test_00_merge_settings(self):
-    #     a = {'org.gnome.gsettings':
-    #          [{'key': '/foo/bar', 'value': False, 'signature': 'b'}]}
-    #     b = {'org.libreoffice.registry':
-    #          [{'key': '/org/libreoffice/registry/foo',
-    #            'value': 'asd', 'signature': 'string'}]}
-    #     c = {'org.gnome.gsettings':
-    #          [{'key': '/foo/bar', 'value': True, 'signature': 'b'}]}
-    #     d = {'org.gnome.gsettings':
-    #          [{'key': '/foo/bar', 'value': True, 'signature': 'b'},
-    #           {'key': '/foo/bleh', 'value': True, 'signature': 'b'}]}
-    #
-    #     ab = fcdbus.merge_settings(a, b)
-    #     ac = fcdbus.merge_settings(a, c)
-    #     aa = fcdbus.merge_settings(a, a)
-    #     ad = fcdbus.merge_settings(a, d)
-    #     an = fcdbus.merge_settings(a, {})
-    #
-    #     self.assertEqual(len(ab), 2)
-    #     self.assertTrue("org.gnome.gsettings" in ab)
-    #     self.assertTrue("org.libreoffice.registry" in ab)
-    #     self.assertTrue(len(ac["org.gnome.gsettings"]) == 1)
-    #     self.assertTrue(ac["org.gnome.gsettings"][0]["value"] is True)
-    #     self.assertTrue(len(ad["org.gnome.gsettings"]) == 2)
-    #     self.assertTrue(ad["org.gnome.gsettings"][1]["key"] == "/foo/bar")
-    #     self.assertTrue(ad["org.gnome.gsettings"][0]["key"] == "/foo/bleh")
 
     def test_01_get_public_key(self):
         c = fcdbus.FleetCommanderDbusClient()
@@ -373,12 +349,12 @@ class TestDbusService(unittest.TestCase):
         self.configure_hypervisor(c)
 
         # Start session
-        resp = c.session_start('uuid', 'host', '5')
+        resp = c.session_start(self.TEMPLATE_UUID, 'host', '5')
         self.assertTrue(resp['status'])
         self.assertEqual(resp['port'], 0)
 
         # Try to start another session
-        resp = c.session_start('uuid', 'host', '0')
+        resp = c.session_start(self.TEMPLATE_UUID, 'host', '0')
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
@@ -394,7 +370,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['error'], 'There was no session started')
 
         # Stop previous started session
-        c.session_start('uuid', 'host', '0')
+        c.session_start(self.TEMPLATE_UUID, 'host', '0')
         resp = c.session_stop()
         self.assertTrue(resp['status'])
 
@@ -409,7 +385,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start(self.TEMPLATE_UUID, 'host', '0')
         # Check for empty changes
         resp = c.get_changes()
         self.assertEqual(resp, {})
@@ -472,7 +448,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start(self.TEMPLATE_UUID, 'host', '0')
 
         # Save empty session
         resp = c.session_save(uid)
@@ -490,7 +466,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start(self.TEMPLATE_UUID, 'host', '0')
 
         gsettings = self.get_data_from_file(PROFILE_FILE)['settings']
         self.assertEqual(gsettings, {})
@@ -577,7 +553,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start('uuid', 'host', '0')
+        c.session_start(self.TEMPLATE_UUID, 'host', '0')
         # Check for empty changes
         resp = c.get_changes()
         self.assertEqual(resp, {})
@@ -732,6 +708,29 @@ class TestDbusService(unittest.TestCase):
         profile = self.get_data_from_file(PROFILE_FILE)
         goa_accounts = profile['settings']['org.gnome.online-accounts']
         self.assertEqual(len(goa_accounts), 0)
+
+    def test_24_is_session_active(self):
+        c = fcdbus.FleetCommanderDbusClient()
+
+        # Configure hypervisor
+        self.configure_hypervisor(c)
+
+        # Check current session active without starting any
+        resp = c.is_session_active()
+        self.assertFalse(resp)
+
+        # Check current session active after started current session
+        print c.session_start(self.TEMPLATE_UUID, 'host', '5')
+        resp = c.is_session_active()
+        self.assertTrue(resp)
+
+        # Check non existent session by its uuid
+        resp = c.is_session_active('unkknown')
+        self.assertFalse(resp)
+
+        # Check existent session by its uuid
+        resp = c.is_session_active('')
+        self.assertTrue(resp)
 
 if __name__ == '__main__':
     unittest.main()

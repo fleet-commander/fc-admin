@@ -34,10 +34,15 @@ from fleetcommander import fcdbus
 
 class MockLibVirtController(object):
 
+    TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
+    SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'
+
     DOMAINS_LIST = [
         {
-            'uuid': 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81',
-            'name': 'fedora-unkno'
+            'uuid': TEMPLATE_UUID,
+            'name': 'fedora-unkno',
+            'active': False,
+            'temporary': False
         }
     ]
 
@@ -58,10 +63,18 @@ class MockLibVirtController(object):
         return self.DOMAINS_LIST
 
     def session_start(self, uuid):
-        return ('someuuid', 0, 'tunnel_pid')
+        self.DOMAINS_LIST.append({
+            'uuid': self.SESSION_UUID,
+            'name': 'fc-',
+            'active': True,
+            'temporary': True
+        })
+        return (self.SESSION_UUID, 0, 'tunnel_pid')
 
     def session_stop(self, uuid, tunnel_pid):
-        pass
+        for d in self.DOMAINS_LIST:
+            if d['uuid'] == uuid:
+                self.DOMAINS_LIST.remove(d)
 
 
 # Mock libvirt controller

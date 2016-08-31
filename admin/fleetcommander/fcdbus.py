@@ -152,6 +152,9 @@ class FleetCommanderDbusClient(object):
     def session_save(self, uid):
         return json.loads(self.iface.SessionSave(uid))
 
+    def is_session_active(self, uuid=''):
+        return self.iface.IsSessionActive(uuid)
+
     def get_change_listener_port(self):
         return self.iface.GetChangeListenerPort()
 
@@ -361,7 +364,8 @@ class FleetCommanderDbusService(dbus.service.Object):
             try:
                 domains = self.get_libvirt_controller().list_domains()
                 if only_temporary:
-                    return [d for d in domains if d['temporary']]
+                    domains = [d for d in domains if d['temporary']]
+                logging.debug('Domains retrieved: %s' % domains)
                 return domains
             except Exception as e:
                 error = e
@@ -856,6 +860,29 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.profiles.save_profile(profile)
 
         return json.dumps({'status': True})
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='b')
+    def IsSessionActive(self, uuid):
+        if uuid == '':
+            # Asking for current session
+            if 'uuid' in self.db.config:
+                logging.debug(
+                    'Checking for default session with uuid: %s' %
+                    self.db.config['uuid'])
+                uuid = self.db.config['uuid']
+            else:
+                logging.debug('Default session not started')
+                return False
+
+        domains = self.get_domains()
+        for domain in domains:
+            if domain['uuid'] == uuid:
+                logging.debug(
+                    'Session found: %s' % domain)
+                return domain['active']
+        logging.debug('Given session uuid not found in domains')
+        return False
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='i')
