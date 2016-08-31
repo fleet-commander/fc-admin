@@ -83,10 +83,10 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %systemd_preun fleet-commander-dbus.service
 
 %post
-systemctl daemon-reload >/dev/null 2>&1
-systemctl enable fleet-commander-dbus.service >/dev/null 2>&1
-systemctl daemon-reload >/dev/null 2>&1
-systemctl restart fleet-commander-dbus.service >/dev/null 2>&1
+%systemd_post fleet-commander-dbus.service
+
+%postun
+%systemd_postun_with_restart fleet-commander-dbus.service
 
 %files
 %license
