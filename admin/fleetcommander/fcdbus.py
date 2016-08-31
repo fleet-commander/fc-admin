@@ -81,6 +81,9 @@ class FleetCommanderDbusClient(object):
                 pass
         raise Exception('Timed out trying to connect to fleet commander dbus service')
 
+    def get_debug_level(self):
+        return self.iface.GetDebugLevel()
+
     def check_needs_configuration(self):
         return self.iface.CheckNeedsConfiguration()
 
@@ -101,7 +104,6 @@ class FleetCommanderDbusClient(object):
 
     def add_known_host(self, host):
         return json.loads(self.iface.AddKnownHost(host))
-
 
     def install_pubkey(self, host, user, passwd):
         return json.loads(self.iface.InstallPubkey(
@@ -191,6 +193,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.args = args
         self.state_dir = args['state_dir']
 
+        self.log_level = args['log_level'].lower()
         loglevel = getattr(logging, args['log_level'].upper())
         logging.basicConfig(level=loglevel, format=args['log_format'])
 
@@ -444,6 +447,11 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'Resetting timer for session check')
             self._last_changes_request = time.time()
         return True
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetDebugLevel(self):
+        return self.log_level
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')

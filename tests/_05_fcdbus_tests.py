@@ -152,6 +152,10 @@ class TestDbusService(unittest.TestCase):
             'keys': 'myhost ssh-rsa KEY'
         })
 
+    def test_00_get_debug_level(self):
+        c = fcdbus.FleetCommanderDbusClient()
+        self.assertEqual(c.get_debug_level(), 'debug')
+
     def test_01_get_public_key(self):
         c = fcdbus.FleetCommanderDbusClient()
         self.assertEqual(c.get_public_key(), 'PUBLIC_KEY')
