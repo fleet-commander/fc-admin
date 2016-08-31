@@ -147,6 +147,11 @@ $(document).ready (function () {
 
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
+
+    fc.GetDebugLevel(function(resp) {
+      setDebugLevel(resp);
+    });
+
     $('#main-container').show();
     startLiveSession();
     // Error catchall to workarount "oops" message in cockpit

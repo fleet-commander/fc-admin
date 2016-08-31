@@ -18,7 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-var DEBUG = 1;
+var DEBUG = 0;
 var _ = cockpit.gettext
 var fc = null;
 var currentuid = null;
@@ -493,6 +493,11 @@ $(document).ready (function () {
 
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
+
+    fc.GetDebugLevel(function(resp) {
+      setDebugLevel(resp);
+    });
+
     $('#main-container').show();
     refreshProfileList();
     checkHypervisorConfig();

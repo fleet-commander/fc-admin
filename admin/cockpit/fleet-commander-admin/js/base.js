@@ -91,3 +91,21 @@ function addFormError(fieldId, errorMessage) {
 function hasSuffix (haystack, needle) {
   return (haystack.length - needle.length) == haystack.lastIndexOf(needle);
 }
+
+function setDebugLevel(level) {
+  switch (level) {
+    case 'debug':
+      DEBUG = 3;
+      break;
+    case 'info':
+    case 'warning':
+      DEBUG = 2;
+      break;
+    case 'error':
+      DEBUG = 1;
+      break;
+    default:
+      DEBUG = 0;
+  }
+  DEBUG > 0 && console.log('Debug level set to ' + DEBUG)
+}
