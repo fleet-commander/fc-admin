@@ -55,24 +55,38 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   this.spice_error = function(err) {
-    DEBUG > 0 && console.log("FC: SPICE connection error:", err.message);
+    DEBUG > 0 && console.log('FC: SPICE connection error:', err.message);
 
-    self.set_connection_timeout()
-
-    if (err.message == 'Unexpected close while ready' || err.message == 'Connection timed out.' || self.sc.state != 'ready')  {
-      if (!self.noretry) {
-        $('#spinner-modal h4').text('Connecting to virtual machine. Please wait...');
-        $('#spinner-modal').modal('show');
-        self.do_connection();
+    fc.IsSessionActive('', function(resp){
+      DEBUG > 0 && console.log('FC: Current session active status:', resp);
+      if (resp) {
+        self.set_connection_timeout()
+        if (err.message == 'Unexpected close while ready' ||
+            err.message == 'Connection timed out.' ||
+            self.sc.state != 'ready')  {
+          if (!self.noretry) {
+            $('#spinner-modal h4').text(
+              'Connecting to virtual machine. Please wait...');
+            $('#spinner-modal').modal('show');
+            self.do_connection();
+          }
+          return
+        } else {
+          showMessageDialog(
+            'Connection error to virtual machine', 'Connection error');
+        }
+      } else {
+        showMessageDialog(
+          'Virtual machine has been stopped', 'Connection error');
       }
-    } else {
+
       $('#spinner-modal').modal('hide');
       if (self.connecting) {
         clearTimeout(self.connecting);
         self.connecting = null;
       }
-      showMessageDialog('Connection error to virtual machine.', 'Connection error');
-    }
+
+    });
   }
 
   this.do_connection = function() {

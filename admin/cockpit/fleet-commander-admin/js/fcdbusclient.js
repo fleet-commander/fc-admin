@@ -178,6 +178,15 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
+  this.IsSessionActive = function(uid, cb, errcb) {
+    uid = uid || '';
+    self._proxy.IsSessionActive(uid).done(
+      function(resp) {
+        cb(resp);
+      }
+    ).fail(errorhandler);
+  }
+
   // Changes methods
   this.GetChanges = function(cb, errcb) {
     self._proxy.GetChanges().done(

@@ -155,6 +155,7 @@ $(document).ready (function () {
       return true;
     };
   }, function(){
+    $('#main-container').hide()
     showCurtain(
       _('Can not connect with Fleet Commander dbus service'),
       _('Can\'t connect to Fleet Commander'),
