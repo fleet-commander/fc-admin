@@ -22,6 +22,7 @@ var _ = cockpit.gettext
 var fc = null;
 var fcsc = null;
 var updater = null;
+var reviewing = false;
 
 window.alert = function(message) {
   DEBUG > 0 && console.log('FC: Alert message:' + message);
@@ -61,16 +62,18 @@ function listenForChanges() {
 
 function readChanges() {
   fc.GetChanges(function(resp){
-    $('#gsettings-event-list').html('');
-    $('#libreoffice-event-list').html('');
-    $('#networkmanager-event-list').html('');
+    if (!reviewing) {
+      $('#gsettings-event-list').html('');
+      $('#libreoffice-event-list').html('');
+      $('#networkmanager-event-list').html('');
 
-    if ('org.libreoffice.registry' in resp)
-      populateChanges('#libreoffice-event-list', resp['org.libreoffice.registry']);
-    if ('org.gnome.gsettings' in resp)
-      populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
-    if ('org.freedesktop.NetworkManager' in resp)
-      populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager'], true);
+      if ('org.libreoffice.registry' in resp)
+        populateChanges('#libreoffice-event-list', resp['org.libreoffice.registry']);
+      if ('org.gnome.gsettings' in resp)
+        populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
+      if ('org.freedesktop.NetworkManager' in resp)
+        populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager'], true);
+    }
   });
 }
 
@@ -90,7 +93,7 @@ function populateChanges(section, data, only_value) {
 }
 
 function reviewAndSubmit() {
-  clearInterval(updater);
+  reviewing = true;
   $('.change-checkbox').show();
   $('#event-logs').modal('show');
 }
@@ -143,7 +146,10 @@ $(document).ready (function () {
   $('#close-live-session').click(stopLiveSession);
   $('#review-changes').click(reviewAndSubmit);
   $('#deploy-profile').click(deployProfile);
-  $('#close-review, #back_review').click(listenForChanges);
+
+  $("#event-logs").on('hidden.bs.modal', function () {
+    reviewing = false;
+  });
 
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
