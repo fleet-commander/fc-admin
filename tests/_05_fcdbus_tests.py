@@ -53,6 +53,8 @@ fcdbus.FleetCommanderDbusClient = TestDbusClient
 
 class TestDbusService(unittest.TestCase):
 
+    maxDiff = None
+
     TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
     SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'
 
@@ -74,7 +76,7 @@ class TestDbusService(unittest.TestCase):
             }
         },
         'pizza_provider': {
-            'name': 'Pizza Provider',
+            'name': 'My Pizza Provider',
             'services': {
                 'HotdogEnabled': {'enabled': False, 'name': 'Hotdog'},
                 'PizzaEnabled': {'enabled': True, 'name': 'Pizza'},

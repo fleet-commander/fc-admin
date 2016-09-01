@@ -60,7 +60,11 @@ class GOAProvidersLoader(object):
                     'services': {}
                 }
                 for option in self._configparser.options(section):
-                    if option.endswith('enabled'):
+                    if option == 'providername':
+                        name = self._configparser.get(
+                            section, option)
+                        self._providers[provider]['name'] = name
+                    elif option.endswith('enabled'):
                         service = option[:-7].title() + 'Enabled'
                         name = self.generate_readable_name(service[:-7])
                         enabled = self._configparser.getboolean(
