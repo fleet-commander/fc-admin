@@ -21,6 +21,17 @@
 var current_goa_accounts = null;
 var current_goa_account_id = null;
 
+function sortGoaNamedEntries(data) {
+  var entries = [];
+  $.each(data, function(key, elem){
+    entries.push([key, elem]);
+  });
+  entries.sort(function(a, b){
+    return a[1].name.localeCompare(b[1].name);
+  });
+  return entries;
+}
+
 function showGOAAccounts() {
   // Populate GOA accounts list
   populateGOAAccounts();
@@ -38,7 +49,9 @@ function populateGOAAccounts() {
 function addGOAAccountItem(account_id, account_data) {
   var tr = $('<tr></tr>');
   $('<td></td>', { text: account_id }).appendTo(tr);
-  var provider = $('<td></td>', { text: account_data.Provider });
+  var provider = $('<td></td>', {
+      text: GOA_PROVIDERS[account_data.Provider].name
+  });
   p_icon = $('<img class="goa-provider-icon" src="img/goa/' +
     account_data.Provider + '.png">')
   p_icon.prependTo(provider)
@@ -61,11 +74,19 @@ function addGOAAccountItem(account_id, account_data) {
   tr.appendTo('#goa-accounts-list');
 }
 
+
 function showGOAAccountEdit(account_id) {
-  combo = $('#goa-provider');
+  var combo = $('#goa-provider');
   combo.html('');
-  $.each(GOA_PROVIDERS, function(key, element) {
-    combo.append('<option value="' + key + '">' + element.name + '</option>')
+  var entries = sortGoaNamedEntries(GOA_PROVIDERS);
+  $.each(entries, function(index) {
+    var key = entries[index][0];
+    var elem = entries[index][1];
+    if (key == 'google') {
+      combo.append('<option value="' + key + '" selected>' + elem.name + '</option>')
+    } else {
+      combo.append('<option value="' + key + '">' + elem.name + '</option>')
+    }
   });
 
   if (typeof(account_id) == 'string') {
@@ -103,8 +124,13 @@ function updateProviderServices() {
   var services = GOA_PROVIDERS[provider].services;
   var serviceblock = $('#goa-services');
   serviceblock.html('');
-  $.each(services, function(key, element) {
-    if (services[key].enabled) {
+
+  var entries = sortGoaNamedEntries(services);
+
+  $.each(entries, function(index) {
+    var key = entries[index][0];
+    var elem = entries[index][1];
+    if (elem.enabled) {
       service = '<div class="checkbox"><label>' +
         '<input type="checkbox" ' +
           'id="goa-service-' + key + '" ' +
