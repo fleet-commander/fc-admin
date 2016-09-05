@@ -7,7 +7,7 @@ BuildArch: noarch
 
 # Fleet commander code is LGPLv2. spice-html5 uses dual license (GPLv3 or LGPLv3)
 # Bootstrap and jQuery are MIT licensed and Patternfly is MIT, ASL 2.0 and OFL
-License: LGPLv2+ and MIT and BSD and ASL 2.0 and OFL
+License: LGPLv2+ and MIT and BSD
 URL: https://raw.githubusercontent.com/fleet-commander/fc-admin/master/fleet-commander-admin.spec
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
