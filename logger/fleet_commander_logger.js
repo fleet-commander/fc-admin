@@ -159,12 +159,6 @@ function parse_args () {
   }
 }
 
-function endianness () {
-  let a32 = new Uint32Array([0x12345678]);
-  let a8 = new Uint8Array(a32.buffer);
-  return a8[1] === 0x12 && a8[2] === 0x78 ? 'MIDDLE' : (a8[0] === 0x12 ? 'BIG' : 'LITTLE');
-}
-
 var ScreenSaverInhibitor = function () {
     this.proxy = Gio.DBusProxy.new_sync(Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
                                         'org.freedesktop.ScreenSaver', '/ScreenSaver',
@@ -410,15 +404,7 @@ NMLogger.prototype.merge_variants = function (va, vb) {
 NMLogger.prototype.submit_connection = function (conn) {
     debug ("Submitting Network Manager connection");
     let conf = conn.to_dbus (NM.ConnectionSerializationFlags.ALL);
-    let endns = endianness ();
-
-    if (endns == 'MIDDLE') {
-        printerr ("ERROR: middle endianness not supported");
-        return;
-    }
-
     let type = conn.get_connection_type ();
-
     let secrets = [];
 
     debug ("Added connection of type " + type);
@@ -447,21 +433,21 @@ NMLogger.prototype.submit_connection = function (conn) {
     conf = this.security_filter (conf);
 
     let payload = {
-      data: this.variant_data_to_base64 (conf),
-      json: this.deep_unpack (conf),
+      data: conf.print (true),
+      uuid: null,
+      type: null,
+      id: null,
+    }
+
+    let connection = conf.lookup_value ("connection", null);
+    if (connection != null) {
+      payload.uuid = connection.lookup_value ("uuid", null).get_string ()[0];
+      payload.type = connection.lookup_value ("type", null).get_string ()[0];
+      payload.id   = connection.lookup_value ("id", null).get_string ()[0];
     }
 
     this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (payload));
     this.connmgr.finish_changes();
-}
-
-
-NMLogger.prototype.variant_data_to_base64 = function (variant) {
-    let target = variant;
-    if (endianness () != 'LITTLE')
-        target = variant.byteswap ();
-    let variant_bytes = target.get_data_as_bytes ();
-    return GLib.base64_encode (variant_bytes.get_data (null), variant_bytes.get_size ());
 }
 
 //This is a workaround for the broken deep_unpack behaviour

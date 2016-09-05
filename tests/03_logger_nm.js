@@ -103,14 +103,7 @@ function serializeConfigObject (obj) {
 }
 
 function unmarshallVariant (data) {
-    let raw_data = GLib.base64_decode (data, data.length);
-    let variant_bytes = GLib.Bytes.new (raw_data, raw_data.length);
-    let variant = GLib.Variant.new_from_bytes (new GLib.VariantType ("a{sa{sv}}"),
-                                              raw_data, raw_data.length, false, null, null);
-    if (FleetCommander.endianness () != 'LITTLE')
-        variant.byteswap ();
-
-    return variant;
+    return GLib.Variant.parse (null, data, null, null);
 }
 
 function setupNetworkConnection (type, settings, secrets) {
