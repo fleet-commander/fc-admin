@@ -100,6 +100,7 @@ function saveHypervisorConfig(cb) {
     fc.SetHypervisorConfig(data, function(resp) {
       if (resp.status) {
         $('#hypervisor-config-modal').modal('hide');
+        if (typeof(cb) == 'function') cb();
       } else {
         showMessageDialog(resp.error, _('Error'))
       }
@@ -133,7 +134,9 @@ function cancelPubkeyInstall() {
 }
 
 function installPubkey() {
+  DEBUG > 0 && console.log('FC: Saving hypervisor configuration');
   saveHypervisorConfig(function(){
+    DEBUG > 0 && console.log('FC: Hypervisor config saved. Install public key');
     $('#pubkey-install-modal .spinner').show();
     $('#pubkey-install-credentials-group').hide();
     $('#pubkey-install-modal .modal-footer').hide();
@@ -143,6 +146,7 @@ function installPubkey() {
     var pass = $('#pubkey-install-password').val();
 
     fc.InstallPubkey(host, user, pass, function(resp) {
+      DEBUG > 0 && console.log('FC: Calling dbus for public key install')
       $('#pubkey-install-modal').modal('hide');
       $('#pubkey-install-password').val('');
       if (resp.status) {
