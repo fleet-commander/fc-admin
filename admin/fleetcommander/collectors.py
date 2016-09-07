@@ -141,15 +141,16 @@ class BaseCollector(object):
         keys = sorted(changes.keys())
         return [json.loads(changes[key]) for key in keys]
 
-    def merge_settings(self, profile_settings):
+    def merge_settings(self, settings):
         """
-        Return a list of selected changes
+        Merge collected settings with given settings
         """
         current = self.get_settings()
         index = {}
-        for changeset in [profile_settings, current]:
+        for changeset in [settings, current]:
             for change in changeset:
-                index[change["key"]] = change
+                key = self.get_key_from_change(change)
+                index[key] = change
         return index.values()
 
 
@@ -178,7 +179,7 @@ class NetworkManagerCollector(BaseCollector):
         Return change key identifier for NM connection
         """
         try:
-            return change[u'uuid']
+            return change['uuid']
         except:
             return
 
@@ -187,6 +188,6 @@ class NetworkManagerCollector(BaseCollector):
         Return change human readable value for NM connection
         """
         try:
-            return '%s - %s' % (change[u'type'], change[u'id']),
+            return '%s - %s' % (change['type'], change['id'])
         except:
             return 'Undefined'
