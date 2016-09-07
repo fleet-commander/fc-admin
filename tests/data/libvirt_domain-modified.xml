@@ -131,10 +131,9 @@
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci" />
     </sound>
     <video>
-      <model heads="1" ram="65536" type="qxl" vgamem="16384" vram="65536" />
       <alias name="video0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x02" type="pci" />
-    </video>
+    <model heads="1" primary="yes" type="virtio" /></video>
     <redirdev bus="usb" type="spicevmc">
       <alias name="redir0" />
     </redirdev>

@@ -196,6 +196,14 @@ class LibVirtController(object):
             mac = elem.find('mac')
             if mac is not None:
                 elem.remove(mac)
+        video = devs.find('video')
+        model = video.find('model')
+        if model is not None:
+            video.remove(model)
+        model = ET.SubElement(video, 'model')
+        model.set('heads', '1')
+        model.set('primary', 'yes')
+        model.set('type', 'virtio')
         # Remove all graphics adapters and create our own
         for elem in devs.findall('graphics'):
             devs.remove(elem)
