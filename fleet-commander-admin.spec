@@ -1,13 +1,11 @@
 Name:           fleet-commander-admin
 Version:        0.7.99
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
 
-# Fleet commander code is LGPLv2. spice-html5 uses dual license (GPLv3 or LGPLv3)
-# Bootstrap and jQuery are MIT licensed and Patternfly is MIT, ASL 2.0 and OFL
-License: LGPLv2+ and MIT and BSD
+License: LGPLv3+ and LGPLv2+ and MIT and BSD
 URL: https://raw.githubusercontent.com/fleet-commander/fc-admin/master/fleet-commander-admin.spec
 Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version}/%{name}-%{version}.tar.xz
 
@@ -53,6 +51,7 @@ configuration of a large network of users and workstations/laptops.
 
 %package -n fleet-commander-logger
 Summary: Logs configuration changes in a session
+License: GPLv2
 Requires: gjs
 Requires: libsoup
 Requires: json-glib
@@ -108,6 +107,9 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Thu Sep 08 2016 Alberto Ruiz <aruizrui@redhat.com> - 0.7.99-2
+- Update licensing metadata
+
 * Mon Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.99-1
 - Fleet Commander admin migrated to Cockpit plugin
 - Updated package for 0.7.99 release
