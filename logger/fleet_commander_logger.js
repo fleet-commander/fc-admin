@@ -636,7 +636,7 @@ GSettingsLogger.prototype._libreoffice_change = function(path, keys) {
     builder.set_member_name("key");
     builder.add_string_value(path + key);
     builder.set_member_name("value");
-    builder.add_value(Json.gvariant_serialize(variant));
+    builder.add_string_value(variant.print (true));
     builder.set_member_name("signature");
     builder.add_string_value(variant.get_type_string());
     builder.end_object();
@@ -663,7 +663,7 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
         builder.set_member_name("schema");
         builder.add_string_value(schema.get_id());
         builder.set_member_name("value");
-        builder.add_value(Json.gvariant_serialize(variant));
+        builder.add_string_value(variant.print (true));
         builder.set_member_name("signature");
         builder.add_string_value(variant.get_type().dup_string());
         builder.end_object();

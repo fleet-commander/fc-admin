@@ -94,7 +94,7 @@ function testGSettingsLoggerWriteKeyForKnownSchema () {
   JsUnit.assertEquals(change[0], "org.gnome.gsettings");
 
   // we normalize the json object using the same parser
-  JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'fleet-commander-test','value':true,'signature':'b'}),
+  JsUnit.assertEquals(JSON.stringify({'key':'/test/test', 'schema':'fleet-commander-test','value': 'true','signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
 
   Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
@@ -124,7 +124,7 @@ function testGSettingsLoggerWriteKeyForGuessableSchema () {
   JsUnit.assertEquals(change[0], "org.gnome.gsettings");
   JsUnit.assertEquals(JSON.stringify({'key':'/reloc/foo/fc-unique',
                                        'schema':'fleet-commander-reloc1',
-                                       'value':true,
+                                       'value': 'true',
                                        'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
   Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
@@ -143,7 +143,7 @@ function testGSettingsLoggerGuessSchemaCachedPath () {
   JsUnit.assertEquals(change[0], "org.gnome.gsettings");
   JsUnit.assertEquals(JSON.stringify({'key':'/reloc/foo/fc-common',
                                        'schema':'fleet-commander-reloc1',
-                                       'value':true,
+                                       'value': 'true',
                                        'signature':'b'}),
                       JSON.stringify(JSON.parse(change[1])));
 
@@ -165,7 +165,7 @@ function testLibreOfficeLoggerWriteKey () {
   JsUnit.assertEquals(change[0], "org.libreoffice.registry");
 
   // we normalize the json object using the same parser
-  JsUnit.assertEquals(JSON.stringify({'key':'/org/libreoffice/registry/somepath/somekey', 'value':123,'signature':'i'}),
+  JsUnit.assertEquals(JSON.stringify({'key':'/org/libreoffice/registry/somepath/somekey', 'value': '123','signature':'i'}),
                       JSON.stringify(JSON.parse(change[1])));
 
   Gio.DBus.get_sync (Gio.BusType.SESSION, null).signal_unsubscribe (glog.dconf_subscription_id);
