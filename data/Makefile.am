@@ -10,9 +10,9 @@ fleet_commander_dbus_servicedir = ${datarootdir}/dbus-1/system-services/
 fleet_commander_dbus_service_in_files = org.freedesktop.FleetCommander.service.in
 fleet_commander_dbus_service_DATA = org.freedesktop.FleetCommander.service
 
-fleet_commander_dbus_systemd_servicedir = $(systemdsystemunitdir)
-fleet_commander_dbus_systemd_service_in_files = fleet-commander-dbus.service.in
-fleet_commander_dbus_systemd_service_DATA = fleet-commander-dbus.service
+fleet_commander_admin_systemd_servicedir = $(systemdsystemunitdir)
+fleet_commander_admin_systemd_service_in_files = fleet-commander-admin.service.in
+fleet_commander_admin_systemd_service_DATA = fleet-commander-admin.service
 
 fleet_commander_dbus_configdir = ${sysconfdir}/dbus-1/system.d/
 fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
@@ -27,13 +27,13 @@ EXTRA_DIST = \
 	$(fleet_commander_dbus_service_in_files)       \
 	$(fleet_commander_dbus_config_DATA)            \
 	$(fleet_commander_goa_providers_DATA)          \
-	$(fleet_commander_dbus_systemd_service_in_files)
+	$(fleet_commander_admin_systemd_service_in_files)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
 	$(fleet_commander_admin_config_DATA)        \
 	$(fleet_commander_dbus_service_DATA)        \
-	$(fleet_commander_dbus_systemd_service_DATA)
+	$(fleet_commander_admin_systemd_service_DATA)
 
 install-data-local:
 	install -d ${adminstatedir}

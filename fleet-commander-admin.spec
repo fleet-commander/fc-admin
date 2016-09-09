@@ -79,13 +79,13 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
 
 %preun
-%systemd_preun fleet-commander-dbus.service
+%systemd_preun fleet-commander-admin.service
 
 %post
-%systemd_post fleet-commander-dbus.service
+%systemd_post fleet-commander-admin.service
 
 %postun
-%systemd_postun_with_restart fleet-commander-dbus.service
+%systemd_postun_with_restart fleet-commander-admin.service
 
 %files
 %license
@@ -98,7 +98,7 @@ getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/%{name}.conf
 %config(noreplace) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
-%{_unitdir}/fleet-commander-dbus.service
+%{_unitdir}/fleet-commander-admin.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
 %attr(-, fleet-commander-admin, -) %{_localstatedir}/lib/%{name}
 
