@@ -37,7 +37,7 @@ function showMessageDialog(message, title, closecb) {
 }
 
 function showQuestionDialog(message, title, acceptcb, cancelcb) {
-  title = title || 'Question';
+  title = title || _('Question');
   var dialog = $('#message-dialog-modal');
   cancelcb = cancelcb || function() { dialog.modal('hide') }
   $('#message-dialog-modal h4').html(title);
@@ -51,6 +51,13 @@ function showQuestionDialog(message, title, acceptcb, cancelcb) {
     .click(acceptcb)
     .appendTo(modal_footer);
   dialog.modal('show');
+}
+
+function showSpinnerDialog(message, title) {
+  title = title || _('Loading');
+  $('#spinner-dialog-modal h4').html(title);
+  $('#spinner-dialog-modal .modal-body p').html(message);
+  $('#spinner-dialog-modal').modal('show');
 }
 
 function showCurtain(message, title, icon, buttons) {

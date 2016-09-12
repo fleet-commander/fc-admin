@@ -121,8 +121,9 @@ function deployProfile() {
     "org.freedesktop.NetworkManager": networkmanager
   };
 
-  $('#spinner-modal h4').text(_('Saving settings'));
-  $('#spinner-modal').modal('show');
+  showSpinnerDialog(
+    _('Saving settings to profile. Please wait...'),
+    _('Saving settings'))
 
   fc.SelectChanges(changeset, function(resp){
     if (resp.status) {

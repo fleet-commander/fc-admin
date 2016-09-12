@@ -134,24 +134,29 @@ function cancelPubkeyInstall() {
 }
 
 function installPubkey() {
+  $('#pubkey-install-modal').modal('hide');
+
   DEBUG > 0 && console.log('FC: Saving hypervisor configuration');
   saveHypervisorConfig(function(){
-    DEBUG > 0 && console.log('FC: Hypervisor config saved. Install public key');
-    $('#pubkey-install-modal .spinner').show();
-    $('#pubkey-install-credentials-group').hide();
-    $('#pubkey-install-modal .modal-footer').hide();
 
+    DEBUG > 0 && console.log('FC: Hypervisor config saved. Install public key');
     var host = $('#host').val();
     var user = $('#username').val();
     var pass = $('#pubkey-install-password').val();
+    $('#pubkey-install-password').val('');
+
+    showSpinnerDialog(
+      _('Fleet Commander is installing the public key. Please wait'),
+      _('Installing public key'));
 
     fc.InstallPubkey(host, user, pass, function(resp) {
       DEBUG > 0 && console.log('FC: Calling dbus for public key install')
-      $('#pubkey-install-modal').modal('hide');
-      $('#pubkey-install-password').val('');
+
+      $('#spinner-dialog-modal').modal('hide');
+
       if (resp.status) {
         showMessageDialog(
-          _('Publick key has been installed succesfuly'),
+          _('Public key has been installed succesfuly'),
           _('Public key installed'),
           cancelPubkeyInstall);
       } else {
@@ -416,7 +421,8 @@ function selectDomain() {
   $('#domain-selection-modal').modal('hide');
   sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
   sessionStorage.setItem("fc.session.profile_uid", currentuid);
-  $('#spinner-modal').modal('show');
+  showSpinnerDialog(
+    _('Starting live session. Please wait...'))
   setTimeout(function(){
     location.href = "livesession.html";
   }, 500)

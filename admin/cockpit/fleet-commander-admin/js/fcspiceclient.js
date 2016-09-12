@@ -39,7 +39,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
         self.connecting = null;
         self.noretry = true;
         DEBUG > 0 && console.log('FC: Connection tries timed out');
-        $('#spinner-modal').modal('hide');
+        $('#spinner-dialog-modal').modal('hide');
         showMessageDialog(_('Connection error to virtual machine.'), _('Connection error'));
       }, self.conn_timeout);
     }
@@ -47,7 +47,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
 
   this.spice_connected = function() {
     DEBUG > 0 && console.log('FC: Connected to virtual machine using SPICE');
-    $('#spinner-modal').modal('hide');
+    $('#spinner-dialog-modal').modal('hide');
     if (self.connecting) {
       clearTimeout(self.connecting);
       self.connecting = null;
@@ -65,9 +65,9 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
             err.message == 'Connection timed out.' ||
             self.sc.state != 'ready')  {
           if (!self.noretry) {
-            $('#spinner-modal h4').text(
-              'Connecting to virtual machine. Please wait...');
-            $('#spinner-modal').modal('show');
+            showSpinnerDialog(
+              _('Connecting to virtual machine. Please wait...'),
+              _('Reconnecting'))
             self.do_connection();
           }
           return
@@ -80,7 +80,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
           'Virtual machine has been stopped', 'Connection error');
       }
 
-      $('#spinner-modal').modal('hide');
+      $('#spinner-dialog-modal').modal('hide');
       if (self.connecting) {
         clearTimeout(self.connecting);
         self.connecting = null;

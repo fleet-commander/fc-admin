@@ -42,15 +42,16 @@
     </div>
 
     <!-- Spinner modal -->
-    <div id="spinner-modal" class="modal fade" tabindex='-1'>
+    <div id="spinner-dialog-modal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
 
           <div class="modal-header">
-            <h4 class="modal-title" translatable="yes">Starting live session</h4>
+            <h4 class="modal-title"></h4>
           </div>
 
           <div class="modal-body">
+            <p></p>
             <div class="spinner"></div>
           </div>
 
@@ -124,7 +125,6 @@
             </div>
 
             <div class="modal-body">
-              <div class="spinner"></div>
               <div id="pubkey-install-credentials-group" class="form-group">
                 <label for="pubkey-install-password" class="control-label" translatable="yes">Password</label>
                 <input id="pubkey-install-password" name="pubkey-install-password" type="password" class="form-control">
@@ -132,8 +132,8 @@
             </div>
 
             <div class="modal-footer">
-              <button id="install-pubkey" class="btn btn-primary" t ranslatable="yes">Install</button>
               <button id="cancel-pubkey-install" class="btn btn-default" translatable="yes">Cancel</button>
+              <button id="install-pubkey" class="btn btn-primary" t ranslatable="yes">Install</button>
             </div>
           </div>
         </div>
