@@ -75,9 +75,6 @@ desktop-file-validate %{buildroot}/%{_sysconfdir}/xdg/autostart/fleet-commander-
 %make_install
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
 
-%pre
-getent passwd fleet-commander-admin >/dev/null || /usr/sbin/useradd -M -r -d %{_localstatedir}/lib/fleet-commander-admin -s /usr/bin/false -c "Fleet Commander administration interface service" fleet-commander-admin
-
 %preun
 %systemd_preun fleet-commander-admin.service
 

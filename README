@@ -24,9 +24,6 @@ $ make
 $ make install
 $ mkdir -p /var/lib/fleet-commander-admin/profiles
 
-You must also create a fleet-commander-admin user and grant it privileges to
-/var/lib/fleet-commander-admin and /var/lib/fleet-commander-admin/profiles
-
 These are the instructions to install the logger and enable a VM as a Fleet Commander template:
 
 $ ./configure --prefix=/usr
