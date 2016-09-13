@@ -86,7 +86,9 @@ function addToKnownHosts(hostname, cb, data) {
 }
 
 function saveHypervisorConfig(cb) {
-  clearModalFormErrors('configure-hypervisor-modal');
+  DEBUG > 0 && console.log('FC: Saving hypervisor configuration');
+
+  clearModalFormErrors('hypervisor-config-modal');
 
   var data = {
     host: $('#host').val(),
@@ -119,12 +121,11 @@ function saveHypervisorConfig(cb) {
 }
 
 function showPubkeyInstall() {
-  $('#pubkey-install-modal .spinner').hide();
-  $('#pubkey-install-credentials-group').show();
-  $('#pubkey-install-modal .modal-footer').show();
-  $('#pubkey-install-password').val('');
-  $('#hypervisor-config-modal').modal('hide');
-  $('#pubkey-install-modal').modal('show');
+  saveHypervisorConfig(function(){
+    $('#pubkey-install-password').val('');
+    $('#hypervisor-config-modal').modal('hide');
+    $('#pubkey-install-modal').modal('show');
+  });
 }
 
 function cancelPubkeyInstall() {
@@ -134,35 +135,31 @@ function cancelPubkeyInstall() {
 }
 
 function installPubkey() {
+  DEBUG > 0 && console.log('FC: Install public key');
+
   $('#pubkey-install-modal').modal('hide');
+  var host = $('#host').val();
+  var user = $('#username').val();
+  var pass = $('#pubkey-install-password').val();
+  $('#pubkey-install-password').val('');
 
-  DEBUG > 0 && console.log('FC: Saving hypervisor configuration');
-  saveHypervisorConfig(function(){
+  showSpinnerDialog(
+    _('Fleet Commander is installing the public key. Please wait'),
+    _('Installing public key'));
 
-    DEBUG > 0 && console.log('FC: Hypervisor config saved. Install public key');
-    var host = $('#host').val();
-    var user = $('#username').val();
-    var pass = $('#pubkey-install-password').val();
-    $('#pubkey-install-password').val('');
+  fc.InstallPubkey(host, user, pass, function(resp) {
+    DEBUG > 0 && console.log('FC: Calling dbus for public key install')
 
-    showSpinnerDialog(
-      _('Fleet Commander is installing the public key. Please wait'),
-      _('Installing public key'));
+    $('#spinner-dialog-modal').modal('hide');
 
-    fc.InstallPubkey(host, user, pass, function(resp) {
-      DEBUG > 0 && console.log('FC: Calling dbus for public key install')
-
-      $('#spinner-dialog-modal').modal('hide');
-
-      if (resp.status) {
-        showMessageDialog(
-          _('Public key has been installed succesfuly'),
-          _('Public key installed'),
-          cancelPubkeyInstall);
-      } else {
-        showMessageDialog(resp.error, _('Error'), cancelPubkeyInstall);
-      }
-    });
+    if (resp.status) {
+      showMessageDialog(
+        _('Public key has been installed succesfuly'),
+        _('Public key installed'),
+        cancelPubkeyInstall);
+    } else {
+      showMessageDialog(resp.error, _('Error'), cancelPubkeyInstall);
+    }
   })
 }
 
