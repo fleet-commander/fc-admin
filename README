@@ -22,6 +22,7 @@ These are the instructions to build and install the admin interface:
 $ ./configure --prefix=$PREFIX # where $PREFIX can be /usr or /usr/local
 $ make
 $ make install
+$ mkdir -p /var/lib/fleet-commander-admin/profiles
 
 You must also create a fleet-commander-admin user and grant it privileges to
 /var/lib/fleet-commander-admin and /var/lib/fleet-commander-admin/profiles

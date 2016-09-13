@@ -34,7 +34,3 @@ CLEANFILES = \
 	$(fleet_commander_admin_config_DATA)        \
 	$(fleet_commander_dbus_service_DATA)        \
 	$(fleet_commander_admin_systemd_service_DATA)
-
-install-data-local:
-	install -d ${adminstatedir}
-	install -d ${profilesdir}
