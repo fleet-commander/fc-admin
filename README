@@ -33,20 +33,27 @@ $ make install
 $ cd ../data/
 $ make install
 
-The install prefix must be set to /usr so that the fleet-commander-logger.desktop file makes it
-to the /etc/xdg/autostart directory.
+The install prefix must be set to /usr so that the fleet-commander-logger.desktop
+file makes it to the /etc/xdg/autostart directory.
 
 NOTE ON THE LOGGER
 
-The logger autostarts on a desktop session only when a special device shows up in /dev/virtio-ports
+The logger autostarts on a desktop session only when a special device shows up
+in /dev/virtio-ports
 
 RUNNING THE ADMIN INTERFACE
 
-You must first enable the apache configuration, in Fedora systems you must do
-the following as root (assuming you installed it in --prefix=/usr):
+Fleet commander is a plugin for Cockpit. You should already have an installation
+of cockpit in your machine. If not, install it first following the instructions
+at http://cockpit-project.org/running.html
 
-# ln -s /etc/xdg/fleet-commander-apache.conf /etc/httpd/conf.d
-# systemctl restart httpd
+If you have used the /usr prefix, Fleet Commander plugin is already installed in
+the cockpit plugin folder. Ig you choose something different like /usr/local
+you can enable fleet commander executing the following command as root:
 
-And the service must be available as a virtual host in apache, point your
-browser to it and follow the instructions.
+# ln -s /usr/local/share/fleet-commander-admin/cockpit/fleet-commander-admin /usr/share/cockpit/
+
+Then, logout from cockpit if you are already logged in, and in the next login
+Fleet Commander should be available under Tools.
+
+Once in Fleet Commander, just follow the on-screen instructions.
