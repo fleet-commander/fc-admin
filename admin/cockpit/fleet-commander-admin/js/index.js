@@ -489,6 +489,23 @@ $(document).ready (function () {
   $('#install-pubkey').click(installPubkey);
   $('#copy-pubkey-to-clipboard').click(copyPubkeyToClipboard);
 
+  $('#pubkey-install-password').keypress(function(e){
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) installPubkey();
+  });
+
+  $("#hypervisor-config-modal").on('shown.bs.modal', function () {
+    $('#host').focus();
+  });
+
+  $("#add-profile-modal").on('shown.bs.modal', function () {
+    $('#profile-name').focus();
+  });
+
+  $("#edit-profile-modal").on('shown.bs.modal', function () {
+    $('#edit-profile-name').focus();
+  });
+
   $("#pubkey-install-modal").on('shown.bs.modal', function () {
     $('#pubkey-install-password').focus();
   });
