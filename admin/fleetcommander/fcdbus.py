@@ -772,14 +772,16 @@ class FleetCommanderDbusService(dbus.service.Object):
 
             existing_change = change
 
-        if existing_change and data == []:
-            gsettings.remove(existing_change)
-        elif not existing_change:
+        if not existing_change:
             existing_change = {'key': '/org/gnome/software/popular-overrides',
                                'signature': 'as'}
             gsettings.append(existing_change)
 
-        existing_change['value'] = data
+        if data == []:
+            gsettings.remove(existing_change)
+        else:
+            value = '[%s]' % ','.join(["'%s'" % x for x in data])
+            existing_change['value'] = value
 
         try:
             self.profiles.save_profile(profile)

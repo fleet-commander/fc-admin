@@ -421,19 +421,27 @@ class TestDbusService(unittest.TestCase):
 
 #        # Add GNOME Software overrides
         highlightedapps = ['foo.desktop', 'bar.desktop', 'baz.desktop']
+        highlightedappsstring = "['foo.desktop','bar.desktop','baz.desktop']"
         resp = c.highlighted_apps(highlightedapps, uid)
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
         self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 1)
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]['key'], '/org/gnome/software/popular-overrides')
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]['value'], highlightedapps)
+        self.assertEqual(
+            profile['settings']['org.gnome.gsettings'][0]['key'],
+            '/org/gnome/software/popular-overrides')
+        self.assertEqual(
+            profile['settings']['org.gnome.gsettings'][0]['value'],
+            highlightedappsstring)
 
         # Modify overrides
         highlightedapps = ['foo.desktop']
+        highlightedappsstring = "['foo.desktop']"
         resp = c.highlighted_apps(highlightedapps, uid)
         self.assertTrue(resp['status'])
         profile = self.get_data_from_file(PROFILE_FILE)
-        self.assertEqual(profile['settings']['org.gnome.gsettings'][0]["value"], highlightedapps)
+        self.assertEqual(
+            profile['settings']['org.gnome.gsettings'][0]["value"],
+            highlightedappsstring)
 
         # Empty overrides
         highlightedapps = []
