@@ -332,15 +332,28 @@ function showHighlightedApps () {
 }
 
 function refreshHighlightedAppsList () {
+  DEBUG > 0 && console.log('FC: Refreshing highlighted apps list');
   try {
     var changes = currentprofile.settings["org.gnome.gsettings"];
     $.each (changes, function (i,e) {
       for (key in e) {
         if (e[key] == "/org/gnome/software/popular-overrides") {
           try {
-            var overrides = e["value"];
+            var overrides = e['value'];
             if (Array.isArray (overrides) == false) {
-              overrides = null;
+              if (typeof(overrides) == 'string' &&
+                overrides.match(/\[.*\]/)) {
+                  var a = overrides.substring(1, overrides.length - 1);
+                  if (a.length > 0) {
+                    overrides = a.substring(1, a.length - 1).split("','");
+                  } else {
+                    overrides = null;
+                  }
+              } else {
+                overrides = null;
+              }
+            } else {
+                overrides = null;
             }
             $.each (overrides, function(i, app) {
               addHighlightedApp(app);
