@@ -8,23 +8,23 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PATH_PROG([RUNUSER], [runuser])
-AC_PATH_PROG([SSH], [ssh])
-AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
-AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
+#AC_PATH_PROG([SSH], [ssh])
+#AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
+#AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
 AC_PATH_PROG([MKDIR], [mkdir])
 
 if test x$RUNUSER = x ; then
   AC_MSG_ERROR([Could not find runuser])
 fi
-if test x$SSH = x ; then
-  AC_MSG_ERROR([Could not find ssh])
-fi
-if test x$SSHKEYGEN = x ; then
-  AC_MSG_ERROR([Could not find ssh-keygen])
-fi
-if test x$SSHKEYSCAN = x ; then
-  AC_MSG_ERROR([Could not find ssh-keyscan])
-fi
+#if test x$SSH = x ; then
+#  AC_MSG_ERROR([Could not find ssh])
+#fi
+#if test x$SSHKEYGEN = x ; then
+#  AC_MSG_ERROR([Could not find ssh-keygen])
+#fi
+#if test x$SSHKEYSCAN = x ; then
+#  AC_MSG_ERROR([Could not find ssh-keyscan])
+#fi
 
 PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([systemdsystemunitdir],

@@ -12,33 +12,37 @@ Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version
 BuildRequires: python2-devel
 BuildRequires: dbus-python
 BuildRequires: pygobject2
-BuildRequires: python-gobject
 BuildRequires: libvirt-python
 BuildRequires: python-dbusmock
 BuildRequires: gjs
 BuildRequires: dconf
 BuildRequires: desktop-file-utils
-%if 0%{?rhel}
+%if 0%{?rhel} < 8
 BuildRequires: pexpect
+BuildRequires: pygobject3
 %endif
-%if 0%{?fedora}
+%if 0%{?fedora} >= 21
 BuildRequires: python2-pexpect
+BuildRequires: python-gobject
 %endif
 
+Requires: NetworkManager
+Requires: NetworkManager-libnm
 Requires: systemd
 Requires: dconf
 Requires: python2
 Requires: dbus-python
 Requires: pygobject2
-Requires: python-gobject
 Requires: libvirt-python
 Requires: cockpit
 Requires(preun): systemd
-%if 0%{?rhel}
+%if 0%{?rhel} < 8
 Requires: pexpect
+Requires: pygobject3
 %endif
 %if 0%{?fedora} >= 21
 Requires: python2-pexpect
+Requires: python-gobject
 %endif
 
 Provides: bundled(jquery) = 1.11.1
