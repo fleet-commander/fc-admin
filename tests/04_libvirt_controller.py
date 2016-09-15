@@ -143,7 +143,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         with open(self.ssh_parms_file, 'r') as fd:
             command = fd.read()
             fd.close()
-        self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost -p %(sshport)s -L %(port)s:127.0.0.1:5900 -N\n' % {
+        self.assertEqual(command, '-i %(tmpdir)s/id_rsa -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost -p %(sshport)s -L 127.0.0.1:%(port)s:127.0.0.1:5900 -N\n' % {
             'tmpdir': self.test_directory,
             'sshport': ctrlr.ssh_port,
             'port': port,

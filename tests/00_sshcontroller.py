@@ -52,7 +52,7 @@ class TestSSHController(unittest.TestCase):
         '-o PasswordAuthentication=no',
         '-o UserKnownHostsFile=%(known_hosts_file)s',
         '%(username)s@%(hostname)s -p %(port)s',
-        '-L %(local_port)s:%(tunnel_host)s:%(tunnel_port)s -N\n'
+        '-L %(local_host)s:%(local_port)s:%(tunnel_host)s:%(tunnel_port)s -N\n'
     ])
 
     def setUp(self):
@@ -196,6 +196,9 @@ class TestSSHController(unittest.TestCase):
         hostname = 'localhost'
         port = '2022'
         command = 'mycommand'
+        optional_local_host = 'myhost'
+
+        # Open tunnel without specifying a local host
         ssh.open_tunnel(
             local_port,
             tunnel_host,
@@ -213,6 +216,7 @@ class TestSSHController(unittest.TestCase):
             fd.close()
 
         self.assertEqual(parms, self.SSH_TUNNEL_PARMS % {
+            'local_host': '127.0.0.1',
             'local_port': local_port,
             'tunnel_host': tunnel_host,
             'tunnel_port': tunnel_port,
@@ -222,6 +226,36 @@ class TestSSHController(unittest.TestCase):
             'private_key_file': self.private_key_file,
             'known_hosts_file': self.known_hosts_file,
         })
+
+        ssh.open_tunnel(
+            local_port,
+            tunnel_host,
+            tunnel_port,
+            self.private_key_file,
+            username, hostname, port,
+            local_host=optional_local_host,
+            # Extra options
+            UserKnownHostsFile=self.known_hosts_file,
+        )
+
+        ssh._tunnel_prog.wait()
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file, 'r') as fd:
+            parms = fd.read()
+            fd.close()
+
+        self.assertEqual(parms, self.SSH_TUNNEL_PARMS % {
+            'local_host': optional_local_host,
+            'local_port': local_port,
+            'tunnel_host': tunnel_host,
+            'tunnel_port': tunnel_port,
+            'username': username,
+            'hostname': hostname,
+            'port': port,
+            'private_key_file': self.private_key_file,
+            'known_hosts_file': self.known_hosts_file,
+        })
+
 
     def test_08_install_pubkey(self):
         ssh = sshcontroller.SSHController()
