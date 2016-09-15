@@ -95,7 +95,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
     var query = window.btoa(JSON.stringify({
       payload: 'stream',
       protocol: 'binary',
-      address: location.hostname,
+      address: 'localhost',
       port: port,
       binary: 'raw',
     }));
