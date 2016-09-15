@@ -181,7 +181,7 @@ class SSHController(object):
 
     def open_tunnel(self, local_port, tunnel_host, tunnel_port,
                     private_key_file, username, hostname, port=DEFAULT_SSH_PORT,
-                    **kwargs):
+                    local_host='127.0.0.1', **kwargs):
         """
         Open a tunnel with given ports and return SSH PID
         """
@@ -191,7 +191,8 @@ class SSHController(object):
         ssh_command_end = [
             '%s@%s' % (username, hostname),
             '-p', unicode(port),
-            '-L', '%s:%s:%s' % (local_port, tunnel_host, tunnel_port),
+            '-L', '%s:%s:%s:%s' % (local_host, local_port,
+                                   tunnel_host, tunnel_port),
             '-N'
         ]
 
