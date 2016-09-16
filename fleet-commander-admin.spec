@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
 Version:        0.7.99
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -45,8 +45,6 @@ Requires: python2-pexpect
 Requires: python-gobject
 %endif
 
-Provides: bundled(jquery) = 1.11.1
-Provides: bundled(patternfly)
 Provides: bundled(spice-html5)
 
 %description
@@ -108,6 +106,9 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-5
+- Removed patternfly and jquery from bundled provides
+
 * Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-4
 - Fixed changelog formatting and typos in email address
 
