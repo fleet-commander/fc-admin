@@ -95,7 +95,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
     var query = window.btoa(JSON.stringify({
       payload: 'stream',
       protocol: 'binary',
-      address: 'localhost',
+      address: '127.0.0.1',
       port: port,
       binary: 'raw',
     }));
@@ -103,6 +103,9 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
     websocket_proto = 'ws:';
     if (location.protocol === 'https:') websocket_proto = 'wss:';
     var cockpit_uri = websocket_proto + '//' + location.hostname + ':' + location.port + '/cockpit/channel/' + cockpit.transport.csrf_token + '?' + query
+
+    DEBUG > 0 && console.log(
+      'FC: Cockpit channel websocket uri is:', cockpit_uri);
 
     if (self.sc) self.sc.stop()
     $('#spice-screen').html('');
