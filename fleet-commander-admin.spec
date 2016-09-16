@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
-Version:        0.7.99
-Release:        5%{?dist}
+Version:        0.8.0
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -106,6 +106,9 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.8.0-1
+- Updated package for 0.8.0 release
+
 * Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-5
 - Removed patternfly and jquery from bundled provides
 
