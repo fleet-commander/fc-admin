@@ -1,4 +1,5 @@
 Fleet Commander
+===============
 
 Fleet Commander is an application that allows you to manage the desktop
 configuration of a large network of users and workstations/laptops.
@@ -7,53 +8,63 @@ It is primarily targeted to Linux systems based on the GNOME desktop.
 
 Fleet Commander consists on two components:
 
-- a web service integrated with Apache that serves the dynamic application and
+* a web service integrated with Apache that serves the dynamic application and
   the profile data to the network.
-- and a client side daemon that runs on every host of the network.
+* and a client side daemon that runs on every host of the network.
 
 Fleet Commander relies on libvirt and KVM to generate the profile data
 dinamically from a template VM running the same environment as the rest of the
 network.
 
 SETUP
+-----
 
 These are the instructions to build and install the admin interface:
 
+```
 $ ./configure --prefix=$PREFIX # where $PREFIX can be /usr or /usr/local
 $ make
 $ make install
 $ mkdir -p /var/lib/fleet-commander-admin/profiles
+```
 
 These are the instructions to install the logger and enable a VM as a Fleet Commander template:
 
+```
 $ ./configure --prefix=/usr
 $ make
 $ cd logger
 $ make install
 $ cd ../data/
 $ make install
+```
 
 The install prefix must be set to /usr so that the fleet-commander-logger.desktop
 file makes it to the /etc/xdg/autostart directory.
 
 NOTE ON THE LOGGER
+------------------
 
 The logger autostarts on a desktop session only when a special device shows up
 in /dev/virtio-ports
 
 RUNNING THE ADMIN INTERFACE
+---------------------------
 
 Fleet commander is a plugin for Cockpit. You should already have an installation
 of cockpit in your machine. If not, install it first following the instructions
 at http://cockpit-project.org/running.html
 
 If you have used the /usr prefix, Fleet Commander plugin is already installed in
-the cockpit plugin folder. Ig you choose something different like /usr/local
+the cockpit plugin folder. If you chosen something different like /usr/local
 you can enable fleet commander executing the following command as root:
 
-# ln -s /usr/local/share/fleet-commander-admin/cockpit/fleet-commander-admin /usr/share/cockpit/
+```
+# ln -s /usr/local/share/fleet-commander-admin/cockpit/fleet-commander-admin \
+    /usr/share/cockpit/
+```
 
-Then, logout from cockpit if you are already logged in, and in the next login
-Fleet Commander should be available under Tools.
+Then, logout from cockpit if you are already logged in, and whe you login
+again Fleet Commander will be available under Tools option.
 
 Once in Fleet Commander, just follow the on-screen instructions.
