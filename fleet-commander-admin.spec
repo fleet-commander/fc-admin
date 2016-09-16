@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
 Version:        0.7.99
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -101,13 +101,16 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %config(noreplace) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
 %{_unitdir}/fleet-commander-admin.service
 %{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
-%attr(-, fleet-commander-admin, -) %{_localstatedir}/lib/%{name}
+%{_localstatedir}/lib/%{name}
 
 %files -n fleet-commander-logger
 %attr(755, root, root) %{_libexecdir}/fleet_commander_logger.js
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-3
+- Removed unneeded permission for fleet-commander-admin user
+
 * Thu Sep 08 2016 Alberto Ruiz <aruizrui@redhat.com> - 0.7.99-2
 - Update licensing metadata
 
