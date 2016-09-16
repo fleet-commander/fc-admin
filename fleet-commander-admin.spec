@@ -1,6 +1,6 @@
 Name:           fleet-commander-admin
 Version:        0.7.99
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Fleet Commander
 
 BuildArch: noarch
@@ -108,40 +108,43 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
 
 %changelog
+* Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-4
+- Fixed changelog formatting and typos in email address
+
 * Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-3
 - Removed unneeded permission for fleet-commander-admin user
 
 * Thu Sep 08 2016 Alberto Ruiz <aruizrui@redhat.com> - 0.7.99-2
 - Update licensing metadata
 
-* Mon Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.99-1
+* Mon Jun 06 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.99-1
 - Fleet Commander admin migrated to Cockpit plugin
 - Updated package for 0.7.99 release
 
-* Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.6-1
+* Thu Apr 07 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.6-1
 - Created workaround for libvirt bug dealing with too large qemu monitor paths
 - Updated package for 0.7.6 release
 
-* Thu Mar 31 2016 Oliver Gutierrez <ogutierrez@redhat.org>  - 0.7.5-1
+* Thu Mar 31 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.5-1
 - Fixed spice reconnection problems
 - Updated package for 0.7.5 release
 
-* Tue Mar 08 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.4-1
+* Tue Mar 08 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.4-1
 - Update package for 0.7.4 release
 
-* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.3-2
+* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.3-2
 - Removed failing tests
 
-* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.3-1
+* Fri Feb 05 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.3-1
 - Fixes in spec for Fedora release
 
-* Thu Jan 28 2016 Oliver Gutierrez <ogutierrez@redhat.org> - 0.7.2-1
+* Thu Jan 28 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.7.2-1
 - Fixes in spec for Fedora release
 
-* Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.org> - 0.7.1-1
+* Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.com> - 0.7.1-1
 - Update package for 0.7.1 release
 
-* Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.org> - 0.7.0-1
+* Tue Jan 19 2016 Alberto Ruiz <aruiz@redhat.com> - 0.7.0-1
 - Update package for 0.7.0 release
 
 * Wed Jan 13 2016 Alberto Ruiz <aruiz@redhat.com> - 0.2.0-1
