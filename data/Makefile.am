@@ -20,6 +20,9 @@ fleet_commander_dbus_config_DATA = org.freedesktop.FleetCommander.conf
 fleet_commander_goa_providersdir = ${fcadmindir}
 fleet_commander_goa_providers_DATA = fc-goa-providers.ini
 
+fleet_commander_udev_rulesdir = ${sysconfdir}/udev/rules.d/
+fleet_commander_udev_rules_DATA = 81-fleet-commander-logger.rules
+
 EXTRA_DIST = \
   $(gnome_software_service_desktop_DATA)         \
 	$(fleet_commander_logger_desktop_in_files)     \
@@ -27,6 +30,7 @@ EXTRA_DIST = \
 	$(fleet_commander_dbus_service_in_files)       \
 	$(fleet_commander_dbus_config_DATA)            \
 	$(fleet_commander_goa_providers_DATA)          \
+  $(fleet_commander_udev_rules_DATA)             \
 	$(fleet_commander_admin_systemd_service_in_files)
 
 CLEANFILES = \
