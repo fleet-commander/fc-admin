@@ -95,6 +95,8 @@ def parse_config(config_file=None):
         section = {}
 
     args = {
+        'default_profile_priority': section.get(
+            'default_profile_priority', constants.DEFAULT_PROFILE_PRIORITY),
         'log_level': section.get(
             'log_level', constants.DEFAULT_LOG_LEVEL),
         'log_format': section.get(

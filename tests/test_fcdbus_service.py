@@ -94,6 +94,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'database_path': os.path.join(test_directory, 'database.db'),
             'client_data_url': '/',
             'tmp_session_destroy_timeout': 60,
+            'default_profile_priority': 50,
         }
 
         super(TestFleetCommanderDbusService, self).__init__(args)

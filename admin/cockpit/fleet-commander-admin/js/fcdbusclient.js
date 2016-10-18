@@ -39,10 +39,10 @@ function FleetCommanderDbusClient(readycb, errorcb) {
   // TODO: Bind event in proxy status change and show connection error curtain
 
   // Hypervisor configuration methods
-  this.GetDebugLevel = function(cb, errcb) {
-    self._proxy.GetDebugLevel().done(
+  this.GetInitialValues = function(cb, errcb) {
+    self._proxy.GetInitialValues().done(
       function(resp) {
-        cb(resp);
+        cb(JSON.parse(resp));
       }
     ).fail(errorhandler);
   }

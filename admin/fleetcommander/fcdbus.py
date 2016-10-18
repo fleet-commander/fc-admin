@@ -81,8 +81,8 @@ class FleetCommanderDbusClient(object):
                 pass
         raise Exception('Timed out trying to connect to fleet commander dbus service')
 
-    def get_debug_level(self):
-        return self.iface.GetDebugLevel()
+    def get_initial_values(self):
+        return self.iface.GetInitialValues()
 
     def check_needs_configuration(self):
         return self.iface.CheckNeedsConfiguration()
@@ -192,10 +192,13 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.args = args
         self.state_dir = args['state_dir']
+        
 
         self.log_level = args['log_level'].lower()
         loglevel = getattr(logging, args['log_level'].upper())
         logging.basicConfig(level=loglevel, format=args['log_format'])
+
+        self.default_profile_priority = args['default_profile_priority']
 
         self.profiles = profiles.ProfileManager(
             args['database_path'], args['profiles_dir'])
@@ -450,8 +453,14 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
-    def GetDebugLevel(self):
-        return self.log_level
+    def GetInitialValues(self):
+        state = {
+            'debuglevel' : self.log_level,
+            'defaults' : {
+                'profilepriority' : self.default_profile_priority,
+            }
+        }
+        return json.dumps(state)
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
@@ -621,6 +630,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         profile = {
             'name': data['profile-name'],
             'description': data['profile-desc'],
+            'priority': data['priority'],
             'settings': {},
             'groups': filter(
                 None, [g.strip() for g in data['groups'].split(",")]),
@@ -671,6 +681,9 @@ class FleetCommanderDbusService(dbus.service.Object):
 
             if 'profile-desc' in payload:
                 profile['description'] = payload['profile-desc']
+
+        if 'priority' in payload:
+            profile['priority'] = payload['priority']
 
         if 'users' in payload:
             users = [u.strip() for u in payload['users'].split(",")]
