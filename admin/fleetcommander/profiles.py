@@ -174,8 +174,6 @@ class ProfileManager(object):
             })
 
             # Update applies data
-            #users = []
-            #groups = [] 
             applies[uid] = {
                 'users': profile['users'],
                 'groups': profile['groups']
