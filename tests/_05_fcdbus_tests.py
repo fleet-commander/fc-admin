@@ -64,6 +64,7 @@ class TestDbusService(unittest.TestCase):
         "users":        "user1,user2,user3",
         "groups":       "group1,group2",
         "priority":      51, 
+        "hosts":      "testhost1,testhost2",
     }
 
     MAX_DBUS_CHECKS = 10
@@ -551,6 +552,7 @@ class TestDbusService(unittest.TestCase):
             'users': ['user1', 'user2', 'user3'],
             'groups': ['group1', 'group2'],
             'priority': 51,
+            'hosts': ['testhost1','testhost2'],
 
         })
 
@@ -568,7 +570,8 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         self.assertEqual(resp['data'], {
             'users': ['user1', 'user2', 'user3'],
-            'groups': ['group1', 'group2']
+            'groups': ['group1', 'group2'],
+            'hosts': ['testhost1','testhost2'],
         })
 
     def test_21_changes_listener(self):
@@ -650,7 +653,8 @@ class TestDbusService(unittest.TestCase):
             {
                 uid: {
                     'users': ['user1', 'user2', 'user3'],
-                    'groups': ['group1', 'group2']
+                    'groups': ['group1', 'group2'],
+                    'hosts': ['testhost1','testhost2'],
                 }
             }
         )

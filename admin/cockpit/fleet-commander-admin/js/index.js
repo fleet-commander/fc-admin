@@ -232,6 +232,7 @@ function showAddProfile() {
   $('#profile-users').val('');
   $('#profile-groups').val('');
   $('#profile-priority').val(state.defaults.profilepriority);
+  $('#profile-hosts').val('');
   $('#add-profile-modal').modal('show');
 }
 
@@ -254,6 +255,7 @@ function saveNewProfile() {
     'users': $('#profile-users').val(),
     'groups': $('#profile-groups').val(),
     'priority': $('#profile-priority').val(),
+    'hosts': $('#profile-hosts').val(),
   }
 
   // TODO: Show spinner
@@ -279,6 +281,13 @@ function editProfile(uid) {
         $('#edit-profile-priority').val(state.defaults.profilepriority);
       else
         $('#edit-profile-priority').val(resp.data.priority);
+
+
+      // for backwards compatibility, older profiles might not have hosts
+      if (typeof resp.data.hosts === "undefined") 
+        $('#edit-profile-hosts').val(state.defaults.profilehosts);
+      else
+        $('#edit-profile-hosts').val(resp.data.hosts);
 
       currentuid = uid;
       currentprofile = resp.data
@@ -319,6 +328,7 @@ function saveExistingProfile() {
     'users': $('#edit-profile-users').val(),
     'groups': $('#edit-profile-groups').val(),
     'priority': $('#edit-profile-priority').val(),
+    'hosts': $('#edit-profile-hosts').val(),
   }
 
   //TODO: show spinner/progress indicator

@@ -636,6 +636,8 @@ class FleetCommanderDbusService(dbus.service.Object):
                 None, [g.strip() for g in data['groups'].split(",")]),
             'users': filter(
                 None, [u.strip() for u in data['users'].split(",")]),
+            'hosts': filter(
+                None, [u.strip() for u in data['hosts'].split(",")]),
         }
     
         try:
@@ -689,6 +691,12 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         if 'priority' in payload:
             profile['priority'] = payload['priority']
+
+
+        if 'hosts' in payload:
+            hosts = [u.strip() for u in payload['hosts'].split(",")]
+            hosts = filter(None, hosts)
+            profile['hosts'] = hosts
 
         if 'users' in payload:
             users = [u.strip() for u in payload['users'].split(",")]

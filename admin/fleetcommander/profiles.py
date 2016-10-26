@@ -112,11 +112,13 @@ class ProfileManager(object):
             path = self.get_profile_path(uid)
         profile = self.profiles[uid]
 
-        # Remove profile users and groups information before saving to file
+        # Remove profile users, groups and hosts before saving to file
         if 'users' in profile:
             del(profile['users'])
         if 'groups' in profile:
             del(profile['groups'])
+        if 'hosts' in profile:
+            del(profile['hosts'])
 
         # Save profile to disk
         write_and_close(path, json.dumps(profile))
@@ -160,6 +162,8 @@ class ProfileManager(object):
             profile['users'] = []
         if not 'groups' in profile:
             profile['groups'] = []
+        if not 'hosts' in profile:
+            profile['hosts'] = []
 
         return profile
 
@@ -167,6 +171,7 @@ class ProfileManager(object):
         index = []
         applies = {}
         for uid, profile in self.profiles.items():
+            profile = self.profile_sanity_check(profile)
             # Update index
             index.append({
                 'url': '%s.json' % uid,
@@ -176,8 +181,11 @@ class ProfileManager(object):
             # Update applies data
             applies[uid] = {
                 'users': profile['users'],
-                'groups': profile['groups']
+                'groups': profile['groups'],
+                'hosts': profile['hosts'],
             }
+            
+                
         write_and_close(self.INDEX_FILE, json.dumps(index))
         write_and_close(self.APPLIES_FILE, json.dumps(applies))
 

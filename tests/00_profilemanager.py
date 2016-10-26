@@ -69,6 +69,7 @@ class TestProfileManager(unittest.TestCase):
        },
        u'users': [u'user1', u'user2'],
        u'groups': [u'group1', u'group2'],
+       u'hosts': [u'host1', u'host2'],
     }
 
     def setUp(self):
@@ -139,6 +140,7 @@ class TestProfileManager(unittest.TestCase):
         path = self.profiles.get_profile_path(uid)
         del(profile_data['users'])
         del(profile_data['groups'])
+        del(profile_data['hosts'])
         with open(path, 'r') as fd:
             saved_data = json.loads(fd.read())
             self.assertEqual(
@@ -169,6 +171,7 @@ class TestProfileManager(unittest.TestCase):
             self.assertEqual(applies_data[uid], {
                'users': ['user1', 'user2'],
                'groups': ['group1', 'group2'],
+               'hosts': ['host1', 'host2'],
             })
             fd.close()
 
@@ -182,6 +185,7 @@ class TestProfileManager(unittest.TestCase):
         profile_data['name'] = 'Another dummy profile'
         profile_data['users'] = ['otheruser1', 'anotheruser2']
         profile_data['groups'] = ['othergroup1', 'anothergroup2']
+        profile_data['hosts'] = ['otherhost1', 'anotherhost2']
 
         updated_uid = self.profiles.save_profile(profile_data)
 
@@ -191,6 +195,7 @@ class TestProfileManager(unittest.TestCase):
         path = self.profiles.get_profile_path(uid)
         del(profile_data['users'])
         del(profile_data['groups'])
+        del(profile_data['hosts'])
         with open(path, 'r') as fd:
             saved_data = json.loads(fd.read())
             self.assertEqual(
@@ -221,6 +226,7 @@ class TestProfileManager(unittest.TestCase):
             self.assertEqual(applies_data[uid], {
                'users': ['otheruser1', 'anotheruser2'],
                'groups': ['othergroup1', 'anothergroup2'],
+               'hosts': ['otherhost1', 'anotherhost2'],
             })
             fd.close()
 
@@ -279,6 +285,7 @@ class TestProfileManager(unittest.TestCase):
             uid: {
                'users': ['user1', 'user2'],
                'groups': ['group1', 'group2'],
+               'hosts': ['host1', 'host2'],
             }
         })
 
@@ -328,10 +335,12 @@ class TestProfileManager(unittest.TestCase):
             uid1: {
                'users': ['user1', 'user2'],
                'groups': ['group1', 'group2'],
+               'hosts': ['host1', 'host2'],
             },
             uid2: {
                'users': ['user1', 'user2'],
                'groups': ['group1', 'group2'],
+               'hosts': ['host1', 'host2'],
             }
         })
 
