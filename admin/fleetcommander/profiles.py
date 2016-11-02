@@ -205,6 +205,14 @@ class ProfileManager(object):
         self.profile_sanity_check(profile)
         uid = profile['uid']
 
+        if 'priority' in profile:
+            # priority has to be a number, so either convert it or fail
+            try:
+                profile['priority'] = int(profile['priority'])
+            except:
+                raise ProfileDataError(
+                'Profile priority %s is not a number' % profile['priority'])
+
         # Save profile data
         self.profiles[uid] = profile
 
