@@ -19,6 +19,7 @@ fc_js_DATA = \
 	cockpit/fleet-commander-admin/js/base.js \
 	cockpit/fleet-commander-admin/js/fcdbusclient.js \
 	cockpit/fleet-commander-admin/js/fcspiceclient.js \
+	cockpit/fleet-commander-admin/js/collectors.js \
 	cockpit/fleet-commander-admin/js/index.js \
 	cockpit/fleet-commander-admin/js/goa.js \
 	cockpit/fleet-commander-admin/js/livesession.js \
@@ -62,6 +63,7 @@ fc_spicehtml5_DATA = \
 	cockpit/fleet-commander-admin/js/spice-html5/simulatecursor.js \
 	cockpit/fleet-commander-admin/js/spice-html5/enums.js \
 	cockpit/fleet-commander-admin/js/spice-html5/inputs.js \
+	cockpit/fleet-commander-admin/js/spice-html5/port.js \
 	cockpit/fleet-commander-admin/js/spice-html5/atKeynames.js \
 	cockpit/fleet-commander-admin/js/spice-html5/display.js \
 	cockpit/fleet-commander-admin/js/spice-html5/png.js \
