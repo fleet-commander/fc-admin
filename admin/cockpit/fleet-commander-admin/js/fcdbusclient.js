@@ -36,11 +36,16 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     errorcb(err)
   });
 
-  // TODO: Bind event in proxy status change and show connection error curtain
-
-  // Hypervisor configuration methods
   this.GetDebugLevel = function(cb, errcb) {
     self._proxy.GetDebugLevel().done(
+      function(resp) {
+        cb(resp);
+      }
+    ).fail(errorhandler);
+  }
+
+  this.HeartBeat = function(cb, errcb) {
+    self._proxy.HeartBeat().done(
       function(resp) {
         cb(resp);
       }
@@ -179,8 +184,8 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
-  this.SessionSave = function(uid, cb, errcb) {
-    self._proxy.SessionSave(uid).done(
+  this.SessionSave = function(uid, changesets, cb, errcb) {
+    self._proxy.SessionSave(uid, JSON.stringify(changesets)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
@@ -192,23 +197,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     self._proxy.IsSessionActive(uid).done(
       function(resp) {
         cb(resp);
-      }
-    ).fail(errorhandler);
-  }
-
-  // Changes methods
-  this.GetChanges = function(cb, errcb) {
-    self._proxy.GetChanges().done(
-      function(resp) {
-        cb(JSON.parse(resp));
-      }
-    ).fail(errorhandler);
-  }
-
-  this.SelectChanges = function(data, cb, errcb) {
-    self._proxy.SelectChanges(JSON.stringify(data)).done(
-      function(resp) {
-        cb(JSON.parse(resp));
       }
     ).fail(errorhandler);
   }

@@ -21,138 +21,76 @@
 
 const GLib           = imports.gi.GLib;
 const Gio            = imports.gi.Gio;
-const Soup           = imports.gi.Soup;
 const JsUnit         = imports.jsUnit;
 const FleetCommander = imports.fleet_commander_logger;
-//FleetCommander._debug = true;
+FleetCommander._debug = true;
 
-// Mock web server //
-
-var MockWebServer = function (counter) {
-  this.HOST = "localhost";
-  this.server = new Soup.Server ();
-  this.bound = false;
-  this.port = 8000;
-  this.queue = [];
-
-  // this lets us know how many requests to serve before we quit the mainloop //
-  this.counter = counter;
-
-  // we find a port that suits us //
-  for (; this.port<9999; this.port++) {
-    let addr = Gio.InetSocketAddress.new_from_string (this.HOST, this.port);
-    try {
-      this.bound = this.server.listen_local (this.port, Soup.ServerListenOptions.IPV4_ONLY);
-    } catch (e) { }
-    if (this.bound)
-      break;
-  }
-  if (this.bound == false)
-    return;
-
-  // 2s timeout on the mainloop
-  this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT, 2000, function () {
-    this.timeout = 0;
-    this.server.disconnect();
-    this.loop.quit();
-    return false;
-  }.bind(this));
-
-  this.server.add_handler (FleetCommander.SUBMIT_PATH, this.submit_change_cb.bind(this));
-}
-
-MockWebServer.prototype.submit_change_cb = function (server, msg, path, query, client) {
-  msg.set_status (Soup.Status.OK);
-  msg.set_response ("application/json", Soup.MemoryUse.COPY, '{"status": "ok"}');
-
-  msg.connect('finished', function () {
-    this.queue.push([path, msg]);
-
-    this.counter--;
-    if (this.counter > 0)
-      return;
-
-    this.server.disconnect();
-    this.loop.quit();
-  }.bind(this));
-}
-
-MockWebServer.prototype.pop = function () {
-  return this.queue.pop();
+function readFile(filename) {
+    let input_file = Gio.file_new_for_path(filename);
+    let size = input_file.query_info(
+        "standard::size",
+        Gio.FileQueryInfoFlags.NONE,
+        null).get_size();
+    let stream = input_file.open_readwrite(null).get_input_stream();
+    let data = stream.read_bytes(size, null).get_data();
+    stream.close(null);
+    return data;
 }
 
 // Test suite //
 
-function testConnectionManagerSubmitChange () {
+function testSpicePortManagerSubmitChange () {
+  // Get temporary file
+  let TMPFILE = Gio.file_new_tmp('fc_logger_spiceport_XXXXXX');
+  let path = TMPFILE[0].get_path();
+  let mgr = new FleetCommander.SpicePortManager(path);
   let PAYLOAD = '["PAYLOAD"]';
-  let server = new MockWebServer (1);
-  JsUnit.assertTrue(server.bound);
-  server.loop = GLib.MainLoop.new (null, false);
+  var expectedData = '{"ns":"org.gnome.gsettings","data":"[\\"PAYLOAD\\"]"}'
+  mgr.submit_change("org.gnome.gsettings", PAYLOAD);
 
-  let mgr = new FleetCommander.ConnectionManager(server.HOST, server.port);
-  mgr.submit_change ("org.gnome.gsettings", PAYLOAD);
+  // Check change is in queue
+  JsUnit.assertEquals(mgr.queue.length, 1);
+  JsUnit.assertEquals(mgr.queue[0].ns, "org.gnome.gsettings");
+  JsUnit.assertEquals(mgr.queue[0].data, PAYLOAD);
 
-  server.loop.run();
-  if (server.timeout != 0) {
-    GLib.source_remove (server.timeout);
-  }
-  JsUnit.assertTrue("Server did not receive any requests", server.timeout != 0);
-
-  let last = server.pop();
-
-  JsUnit.assertNotNull(last);
-  JsUnit.assertEquals(last[0], FleetCommander.SUBMIT_PATH + "org.gnome.gsettings");
-
-  JsUnit.assertNotNull(last[1]);
-
-  JsUnit.assertEquals(last[1].method, "POST");
-
-  JsUnit.assertNotNull(last[1].request_headers);
-  JsUnit.assertNotNull(last[1].request_headers.get("Content-Type"), "application/json");
-
-  JsUnit.assertNotNull(last[1].request_body.data);
-
-  JsUnit.assertEquals(last[1].request_body.data, PAYLOAD);
-
+  // Clean queue and quit
   mgr.give_up();
   JsUnit.assertEquals(mgr.queue.length, 0);
   JsUnit.assertEquals(mgr.timeout, 0);
+
+  // Check data has been written to spiceport file
+  var data = String(readFile(path));
+  JsUnit.assertEquals(expectedData, data);
 }
 
-function testConnectionManagerQueue () {
+function testSpicePortManagerQueue () {
+  // Get temporary file
+  let TMPFILE = Gio.file_new_tmp('fc_logger_spiceport_XXXXXX');
+  let path = TMPFILE[0].get_path();
+
+  let mgr = new FleetCommander.SpicePortManager(path);
   let PAYLOADS = ['1', '2', '3', '4', '5'];
-  let server = new MockWebServer (PAYLOADS.length);
-  JsUnit.assertTrue(server.bound);
+  var expectedData = '';
 
-  server.loop = GLib.MainLoop.new (null, false);
-
-  let mgr = new FleetCommander.ConnectionManager(server.HOST, server.port);
   for(let i=0; i<PAYLOADS.length; i++) {
-    mgr.submit_change ("org.gnome.gsettings", PAYLOADS[i]);
+    mgr.submit_change("org.gnome.gsettings", PAYLOADS[i]);
+    expectedData += '{"ns":"org.gnome.gsettings","data":"' + PAYLOADS[i] + '"}'
   }
 
   JsUnit.assertEquals(PAYLOADS.length, mgr.queue.length);
   for(let i=0; i<mgr.queue.length; i++) {
-    JsUnit.assertEquals(mgr.queue[i].ns,   "org.gnome.gsettings");
+    JsUnit.assertEquals(mgr.queue[i].ns, "org.gnome.gsettings");
     JsUnit.assertEquals(mgr.queue[i].data, PAYLOADS[i]);
   }
 
-  server.loop.run();
-  if (server.timeout != 0) {
-    GLib.source_remove (server.timeout);
-  }
-  JsUnit.assertTrue("Server did not receive any requests", server.timeout != 0);
-
-  JsUnit.assertEquals(server.queue.length, PAYLOADS.length);
-  for(let i=0; i<server.queue.length; i++) {
-    JsUnit.assertEquals(server.queue[i][0],   FleetCommander.SUBMIT_PATH + "org.gnome.gsettings");
-    JsUnit.assertNotNull(server.queue[i][1].request_body);
-    JsUnit.assertNotNull(server.queue[i][1].request_body.data);
-    let data = server.queue[i][1].request_body.data;
-    JsUnit.assertTrue(PAYLOADS.indexOf(data) != -1);
-  }
-
+  // Clean queue and quit
   mgr.give_up();
+  JsUnit.assertEquals(mgr.queue.length, 0);
+  JsUnit.assertEquals(mgr.timeout, 0);
+
+  // Check data has been written to spiceport file
+  var data = String(readFile(path));
+  JsUnit.assertEquals(expectedData, data);
 }
 
 JsUnit.gjstestRun(this, JsUnit.setUp, JsUnit.tearDown);

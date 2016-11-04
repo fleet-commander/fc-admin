@@ -63,7 +63,6 @@ class TestDBManager(unittest.TestCase):
     def setUp(self):
         # Initialize memory database
         self.db = DBManager(':memory:')
-        self.settings = self.db.sessionsettings
         # Add values to config
         for k, v in self.INITIAL_VALUES.items():
             self.db.config[k] = v
@@ -101,21 +100,7 @@ class TestDBManager(unittest.TestCase):
         self.assertEqual(self.db.config['anothertestkeystr'], 'anotherstrvalue')
         self.assertEqual(value, 'anotherstrvalue')
 
-    def test_06_sessionsettings_update_and_retrieve(self):
-        # Add settings in database
-        self.settings.update_setting('org.gnome.gsettings', '/foo/bar', self.test_setting_json)
-        self.assertEqual(self.settings.get_setting('org.gnome.gsettings', '/foo/bar'), self.test_setting_json)
-
-    def test_07_sessionsettings_retrieval_and_selection(self):
-        self.settings.update_setting('org.gnome.gsettings', '/foo/bar', self.test_setting_json)
-        self.settings.update_setting('org.gnome.nogsettings', '/bar/baz', self.test_setting_json)
-        self.settings.update_setting('org.gnome.nogsettings', '/baz/buzz', self.test_setting_json)
-        self.settings.select_settings('org.gnome.nogsettings', ['/bar/baz'])
-        self.assertEqual(self.settings.get_for_collector('org.gnome.gsettings'), {'/foo/bar': self.test_setting_json})
-        self.assertEqual(self.settings.get_for_collector('org.gnome.gsettings', only_selected=True), {})
-        self.assertEqual(self.settings.get_for_collector('org.gnome.nogsettings', only_selected=True), {'/bar/baz': self.test_setting_json})
-
-    def test_07_config_dictionary_iteration(self):
+    def test_06_config_dictionary_iteration(self):
         items = self.db.config.items()
         self.assertEqual(len([x for x in items]), 8)
         for item in items:

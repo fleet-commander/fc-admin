@@ -104,6 +104,7 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %files -n fleet-commander-logger
 %attr(755, root, root) %{_libexecdir}/fleet_commander_logger.js
 %{_sysconfdir}/xdg/autostart/fleet-commander-logger.desktop
+%{_sysconfdir}/udev/rules.d/81-fleet-commander-logger.rules
 
 %changelog
 * Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.8.0-1

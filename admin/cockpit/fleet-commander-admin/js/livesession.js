@@ -21,8 +21,16 @@
 var _ = cockpit.gettext
 var fc = null;
 var fcsc = null;
-var updater = null;
-var reviewing = false;
+var heartbeat = null;
+
+var collectors = {
+  'org.gnome.gsettings':
+    new BaseCollector('org.gnome.gsettings'),
+  'org.libreoffice.registry':
+    new BaseCollector('org.libreoffice.registry'),
+  'org.freedesktop.NetworkManager':
+    new NMCollector('org.freedesktop.NetworkManager'),
+}
 
 window.alert = function(message) {
   DEBUG > 0 && console.log('FC: Alert message:' + message);
@@ -37,7 +45,7 @@ function startLiveSession() {
       if (resp.status) {
         fcsc = new FleetCommanderSpiceClient(
           admin_host, resp.port, stopLiveSession);
-        listenForChanges();
+        startHeartBeat();
       } else {
         showMessageDialog(resp.error, _('Error'));
       }
@@ -56,28 +64,33 @@ function stopLiveSession(cb) {
   });
 }
 
-function listenForChanges() {
-  updater = window.setInterval (readChanges, 1000);
+function startHeartBeat() {
+  heartbeat = window.setInterval (function(){
+    fc.HeartBeat(function(resp){
+      DEBUG > 0 && console.log('FC: Heartbeat:', resp)
+    });
+  }, 1000);
 }
 
-function readChanges() {
-  fc.GetChanges(function(resp){
-    if (!reviewing) {
-      $('#gsettings-event-list').html('');
-      $('#libreoffice-event-list').html('');
-      $('#networkmanager-event-list').html('');
+function populateChanges() {
+  $('#gsettings-event-list').html('');
+  $('#libreoffice-event-list').html('');
+  $('#networkmanager-event-list').html('');
 
-      if ('org.libreoffice.registry' in resp)
-        populateChanges('#libreoffice-event-list', resp['org.libreoffice.registry']);
-      if ('org.gnome.gsettings' in resp)
-        populateChanges('#gsettings-event-list', resp['org.gnome.gsettings']);
-      if ('org.freedesktop.NetworkManager' in resp)
-        populateChanges('#networkmanager-event-list', resp['org.freedesktop.NetworkManager'], true);
-    }
-  });
+  DEBUG > 0 && console.log('FC: Populating LibreOffice change list');
+  populateSectionChanges('#libreoffice-event-list',
+    collectors['org.libreoffice.registry'].dump_changes());
+
+  DEBUG > 0 && console.log('FC: Populating GSettings change list');
+  populateSectionChanges('#gsettings-event-list',
+    collectors['org.gnome.gsettings'].dump_changes());
+
+  DEBUG > 0 && console.log('FC: Populating NetworkManager change list');
+  populateSectionChanges('#networkmanager-event-list',
+    collectors['org.freedesktop.NetworkManager'].dump_changes());
 }
 
-function populateChanges(section, data, only_value) {
+function populateSectionChanges(section, data, only_value) {
   $.each (data, function (i, item) {
     if (only_value) {
       var row = item[1];
@@ -93,8 +106,8 @@ function populateChanges(section, data, only_value) {
 }
 
 function reviewAndSubmit() {
-  reviewing = true;
   $('.change-checkbox').show();
+  populateChanges();
   $('#event-logs').modal('show');
 }
 
@@ -115,31 +128,32 @@ function deployProfile() {
     networkmanager.push($(this).attr('data-id'));
   });
 
-  var changeset = {
-    "org.gnome.gsettings": gsettings,
-    "org.libreoffice.registry": libreoffice,
-    "org.freedesktop.NetworkManager": networkmanager
+  var changesets = {
+    'org.gnome.gsettings':
+      collectors['org.gnome.gsettings'].get_changeset(gsettings),
+    'org.libreoffice.registry':
+      collectors['org.libreoffice.registry'].get_changeset(libreoffice),
+    'org.freedesktop.NetworkManager':
+      collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };
 
   showSpinnerDialog(
     _('Saving settings to profile. Please wait...'),
     _('Saving settings'))
 
-  fc.SelectChanges(changeset, function(resp){
-    if (resp.status) {
-      stopLiveSession(function () {
-        var uid = sessionStorage.getItem("fc.session.profile_uid");
-        fc.SessionSave(uid, function(){
-            if (resp.status) {
-              location.href='index.html'
-            } else {
-              showMessageDialog(_('Error saving session'), _('Error'));
-            }
-        });
-      });
-    } else {
-      showMessageDialog(_('Error saving settings'), _('Error'));
-    }
+  stopLiveSession(function () {
+    var uid = sessionStorage.getItem("fc.session.profile_uid");
+    DEBUG > 0 && console.log('FC: Saving live session settings')
+    fc.SessionSave(uid, changesets, function(resp){
+        if (resp.status) {
+          DEBUG > 0 && console.log('FC: Saved live session settings')
+          location.href='index.html'
+        } else {
+          showMessageDialog(_('Error saving session'), _('Error'));
+        }
+    }, function(){
+      console.log('FC: Error saving live session settings')
+    });
   });
 }
 
@@ -148,8 +162,46 @@ $(document).ready (function () {
   $('#review-changes').click(reviewAndSubmit);
   $('#deploy-profile').click(deployProfile);
 
-  $("#event-logs").on('hidden.bs.modal', function () {
-    reviewing = false;
+  // SPICE port changes listeners
+  window.addEventListener('spice-port-data', function(event) {
+    if (event.detail.channel.portName == 'org.freedesktop.FleetCommander.0') {
+      var msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
+      DEBUG > 0 && console.log(
+        'FC: Logger data received in spice port',
+        event.detail.channel.portName,
+        msg_text);
+      try {
+        var change = JSON.parse(msg_text);
+        DEBUG > 0 && console.log(
+          'FC: Change parsed', change);
+        if (change.ns in collectors) {
+          collectors[change.ns].handle_change(JSON.parse(change.data));
+        } else {
+          DEBUG > 0 && console.log(
+            'FC: Unknown change namespace', change.ns);
+        }
+      } catch (e) {
+        DEBUG > 0 && console.log(
+          'FC: Error while parsing change', msg_text);
+      }
+    }
+  });
+
+  window.addEventListener('spice-port-event', function(event) {
+    if (event.detail.channel.portName == 'org.freedesktop.FleetCommander.0') {
+      if (event.detail.spiceEvent[0] == 0) {
+        DEBUG > 0 && console.log(
+          'FC: Logger connected to SPICE channel');
+      } else if (event.detail.spiceEvent[0] == 1) {
+        DEBUG > 0 && console.log(
+          'FC: Logger disconnected to SPICE channel');
+      } else {
+        DEBUG > 0 && console.log(
+          'FC: Unknown event received in SPICE channel',
+          event.detail.spiceEvent);
+      }
+
+    }
   });
 
   // Create a Fleet Commander dbus client instance

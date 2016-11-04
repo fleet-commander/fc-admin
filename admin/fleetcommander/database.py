@@ -150,6 +150,7 @@ class SQLiteDict(object):
                     value = row[1]
                 yield (row[0], valuetype(value))
 
+
 class ConfigValues(SQLiteDict):
     """
     Configuration values database handler
@@ -162,82 +163,6 @@ class ProfilesData(SQLiteDict):
     Configuration values database handler
     """
     TABLE_NAME = 'profiles'
-
-
-class SessionSettings(object):
-
-    TABLE_NAME = 'sessionsettings'
-
-    def __init__(self, db):
-        """
-        Class initialization
-        """
-        self.db = db
-        self.cursor = db.cursor
-        # Generate table if not exists
-        self.db.create_table(self.TABLE_NAME, **{
-            'collector': unicode,
-            'key':       unicode,
-            'value':     unicode,
-            'selected':  int,
-        })
-
-    def update_setting(self, collectorname, key, value):
-        """
-        Updates a setting in database or creates it if it does not exist
-        """
-        # Try to update any existing row
-        updatequery = 'UPDATE %s SET value=? WHERE collector=? and key=?'
-        self.cursor.execute(updatequery % self.TABLE_NAME, (value, collectorname, key))
-
-        # Make sure it exists
-        insertquery = 'INSERT OR IGNORE INTO %s (collector, key, value, selected) VALUES (?,?,?,?)'
-        self.cursor.execute(insertquery % self.TABLE_NAME, (collectorname, key, value, 0))
-
-        # Commit changes
-        self.db.conn.commit()
-
-    def get_setting(self, collectorname, key):
-        """
-        Updates a setting in database or creates it if it does not exist
-        """
-        # Try to update any existing row
-        query = 'SELECT value FROM %s WHERE collector=? AND key=?'
-        self.cursor.execute(query % self.TABLE_NAME, (collectorname, key))
-        data = self.cursor.fetchone()
-        if data is not None:
-            return data[0]
-        raise KeyError('There is no setting with key %s for collector name %s' % (key, collectorname))
-
-    def get_for_collector(self, collectorname, only_selected=False):
-        """
-        Returns settings for a given collector and filtered by selected only if specified
-        """
-        query = 'SELECT key, value FROM %s WHERE collector=?'
-        if only_selected:
-            query += ' AND selected=1'
-        result = self.cursor.execute(query % self.TABLE_NAME, (collectorname,))
-        return {k: v for k, v in result}
-
-    def select_settings(self, collectorname, keys):
-        """
-        Marks given keys for a collector as selected
-        """
-        query = 'UPDATE %s SET selected=1 WHERE key IN (%s)' % (self.TABLE_NAME, ','.join('?'*len(keys)))
-        self.cursor.execute(query, keys)
-        self.db.conn.commit()
-
-    def clear_settings(self, collectorname=None):
-        """
-        Clear settings for a given collector or all collectors at once
-        """
-        query = 'DELETE FROM %s'
-        if collectorname is not None:
-            query += 'WHERE collector=?'
-            self.cursor.execute(query % self.TABLE_NAME, collectorname)
-        else:
-            self.cursor.execute(query % self.TABLE_NAME)
-        self.db.conn.commit()
 
 
 class BaseDBManager(object):
@@ -284,7 +209,5 @@ class DBManager(BaseDBManager):
         super(DBManager, self).__init__(database)
         # Initialize configuration data
         self.config = ConfigValues(self)
-        # Session settings initialization
-        self.sessionsettings = SessionSettings(self)
         # Profiles
         self.profiles = ProfilesData(self)

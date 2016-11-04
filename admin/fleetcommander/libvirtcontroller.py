@@ -167,6 +167,19 @@ class LibVirtController(object):
             else:
                 raise LibVirtControllerException('Can not obtain SPICE URI for virtual session')
 
+    def _add_spice_port(self, parent, name, alias=None):
+        channel = ET.SubElement(parent, 'channel')
+        channel.set('type', 'spiceport')
+        source = ET.SubElement(channel, 'source')
+        source.set('channel', name)
+        target = ET.SubElement(channel, 'target')
+        target.set('type', 'virtio')
+        target.set('name', name)
+        target.set('state', 'connected')
+        if alias is not None:
+            aliaselem = ET.SubElement(channel, 'alias')
+            aliaselem.set('name', alias)
+
     def _generate_new_domain_xml(self, xmldata):
         """
         Generates new domain XML from given XML data
@@ -210,11 +223,7 @@ class LibVirtController(object):
         graphics = ET.SubElement(devs, 'graphics')
         graphics.set('type', 'spice')
         graphics.set('autoport', 'yes')
-        channel = ET.SubElement(devs, 'channel')
-        channel.set('type', 'pty')
-        target = ET.SubElement(channel, 'target')
-        target.set('type', 'virtio')
-        target.set('name', 'fleet-commander_%s-%s' % (self.admin_hostname, self.admin_port))
+        self._add_spice_port(devs, 'org.freedesktop.FleetCommander.0', 'fc0')
         return ET.tostring(root)
 
     def _open_ssh_tunnel(self, host, spice_port):
