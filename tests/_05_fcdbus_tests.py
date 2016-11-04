@@ -385,31 +385,6 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'There was no session started')
 
-    def test_14_get_submit_select_changes(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Configure hypervisor
-        self.configure_hypervisor(c)
-        # Start a session
-        c.session_start(self.TEMPLATE_UUID, 'host', '0')
-        # Check for empty changes
-        resp = c.get_changes()
-        self.assertEqual(resp, {})
-        # Add some changes to database
-        data = {
-            'key': '/foo/bar',
-            'schema': 'foo',
-            'value': True,
-            'signature': 'b'
-        }
-        c.submit_change('org.gnome.gsettings', data)
-        # Check submitted changes
-        resp = c.get_changes()
-        self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
-        # Select change for profile
-        resp = c.select_changes({'org.gnome.gsettings': [data['key']]})
-        self.assertTrue(resp['status'])
-
     def test_15_highlighted_apps(self):
         c = fcdbus.FleetCommanderDbusClient()
 
@@ -465,10 +440,10 @@ class TestDbusService(unittest.TestCase):
         c.session_start(self.TEMPLATE_UUID, 'host', '0')
 
         # Save empty session
-        resp = c.session_save(uid)
+        resp = c.session_save(uid, {})
         self.assertTrue(resp['status'])
 
-    def test_17_session_select_save(self):
+    def test_17_session_save(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -485,24 +460,23 @@ class TestDbusService(unittest.TestCase):
         gsettings = self.get_data_from_file(PROFILE_FILE)['settings']
         self.assertEqual(gsettings, {})
 
-        # Submit a change
-        change = {'key': '/foo/bar', 'schema': 'foo', 'value': True, 'signature': 'b'}
-        resp = c.submit_change('org.gnome.gsettings', change)
-        self.assertTrue(resp['status'])
-
-        # Select change
-        resp = c.select_changes({'org.gnome.gsettings': ['/foo/bar']})
-        self.assertTrue(resp['status'])
-
         # Save session
-        resp = c.session_save(uid)
+        # TODO: Settings for session saving
+        settings = {
+            'org.gnome.gsettings': [{
+                'value': True,
+                'key': '/foo/bar',
+                'signature': 'b'
+            }]
+        }
+        resp = c.session_save(uid, settings)
         self.assertTrue(resp['status'])
 
-        gsettings = self.get_data_from_file(PROFILE_FILE)['settings']['org.gnome.gsettings']
+        gsettings = self.get_data_from_file(
+            PROFILE_FILE)['settings']['org.gnome.gsettings']
         self.assertEqual(len(gsettings), 1)
         self.assertEqual(gsettings[0]['value'], True)
         self.assertEqual(gsettings[0]['signature'], 'b')
-
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
     def test_18_get_profiles(self):
@@ -560,38 +534,6 @@ class TestDbusService(unittest.TestCase):
             'users': ['user1', 'user2', 'user3'],
             'groups': ['group1', 'group2']
         })
-
-    def test_21_changes_listener(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Configure hypervisor
-        self.configure_hypervisor(c)
-        # Start a session
-        c.session_start(self.TEMPLATE_UUID, 'host', '0')
-        # Check for empty changes
-        resp = c.get_changes()
-        self.assertEqual(resp, {})
-
-        # Obtain change listener port
-        port = c.get_change_listener_port()
-
-        # Submit changes via changes listener
-        data = {
-            'key': '/foo/bar',
-            'schema': 'foo',
-            'value': True,
-            'signature': 'b'
-        }
-        jsondata = json.dumps(data)
-        req = urllib2.Request('http://localhost:%s/changes/submit/org.gnome.gsettings' % port, jsondata, {'Content-Type': 'application/json', 'Content-Length': len(jsondata)})
-        f = urllib2.urlopen(req)
-        response = f.read()
-        f.close()
-        self.assertEqual(response, json.dumps({'status': 'ok'}))
-
-        # Check submitted changes
-        resp = c.get_changes()
-        self.assertEqual(resp, {u'org.gnome.gsettings': [[data['key'], data['value']]]})
 
     def test_22_clientdata_serving(self):
         c = fcdbus.FleetCommanderDbusClient()
