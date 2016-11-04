@@ -47,6 +47,15 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
+  this.HeartBeat = function(cb, errcb) {
+    self._proxy.HeartBeat().done(
+      function(resp) {
+        cb(resp);
+      }
+    ).fail(errorhandler);
+  }
+
+
   // Hypervisor configuration methods
   this.GetHypervisorConfig = function(cb, errcb) {
     self._proxy.GetHypervisorConfig().done(
@@ -179,8 +188,8 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
-  this.SessionSave = function(uid, cb, errcb) {
-    self._proxy.SessionSave(uid).done(
+  this.SessionSave = function(uid, changesets, cb, errcb) {
+    self._proxy.SessionSave(uid, JSON.stringify(changesets)).done(
       function(resp) {
         cb(JSON.parse(resp));
       }
@@ -192,23 +201,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     self._proxy.IsSessionActive(uid).done(
       function(resp) {
         cb(resp);
-      }
-    ).fail(errorhandler);
-  }
-
-  // Changes methods
-  this.GetChanges = function(cb, errcb) {
-    self._proxy.GetChanges().done(
-      function(resp) {
-        cb(JSON.parse(resp));
-      }
-    ).fail(errorhandler);
-  }
-
-  this.SelectChanges = function(data, cb, errcb) {
-    self._proxy.SelectChanges(JSON.stringify(data)).done(
-      function(resp) {
-        cb(JSON.parse(resp));
       }
     ).fail(errorhandler);
   }

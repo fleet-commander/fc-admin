@@ -41,7 +41,7 @@ import sshcontroller
 import libvirtcontroller
 from database import DBManager
 from utils import get_ip_address, get_data_from_file
-import collectors
+import mergers
 from goa import GOAProvidersLoader
 import profiles
 
@@ -83,6 +83,9 @@ class FleetCommanderDbusClient(object):
 
     def get_initial_values(self):
         return self.iface.GetInitialValues()
+
+    def heartbeat(self):
+        return self.iface.HeartBeat()
 
     def check_needs_configuration(self):
         return self.iface.CheckNeedsConfiguration()
@@ -128,15 +131,6 @@ class FleetCommanderDbusClient(object):
     def profile_props(self, data, uid):
         return json.loads(self.iface.ProfileProps(json.dumps(data), uid))
 
-    def submit_change(self, name, change):
-        return json.loads(self.iface.SubmitChange(name, json.dumps(change)))
-
-    def get_changes(self):
-        return json.loads(self.iface.GetChanges())
-
-    def select_changes(self, data):
-        return json.loads(self.iface.SelectChanges(json.dumps(data)))
-
     def highlighted_apps(self, data, uid):
         return json.loads(self.iface.HighlightedApps(json.dumps(data), uid))
 
@@ -151,8 +145,8 @@ class FleetCommanderDbusClient(object):
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
 
-    def session_save(self, uid):
-        return json.loads(self.iface.SessionSave(uid))
+    def session_save(self, uid, data):
+        return json.loads(self.iface.SessionSave(uid, json.dumps(data)))
 
     def is_session_active(self, uuid=''):
         return self.iface.IsSessionActive(uuid)
@@ -214,14 +208,14 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Initialize database
         self.db = DBManager(args['database_path'])
 
-        # Initialize collectors
-        self.collectors_by_name = {
+        # Initialize change mergers
+        self.changemergers = {
             'org.gnome.gsettings':
-                collectors.GSettingsCollector(self.db),
+                mergers.GSettingsChangeMerger(),
             'org.libreoffice.registry':
-                collectors.LibreOfficeCollector(self.db),
+                mergers.LibreOfficeChangeMerger(),
             'org.freedesktop.NetworkManager':
-                collectors.NetworkManagerCollector(self.db),
+                mergers.NetworkManagerChangeMerger(),
         }
 
         # Initialize SSH controller
@@ -261,9 +255,6 @@ class FleetCommanderDbusService(dbus.service.Object):
             sys.exit(1)
 
         self.webservice.add_handler(
-            '/changes/submit/', self.changes_listener_callback)
-
-        self.webservice.add_handler(
             self.client_data_url, self.client_data_callback)
 
         # Start session checking
@@ -271,42 +262,6 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         # Enter main loop
         self._loop.run()
-
-    def changes_listener_callback(self, server, message, path, query, client,
-                                  **kwargs):
-
-        logging.debug('[%s] changes_listener: Request at %s' % (message.method, path))
-        # Get changes name
-        pathsplit = path[1:].split('/')
-        if len(pathsplit) == 3:
-            name = pathsplit[2]
-            # Get data in message
-            try:
-                logging.debug('Data received: %s' % message.request_body.data)
-                if name in self.collectors_by_name:
-                    self.collectors_by_name[name].handle_change(json.loads(message.request_body.data))
-                    response = {'status': 'ok'}
-                    status_code = Soup.Status.OK
-                else:
-                    logging.error(
-                        'Change submitted for unknown settings name: %s' % name)
-                    response = {'status': 'unknown settings name'}
-                    status_code = 520
-            except Exception, e:
-                logging.error(
-                    'Error saving changes for setting name %s: %s' % (name, e))
-                response = {'status': 'error saving changes'}
-                status_code = 520
-        else:
-            logging.error('Change submited with no settings key name')
-            response = {'status': 'error no name'}
-            status_code = 520
-
-        message.set_status(status_code)
-        message.set_response(
-            'application/json',
-            Soup.MemoryUse(Soup.MemoryUse.COPY),
-            json.dumps(response))
 
     def client_data_callback(self, server, message, path, query, client,
                              **kwargs):
@@ -401,7 +356,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         return True, None
 
     def start_session_checking(self):
-        self._last_changes_request = time.time()
+        self._last_heartbeat = time.time()
         # Add callback for temporary sessions check
         self.current_session_checking = GObject.timeout_add(
             1000, self.check_running_sessions)
@@ -421,7 +376,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Checks currently running sessions and destroy temporary ones on timeout
         """
-        time_passed = time.time() - self._last_changes_request
+        time_passed = time.time() - self._last_heartbeat
         logging.debug(
             'Checking running sessions. Time passed: %s' % time_passed)
         if time_passed > self.tmp_session_destroy_timeout:
@@ -448,7 +403,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                                 (domain_uuid, e))
             logging.debug(
                 'Resetting timer for session check')
-            self._last_changes_request = time.time()
+            self._last_heartbeat = time.time()
         return True
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
@@ -461,6 +416,15 @@ class FleetCommanderDbusService(dbus.service.Object):
             }
         }
         return json.dumps(state)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='b')
+    def HeartBeat(self):
+        # Update last heartbeat time
+        self._last_heartbeat = time.time()
+        logging.debug(
+            'Heartbeat: %s' % self._last_heartbeat)
+        return True
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
@@ -718,59 +682,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='', out_signature='s')
-    def GetChanges(self):
-        # Update last changes request time
-        self._last_changes_request = time.time()
-        logging.debug(
-            'Changes being requested: %s' % self._last_changes_request)
-
-        response = {}
-
-        for namespace, collector in self.collectors_by_name.items():
-            if not collector:
-                continue
-
-            changes = collector.dump_changes()
-            if not changes:
-                continue
-
-            response[namespace] = changes
-
-        return json.dumps(response)
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='s')
-    def SubmitChange(self, name, change):
-        if name in self.collectors_by_name:
-            self.collectors_by_name[name].handle_change(json.loads(change))
-            return json.dumps({'status': True})
-        else:
-            return json.dumps({
-                'status': False,
-                'error': 'Namespace %s not supported or session not started' % name})
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='s', out_signature='s')
-    def SelectChanges(self, data):
-        changes = json.loads(data)
-
-        if self.db.config.get('port', None) is None:
-            return json.dumps({
-                'status': False, 'error': 'session was not started'})
-
-        for key in changes:
-            selection = changes[key]
-
-            if not isinstance(selection, list):
-                return json.dumps({
-                    'status': False, 'error': 'bad JSON format for %s' % key})
-
-            self.collectors_by_name[key].remember_selected(selection)
-
-        return json.dumps({'status': True})
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
     def HighlightedApps(self, payload, uid):
 
@@ -845,8 +756,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'error': 'Session already started'
             })
 
-        self.db.sessionsettings.clear_settings()
-
         hypervisor = self.get_hypervisor_config()
 
         # By default the admin port will be the one we use to listen changes
@@ -882,23 +791,60 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({'status': False, 'error': msg})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='s', out_signature='s')
-    def SessionSave(self, uid):
+                         in_signature='ss', out_signature='s')
+    def SessionSave(self, uid, data):
+        logging.debug('FC: Saving session')
         try:
             profile = self.profiles.get_profile(uid)
         except:
             return json.dumps({
                 'status': False,
-                'error': 'Could not parse profile %s' % uid})
+                'error': 'Could not parse profile %s' % uid
+            })
 
-        for name, collector in self.collectors_by_name.items():
-            if name not in profile['settings']:
-                profile['settings'][name] = collector.get_settings()
+        logging.debug('FC: Loaded profile')
+
+        # Handle changesets
+        try:
+            changesets = json.loads(data)
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Could not parse changesets: %s' % data
+            })
+
+        logging.debug('FC: Changesets loaded: %s' % changesets)
+
+        if not isinstance(changesets, dict):
+            logging.debug('FC: Invalid changesets data')
+            return json.dumps({
+                'status': False,
+                'error': 'Changesets should be a namespace/changes lists dict'
+            })
+
+        # Save changes
+        for ns, changeset in changesets.items():
+            logging.debug('FC: Processing %s changeset: %s' % (ns, changeset))
+            if not isinstance(changeset, list):
+                logging.debug('FC: Invalid changeset: %s' % ns)
+                return json.dumps({
+                    'status': False,
+                    'error': 'Changesets should be a change list'
+                })
+
+            logging.debug('FC: Adding changes to profile')
+            if ns not in profile['settings']:
+                logging.debug('FC: Adding new changeset into profile')
+                profile['settings'][ns] = changeset
             else:
-                profile['settings'][name] = collector.merge_settings(
-                    profile['settings'][name])
+                logging.debug('FC: Merging changeset into profile')
+                profile['settings'][ns] = self.changemergers[ns].merge(
+                    profile['settings'][ns],
+                    changeset)
 
+        logging.debug('FC: Saving profile')
         self.profiles.save_profile(profile)
+        logging.debug('FC: Saved profile')
 
         return json.dumps({'status': True})
 
