@@ -1,7 +1,7 @@
 fc_admin_pydir = ${fcpythondir}/fleetcommander
 fc_admin_py_SCRIPTS = \
 	fleetcommander/__init__.py \
-	fleetcommander/collectors.py \
+	fleetcommander/mergers.py \
 	fleetcommander/database.py \
 	fleetcommander/fcdbus.py \
 	fleetcommander/goa.py \
