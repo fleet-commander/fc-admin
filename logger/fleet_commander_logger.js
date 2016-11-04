@@ -24,7 +24,6 @@ const System = imports.system;
 
 const GLib = imports.gi.GLib;
 const Gio  = imports.gi.Gio;
-const Soup = imports.gi.Soup;
 const Json = imports.gi.Json;
 
 let NM   = imports.gi.NM;
@@ -42,6 +41,7 @@ const ml = imports.mainloop;
 //Global settings
 var _debug = false;
 var _use_devfile = true;
+var _spiceport_path = DEV_PATH + 'org.freedesktop.FleetCommander.0'
 
 function debug (msg) {
   if (!_debug)
@@ -55,85 +55,6 @@ function hasSuffix (haystack, needle) {
 
 function hasPrefix (haystack, needle) {
   return 0 == haystack.indexOf(needle);
-}
-
-function get_options_from_devfile () {
-  let dev = Gio.file_new_for_path (DEV_PATH);
-  let options = {};
-
-  if (dev.query_exists (null) == false) {
-    printerr ("No file found in " + DEV_PATH);
-    return null;
-  }
-
-  let enumerator = dev.enumerate_children ("standard::name", Gio.FileQueryInfoFlags.NONE, null);
-  for (let info = enumerator.next_file (null); info != null; info = enumerator.next_file (null)) {
-    let name = info.get_name ();
-    if (hasPrefix(info.get_name (), DEV_PREFIX)) {
-      let hostport = name.slice (DEV_PREFIX.length, name.length);
-
-      let lastdash = hostport.lastIndexOf ("-");
-      if (lastdash == -1) {
-        printerr (name + " file does not have '-' port separator");
-        continue;
-      }
-
-      let host = hostport.slice (0, lastdash);
-      let portstr = hostport.slice (lastdash + 1, hostport.length);
-
-      let port = parseInt(portstr);
-
-      if (port.toString() !=  portstr) {
-        printerr ("Could not parse admin connection port string " + portstr + " as integer");
-        continue;
-      }
-
-      debug ("Found server file in " + DEV_PATH + "fleet-commander_" + host + "-" + port);
-
-      if (host == "localhost" || host == "127.0.0.1") {
-        let route = null;
-        while (route == null) {
-          route = get_default_route ();
-          GLib.usleep (2000000);
-        }
-        if (route) {
-          debug ("Found " + host + " as admin host, using default route");
-          host = route;
-        }
-      }
-      options['admin_server_host'] = host;
-      options['admin_server_port'] = port;
-
-      return options;
-    }
-  }
-  debug ("No fleet commander file in " + DEV_PATH + " to find host and port");
-  return null;
-}
-
-function get_default_route () {
-  let route = null;
-  let ipr = Gio.Subprocess.new (["ip", "-4", "route", "list", "0/0"],
-                                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
-
-  let pipe = ipr.get_stdout_pipe ();
-  ipr.wait (null);
-  let input = Gio.DataInputStream.new (pipe);
-  let stdout = input.read_until ("\0", null)[0];
-
-  if (ipr.get_exit_status () != 0) {
-    printerr ("There was an error calling ip to get the default route");
-  } else if (stdout == null) {
-    printerr ("There were no default routes, waiting for a default route to be available");
-  } else {
-
-    let routev = stdout.trim ().split (" ");
-    if (routev.length > 2) {
-      route = routev[2];
-    }
-  }
-
-  return route;
 }
 
 function parse_args () {
@@ -198,56 +119,40 @@ ScreenSaverInhibitor.prototype.uninhibit = function () {
     this.cookie = null;
 }
 
-// ConnectionManager - This class manages the HTTP connection to the admin server
-var ConnectionManager = function (host, port) {
-    this.uri = new Soup.URI("http://" + host + ":" + port);
-    this.session = new Soup.Session();
-    this.queue = [];
-    this.timeout = 0;
+
+// SpicePortManager - This class manages the SpicePort connection to the admin server
+var SpicePortManager = function(path) {
+  this.queue = [];
+  this.timeout = 0;
+  this.path = path;
+  debug("SPICE Port: Using '" + this.path + "' for submitting changes")
+  this.file = Gio.file_new_for_path(this.path);
+  this.stream = this.file.append_to(Gio.FileCreateFlags.NONE, null);
 }
 
-ConnectionManager.prototype._perform_submits = function () {
+SpicePortManager.prototype._perform_submits = function () {
     if (this.queue.length < 1)
         return false;
 
-    for (let i = 0; i < this.queue.length ; i++) {
-        debug("Submitting change " + this.queue[i].ns + ":")
-        debug(this.queue[i].data);
+    debug("SPICE Port: Performing changes submission");
+    while (this.queue.length > 0) {
+      let elem = this.queue.splice(0, 1)[0];
+      debug("SPICE Port: Submitting change " + elem.ns + ":");
+      debug(elem.data);
+      debug("SPICE Port: Remaining elements: " + this.queue.length);
 
-        let payload = this.queue[i].data;
-        let ns      = this.queue[i].ns;
+      let payload = JSON.stringify(elem);
 
-        this.uri.set_path(SUBMIT_PATH+ns);
-        let msg = Soup.Message.new_from_uri("POST", this.uri);
-        msg.set_request('application/json', Soup.MemoryUse.COPY, payload, payload.length);
-
-        this.session.queue_message(msg, function (s, m) {
-            debug("Response from server: returned code " + m.status_code);
-            switch (m.status_code) {
-                case 200:
-                    debug ("Change submitted " + ns + " " + payload);
-                    break;
-                case 403:
-                    printerr("ERROR: invalid change namespace " + ns);
-                    printerr(m.response_body.data);
-                    break;
-                default:
-                    printerr("ERROR: There was an error trying to contact the server");
-                    return;
-            }
-
-            //Remove this item, if the queue is empty remove timeout
-            this.queue = this.queue.splice(i, 1);
-            if (this.queue.length < 1 && this.timeout > 0) {
-                GLib.source_remove(this.timeout);
-                this.timeout = 0;
-            }
-        }.bind(this));
+      // Write change to port
+      this.stream.write(payload, null);
     }
+    GLib.source_remove(this.timeout);
+    this.timeout = 0;
+
     return true;
 }
 
-ConnectionManager.prototype.submit_change = function (namespace, data) {
+SpicePortManager.prototype.submit_change = function (namespace, data) {
     debug ("Submitting changeset as namespace " + namespace)
     debug (">>> " + data);
 
@@ -261,18 +166,11 @@ ConnectionManager.prototype.submit_change = function (namespace, data) {
                                          this._perform_submits.bind(this));
 }
 
-ConnectionManager.prototype.give_up = function () {
+SpicePortManager.prototype.give_up = function () {
+  this._perform_submits()
   this.queue = [];
-  if (this.timeout == 0)
-    return;
-
-  GLib.source_remove(this.timeout);
-  this.timeout = 0;
 }
 
-/* TODO: This function will commit batches of changes in a single request */
-ConnectionManager.prototype.finish_changes = function () {
-}
 
 // Generic
 var FileMonitor = function(path, callback) {
@@ -447,7 +345,6 @@ NMLogger.prototype.submit_connection = function (conn) {
     }
 
     this.connmgr.submit_change ("org.freedesktop.NetworkManager", JSON.stringify (payload));
-    this.connmgr.finish_changes();
 }
 
 //This is a workaround for the broken deep_unpack behaviour
@@ -585,7 +482,6 @@ GSettingsLogger.prototype._writer_notify_cb = function (connection, sender_name,
   debug(">>> Schema not known yet");
   let schema_name = this._guess_schema(path, keys);
   if (schema_name == null) {
-    this.connmgr.finish_changes();
     return;
   }
 
@@ -645,7 +541,6 @@ GSettingsLogger.prototype._libreoffice_change = function(path, keys) {
     let data = generator.to_data(null)[0];
 
     this.connmgr.submit_change ("org.libreoffice.registry", data);
-    this.connmgr.finish_changes ();
   }.bind(this));
 }
 
@@ -673,7 +568,6 @@ GSettingsLogger.prototype._settings_changed = function(schema, settings, keys) {
 
         this.connmgr.submit_change("org.gnome.gsettings", data);
     }.bind(this));
-    this.connmgr.finish_changes();
 }
 
 /* In this function we try to guess the schema by trying to find a
@@ -752,20 +646,12 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 
 if (GLib.getenv('FC_TESTING') == null) {
   parse_args ();
-  let options = null;
-  if (_use_devfile) {
-    options = get_options_from_devfile (options);
-    if (options == null) {
-      System.exit(0);
-    }
-  } else {
-    options = {admin_server_port: 9999, admin_server_host: 'localhost'};
+  if (!_use_devfile) {
+    _spiceport_path = '/tmp/org.freedesktop.FleetCommander.0';
   }
 
-  debug ("admin_server_host: " + options['admin_server_host'] + " - admin_server_port: " + options['admin_server_port']);
-
   let inhibitor = new ScreenSaverInhibitor();
-  let connmgr = new ConnectionManager(options['admin_server_host'], options['admin_server_port']);
+  let connmgr = new SpicePortManager(_spiceport_path);
   let gsetlogger = new GSettingsLogger(connmgr);
   let nmlogger = new NMLogger (connmgr);
 
