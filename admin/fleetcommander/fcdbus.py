@@ -637,8 +637,13 @@ class FleetCommanderDbusService(dbus.service.Object):
             'users': filter(
                 None, [u.strip() for u in data['users'].split(",")]),
         }
-
-        uid = self.profiles.save_profile(profile)
+    
+        try:
+            uid = self.profiles.save_profile(profile)
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Could not write new profile'})
 
         return json.dumps({'status': True, 'uid': uid})
 
@@ -700,7 +705,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         except:
             return json.dumps({
                 'status': False,
-                'error': 'Could not write profile'})
+                'error': 'Could not write profile %s' % uid})
         
         return json.dumps({'status': True})
 
