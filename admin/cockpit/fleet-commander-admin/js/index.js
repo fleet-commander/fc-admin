@@ -23,7 +23,12 @@ var _ = cockpit.gettext
 var fc = null;
 var currentuid = null;
 var currentprofile = null;
-
+var state = {
+  debuglevel: 'info',
+  defaults: {
+    profilepriority : 50
+  }
+};
 /*******************************************************************************
  * Hypervisor configuration
  ******************************************************************************/
@@ -226,6 +231,7 @@ function showAddProfile() {
   $('#profile-desc').val('');
   $('#profile-users').val('');
   $('#profile-groups').val('');
+  $('#profile-priority').val(state.defaults.profilepriority);
   $('#add-profile-modal').modal('show');
 }
 
@@ -237,11 +243,17 @@ function saveNewProfile() {
     return
   }
 
+  if (!$('#profile-priority').val()) {
+    addFormError('profile-priority', _('Priority is required'));
+    return
+  }
+
   var data = {
     'profile-name': $('#profile-name').val(),
     'profile-desc': $('#profile-desc').val(),
     'users': $('#profile-users').val(),
     'groups': $('#profile-groups').val(),
+    'priority': $('#profile-priority').val(),
   }
 
   // TODO: Show spinner
@@ -261,6 +273,12 @@ function editProfile(uid) {
     if (resp.status) {
       $('#edit-profile-name').val(resp.data.name);
       $('#edit-profile-desc').val(resp.data.description || '');
+
+      // for backwards compatibility, older profiles might not have priority
+      if (typeof resp.data.priority === "undefined") 
+        $('#edit-profile-priority').val(state.defaults.profilepriority);
+      else
+        $('#edit-profile-priority').val(resp.data.priority);
 
       currentuid = uid;
       currentprofile = resp.data
@@ -290,11 +308,17 @@ function saveExistingProfile() {
     return
   }
 
+  if (!$('#edit-profile-priority').val()) {
+    addFormError('edit-profile-priority', 'Profile priority is required');
+    return
+  }
+
   var data = {
     'profile-name': $('#edit-profile-name').val(),
     'profile-desc': $('#edit-profile-desc').val(),
     'users': $('#edit-profile-users').val(),
     'groups': $('#edit-profile-groups').val(),
+    'priority': $('#edit-profile-priority').val(),
   }
 
   //TODO: show spinner/progress indicator
@@ -531,8 +555,11 @@ $(document).ready (function () {
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
 
-    fc.GetDebugLevel(function(resp) {
-      setDebugLevel(resp);
+    fc.GetInitialValues(function(resp) {
+      state.debuglevel = resp.debuglevel
+      state.defaults = resp.defaults
+
+      setDebugLevel(resp.debugLevel);
     });
 
     $('#main-container').show();

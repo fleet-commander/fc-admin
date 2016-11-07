@@ -62,7 +62,8 @@ class TestDbusService(unittest.TestCase):
         "profile-name": "foo",
         "profile-desc": "bar",
         "users":        "user1,user2,user3",
-        "groups":       "group1,group2"
+        "groups":       "group1,group2",
+        "priority":      51, 
     }
 
     MAX_DBUS_CHECKS = 10
@@ -154,9 +155,17 @@ class TestDbusService(unittest.TestCase):
             'keys': 'myhost ssh-rsa KEY'
         })
 
-    def test_00_get_debug_level(self):
+    def test_00_get_initial_values(self):
         c = fcdbus.FleetCommanderDbusClient()
-        self.assertEqual(c.get_debug_level(), 'debug')
+
+        state = {
+            'debuglevel' : "debug",
+            'defaults' : {
+                'profilepriority' : 50,
+            }
+        }
+
+        self.assertEqual(json.loads(c.get_initial_values()), state)
 
     def test_01_get_public_key(self):
         c = fcdbus.FleetCommanderDbusClient()
@@ -541,6 +550,7 @@ class TestDbusService(unittest.TestCase):
             'description': 'bar',
             'users': ['user1', 'user2', 'user3'],
             'groups': ['group1', 'group2'],
+            'priority': 51,
 
         })
 
@@ -657,7 +667,8 @@ class TestDbusService(unittest.TestCase):
                 'name': 'foo',
                 'uid': uid,
                 'description': 'bar',
-                'settings': {}
+                'settings': {},
+                'priority': 51,
             }
         )
 
