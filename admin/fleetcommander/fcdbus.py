@@ -695,8 +695,13 @@ class FleetCommanderDbusService(dbus.service.Object):
             groups = filter(None, groups)
             profile['groups'] = groups
 
-        self.profiles.save_profile(profile)
-
+        try:
+            self.profiles.save_profile(profile)
+        except:
+            return json.dumps({
+                'status': False,
+                'error': 'Could not write profile'})
+        
         return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
