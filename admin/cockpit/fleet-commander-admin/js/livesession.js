@@ -207,8 +207,11 @@ $(document).ready (function () {
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
 
-    fc.GetDebugLevel(function(resp) {
-      setDebugLevel(resp);
+    fc.GetInitialValues(function(resp) {
+      state.debuglevel = resp.debuglevel
+      state.defaults = resp.defaults
+
+      setDebugLevel(resp.debugLevel);
     });
 
     $('#main-container').show();
