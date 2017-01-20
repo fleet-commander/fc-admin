@@ -1,8 +1,9 @@
 TESTS_ENVIRONMENT = export PATH=$(abs_top_srcdir)/tests/tools:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export GJS_PATH=$(abs_top_srcdir)/logger; export FC_TESTING=true;
-TESTS = 00_database.py 00_profilemanager.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_nm.js 04_libvirt_controller.py 05_fcdbus.sh
+TESTS = 00_database.py 00_freeipa.py 00_profilemanager.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_nm.js 04_libvirt_controller.py 05_fcdbus.sh
 
 EXTRA_DIST =                       \
 	$(TESTS)                         \
+	freeipamock.py                   \
 	libvirtmock.py                   \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.js         \
