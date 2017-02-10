@@ -37,6 +37,12 @@ class FreeIPAErrors(object):
     class NotFound(Exception):
         pass
 
+    class EmptyModlist(Exception):
+        pass
+
+    class DuplicateEntry(Exception):
+        pass
+
 
 class FreeIPARPCClient(object):
 
@@ -100,57 +106,84 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofile_mod(self, uid, newuid):
-        if uid in self.data.profiles:
-            self.data.profiles[newuid] = {
-                u'cn': (unicode(newuid),),
+    def deskprofile_add(self, name, description, ipadeskdata):
+        if name in self.data.profiles:
+            raise FreeIPAErrors.DuplicateEntry()
+        else:
+            self.data.profiles[name] = {
+                u'cn': (unicode(name),),
+                u'description': (unicode(description),),
+                u'ipadeskdata': (unicode(ipadeskdata),),
             }
-            del(self.data.profiles[uid])
+
+    def deskprofile_mod(self, name, description, ipadeskdata):
+        if name in self.data.profiles:
+            self.data.profiles[name]['description'] = (unicode(description),)
+            self.data.profiles[name]['ipadeskdata'] = (unicode(ipadeskdata),)
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofile_add(self, uid, description, ipadeskdata):
-        self.data.profiles[uid] = {
-            u'cn': (unicode(uid),),
-            u'description': (unicode(description),),
-            u'ipadeskdata': (unicode(ipadeskdata),),
-        }
-
-    def deskprofilerule_add(self, uid,
+    def deskprofilerule_add(self, name,
                             ipadeskprofiletarget, ipadeskprofilepriority):
-        self.data.profilerules[uid] = {
-            'priority': ipadeskprofilepriority,
-            'users': [],
-            'groups': [],
-            'hosts': [],
-            'hostgroups': [],
-        }
+        if name in self.data.profilerules:
+            raise FreeIPAErrors.DuplicateEntry()
+        else:
+            self.data.profilerules[name] = {
+                'priority': ipadeskprofilepriority,
+                'users': [],
+                'groups': [],
+                'hosts': [],
+                'hostgroups': [],
+            }
 
-    def deskprofilerule_add_user(self, uid, user, group):
-        if uid in self.data.profilerules:
-            self.data.profilerules[uid]['users'].extend(user)
-            self.data.profilerules[uid]['users'] = list(set(self.data.profilerules[uid]['users']))
-            self.data.profilerules[uid]['groups'].extend(group)
-            self.data.profilerules[uid]['groups'] = list(set(self.data.profilerules[uid]['groups']))
+    def deskprofilerule_add_user(self, name, user, group):
+        if name in self.data.profilerules:
+            self.data.profilerules[name]['users'].extend(user)
+            self.data.profilerules[name]['users'] = list(
+                set(self.data.profilerules[name]['users']))
+            self.data.profilerules[name]['groups'].extend(group)
+            self.data.profilerules[name]['groups'] = list(
+                set(self.data.profilerules[name]['groups']))
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofilerule_add_host(self, uid, host, hostgroup):
-        if uid in self.data.profilerules:
-            self.data.profilerules[uid]['hosts'].extend(host)
-            self.data.profilerules[uid]['hosts'] = list(set(self.data.profilerules[uid]['hosts']))
-            self.data.profilerules[uid]['hostgroups'].extend(hostgroup)
-            self.data.profilerules[uid]['hostgroups'] = list(set(self.data.profilerules[uid]['hostgroups']))
+    def deskprofilerule_add_host(self, name, host, hostgroup):
+        if name in self.data.profilerules:
+            self.data.profilerules[name]['hosts'].extend(host)
+            self.data.profilerules[name]['hosts'] = list(
+                set(self.data.profilerules[name]['hosts']))
+            self.data.profilerules[name]['hostgroups'].extend(hostgroup)
+            self.data.profilerules[name]['hostgroups'] = list(
+                set(self.data.profilerules[name]['hostgroups']))
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofile_del(self, uid):
-        if uid in self.data.profiles:
-            del(self.data.profiles[uid])
+    def deskprofilerule_remove_user(self, name, user, group):
+        if name in self.data.profilerules:
+            users = set(self.data.profilerules[name]['users']) - set(user)
+            self.data.profilerules[name]['users'] = list(users)
+            groups = set(self.data.profilerules[name]['groups']) - set(group)
+            self.data.profilerules[name]['groups'] = list(groups)
+        else:
+            raise FreeIPAErrors.NotFound()
 
-    def deskprofilerule_del(self, uid):
-        if uid in self.data.profilerules:
-            del(self.data.profilerules[uid])
+    def deskprofilerule_remove_host(self, name, host, hostgroup):
+        if name in self.data.profilerules:
+            hosts = set(self.data.profilerules[name]['hosts']) - set(host)
+            self.data.profilerules[name]['hosts'] = list(hosts)
+            hostgroups = set(
+                self.data.profilerules[name]['hostgroups']) - set(hostgroup)
+            self.data.profilerules[name]['hostgroups'] = list(hostgroups)
+        else:
+            raise FreeIPAErrors.NotFound()
+
+    def deskprofile_del(self, name):
+        if name in self.data.profiles:
+            del(self.data.profiles[name])
+
+    def deskprofilerule_del(self, name):
+        if name in self.data.profilerules:
+            del(self.data.profilerules[name])
         else:
             raise FreeIPAErrors.NotFound()
 
@@ -164,23 +197,35 @@ class FreeIPACommand(object):
         }
         return res
 
-    def deskprofile_show(self, uid, all):
-        if uid in self.data.profiles:
-            return {'result': self.data.profiles[uid]}
+    def deskprofile_show(self, name, all):
+        if name in self.data.profiles:
+            return {'result': self.data.profiles[name]}
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofilerule_show(self, uid, all):
-        if uid in self.data.profilerules:
+    def deskprofilerule_show(self, name, all):
+        if name in self.data.profilerules:
             return {
                 'result': {
-                    'memberuser_user': sorted(self.data.profilerules[uid]['users']),
-                    'memberuser_group': sorted(self.data.profilerules[uid]['groups']),
-                    'memberhost_host': sorted(self.data.profilerules[uid]['hosts']),
-                    'memberhost_hostgroup': sorted(self.data.profilerules[uid]['hostgroups']),
-                    'ipadeskprofilepriority': (self.data.profilerules[uid]['priority'],),
+                    'memberuser_user': sorted(
+                        self.data.profilerules[name]['users']),
+                    'memberuser_group': sorted(
+                        self.data.profilerules[name]['groups']),
+                    'memberhost_host': sorted(
+                        self.data.profilerules[name]['hosts']),
+                    'memberhost_hostgroup': sorted(
+                        self.data.profilerules[name]['hostgroups']),
+                    'ipadeskprofilepriority': (
+                        self.data.profilerules[name]['priority'],),
                 }
             }
+        else:
+            raise FreeIPAErrors.NotFound()
+
+    def deskprofilerule_mod(self, name,
+                            ipadeskprofiletarget, ipadeskprofilepriority):
+        if name in self.data.profilerules:
+            self.data.profilerules[name]['priority'] = ipadeskprofilepriority
         else:
             raise FreeIPAErrors.NotFound()
 

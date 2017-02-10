@@ -81,7 +81,8 @@ class TestFreeIPA(unittest.TestCase):
     #     shutil.rmtree(self.test_directory)
 
     TEST_PROFILE = {
-        'uid': 'TEST_PROFILE_UID',
+        'uid': 'Test Profile',
+        #'name': 'Test Profile',
         'description': 'My test profile',
         'priority': 100,
         'settings': {
@@ -107,6 +108,50 @@ class TestFreeIPA(unittest.TestCase):
         u'ipadeskdata': (json.dumps(TEST_PROFILE['settings']),),
     }
 
+    SAVED_PROFILERULE_DATA = {
+        'priority': 100,
+        'users': ['admin', 'guest'],
+        'groups': ['admins', 'editors'],
+        'hosts': ['client1'],
+        'hostgroups': ['ipaservers'],
+    }
+
+    TEST_PROFILE_MOD = {
+        'uid': 'Test Profile',
+        #'name': 'Test Profile',
+        'description': 'Test profile modified',
+        'priority': 50,
+        'settings': {
+            'org.freedesktop.NetworkManager': [],
+            'org.gnome.gsettings': [
+                {
+                    'schema': 'org.gnome.desktop.notifications.application',
+                    'key': '/org/gnome/desktop/notifications/application/abrt-applet/application-id',
+                    'value': "'abrt-applet.desktop'",
+                    'signature': 's',
+                }
+            ],
+        },
+        'users': sorted(['admin', ]),
+        'groups': sorted(['admins', 'editors', ]),
+        'hosts': sorted(['client1', ]),
+        'hostgroups': sorted(['ipaservers', ]),
+    }
+
+    SAVED_PROFILE_DATA_MOD = {
+        u'cn': (TEST_PROFILE_MOD['uid'],),
+        u'description': (TEST_PROFILE_MOD['description'],),
+        u'ipadeskdata': (json.dumps(TEST_PROFILE_MOD['settings']),),
+    }
+
+    SAVED_PROFILERULE_DATA_MOD = {
+        'priority': 50,
+        'users': ['admin', ],
+        'groups': ['admins', 'editors'],
+        'hosts': ['client1'],
+        'hostgroups': ['ipaservers'],
+    }
+
     def setUp(self):
         self.ipa = freeipa.FreeIPAConnector()
         freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData()
@@ -117,70 +162,79 @@ class TestFreeIPA(unittest.TestCase):
         # Check inexistent user
         self.assertFalse(self.ipa.check_user_exists('fake'))
 
-    def test_02_check_user_exists(self):
-        # Check existent user
+    def test_02_check_group_exists(self):
+        # Check existent group
         self.assertTrue(self.ipa.check_group_exists('admins'))
-        # Check inexistent user
+        # Check inexistent group
         self.assertFalse(self.ipa.check_group_exists('fake'))
 
-    def test_03_check_user_exists(self):
-        # Check existent user
+    def test_03_check_host_exists(self):
+        # Check existent host
         self.assertTrue(self.ipa.check_host_exists('client1'))
-        # Check inexistent user
+        # Check inexistent host
         self.assertFalse(self.ipa.check_host_exists('fake'))
 
-    def test_04_check_user_exists(self):
-        # Check existent user
+    def test_04_check_hostgroup_exists(self):
+        # Check existent hostgroup
         self.assertTrue(self.ipa.check_hostgroup_exists('ipaservers'))
-        # Check inexistent user
+        # Check inexistent hostgroup
         self.assertFalse(self.ipa.check_hostgroup_exists('fake'))
 
-    def test_05_save_profile_basic(self):
-        # Save a profile
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
-        saved_data = self.SAVED_PROFILE_DATA.copy()
-        saved_data['cn'] = (uid,)
+    def test_05_create_profile(self):
+        uid = self.TEST_PROFILE['uid']
+        self.ipa.create_profile(self.TEST_PROFILE)
         self.assertEqual(
             freeipamock.FreeIPACommand.data.profiles,
-            {uid: saved_data})
+            {uid: self.SAVED_PROFILE_DATA})
+        # Check profile rule
+        self.assertEqual(
+            freeipamock.FreeIPACommand.data.profilerules,
+            {uid: self.SAVED_PROFILERULE_DATA})
+        with self.assertRaises(freeipa.errors.DuplicateEntry):
+            self.ipa.create_profile(self.TEST_PROFILE)
 
-    def test_06_del_profile(self):
+    def test_06_check_profile_exists(self):
+        uid = self.TEST_PROFILE['uid']
+        # Check non existent profile
+        self.assertFalse(self.ipa.check_profile_exists(uid))
+        # Add profile
+        self.ipa.create_profile(self.TEST_PROFILE)
+        # Check existent user
+        self.assertTrue(self.ipa.check_profile_exists(uid))
+
+    def test_07_update_profile(self):
+        uid = self.TEST_PROFILE['uid']
+        self.ipa.create_profile(self.TEST_PROFILE)
+        # Save a profile with same UID (overwrite)
+        self.ipa.update_profile(self.TEST_PROFILE_MOD)
+        self.assertEqual(
+            freeipamock.FreeIPACommand.data.profiles,
+            {uid: self.SAVED_PROFILE_DATA_MOD})
+        # Check profile rule
+        self.assertEqual(
+            freeipamock.FreeIPACommand.data.profilerules,
+            {uid: self.SAVED_PROFILERULE_DATA_MOD})
+
+    def test_08_del_profile(self):
         # Save a profile
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
+        self.ipa.create_profile(self.TEST_PROFILE)
         # Delete that profile
-        self.ipa.del_profile(uid)
+        self.ipa.del_profile(self.TEST_PROFILE['uid'])
         self.assertEqual(freeipamock.FreeIPACommand.data.profiles, {})
 
-    def test_07_save_profile_overwrite(self):
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
-        saved_data = self.SAVED_PROFILE_DATA.copy()
-        saved_data['cn'] = (uid,)
-        self.assertEqual(
-            freeipamock.FreeIPACommand.data.profiles,
-            {uid: saved_data})
-        # Save a profile with same UID (overwrite)
-        TEST_PROFILE_OVERWRITE = self.TEST_PROFILE.copy()
-        TEST_PROFILE_OVERWRITE['description'] = 'Test profile overwrite'
-        uid = self.ipa.save_profile(TEST_PROFILE_OVERWRITE)
-        saved_data = self.SAVED_PROFILE_DATA.copy()
-        saved_data['cn'] = (uid,)
-        saved_data['description'] = (u'Test profile overwrite',)
-        self.assertEqual(
-            freeipamock.FreeIPACommand.data.profiles,
-            {uid: saved_data})
-
-    def test_08_get_profiles(self):
+    def test_09_get_profiles(self):
         profiles = self.ipa.get_profiles()
         self.assertEqual(profiles, [])
-        result = self.ipa.save_profile(self.TEST_PROFILE)
+        # Add some profile
+        result = self.ipa.create_profile(self.TEST_PROFILE)
         profiles = self.ipa.get_profiles()
         self.assertEqual(
             profiles,
             [(self.TEST_PROFILE['uid'], self.TEST_PROFILE['description'])])
 
-    def test_09_get_profile_rule(self):
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
-        rule = self.ipa.get_profile_rule(uid)
+    def test_10_get_profile_rule(self):
+        self.ipa.create_profile(self.TEST_PROFILE)
+        rule = self.ipa.get_profile_rule(self.TEST_PROFILE['uid'])
         self.assertEqual(rule, {
             'memberuser_user': self.TEST_PROFILE['users'],
             'memberuser_group': self.TEST_PROFILE['groups'],
@@ -190,8 +244,8 @@ class TestFreeIPA(unittest.TestCase):
         })
 
     def test_10_get_profile_applies_from_rule(self):
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
-        rule = self.ipa.get_profile_rule(uid)
+        self.ipa.create_profile(self.TEST_PROFILE)
+        rule = self.ipa.get_profile_rule(self.TEST_PROFILE['uid'])
         applies = self.ipa.get_profile_applies_from_rule(rule)
         self.assertEqual(applies, {
             'users': self.TEST_PROFILE['users'],
@@ -201,7 +255,8 @@ class TestFreeIPA(unittest.TestCase):
         })
 
     def test_11_get_profile(self):
-        uid = self.ipa.save_profile(self.TEST_PROFILE)
+        uid = self.TEST_PROFILE['uid']
+        self.ipa.create_profile(self.TEST_PROFILE)
         profile = self.ipa.get_profile(uid)
         self.assertEqual(profile, self.TEST_PROFILE)
 
