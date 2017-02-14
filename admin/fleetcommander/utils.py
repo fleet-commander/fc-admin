@@ -88,9 +88,9 @@ def parse_config(config_file=None):
             config_file, e)
         sys.exit(1)
 
-    if config.has_section(constants.CONFIG_SECTION_NAME):
+    if config.has_section('admin'):
         config = config_to_dict(config)
-        section = config[constants.CONFIG_SECTION_NAME]
+        section = config['admin']
     else:
         section = {}
 
@@ -107,12 +107,6 @@ def parse_config(config_file=None):
             'webservice_port', constants.DEFAULT_WEBSERVICE_PORT),
         'data_dir': section.get(
             'data_dir', constants.DEFAULT_DATA_DIR),
-        'state_dir': section.get(
-            'state_dir', constants.DEFAULT_STATE_DIR),
-        'profiles_dir': section.get(
-            'profiles_dir', constants.DEFAULT_PROFILES_DIR),
-        'database_path': section.get(
-            'database_path', constants.DEFAULT_DATABASE_PATH),
         'client_data_url': section.get(
             'client_data_url', constants.DEFAULT_CLIENT_DATA_URL),
         'tmp_session_destroy_timeout': section.get(

@@ -173,20 +173,35 @@ class FleetCommanderDbusService(dbus.service.Object):
     LIST_DOMAINS_RETRIES = 2
     DNULL = open('/dev/null', 'w')
 
+    TEST_DIR = None
+
     def __init__(self, args):
         """
         Class initialization
         """
         super(FleetCommanderDbusService, self).__init__()
 
-        if 'profiles_dir' not in args:
-            args['profiles_dir'] = os.path.join(args['state_dir'], 'profiles')
-            if not os.path.exists(args['profiles_dir']):
-                os.mkdir(args['profiles_dir'])
+        self.home_dir = os.environ['HOME']
+
+        if self.TEST_DIR is not None:
+            self.state_dir = self.TEST_DIR
+        else:
+            # Set state dir to $HOME/.local/share/fleetcommander
+            self.state_dir = os.path.join(
+                self.home_dir, '.local/share/fleetcommander')
+
+        if not os.path.exists(self.state_dir):
+            os.makedirs(self.state_dir)
+
+        self.database_path = os.path.join(self.state_dir, 'fleetcommander.db')
+
+        # TODO: Remove unused variables from constants.py and config reading methods
+        # TODO: Remove this when using FreeIPA
+        self.profiles_dir = os.path.join(self.state_dir, 'profiles')
+        if not os.path.exists(self.profiles_dir):
+            os.makedirs(self.profiles_dir)
 
         self.args = args
-        self.state_dir = args['state_dir']
-
 
         self.log_level = args['log_level'].lower()
         loglevel = getattr(logging, args['log_level'].upper())
@@ -194,19 +209,18 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.default_profile_priority = args['default_profile_priority']
 
+        # TODO: Replace this with FreeIPAManager
         self.profiles = profiles.ProfileManager(
-            args['database_path'], args['profiles_dir'])
+            self.database_path, self.profiles_dir)
 
         # Load previous missing profiles data for retrocompatibility
         self.profiles.load_missing_profiles_data()
-
-        self.profiles_dir = args['profiles_dir']
 
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
 
         # Initialize database
-        self.db = DBManager(args['database_path'])
+        self.db = DBManager(self.database_path)
 
         # Initialize change mergers
         self.changemergers = {
@@ -220,8 +234,9 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         # Initialize SSH controller
         self.ssh = sshcontroller.SSHController()
-        self.known_hosts_file = '/root/.ssh/known_hosts'
+        self.known_hosts_file = os.path.join(self.home_dir, '.ssh/known_hosts')
 
+        # TODO: Remove HTTP service as it is not needed anymore
         self.webservice_host = args['webservice_host']
         self.webservice_port = int(args['webservice_port'])
         self.client_data_url = args['client_data_url']
@@ -268,7 +283,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         match = re.match(CLIENTDATA_REGEX, path[len(self.client_data_url):])
         if match:
             filename = match.groupdict()['filename']
-            filepath = os.path.join(self.args['profiles_dir'], filename)
+            filepath = os.path.join(self.profiles_dir, filename)
             logging.debug('Serving %s -> %s' % (filename, filepath))
             try:
                 response = get_data_from_file(filepath)

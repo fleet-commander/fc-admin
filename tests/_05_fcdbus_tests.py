@@ -63,7 +63,7 @@ class TestDbusService(unittest.TestCase):
         "profile-desc": "bar",
         "users":        "user1,user2,user3",
         "groups":       "group1,group2",
-        "priority":      51, 
+        "priority":      51,
         "hosts":      "testhost1,testhost2",
     }
 

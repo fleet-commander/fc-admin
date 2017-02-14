@@ -84,14 +84,15 @@ fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
 class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
     def __init__(self, test_directory):
+
+        self.TEST_DIR = test_directory
+
         args = {
             'log_level': 'debug',
             'log_format': '\n[%(levelname)s] %(asctime)-15s %(message)s',
             'webservice_host': 'localhost',
             'webservice_port': '0',
             'data_dir': test_directory,
-            'state_dir': test_directory,
-            'database_path': os.path.join(test_directory, 'database.db'),
             'client_data_url': '/',
             'tmp_session_destroy_timeout': 60,
             'default_profile_priority': 50,
