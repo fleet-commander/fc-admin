@@ -46,8 +46,7 @@ class MockLibVirtController(object):
         }
     ]
 
-    def __init__(self, data_path, username, hostname,
-                 mode, admin_hostname, admin_port):
+    def __init__(self, data_path, username, hostname, mode):
 
         self.data_dir = os.path.abspath(data_path)
         if not os.path.exists(self.data_dir):

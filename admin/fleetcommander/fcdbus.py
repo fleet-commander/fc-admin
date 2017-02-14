@@ -60,7 +60,7 @@ class FleetCommanderDbusClient(object):
     Fleet commander dbus client
     """
 
-    DEFAULT_BUS = dbus.SystemBus
+    DEFAULT_BUS = dbus.SessionBus
     CONNECTION_TIMEOUT = 2
 
     def __init__(self, bus=None):
@@ -137,10 +137,8 @@ class FleetCommanderDbusClient(object):
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
-    def session_start(self, domain_uuid, admin_host, admin_port):
-        # Admin port is ignored
-        return json.loads(
-            self.iface.SessionStart(domain_uuid, admin_host))
+    def session_start(self, domain_uuid):
+        return json.loads(self.iface.SessionStart(domain_uuid))
 
     def session_stop(self):
         return json.loads(self.iface.SessionStop())
@@ -236,11 +234,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.ssh = sshcontroller.SSHController()
         self.known_hosts_file = os.path.join(self.home_dir, '.ssh/known_hosts')
 
-        # TODO: Remove HTTP service as it is not needed anymore
-        self.webservice_host = args['webservice_host']
-        self.webservice_port = int(args['webservice_port'])
-        self.client_data_url = args['client_data_url']
-
         self.tmp_session_destroy_timeout = float(
             args['tmp_session_destroy_timeout'])
 
@@ -250,62 +243,22 @@ class FleetCommanderDbusService(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
         self._loop = GObject.MainLoop()
 
-        # Prepare changes listener
-        self.webservice = Soup.Server()
-        try:
-            address = Gio.InetSocketAddress.new_from_string(
-                get_ip_address(self.webservice_host),
-                self.webservice_port)
-            self.webservice.listen(address, 0)
-            if self.webservice_port == 0:
-                listeners = self.webservice.get_listeners()
-                inetsocket = listeners[0].get_local_address()
-                self.webservice_port = inetsocket.get_port()
-        except Exception, e:
-            logging.error('Error starting webservice: %s' % e)
-            sys.exit(1)
-
-        self.webservice.add_handler(
-            self.client_data_url, self.client_data_callback)
-
         # Start session checking
         self.start_session_checking()
 
         # Enter main loop
         self._loop.run()
 
-    def client_data_callback(self, server, message, path, query, client,
-                             **kwargs):
-        logging.debug('[%s] client data: Request at %s' % (message.method, path))
-        # Default response and status code
-        response = ''
-        status_code = 404
-        match = re.match(CLIENTDATA_REGEX, path[len(self.client_data_url):])
-        if match:
-            filename = match.groupdict()['filename']
-            filepath = os.path.join(self.profiles_dir, filename)
-            logging.debug('Serving %s -> %s' % (filename, filepath))
-            try:
-                response = get_data_from_file(filepath)
-                status_code = 200
-            except Exception, e:
-                logging.error('clientdata: %s' % e)
-        message.set_status(status_code)
-        message.set_response(
-            'application/json',
-            Soup.MemoryUse(Soup.MemoryUse.COPY),
-            response)
-
-    def get_libvirt_controller(self, admin_host=None, admin_port=None):
+    def get_libvirt_controller(self):
         """
         Get a libvirtcontroller instance
         """
         hypervisor = self.db.config['hypervisor']
-        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'], admin_host, admin_port)
+        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'])
 
     def get_public_key(self):
         # Initialize LibVirtController to create keypair if needed
-        ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system', None, None)
+        ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system')
         with open(ctrlr.public_key_file, 'r') as fd:
             public_key = fd.read().strip()
             fd.close()
@@ -758,8 +711,8 @@ class FleetCommanderDbusService(dbus.service.Object):
             })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='s')
-    def SessionStart(self, domain_uuid, admin_host):
+                         in_signature='s', out_signature='s')
+    def SessionStart(self, domain_uuid):
 
         if self.db.config.get('port', None) is not None:
             return json.dumps({
@@ -769,17 +722,8 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         hypervisor = self.get_hypervisor_config()
 
-        # By default the admin port will be the one we use to listen changes
-        admin_port = self.webservice_port
-        forcedadminhost = hypervisor.get('adminhost', None)
-        if forcedadminhost:
-            forcedadminhostdata = forcedadminhost.split(':')
-            if len(forcedadminhostdata) < 2:
-                forcedadminhostdata.append(admin_port)
-            admin_host, admin_port = forcedadminhostdata
-
         try:
-            new_uuid, port, tunnel_pid = self.get_libvirt_controller(admin_host, admin_port).session_start(domain_uuid)
+            new_uuid, port, tunnel_pid = self.get_libvirt_controller().session_start(domain_uuid)
         except Exception as e:
             logging.error(e)
             return json.dumps({

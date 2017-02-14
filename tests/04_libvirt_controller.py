@@ -45,8 +45,6 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         'username': 'testuser',
         'hostname': 'localhost',
         'mode': LIBVIRT_MODE,
-        'admin_hostname': 'localhost',
-        'admin_port': 8008,
     }
 
     def setUp(self):

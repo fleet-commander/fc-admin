@@ -48,7 +48,7 @@ class LibVirtController(object):
     MAX_DOMAIN_UNDEFINE_TRIES = 3
     DOMAIN_UNDEFINE_TRIES_DELAY = .1
 
-    def __init__(self, data_path, username, hostname, mode, admin_hostname, admin_port):
+    def __init__(self, data_path, username, hostname, mode):
         """
         Class initialization
         """
@@ -66,10 +66,6 @@ class LibVirtController(object):
             if len(hostport) == 1:
                 hostport.append(22)
             self.ssh_host, self.ssh_port = hostport
-
-        # Admin data
-        self.admin_hostname = admin_hostname
-        self.admin_port = admin_port
 
         # libvirt connection
         self.conn = None
