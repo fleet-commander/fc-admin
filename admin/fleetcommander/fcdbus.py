@@ -186,7 +186,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.args = args
         self.state_dir = args['state_dir']
-        
+
 
         self.log_level = args['log_level'].lower()
         loglevel = getattr(logging, args['log_level'].upper())
@@ -229,13 +229,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.tmp_session_destroy_timeout = float(
             args['tmp_session_destroy_timeout'])
 
-    def run(self, sessionbus=False):
+    def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        if not sessionbus:
-            bus = dbus.SystemBus()
-        else:
-            bus = dbus.SessionBus()
-        bus_name = dbus.service.BusName(DBUS_BUS_NAME, bus)
+        bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
         self._loop = GObject.MainLoop()
 
@@ -603,7 +599,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             'hosts': filter(
                 None, [u.strip() for u in data['hosts'].split(",")]),
         }
-    
+
         try:
             uid = self.profiles.save_profile(profile)
         except:
@@ -678,7 +674,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({
                 'status': False,
                 'error': 'Could not write profile %s' % uid})
-        
+
         return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,

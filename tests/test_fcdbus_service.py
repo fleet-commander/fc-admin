@@ -114,4 +114,4 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             raise ssh.SSHControllerException('Invalid credentials')
 
 if __name__ == '__main__':
-    TestFleetCommanderDbusService(sys.argv[1]).run(sessionbus=True)
+    TestFleetCommanderDbusService(sys.argv[1]).run()
