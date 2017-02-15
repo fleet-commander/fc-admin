@@ -365,12 +365,12 @@ class TestDbusService(unittest.TestCase):
         self.configure_hypervisor(c)
 
         # Start session
-        resp = c.session_start(self.TEMPLATE_UUID, 'host', '5')
+        resp = c.session_start(self.TEMPLATE_UUID)
         self.assertTrue(resp['status'])
         self.assertEqual(resp['port'], 0)
 
         # Try to start another session
-        resp = c.session_start(self.TEMPLATE_UUID, 'host', '0')
+        resp = c.session_start(self.TEMPLATE_UUID)
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
@@ -386,7 +386,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['error'], 'There was no session started')
 
         # Stop previous started session
-        c.session_start(self.TEMPLATE_UUID, 'host', '0')
+        c.session_start(self.TEMPLATE_UUID)
         resp = c.session_stop()
         self.assertTrue(resp['status'])
 
@@ -447,7 +447,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start(self.TEMPLATE_UUID, 'host', '0')
+        c.session_start(self.TEMPLATE_UUID)
 
         # Save empty session
         resp = c.session_save(uid, {})
@@ -465,7 +465,7 @@ class TestDbusService(unittest.TestCase):
         # Configure hypervisor
         self.configure_hypervisor(c)
         # Start a session
-        c.session_start(self.TEMPLATE_UUID, 'host', '0')
+        c.session_start(self.TEMPLATE_UUID)
 
         gsettings = self.get_data_from_file(PROFILE_FILE)['settings']
         self.assertEqual(gsettings, {})
@@ -548,83 +548,13 @@ class TestDbusService(unittest.TestCase):
             'hosts': ['testhost1','testhost2'],
         })
 
-    def test_22_clientdata_serving(self):
-        c = fcdbus.FleetCommanderDbusClient()
-        port = c.get_change_listener_port()
-
-        # Request non existent profile
-        with self.assertRaisesRegexp(
-          urllib2.HTTPError,
-          'HTTP Error 404: Not Found'):
-            inexistentuid = '94484425290563468736752948271916980692'
-            req = urllib2.Request(
-                'http://localhost:%s/%s.json' % (
-                    port, inexistentuid))
-            f = urllib2.urlopen(req)
-            response = f.read()
-            f.close()
-
-        # Create profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        # Request index
-        req = urllib2.Request(
-            'http://localhost:%s/index.json' % port)
-        f = urllib2.urlopen(req)
-        response = f.read()
-        f.close()
-        self.assertEqual(
-            json.loads(response),
-            [
-                {
-                    'url': '%s.json' % uid,
-                    'displayName': 'foo'
-                }
-            ]
-        )
-
-        # Request applies
-        req = urllib2.Request(
-            'http://localhost:%s/applies.json' % port)
-        f = urllib2.urlopen(req)
-        response = f.read()
-        f.close()
-        self.assertEqual(
-            json.loads(response),
-            {
-                uid: {
-                    'users': ['user1', 'user2', 'user3'],
-                    'groups': ['group1', 'group2'],
-                    'hosts': ['testhost1','testhost2'],
-                }
-            }
-        )
-
-        # Request profile
-        req = urllib2.Request(
-            'http://localhost:%s/%s.json' % (port, uid))
-        f = urllib2.urlopen(req)
-        response = f.read()
-        f.close()
-        self.assertEqual(
-            json.loads(response),
-            {
-                'name': 'foo',
-                'uid': uid,
-                'description': 'bar',
-                'settings': {},
-                'priority': 51,
-            }
-        )
-
-    def test_23_get_goa_providers(self):
+    def test_21_get_goa_providers(self):
         c = fcdbus.FleetCommanderDbusClient()
         resp = c.get_goa_providers()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
-    def test_24_goa_accounts(self):
+    def test_22_goa_accounts(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Create a profile
@@ -680,7 +610,7 @@ class TestDbusService(unittest.TestCase):
         goa_accounts = profile['settings']['org.gnome.online-accounts']
         self.assertEqual(len(goa_accounts), 0)
 
-    def test_24_is_session_active(self):
+    def test_23_is_session_active(self):
         c = fcdbus.FleetCommanderDbusClient()
 
         # Configure hypervisor
@@ -691,7 +621,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp)
 
         # Check current session active after started current session
-        print c.session_start(self.TEMPLATE_UUID, 'host', '5')
+        print c.session_start(self.TEMPLATE_UUID)
         resp = c.is_session_active()
         self.assertTrue(resp)
 
