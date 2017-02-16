@@ -77,15 +77,6 @@ desktop-file-validate %{buildroot}/%{_sysconfdir}/xdg/autostart/fleet-commander-
 %make_install
 install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profiles
 
-%preun
-%systemd_preun fleet-commander-admin.service
-
-%post
-%systemd_post fleet-commander-admin.service
-
-%postun
-%systemd_postun_with_restart fleet-commander-admin.service
-
 %files
 %license
 %dir %{_datadir}/%{name}
@@ -96,10 +87,9 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py
 %attr(644, -, -) %{_datadir}/%{name}/python/fleetcommander/*.py[co]
 %config(noreplace) %{_sysconfdir}/xdg/%{name}.conf
-%config(noreplace) %{_sysconfdir}/dbus-1/system.d/org.freedesktop.FleetCommander.conf
-%{_unitdir}/fleet-commander-admin.service
-%{_datadir}/dbus-1/system-services/org.freedesktop.FleetCommander.service
+%{_datadir}/dbus-1/services/org.freedesktop.FleetCommander.service
 %{_localstatedir}/lib/%{name}
+%attr(755, root, root) %{_libexecdir}/fleet-commander-admin
 
 %files -n fleet-commander-logger
 %attr(755, root, root) %{_libexecdir}/fleet_commander_logger.js

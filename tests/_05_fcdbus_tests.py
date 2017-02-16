@@ -44,13 +44,6 @@ from fleetcommander import sshcontroller
 from test_fcdbus_service import MockLibVirtController
 
 
-class TestDbusClient(fcdbus.FleetCommanderDbusClient):
-    DEFAULT_BUS = dbus.SessionBus
-
-# Mock dbus client
-fcdbus.FleetCommanderDbusClient = TestDbusClient
-
-
 class TestDbusService(unittest.TestCase):
 
     maxDiff = None
@@ -97,9 +90,6 @@ class TestDbusService(unittest.TestCase):
         self.test_directory = tempfile.mkdtemp()
 
         self.args = {
-            'webservice_host': 'localhost',
-            'webservice_port': '0',
-            'state_dir': self.test_directory,
             'profiles_dir': os.path.join(self.test_directory, 'profiles'),
             'database_path': os.path.join(self.test_directory, 'database.db'),
             'tmp_session_destroy_timeout': 60,
@@ -120,6 +110,7 @@ class TestDbusService(unittest.TestCase):
         while True:
             try:
                 c = fcdbus.FleetCommanderDbusClient()
+                print fcdbus.DBUS_BUS_NAME
                 c.get_public_key()
                 break
             except:
@@ -133,12 +124,12 @@ class TestDbusService(unittest.TestCase):
 
         self.ssh = sshcontroller.SSHController()
         self.known_hosts_file = os.path.join(
-            self.args['state_dir'], 'known_hosts')
+            self.test_directory, 'known_hosts')
 
     def tearDown(self):
         # Kill service
         self.service.kill()
-        shutil.rmtree(self.test_directory)
+        #shutil.rmtree(self.test_directory)
 
     def get_data_from_file(self, path):
         """
@@ -621,7 +612,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp)
 
         # Check current session active after started current session
-        print c.session_start(self.TEMPLATE_UUID)
+        c.session_start(self.TEMPLATE_UUID)
         resp = c.is_session_active()
         self.assertTrue(resp)
 

@@ -163,15 +163,11 @@ class FleetCommanderDbusClient(object):
 
 
 class FleetCommanderDbusService(dbus.service.Object):
-
     """
     Fleet commander d-bus service class
     """
 
     LIST_DOMAINS_RETRIES = 2
-    DNULL = open('/dev/null', 'w')
-
-    TEST_DIR = None
 
     def __init__(self, args):
         """
@@ -179,10 +175,10 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         super(FleetCommanderDbusService, self).__init__()
 
-        self.home_dir = os.environ['HOME']
+        self.home_dir = os.path.expanduser('~')
 
-        if self.TEST_DIR is not None:
-            self.state_dir = self.TEST_DIR
+        if 'state_dir' in args:
+            self.state_dir = args['state_dir']
         else:
             # Set state dir to $HOME/.local/share/fleetcommander
             self.state_dir = os.path.join(
@@ -265,6 +261,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         return public_key
 
     def get_hypervisor_config(self):
+        logging.debug('Getting hypervisor configuration')
         public_key = self.get_public_key()
         # Check hypervisor configuration
         data = {
@@ -294,14 +291,17 @@ class FleetCommanderDbusService(dbus.service.Object):
                 return domains
             except Exception as e:
                 error = e
-                logging.debug('Getting domain try %s: %s' % (tries, error))
+                logging.debug(
+                    'Getting domain try %s: %s' % (tries, error))
         logging.error('Error retrieving domains %s' % error)
         return None
 
     def stop_current_session(self):
+
         if 'uuid' not in self.db.config or \
            'tunnel_pid' not in self.db.config or \
            'port' not in self.db.config:
+            logging.error('There was no session started')
             return False, 'There was no session started'
 
         domain_uuid = self.db.config['uuid']
@@ -374,9 +374,9 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='', out_signature='s')
     def GetInitialValues(self):
         state = {
-            'debuglevel' : self.log_level,
-            'defaults' : {
-                'profilepriority' : self.default_profile_priority,
+            'debuglevel': self.log_level,
+            'defaults': {
+                'profilepriority': self.default_profile_priority,
             }
         }
         return json.dumps(state)
@@ -714,7 +714,10 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='s', out_signature='s')
     def SessionStart(self, domain_uuid):
 
+        logging.debug('Starting new session')
+
         if self.db.config.get('port', None) is not None:
+            logging.error('Session already started')
             return json.dumps({
                 'status': False,
                 'error': 'Session already started'
@@ -723,9 +726,10 @@ class FleetCommanderDbusService(dbus.service.Object):
         hypervisor = self.get_hypervisor_config()
 
         try:
-            new_uuid, port, tunnel_pid = self.get_libvirt_controller().session_start(domain_uuid)
+            lvirtctrlr = self.get_libvirt_controller()
+            new_uuid, port, tunnel_pid = lvirtctrlr.session_start(domain_uuid)
         except Exception as e:
-            logging.error(e)
+            logging.error('%s' % e)
             return json.dumps({
                 'status': False,
                 'error': 'Error starting session'})
@@ -923,7 +927,7 @@ if __name__ == '__main__':
     # Fleet commander imports
     from utils import parse_config
 
-    parser = ArgumentParser(description='Fleet commander dbus service')
+    parser = ArgumentParser(description='Fleet Commander Admin dbus service')
     parser.add_argument(
         '--configuration', action='store', metavar='CONFIGFILE', default=None,
         help='Provide a configuration file path for the service')

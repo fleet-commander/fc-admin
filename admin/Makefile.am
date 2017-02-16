@@ -4,6 +4,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/mergers.py \
 	fleetcommander/database.py \
 	fleetcommander/fcdbus.py \
+	fleetcommander/freeipa.py \
 	fleetcommander/goa.py \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/profiles.py \

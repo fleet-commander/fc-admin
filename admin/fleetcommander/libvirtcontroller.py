@@ -26,6 +26,7 @@ import uuid
 import subprocess
 import socket
 import xml.etree.ElementTree as ET
+import logging
 
 import libvirt
 
@@ -56,6 +57,8 @@ class LibVirtController(object):
             raise LibVirtControllerException('Invalid libvirt mode selected. Must be "system" or "session"')
         self.mode = mode
 
+        self.home_dir = os.path.expanduser('~')
+
         # Connection data
         self.username = username
         self.hostname = hostname
@@ -76,7 +79,7 @@ class LibVirtController(object):
 
         self.private_key_file = os.path.join(self.data_dir, 'id_rsa')
         self.public_key_file = os.path.join(self.data_dir, 'id_rsa.pub')
-        self.known_hosts_file = os.path.join('/root/.ssh/', 'known_hosts')
+        self.known_hosts_file = os.path.join(self.home_dir, '.ssh/known_hosts')
 
         self.ssh = sshcontroller.SSHController()
 
@@ -117,7 +120,10 @@ class LibVirtController(object):
         """
         Makes a connection to a host using libvirt qemu+ssh
         """
+        logging.debug('libvirtcontroller: Connecting to libvirt')
         if self.conn is None:
+            logging.debug(
+                'libvirtcontroller: Not connected yet. Prepare connection.')
             self._libvirt_socket = self._prepare_remote_env()
 
             options = {
@@ -138,7 +144,11 @@ class LibVirtController(object):
             try:
                 self.conn = libvirt.open(connection_uri)
             except Exception as e:
-                raise LibVirtControllerException('Error connecting to host: %s' % e)
+                raise LibVirtControllerException(
+                    'Error connecting to host: %s' % e)
+        else:
+            logging.debug(
+                'libvirtcontroller: Already connected. Reusing connection.')
 
     def _get_spice_parms(self, domain):
         """
@@ -161,7 +171,8 @@ class LibVirtController(object):
                 time.sleep(self.SESSION_START_TRIES_DELAY)
                 tries += 1
             else:
-                raise LibVirtControllerException('Can not obtain SPICE URI for virtual session')
+                raise LibVirtControllerException(
+                    'Can not obtain SPICE URI for virtual session')
 
     def _add_spice_port(self, parent, name, alias=None):
         channel = ET.SubElement(parent, 'channel')
@@ -196,7 +207,9 @@ class LibVirtController(object):
         # Change domain title
         try:
             title = root.find('title').text
-            root.find('title').text = '%s - Fleet Commander temporary session' % (title)
+            root.find(
+                'title').text = '%s - Fleet Commander temporary session' % (
+                    title)
         except:
             pass
         # Remove domain MAC addresses
@@ -226,6 +239,7 @@ class LibVirtController(object):
         """
         Open SSH tunnel for spice port
         """
+        logging.debug('libvirtcontroller: Opening SSH tunnel')
         # Get a free random local port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('', 0))
@@ -242,6 +256,9 @@ class LibVirtController(object):
                 self.username, self.ssh_host, self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
+            logging.debug(
+                'libvirtcontroller: Tunnel opened %s->%s. PID: %s' % (
+                    local_port, spice_port, pid))
             return (local_port, pid)
         except Exception as e:
             raise LibVirtControllerException('Error opening tunnel: %s' % e)
@@ -273,7 +290,9 @@ class LibVirtController(object):
         """
         Returns a dict with uuid and domain name
         """
+        logging.debug('libvirtcontroller: Listing domains')
         self._connect()
+        logging.debug('libvirtcontroller: Retrieving LibVirt domains')
         domains = self.conn.listAllDomains()
 
         def domain_name(dom):
@@ -283,17 +302,20 @@ class LibVirtController(object):
                 print e
                 return dom.name()
 
-        return [{
+        domainlist = [{
             'uuid': domain.UUIDString(),
             'name': domain_name(domain),
             'active': domain.isActive(),
             'temporary': domain.name().startswith('fc-')
         } for domain in domains]
+        logging.debug('libvirtcontroller: Domains list: %s' % domainlist)
+        return domainlist
 
     def session_start(self, identifier):
         """
         Start session in virtual machine
         """
+        logging.debug('libvirtcontroller: Starting session')
         self._connect()
         # Get machine by its identifier
         origdomain = self.conn.lookupByUUIDString(identifier)
@@ -320,6 +342,7 @@ class LibVirtController(object):
         """
         Stops session in virtual machine
         """
+        logging.debug('libvirtcontroller: Stopping session')
         if tunnel_pid is not None:
             # Kill ssh tunnel
             # FIXME: Test pid belonging to ssh

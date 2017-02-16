@@ -31,6 +31,9 @@ sys.path.append(PYTHONPATH)
 # Fleet commander imports
 from fleetcommander import fcdbus
 
+# Change bus names
+fcdbus.DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderTest'
+fcdbus.DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderTest'
 
 class MockLibVirtController(object):
 
@@ -84,17 +87,15 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
     def __init__(self, test_directory):
 
-        self.TEST_DIR = test_directory
-
         args = {
             'log_level': 'debug',
             'log_format': '\n[%(levelname)s] %(asctime)-15s %(message)s',
-            'webservice_host': 'localhost',
-            'webservice_port': '0',
             'data_dir': test_directory,
             'client_data_url': '/',
             'tmp_session_destroy_timeout': 60,
             'default_profile_priority': 50,
+            # Force state directory
+            'state_dir': test_directory,
         }
 
         super(TestFleetCommanderDbusService, self).__init__(args)

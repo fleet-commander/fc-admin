@@ -40,11 +40,13 @@ function startLiveSession() {
   // Stop any previous session
   stopLiveSession(function(){
     var domain = sessionStorage.getItem("fc.session.domain")
-    var admin_host = location.hostname
-    fc.SessionStart(domain, admin_host,function(resp){
+    fc.SessionStart(domain, function(resp){
       if (resp.status) {
         fcsc = new FleetCommanderSpiceClient(
-          admin_host, resp.port, stopLiveSession);
+          location.hostname, resp.port, function () {
+            console.log('CAGADA')
+            stopLiveSession
+          });
         startHeartBeat();
       } else {
         showMessageDialog(resp.error, _('Error'));
@@ -208,9 +210,6 @@ $(document).ready (function () {
   fc = new FleetCommanderDbusClient(function(){
 
     fc.GetInitialValues(function(resp) {
-      state.debuglevel = resp.debuglevel
-      state.defaults = resp.defaults
-
       setDebugLevel(resp.debugLevel);
     });
 

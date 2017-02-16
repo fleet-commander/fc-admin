@@ -105,6 +105,6 @@ admin/Makefile
 admin/fleetcommander/constants.py
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
-data/fleet-commander-admin.service
 data/org.freedesktop.FleetCommander.service
+data/fleet-commander-admin
 ])
