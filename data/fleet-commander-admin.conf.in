@@ -1,9 +1,3 @@
 [admin]
-webservice_host = 0.0.0.0
-webservice_port = 9989
 data_dir        = @FCADMINDIR@
-state_dir       = @ADMINSTATEDIR@
-profiles_dir    = @PROFILESDIR@
-database_path   = @DATABASEFILE@
-client_data_url = /
 tmp_session_destroy_timeout = 60
