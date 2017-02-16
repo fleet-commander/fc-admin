@@ -1,0 +1,2 @@
+#!/bin/sh
+PYTHONPATH=@FCPYTHONDIR@ @PYTHON@ -m fleetcommander.fcdbus --configuration @XDGCONFIGDIR@/fleet-commander-admin.conf
