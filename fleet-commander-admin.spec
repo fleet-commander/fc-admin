@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.8.0
+Version:        0.9.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -107,6 +107,9 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_sysconfdir}/udev/rules.d/81-fleet-commander-logger.rules
 
 %changelog
+* Mon Feb 20 2017 Oliver Gutierrez <ogutierrez@redhat.com> - 0.9.0-1
+- Updated package for 0.9.0 release
+
 * Fri Sep 16 2016 Oliver Gutierrez <ogutierrez@redhat.com> - 0.8.0-1
 - Updated package for 0.8.0 release
 
