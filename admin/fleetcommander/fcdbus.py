@@ -43,7 +43,7 @@ from database import DBManager
 from utils import get_ip_address, get_data_from_file
 import mergers
 from goa import GOAProvidersLoader
-import profiles
+import fcfreeipa
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -113,23 +113,17 @@ class FleetCommanderDbusClient(object):
             host, user, passwd
         ))
 
+    def save_profile(self, profiledata):
+        return json.loads(self.iface.SaveProfile(json.dumps(profiledata)))
+
     def get_profiles(self):
         return json.loads(self.iface.GetProfiles())
 
     def get_profile(self, uid):
         return json.loads(self.iface.GetProfile(uid))
 
-    def get_profile_applies(self, uid):
-        return json.loads(self.iface.GetProfileApplies(uid))
-
-    def new_profile(self, profiledata):
-        return json.loads(self.iface.NewProfile(json.dumps(profiledata)))
-
     def delete_profile(self, uid):
         return json.loads(self.iface.DeleteProfile(uid))
-
-    def profile_props(self, data, uid):
-        return json.loads(self.iface.ProfileProps(json.dumps(data), uid))
 
     def highlighted_apps(self, data, uid):
         return json.loads(self.iface.HighlightedApps(json.dumps(data), uid))
@@ -189,12 +183,6 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.database_path = os.path.join(self.state_dir, 'fleetcommander.db')
 
-        # TODO: Remove unused variables from constants.py and config reading methods
-        # TODO: Remove this when using FreeIPA
-        self.profiles_dir = os.path.join(self.state_dir, 'profiles')
-        if not os.path.exists(self.profiles_dir):
-            os.makedirs(self.profiles_dir)
-
         self.args = args
 
         self.log_level = args['log_level'].lower()
@@ -203,12 +191,11 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.default_profile_priority = args['default_profile_priority']
 
-        # TODO: Replace this with FreeIPAManager
-        self.profiles = profiles.ProfileManager(
-            self.database_path, self.profiles_dir)
+        # Load FreeIPA connector
+        self.ipa = fcfreeipa.FreeIPAConnector()
 
-        # Load previous missing profiles data for retrocompatibility
-        self.profiles.load_missing_profiles_data()
+        # # Load previous missing profiles data for retrocompatibility
+        # self.profiles.load_missing_profiles_data()
 
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
@@ -505,18 +492,57 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'Error installing public key: %s' % e)
             return json.dumps({
                 'status': False,
-                'error': 'Error installing public key: %s' % e
+                'error': 'Error installing public key'
+            })
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='s', out_signature='s')
+    def SaveProfile(self, profiledata):
+        logging.debug(
+            'Data received for saving profile: %s' % profiledata)
+
+        data = json.loads(profiledata)
+
+        # TODO: Update profile for given name if exists
+
+        profile = {
+            'name': data['name'],
+            'description': data['description'],
+            'priority': int(data['priority']),
+            'settings': data['settings'],
+            'groups': filter(
+                None, [g.strip() for g in data['groups'].split(",")]),
+            'users': filter(
+                None, [u.strip() for u in data['users'].split(",")]),
+            'hosts': filter(
+                None, [u.strip() for u in data['hosts'].split(",")]),
+            'hostgroups': filter(
+                None, [u.strip() for u in data['hostgroups'].split(",")]),
+        }
+
+        try:
+            logging.debug('Saving profile into IPA server')
+            self.ipa.save_profile(profile)
+            return json.dumps({'status': True})
+        except Exception, e:
+            logging.error('Error creating profile %s: %s' % (name, e))
+            return json.dumps({
+                'status': False,
+                'error': 'Can not write new profile'
             })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetProfiles(self):
         try:
+            profiles = self.ipa.get_profiles()
+            logging.debug('Profiles data fetched: %s' % profiles)
             return json.dumps({
                 'status': True,
-                'data': self.profiles.get_index()
+                'data': profiles
             })
-        except:
+        except Exception, e:
+            logging.error('Error reading profiles from IPA: %s' % e)
             return json.dumps({
                 'status': False,
                 'error': 'Error reading profiles index'
@@ -524,179 +550,31 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
-    def GetProfile(self, uid):
+    def GetProfile(self, name):
         try:
+            profile = self.ipa.get_profile(name)
+            logging.debug('Profile data fetched for %s: %s' % (name, profile))
             return json.dumps({
                 'status': True,
-                'data': self.profiles.get_profile(uid)
+                'data': profile
             })
-        except:
+        except Exception, e:
+            logging.error('Error reading profile %s from IPA: %s' % (name, e))
             return json.dumps({
                 'status': False,
-                'error': 'Error reading profile with UID %s' % uid
-            })
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='s', out_signature='s')
-    def GetProfileApplies(self, uid):
-        try:
-            return json.dumps({
-                'status': True,
-                'data': self.profiles.get_applies(uid)
-            })
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'Error reading profile with UID %s' % uid
+                'error': 'Error reading profile %s' % name,
             })
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
-    def NewProfile(self, profiledata):
-        data = json.loads(profiledata)
-
-        profile = {
-            'name': data['profile-name'],
-            'description': data['profile-desc'],
-            'priority': data['priority'],
-            'settings': {},
-            'groups': filter(
-                None, [g.strip() for g in data['groups'].split(",")]),
-            'users': filter(
-                None, [u.strip() for u in data['users'].split(",")]),
-            'hosts': filter(
-                None, [u.strip() for u in data['hosts'].split(",")]),
-        }
-
+    def DeleteProfile(self, name):
+        logging.debug('Deleting profile %s' % name)
         try:
-            uid = self.profiles.save_profile(profile)
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'Could not write new profile'})
-
-        return json.dumps({'status': True, 'uid': uid})
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='s', out_signature='s')
-    def DeleteProfile(self, uid):
-        self.profiles.remove_profile(uid)
-        return json.dumps({'status': True})
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='s')
-    def ProfileProps(self, data, uid):
-        try:
-            profile = self.profiles.get_profile(uid)
-        except:
-            return json.dumps(
-                {'status': False, 'error': 'Can not get profile %s' % uid})
-
-        if not isinstance(profile, dict):
-            return json.dumps({
-                'status': False,
-                'error': 'profile %s.json does not hold a JSON object' % uid})
-
-        try:
-            payload = json.loads(data)
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'request data was not a valid JSON object'})
-
-        if not isinstance(payload, dict):
-            return json.dumps({
-                'status': False,
-                'error': 'request data was not a valid JSON dictionary'})
-
-        if 'profile-name' in payload or 'profile-desc' in payload:
-
-            if 'profile-name' in payload:
-                profile['name'] = payload['profile-name']
-
-            if 'profile-desc' in payload:
-                profile['description'] = payload['profile-desc']
-
-        if 'priority' in payload:
-            profile['priority'] = payload['priority']
-
-
-        if 'hosts' in payload:
-            hosts = [u.strip() for u in payload['hosts'].split(",")]
-            hosts = filter(None, hosts)
-            profile['hosts'] = hosts
-
-        if 'users' in payload:
-            users = [u.strip() for u in payload['users'].split(",")]
-            users = filter(None, users)
-            profile['users'] = users
-
-        if 'groups' in payload:
-            groups = [g.strip() for g in payload['groups'].split(",")]
-            groups = filter(None, groups)
-            profile['groups'] = groups
-
-        try:
-            self.profiles.save_profile(profile)
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'Could not write profile %s' % uid})
-
-        return json.dumps({'status': True})
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='s')
-    def HighlightedApps(self, payload, uid):
-
-        data = json.loads(payload)
-
-        if not isinstance(data, list) or \
-           len(set(map(lambda x: x is unicode, data))) > 1:
-            return json.dumps({
-                'status': False,
-                'error': 'application list is not a list of strings'})
-
-        try:
-            profile = self.profiles.get_profile(uid)
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'Can not read profile data for profile %s' % uid})
-
-        if 'org.gnome.gsettings' not in profile['settings']:
-            profile['settings']['org.gnome.gsettings'] = []
-
-        gsettings = profile['settings']['org.gnome.gsettings']
-        existing_change = None
-        for change in gsettings:
-            if 'key' not in change:
-                continue
-
-            if change['key'] != '/org/gnome/software/popular-overrides':
-                continue
-
-            existing_change = change
-
-        if not existing_change:
-            existing_change = {'key': '/org/gnome/software/popular-overrides',
-                               'signature': 'as'}
-            gsettings.append(existing_change)
-
-        if data == []:
-            gsettings.remove(existing_change)
-        else:
-            value = '[%s]' % ','.join(["'%s'" % x for x in data])
-            existing_change['value'] = value
-
-        try:
-            self.profiles.save_profile(profile)
-        except:
-            return json.dumps({
-                'status': False,
-                'error': 'Can not write profile %s' % uid})
-
-        return json.dumps({'status': True})
+            self.ipa.del_profile(name)
+            return json.dumps({'status': True})
+        except Exception, e:
+            logging.error('Error removing profile %s: %s' % (name, e))
+            return json.dumps({'status': False})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
@@ -754,7 +632,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def SessionSave(self, uid, data):
         logging.debug('FC: Saving session')
         try:
-            profile = self.profiles.get_profile(uid)
+            profile = self.ipa.get_profile(uid)
         except:
             return json.dumps({
                 'status': False,
@@ -802,7 +680,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     changeset)
 
         logging.debug('FC: Saving profile')
-        self.profiles.save_profile(profile)
+        self.ipa.save_profile(profile)
         logging.debug('FC: Saved profile')
 
         return json.dumps({'status': True})
@@ -850,68 +728,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': False,
                 'error': 'Error getting GOA providers data'
             })
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='s')
-    def GOAAccounts(self, payload, uid):
-
-        data = json.loads(payload)
-
-        def check_account(account):
-            if isinstance(account, dict):
-                keys = account.keys()
-                if len(keys) > 2 and 'Template' in keys and 'Provider in keys':
-                    for key, value in account.items():
-                        if key not in ['Template', 'Provider']:
-                            if not key.endswith('Enabled'):
-                                return False
-                    return True
-            return False
-
-        if not isinstance(data, dict):
-            return json.dumps({
-                'status': False,
-                'error': 'accounts data is not a dictionary',
-            })
-
-        for account_id, account in data.items():
-            invalid = True
-            if isinstance(account, dict) and 'Provider' in account.keys():
-                for key, value in account.items():
-                    if key != 'Provider':
-                        if key.endswith('Enabled'):
-                            if type(value) != bool:
-                                invalid = False
-                    else:
-                        invalid = False
-            if invalid:
-                return json.dumps({
-                    'status': False,
-                    'error': 'malformed goa accounts data received',
-                })
-
-        try:
-            profile = self.profiles.get_profile(uid)
-        except Exception, e:
-            return json.dumps({
-                'status': False,
-                'error': unicode(e),
-            })
-
-        if 'settings' not in profile:
-            profile['settings'] = {}
-        profile['settings']['org.gnome.online-accounts'] = data
-
-        try:
-            # profile['uid'] = uid
-            self.profiles.save_profile(profile)
-        except Exception, e:
-            return json.dumps({
-                'status': False,
-                'error': 'could not write profile %s: %s' % (uid, e)
-            })
-
-        return json.dumps({'status': True})
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='')

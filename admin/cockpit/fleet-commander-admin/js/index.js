@@ -196,10 +196,9 @@ function refreshProfileList() {
      // Populate profile list
      $.each (data, function (i, val) {
        var tr = $('<tr ></tr>');
-       $('<td></td>', { text: val.displayName }).appendTo(tr);
-       $('<td></td>').appendTo(tr); // description
-       $('<td></td>').appendTo(tr); // os
-       $('<td></td>').appendTo(tr); // applies to
+       // $('<td></td>', { text: val.displayName }).appendTo(tr);
+       $('<td></td>', { text: val[0] }).appendTo(tr);
+       $('<td></td>', { text: val[1] }).appendTo(tr);
 
        var actions_col = $('<td></td>');
        actions_col.appendTo(tr);
@@ -207,7 +206,8 @@ function refreshProfileList() {
        var actions_container = $('<span></span>', { class: 'pull-right' });
        actions_container.appendTo(actions_col)
 
-       var uid = val.url.slice(0, val.url.length - 5);
+       // var uid = val.url.slice(0, val.url.length - 5);
+       var uid = val[0]
 
        $('<button></button>', {"class": "btn btn-default", text: _('Edit')})
          .click(function () { editProfile(uid); })
@@ -226,18 +226,47 @@ function refreshProfileList() {
 }
 
 function showAddProfile() {
+  // Clear current profile
+  currentprofile = null;
   // Clear form data before show
   $('#profile-name').val('');
   $('#profile-desc').val('');
+  $('#profile-priority').val(state.defaults.profilepriority);
   $('#profile-users').val('');
   $('#profile-groups').val('');
-  $('#profile-priority').val(state.defaults.profilepriority);
   $('#profile-hosts').val('');
-  $('#add-profile-modal').modal('show');
+  $('#profile-hostgroups').val('');
+  // Hide settings adding buttons
+  $('#edit-profile-further-group').hide()
+  // Show profile modal dialog
+  $('#profile-modal').modal('show');
 }
 
-function saveNewProfile() {
-  clearModalFormErrors('add-profile-modal');
+function editProfile(uid) {
+  fc.GetProfile(uid, function(resp) {
+    if (resp.status) {
+      currentuid = uid;
+      currentprofile = resp.data
+
+      $('#profile-name').val(resp.data.name);
+      $('#profile-desc').val(resp.data.description || '');
+      $('#profile-priority').val(resp.data.priority || '');
+      $('#profile-users').val(resp.data.users || '');
+      $('#profile-groups').val(resp.data.groups || '');
+      $('#profile-hosts').val(resp.data.hosts || '');
+      $('#profile-hostgroups').val(resp.data.hostgroups || '');
+      // Dhow settings adding buttons
+      $('#edit-profile-further-group').show()
+      // Show profile modal dialog
+      $('#profile-modal').modal('show');
+    } else {
+      showMessageDialog(_('Error getting profile data'), _('Error'));
+    }
+  });
+}
+
+function saveProfile() {
+  clearModalFormErrors('profile-modal');
 
   if (!$('#profile-name').val()) {
     addFormError('profile-name', _('Profile name is required'));
@@ -250,94 +279,28 @@ function saveNewProfile() {
   }
 
   var data = {
-    'profile-name': $('#profile-name').val(),
-    'profile-desc': $('#profile-desc').val(),
+    'name': $('#profile-name').val(),
+    'description': $('#profile-desc').val(),
+    'priority': $('#profile-priority').val(),
     'users': $('#profile-users').val(),
     'groups': $('#profile-groups').val(),
-    'priority': $('#profile-priority').val(),
     'hosts': $('#profile-hosts').val(),
+    'hostgroups': $('#profile-hostgroups').val(),
   }
 
-  // TODO: Show spinner
-  fc.NewProfile(data, function(resp) {
+  if (currentprofile && currentprofile.settings) {
+    data.settings = currentprofile.settings
+  } else {
+    data.settings = {}
+  }
+
+  fc.SaveProfile(data, function(resp) {
     if (resp.status) {
-      $('#add-profile-modal').modal('hide');
+      $('#profile-modal').modal('hide');
       // Refresh profiles
       refreshProfileList();
     } else {
-      showMessageDialog(_('Error creating profile'), _('Error'));
-    }
-  });
-}
-
-function editProfile(uid) {
-  fc.GetProfile(uid, function(resp) {
-    if (resp.status) {
-      $('#edit-profile-name').val(resp.data.name);
-      $('#edit-profile-desc').val(resp.data.description || '');
-
-      // for backwards compatibility, older profiles might not have priority
-      if (typeof resp.data.priority === "undefined") 
-        $('#edit-profile-priority').val(state.defaults.profilepriority);
-      else
-        $('#edit-profile-priority').val(resp.data.priority);
-
-
-      // for backwards compatibility, older profiles might not have hosts
-      if (typeof resp.data.hosts === "undefined") 
-        $('#edit-profile-hosts').val(state.defaults.profilehosts);
-      else
-        $('#edit-profile-hosts').val(resp.data.hosts);
-
-      currentuid = uid;
-      currentprofile = resp.data
-
-      // Get users and groups
-      fc.GetProfileApplies(uid, function(resp) {
-        if (resp.status) {
-          $('#edit-profile-users').val(resp.data.users || '');
-          $('#edit-profile-groups').val(resp.data.groups || '');
-          $('#edit-profile-modal').modal('show');
-        } else {
-          showMessageDialog(_('Error getting profile users and groups data'), _('Error'));
-        }
-      });
-    } else {
-      showMessageDialog(_('Error getting profile data'), _('Error'));
-    }
-  });
-}
-
-// TODO: Functionality to be reviewed
-function saveExistingProfile() {
-  clearModalFormErrors('edit-profile-modal');
-
-  if (!$('#edit-profile-name').val()) {
-    addFormError('edit-profile-name', 'Profile name is required');
-    return
-  }
-
-  if (!$('#edit-profile-priority').val()) {
-    addFormError('edit-profile-priority', 'Profile priority is required');
-    return
-  }
-
-  var data = {
-    'profile-name': $('#edit-profile-name').val(),
-    'profile-desc': $('#edit-profile-desc').val(),
-    'users': $('#edit-profile-users').val(),
-    'groups': $('#edit-profile-groups').val(),
-    'priority': $('#edit-profile-priority').val(),
-    'hosts': $('#edit-profile-hosts').val(),
-  }
-
-  //TODO: show spinner/progress indicator
-  fc.ProfileProps(data, currentuid, function(resp){
-    if (resp.status) {
-      $('#edit-profile-modal').modal('hide');
-      refreshProfileList();
-    } else {
-      showMessageDialog(_('Error saving profile'), ('Error'));
+      showMessageDialog(_('Error saving profile'), _('Error'));
     }
   });
 }
@@ -352,107 +315,6 @@ function removeProfile(uid, displayName) {
         $('#message-dialog-modal').modal('hide');
       });
     })
-}
-
-/*******************************************************************************
- * Favourites
- ******************************************************************************/
-
-function showHighlightedApps () {
-  $('#highlighted-apps-list').html('');
-  $('#edit-profile-modal').modal('hide');
-  $('#highlighted-apps-modal').modal('show');
-  refreshHighlightedAppsList();
-}
-
-function refreshHighlightedAppsList () {
-  DEBUG > 0 && console.log('FC: Refreshing highlighted apps list');
-  try {
-    var changes = currentprofile.settings["org.gnome.gsettings"];
-    $.each (changes, function (i,e) {
-      for (key in e) {
-        if (e[key] == "/org/gnome/software/popular-overrides") {
-          try {
-            var overrides = e['value'];
-            if (Array.isArray (overrides) == false) {
-              if (typeof(overrides) == 'string' &&
-                overrides.match(/\[.*\]/)) {
-                  var a = overrides.substring(1, overrides.length - 1);
-                  if (a.length > 0) {
-                    overrides = a.substring(1, a.length - 1).split("','");
-                  } else {
-                    overrides = null;
-                  }
-              } else {
-                overrides = null;
-              }
-            } else {
-                overrides = null;
-            }
-            $.each (overrides, function(i, app) {
-              addHighlightedApp(app);
-            });
-            return;
-          } catch (e) {}
-        }
-      }
-    });
-  } catch (e) {}
-}
-
-function addHighlightedApp(app) {
-  if (typeof (app) != "string")
-    return;
-
-  if (hasSuffix (app, ".desktop") == false)
-    return;
-
-  var li = $('<li></li>', {'class': 'list-group-item', 'data-id': app, 'text': app });
-  var del = $('<button></button>', {
-    'class': 'pull-right btn btn-danger',
-    text: 'Delete'
-  });
-  del.click(app, function() { deleteHighlightedApp(app); });
-  del.appendTo (li);
-  li.appendTo($('#highlighted-apps-list'));
-}
-
-function addHighlightedAppFromEntry () {
-  clearModalFormErrors('highlighted-apps-modal');
-
-  var app = $('#app-name').val ();
-
-  if (hasSuffix(app, ".desktop") == false) {
-    showMessageDialog(_('Application identifier must have .desktop extension'), _('Invalid entry'));
-    return
-  } else if (app.indexOf('"') != -1 || app.indexOf("'") != -1) {
-    showMessageDialog(_('Application identifier must not contain quotes'), _('Invalid entry'));
-    return
-  } else if ($('#highlighted-apps-list li[data-id="' + app + '"]').length > 0) {
-    showMessageDialog(_('Application identifier is already in favourites'), _('Invalid entry'));
-    return
-  }
-  addHighlightedApp(app);
-  $('#app-name').val('');
-}
-
-function deleteHighlightedApp(app) {
-  $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
-}
-
-function saveHighlightedApps () {
-  var overrides = []
-  $('#highlighted-apps-list li').each(function() {
-    overrides.push($(this).attr('data-id'));
-  })
-  fc.HighlightedApps(overrides, currentuid, function(resp){
-    if (resp.status) {
-      $('#highlighted-apps-modal').modal('hide');
-      $('#edit-profile-modal').modal('show');
-    } else {
-      showMessageDialog(_('Error saving highlighted apps'), _('Error'));
-    }
-  });
 }
 
 
@@ -478,7 +340,7 @@ function showDomainSelection() {
 
     checkKnownHost(data.host, function(){
 
-      $('#edit-profile-modal').modal('hide');
+      $('#profile-modal').modal('hide');
       $('#domain-selection-modal').modal('show');
 
       // Show loading clock
@@ -525,8 +387,8 @@ $(document).ready (function () {
   $('#show-hypervisor-config').click(showHypervisorConfig);
   $('#save-hypervisor-config').click(saveHypervisorConfig);
   $('#show-add-profile').click(showAddProfile);
-  $('#save-new-profile').click(saveNewProfile);
-  $('#save-existing-profile').click(saveExistingProfile);
+  $('#save-new-profile').click(saveProfile);
+  $('#save-existing-profile').click(saveProfile);
   $('#show-highlighted-apps').click(showHighlightedApps);
   $('#add-highlighted-app').click(addHighlightedAppFromEntry);
   $('#save-highlighted-apps').click(saveHighlightedApps);
@@ -545,12 +407,8 @@ $(document).ready (function () {
     $('#host').focus();
   });
 
-  $("#add-profile-modal").on('shown.bs.modal', function () {
+  $("#profile-modal").on('shown.bs.modal', function () {
     $('#profile-name').focus();
-  });
-
-  $("#edit-profile-modal").on('shown.bs.modal', function () {
-    $('#edit-profile-name').focus();
   });
 
   $("#pubkey-install-modal").on('shown.bs.modal', function () {

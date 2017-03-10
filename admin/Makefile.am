@@ -4,7 +4,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/mergers.py \
 	fleetcommander/database.py \
 	fleetcommander/fcdbus.py \
-	fleetcommander/freeipa.py \
+	fleetcommander/fcfreeipa.py \
 	fleetcommander/goa.py \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/profiles.py \
@@ -22,6 +22,7 @@ fc_js_DATA = \
 	cockpit/fleet-commander-admin/js/fcspiceclient.js \
 	cockpit/fleet-commander-admin/js/collectors.js \
 	cockpit/fleet-commander-admin/js/index.js \
+	cockpit/fleet-commander-admin/js/highlightedapps.js \
 	cockpit/fleet-commander-admin/js/goa.js \
 	cockpit/fleet-commander-admin/js/livesession.js \
 	cockpit/fleet-commander-admin/js/spice_debug_bypass.js

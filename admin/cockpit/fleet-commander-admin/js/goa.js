@@ -35,7 +35,7 @@ function sortGoaNamedEntries(data) {
 function showGOAAccounts() {
   // Populate GOA accounts list
   populateGOAAccounts();
-  $('#edit-profile-modal').modal('hide');
+  $('#profile-modal').modal('hide');
   $('#goa-accounts-modal').modal('show');
 }
 
@@ -191,17 +191,10 @@ function getAccountProviderServicesData() {
 }
 
 function saveGOAAccounts() {
-  fc.GOAAccounts(current_goa_accounts, currentuid, function(resp) {
-    if (resp.status) {
-      currentprofile['settings']['org.gnome.online-accounts'] =
-        current_goa_accounts
-      $('#goa-accounts-modal').modal('hide');
-      $('#edit-profile-modal').modal('show');
-    } else {
-      showMessageDialog(
-        _('There has been an error saving GNOME Online Accounts'), _('Error'))
-    }
-  });
+  currentprofile['settings']['org.gnome.online-accounts'] =
+    current_goa_accounts
+  $('#goa-accounts-modal').modal('hide');
+  $('#profile-modal').modal('show');
 }
 
 /*******************************************************************************
