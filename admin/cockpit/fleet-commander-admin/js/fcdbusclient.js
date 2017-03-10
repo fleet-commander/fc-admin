@@ -123,22 +123,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
-  // this.GetProfileApplies = function(uid, cb, errcb) {
-  //   self._proxy.GetProfileApplies(uid).done(
-  //     function(resp) {
-  //       cb(JSON.parse(resp));
-  //     }
-  //   ).fail(errorhandler);
-  // }
-  //
-  // this.NewProfile = function(data, cb, errcb) {
-  //   self._proxy.NewProfile(JSON.stringify(data)).done(
-  //     function(resp) {
-  //       cb(JSON.parse(resp));
-  //     }
-  //   ).fail(errorhandler);
-  // }
-
   this.DeleteProfile = function(uid, cb, errcb) {
     self._proxy.DeleteProfile(uid).done(
       function(resp) {
@@ -146,14 +130,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
       }
     ).fail(errorhandler);
   }
-
-  // this.ProfileProps = function(data, uid, cb, errcb) {
-  //   self._proxy.ProfileProps(JSON.stringify(data), uid).done(
-  //     function(resp) {
-  //       cb(JSON.parse(resp));
-  //     }
-  //   ).fail(errorhandler);
-  // }
 
   this.SaveProfile = function(data, cb, errcb) {
     self._proxy.SaveProfile(JSON.stringify(data)).done(
@@ -223,11 +199,4 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
-  this.GOAAccounts = function(data, uid, cb, errcb) {
-    self._proxy.GOAAccounts(JSON.stringify(data), uid).done(
-      function(resp) {
-        cb(JSON.parse(resp));
-      }
-    ).fail(errorhandler);
-  }
 }

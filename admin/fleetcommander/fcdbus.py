@@ -125,9 +125,6 @@ class FleetCommanderDbusClient(object):
     def delete_profile(self, uid):
         return json.loads(self.iface.DeleteProfile(uid))
 
-    def highlighted_apps(self, data, uid):
-        return json.loads(self.iface.HighlightedApps(json.dumps(data), uid))
-
     def list_domains(self):
         return json.loads(self.iface.ListDomains())
 
@@ -148,9 +145,6 @@ class FleetCommanderDbusClient(object):
 
     def get_goa_providers(self):
         return json.loads(self.iface.GetGOAProviders())
-
-    def goa_accounts(self, data, uid):
-        return json.loads(self.iface.GOAAccounts(json.dumps(data), uid))
 
     def quit(self):
         return self.iface.Quit()
