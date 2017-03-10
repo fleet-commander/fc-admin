@@ -143,7 +143,6 @@ class TestDbusService(unittest.TestCase):
             'host': 'myhost',
             'username': 'valid_user',
             'mode': 'session',
-            'adminhost': '',
             'keys': 'myhost ssh-rsa KEY'
         })
 
@@ -171,7 +170,6 @@ class TestDbusService(unittest.TestCase):
             'username': '',
             'mode': 'system',
             'needcfg': True,
-            'adminhost': '',
         })
 
     def test_03_check_hypervisor_config(self):
@@ -181,7 +179,6 @@ class TestDbusService(unittest.TestCase):
             'host': 'localhost',
             'username': 'valid_user',
             'mode': 'session',
-            'adminhost': '',
         }
 
         # Set invalid host data

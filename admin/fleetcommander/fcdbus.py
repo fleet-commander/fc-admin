@@ -260,7 +260,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'username': '',
                 'mode': 'system',
                 'needcfg': True,
-                'adminhost': '',
             })
         else:
             data.update(self.db.config['hypervisor'])
@@ -403,11 +402,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Check libvirt mode
         if data['mode'] not in ('system', 'session'):
             errors['mode'] = 'Invalid session type'
-        # Check admin host
-        if 'adminhost' in data and data['adminhost'] != '':
-            if not re.match(HOSTNAME_AND_PORT_REGEX, data['adminhost']) \
-               and not re.match(IPADDRESS_AND_PORT_REGEX, data['adminhost']):
-                errors['adminhost'] = 'Invalid hostname specified'
         if errors:
             return json.dumps({'status': False, 'errors': errors})
 

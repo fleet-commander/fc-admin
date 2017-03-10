@@ -50,7 +50,6 @@ function showHypervisorConfig() {
     $('#host').val(resp.host);
     $('#username').val(resp.username);
     $('#mode option[value="' + resp.mode + '"]').prop('selected', true);
-    $('#adminhost').val(resp.adminhost);
     $('#pubkey').html(resp.pubkey);
     $('#hypervisor-config-modal').modal('show');
   });
@@ -99,7 +98,6 @@ function saveHypervisorConfig(cb) {
     host: $('#host').val(),
     username: $('#username').val(),
     mode: $('#mode').val(),
-    adminhost: $('#adminhost').val(),
     domains: {}
   }
 
@@ -414,11 +412,6 @@ $(document).ready (function () {
   $("#pubkey-install-modal").on('shown.bs.modal', function () {
     $('#pubkey-install-password').focus();
   });
-
-  // Set placeholder for admin port in hypervisor configuration dialog
-  var adminhost = location.hostname;
-  var adminport = location.port || 80
-  $('#adminhost').attr('placeholder', adminhost + ':' + adminport);
 
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
