@@ -73,54 +73,63 @@ class FreeIPAConnector(object):
         except errors.NotFound:
             return False
 
-    def check_profile_exists(self, uid):
+    def check_profile_exists(self, name):
         try:
-            result = api.Command.deskprofile_show(unicode(uid), all=False)
+            result = api.Command.deskprofile_show(unicode(name), all=False)
             return True
         except errors.NotFound:
             return False
 
     def create_profile(self, profile):
-        uid = unicode(profile['uid'])
+        name = unicode(profile['name'])
+        logging.debug(
+            'FreeIPAConnector: Creating profile %s' % name)
         try:
             api.Command.deskprofile_add(
-                uid,
+                name,
                 description=unicode(profile['description']),
                 ipadeskdata=json.dumps(profile['settings'])
             )
             self.create_profile_rules(profile)
         except Exception, e:
             logging.error(
-                'FC - FreeIPAConnector: Error creating profile: %s' % e)
-            self.del_profile(uid)
+                'FreeIPAConnector: Error creating profile: %s' % e)
+            self.del_profile(name)
             raise e
 
     def create_profile_rules(self, profile):
-        uid = unicode(profile['uid'])
+        name = unicode(profile['name'])
         # Save rule for profile
+        logging.debug(
+            'FreeIPAConnector: Creating profile rule for %s' % name)
         api.Command.deskprofilerule_add(
-            uid,
-            ipadeskprofiletarget=uid,
+            name,
+            ipadeskprofiletarget=name,
             ipadeskprofilepriority=profile['priority'])
         # Save rules for users
-        api.Command.deskprofilerule_add_user(
-            uid,
-            user=map(unicode, profile['users']),
-            group=map(unicode, profile['groups'])
-        )
+        users = map(unicode, profile['users'])
+        groups = map(unicode, profile['groups'])
+        logging.debug(
+            'FreeIPAConnector: Creating users rules for profile %s: %s, %s' % (
+                name, users, groups))
+        api.Command.deskprofilerule_add_user(name, user=users, group=groups)
         # Save rules for hosts
+        hosts = map(unicode, profile['hosts'])
+        hostgroups = map(unicode, profile['hostgroups'])
+        logging.debug(
+            'FreeIPAConnector: Creating hosts rules for profile %s: %s, %s' % (
+                name, hosts, hostgroups))
         api.Command.deskprofilerule_add_host(
-            uid,
-            host=map(unicode, profile['hosts']),
-            hostgroup=map(unicode, profile['hostgroups'])
-        )
+            name, host=hosts, hostgroup=hostgroups)
 
     def update_profile(self, profile):
-        uid = unicode(profile['uid'])
+        name = unicode(profile['name'])
+        logging.debug(
+            'FreeIPAConnector: Updating profile %s' % name)
         try:
             # Update profile
             api.Command.deskprofile_mod(
-                uid,
+                name,
                 description=unicode(profile['description']),
                 ipadeskdata=json.dumps(profile['settings'])
             )
@@ -128,34 +137,37 @@ class FreeIPAConnector(object):
             pass
         except Exception, e:
             logging.error(
-                'FC - FreeIPAConnector: Error updating profile %s: %s' % (uid, e))
+                'FreeIPAConnector: Error updating profile %s: %s' % (name, e))
             raise e
 
         self.update_profile_rules(profile)
 
     def update_profile_rules(self, profile):
-        uid = unicode(profile['uid'])
+        name = unicode(profile['name'])
+        logging.debug(
+            'FreeIPAConnector: Updating profile rules for %s' % name)
         # update rule for profile
         try:
             api.Command.deskprofilerule_mod(
-                uid,
-                ipadeskprofiletarget=uid,
+                name,
+                ipadeskprofiletarget=name,
                 ipadeskprofilepriority=profile['priority'])
         except errors.EmptyModlist:
             pass
         except Exception, e:
             logging.error(
-                'FC - FreeIPAConnector: Error updating rule for profile %s: %s - %s' % (uid, e, e.__class__))
+                'FreeIPAConnector: Error updating rule for profile %s: %s - %s' % (
+                    name, e, e.__class__))
             raise e
         # Get current users, groups, hosts and hostgroups for this rule
-        rule = self.get_profile_rule(uid)
+        rule = self.get_profile_rule(name)
         applies = self.get_profile_applies_from_rule(rule)
         # Get users and groups to add
         udif = set(profile['users']) - set(applies['users'])
         gdif = set(profile['groups']) - set(applies['groups'])
         # Add the users and groups to rule
         api.Command.deskprofilerule_add_user(
-            uid,
+            name,
             user=map(unicode, udif),
             group=map(unicode, gdif)
         )
@@ -164,7 +176,7 @@ class FreeIPAConnector(object):
         gdif = set(applies['groups']) - set(profile['groups'])
         # Remove users and groups from rule
         api.Command.deskprofilerule_remove_user(
-            uid,
+            name,
             user=map(unicode, udif),
             group=map(unicode, gdif)
         )
@@ -174,7 +186,7 @@ class FreeIPAConnector(object):
         hgdif = set(profile['hostgroups']) - set(applies['hostgroups'])
         # Add the hosts and hostgroups to rule
         api.Command.deskprofilerule_add_host(
-            uid,
+            name,
             host=map(unicode, hdif),
             hostgroup=map(unicode, hgdif)
         )
@@ -183,40 +195,52 @@ class FreeIPAConnector(object):
         hgdif = set(applies['hostgroups']) - set(profile['hostgroups'])
         # Remove hosts and hostgroups from rule
         api.Command.deskprofilerule_remove_host(
-            uid,
+            name,
             host=map(unicode, hdif),
             hostgroup=map(unicode, hgdif)
         )
 
     def save_profile(self, profile):
+        name = profile['name']
         # Check if profile already exists
-        if self.check_profile_exists(profile['uid']):
+        if self.check_profile_exists(name):
             # Modify it
+            logging.debug(
+                'FreeIPAConnector: Profile %s already exists. Updating' % name)
             return self.update_profile(profile)
         else:
             # Save new
+            logging.debug(
+                'FreeIPAConnector: Profile %s does not exist. Creating' % name)
             return self.create_profile(profile)
 
-    def del_profile(self, uid):
-        uid = unicode(uid)
+    def del_profile(self, name):
+        name = unicode(name)
+        logging.debug(
+            'FreeIPAConnector: Deleting profile %s' % name)
         try:
-            api.Command.deskprofile_del(uid)
+            api.Command.deskprofile_del(name)
         except Exception, e:
-            logging.debug(
-                'FC - FreeIPAConnector: Error removing profile %s. %s - %s' % (uid, e, e.__class__))
+            logging.error(
+                'FreeIPAConnector: Error removing profile %s. %s - %s' % (
+                    name, e, e.__class__))
 
+        logging.debug(
+            'FreeIPAConnector: Deleting profile rule for %s' % name)
         try:
-            api.Command.deskprofilerule_del(uid)
+            api.Command.deskprofilerule_del(name)
         except Exception, e:
-            logging.debug(
-                'FC - FreeIPAConnector: Error removing rule for profile %s. %s - %s' % (uid, e, e.__class__))
+            logging.error(
+                'FreeIPAConnector: Error removing rule for profile %s. %s - %s' % (
+                    name, e, e.__class__))
 
     def get_profiles(self):
         try:
             results = api.Command.deskprofile_find('', all=True)
         except Exception, e:
             logging.error(
-                'FC - FreeIPAConnector: Error getting profiles: %s - %s' % (e, e.__class__))
+                'FreeIPAConnector: Error getting profiles: %s - %s' % (
+                    e, e.__class__))
         else:
             resultlist = []
             for res in results['result']:
@@ -228,19 +252,19 @@ class FreeIPAConnector(object):
                 )
             return resultlist
 
-    def get_profile(self, uid):
-        uid = unicode(uid)
+    def get_profile(self, name):
+        name = unicode(name)
         try:
-            result = api.Command.deskprofile_show(uid, all=True)
+            result = api.Command.deskprofile_show(name, all=True)
         except Exception, e:
             logging.error(
-                'Error getting profile %s: %s. %s' % (uid, e, e.__class__))
+                'Error getting profile %s: %s. %s' % (name, e, e.__class__))
             raise e
-        rule = self.get_profile_rule(uid)
+        rule = self.get_profile_rule(name)
         data = result['result']
         profile = {
-            'uid': data['cn'][0],
-            'description': data['description'][0],
+            'name': data['cn'][0],
+            'description': data.get('description', ('',))[0],
             'priority': int(rule['ipadeskprofilepriority'][0]),
             'settings': json.loads(data['ipadeskdata'][0]),
         }
@@ -248,13 +272,14 @@ class FreeIPAConnector(object):
         profile.update(applies)
         return profile
 
-    def get_profile_rule(self, uid):
-        uid = unicode(uid)
+    def get_profile_rule(self, name):
+        name = unicode(name)
         try:
-            result = api.Command.deskprofilerule_show(uid, all=True)
+            result = api.Command.deskprofilerule_show(name, all=True)
         except Exception, e:
             logging.error(
-                'Error getting rule for profile %s: %s. %s' % (uid, e, e.__class__))
+                'Error getting rule for profile %s: %s. %s' % (
+                    name, e, e.__class__))
             raise e
         return result['result']
 
