@@ -218,7 +218,7 @@ class SSHController(object):
 
     def install_pubkey(self, pub_key, username, password,
                        hostname, port=DEFAULT_SSH_PORT,
-                       password_prompt='.*password:',
+                       password_prompt='.*(P|p)assword:',
                        command_prompt='.+\$',
                        **kwargs):
         """
@@ -243,13 +243,17 @@ class SSHController(object):
                 if not final:
                     ssh.expect(command_prompt)
 
+            logging.debug('Waiting password prompt')
             prompts = [password_prompt, command_prompt]
             result = ssh.expect(prompts)
             if result == 0:
+                logging.debug('Sending password')
                 ssh.sendline(password)
                 result = ssh.expect(prompts)
                 if result == 0:
                     # Bad credentials
+                    logging.debug(
+                        'Password prompted again. Invalid credentials.')
                     raise SSHControllerException(
                         'Invalid credentials')
 
@@ -258,8 +262,7 @@ class SSHController(object):
             execute_command('echo "%s" >> ~/.ssh/authorized_keys' % pub_key)
             execute_command('chmod 600 ~/.ssh/authorized_keys')
             execute_command('exit', final=True)
-        except SSHControllerException, e:
-            raise e
         except Exception, e:
+            logging.error('Error installing SSH public key: %s' % e)
             raise SSHControllerException(
                 'Error installing SSH public key: %s' % e)
