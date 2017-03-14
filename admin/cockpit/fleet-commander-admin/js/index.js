@@ -184,7 +184,7 @@ function copyPubkeyToClipboard() {
  * Profiles
  ******************************************************************************/
 
-function refreshProfileList() {
+function refreshProfileList(cb) {
  // Populate profiles list
  fc.GetProfiles(function(resp) {
    if (resp.status) {
@@ -220,7 +220,11 @@ function refreshProfileList() {
    } else {
      showMessageDialog(resp.error, 'Error');
    }
- });
+
+   if(cb && typeof(cb) == 'function') {
+     cb();
+   }
+  });
 }
 
 function showAddProfile() {
@@ -286,19 +290,26 @@ function saveProfile() {
     'hostgroups': $('#profile-hostgroups').val(),
   }
 
-  if (currentprofile && currentprofile.settings) {
-    data.settings = currentprofile.settings
+  if (currentprofile) {
+    if (currentprofile.settings) {
+      data.settings = currentprofile.settings
+    }
+    // Check if profile is being renamed to add an 'oldname' field to data sent
+    if (currentprofile.name && currentprofile.name != data.name) {
+      data['oldname'] = currentprofile.name;
+    }
   } else {
     data.settings = {}
   }
 
   fc.SaveProfile(data, function(resp) {
+    console.log('REEIVED RESP', resp)
     if (resp.status) {
       $('#profile-modal').modal('hide');
       // Refresh profiles
       refreshProfileList();
     } else {
-      showMessageDialog(_('Error saving profile'), _('Error'));
+      showMessageDialog(_('Error saving profile') + ': ' + resp.error, _('Error'));
     }
   });
 }
@@ -413,24 +424,32 @@ $(document).ready (function () {
     $('#pubkey-install-password').focus();
   });
 
+  showCurtain(
+    _('Connecting to Fleet Commander service. Please wait...'),
+    _('Connecting'),
+    'spinner');
+
   // Create a Fleet Commander dbus client instance
   fc = new FleetCommanderDbusClient(function(){
-
     fc.GetInitialValues(function(resp) {
       state.debuglevel = resp.debuglevel
       state.defaults = resp.defaults
 
       setDebugLevel(resp.debugLevel);
-    });
 
-    $('#main-container').show();
-    refreshProfileList();
-    checkHypervisorConfig();
-    initialize_goa();
-  }, function(){
+
+      checkHypervisorConfig();
+      initialize_goa();
+      refreshProfileList(function() {
+        $('#main-container').show();
+        $('#curtain').hide();
+      });
+    });
+  }, function(err){
     $('#main-container').hide()
+    console.log(err);
     showCurtain(
-      _('Can not connect with Fleet Commander dbus service'),
+      _('Can not connect with Fleet Commander service'),
       _('Can\'t connect to Fleet Commander'),
       null,
       {

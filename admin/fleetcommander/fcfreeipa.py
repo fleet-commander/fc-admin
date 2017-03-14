@@ -28,6 +28,14 @@ from ipalib import api
 from ipalib import errors
 
 
+class IPAConnectionError(Exception):
+    pass
+
+
+class RenameToExistingException(Exception):
+    pass
+
+
 class FreeIPAConnector(object):
 
     def __init__(self):
@@ -37,13 +45,18 @@ class FreeIPAConnector(object):
         """
         Connect to FreeIPA server
         """
-        if not api.isdone('bootstrap'):
-            api.bootstrap(context='cli', log=None)
-            api.finalize()
+        try:
+            if not api.isdone('bootstrap'):
+                api.bootstrap(context='cli', log=None)
+                api.finalize()
 
-        if not api.Backend.rpcclient.isconnected():
-            api.Backend.rpcclient.connect()
-        api.Command.ping()
+            if not api.Backend.rpcclient.isconnected():
+                api.Backend.rpcclient.connect()
+            api.Command.ping()
+        except Exception, e:
+            logging. error(
+                'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
+            raise IPAConnectionError('Error connecting to FreeIPA')
 
     def check_user_exists(self, username):
         try:
@@ -80,7 +93,7 @@ class FreeIPAConnector(object):
         except errors.NotFound:
             return False
 
-    def create_profile(self, profile):
+    def _create_profile(self, profile):
         name = unicode(profile['name'])
         logging.debug(
             'FreeIPAConnector: Creating profile %s' % name)
@@ -90,14 +103,14 @@ class FreeIPAConnector(object):
                 description=unicode(profile['description']),
                 ipadeskdata=json.dumps(profile['settings'])
             )
-            self.create_profile_rules(profile)
+            self._create_profile_rules(profile)
         except Exception, e:
             logging.error(
                 'FreeIPAConnector: Error creating profile: %s' % e)
             self.del_profile(name)
             raise e
 
-    def create_profile_rules(self, profile):
+    def _create_profile_rules(self, profile):
         name = unicode(profile['name'])
         # Save rule for profile
         logging.debug(
@@ -122,36 +135,58 @@ class FreeIPAConnector(object):
         api.Command.deskprofilerule_add_host(
             name, host=hosts, hostgroup=hostgroups)
 
-    def update_profile(self, profile):
+    def _update_profile(self, profile, oldname=None):
         name = unicode(profile['name'])
-        logging.debug(
-            'FreeIPAConnector: Updating profile %s' % name)
+
+        parms = {
+            'cn': name,
+            'description': unicode(profile['description']),
+            'ipadeskdata': json.dumps(profile['settings'])
+        }
+
+        if oldname is not None:
+            parms['cn'] = oldname
+            parms['rename'] = name
+            # Update profile renaming it
+            logging.debug(
+                'FreeIPAConnector: Updating profile %s and renaming to %s' % (
+                    oldname, name))
+        else:
+            logging.debug(
+                'FreeIPAConnector: Updating profile %s' % name)
         try:
-            # Update profile
-            api.Command.deskprofile_mod(
-                name,
-                description=unicode(profile['description']),
-                ipadeskdata=json.dumps(profile['settings'])
-            )
+            api.Command.deskprofile_mod(**parms)
         except errors.EmptyModlist:
             pass
         except Exception, e:
             logging.error(
                 'FreeIPAConnector: Error updating profile %s: %s' % (name, e))
             raise e
+        # Update rules for profile
+        self._update_profile_rules(profile, oldname=oldname)
 
-        self.update_profile_rules(profile)
-
-    def update_profile_rules(self, profile):
+    def _update_profile_rules(self, profile, oldname=None):
         name = unicode(profile['name'])
-        logging.debug(
-            'FreeIPAConnector: Updating profile rules for %s' % name)
-        # update rule for profile
+
+        parms = {
+            'cn': name,
+            'ipadeskprofiletarget': name,
+            'ipadeskprofilepriority': profile['priority']
+        }
+
+        if oldname is not None:
+            # Update profile renaming it
+            logging.debug(
+                'FreeIPAConnector: Updating profile rule %s and renaming to %s' % (
+                    oldname, name))
+            parms['cn'] = oldname
+            parms['rename'] = name
+        else:
+            logging.debug(
+                'FreeIPAConnector: Updating profile rules for %s' % name)
+
         try:
-            api.Command.deskprofilerule_mod(
-                name,
-                ipadeskprofiletarget=name,
-                ipadeskprofilepriority=profile['priority'])
+            api.Command.deskprofilerule_mod(**parms)
         except errors.EmptyModlist:
             pass
         except Exception, e:
@@ -159,6 +194,7 @@ class FreeIPAConnector(object):
                 'FreeIPAConnector: Error updating rule for profile %s: %s - %s' % (
                     name, e, e.__class__))
             raise e
+
         # Get current users, groups, hosts and hostgroups for this rule
         rule = self.get_profile_rule(name)
         applies = self.get_profile_applies_from_rule(rule)
@@ -202,17 +238,37 @@ class FreeIPAConnector(object):
 
     def save_profile(self, profile):
         name = profile['name']
-        # Check if profile already exists
-        if self.check_profile_exists(name):
+        # Check if profile has an "oldname" field so we need to rename it
+        if 'oldname' in profile and name != profile['oldname']:
+            oldname = profile['oldname']
             # Modify it
             logging.debug(
-                'FreeIPAConnector: Profile %s already exists. Updating' % name)
-            return self.update_profile(profile)
+                'FreeIPAConnector: Profile needs renaming from %s to %s' % (
+                    profile['oldname'], name))
+            # Check new name exists
+            if self.check_profile_exists(name):
+                # Profile can not be renamed to an existing name
+                logging.error(
+                    'FreeIPAConnector: Profile %s can not be renamed to existing name %s' % (
+                        oldname, name))
+                raise RenameToExistingException(
+                    'Profile %s can not be renamed to existing name %s' % (
+                        oldname, name))
+            else:
+                # Rename profile
+                return self._update_profile(profile, oldname=oldname)
         else:
-            # Save new
-            logging.debug(
-                'FreeIPAConnector: Profile %s does not exist. Creating' % name)
-            return self.create_profile(profile)
+            # Check if profile already exists
+            if self.check_profile_exists(name):
+                # Modify it
+                logging.debug(
+                    'FreeIPAConnector: Profile %s already exists. Updating' % name)
+                return self._update_profile(profile)
+            else:
+                # Save new
+                logging.debug(
+                    'FreeIPAConnector: Profile %s does not exist. Creating' % name)
+                return self._create_profile(profile)
 
     def del_profile(self, name):
         name = unicode(name)

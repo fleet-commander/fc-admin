@@ -28,6 +28,7 @@ import subprocess
 import re
 import uuid
 import time
+from functools import wraps
 
 import dbus
 import dbus.service
@@ -53,6 +54,16 @@ CLIENTDATA_REGEX = re.compile(r'^(?P<filename>(index|applies|[0-9]+)\.json)')
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
 DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
+
+
+def set_last_call_time(f):
+    @wraps(f)
+    def wrapped(obj, *args, **kwargs):
+        obj._last_call_time = time.time()
+        r = f(obj, *args, **kwargs)
+        return r
+    return wrapped
+
 
 class FleetCommanderDbusClient(object):
 
@@ -211,8 +222,11 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.ssh = sshcontroller.SSHController()
         self.known_hosts_file = os.path.join(self.home_dir, '.ssh/known_hosts')
 
+        # Timeout values
         self.tmp_session_destroy_timeout = float(
             args['tmp_session_destroy_timeout'])
+        self.auto_quit_timeout = float(
+            args['auto_quit_timeout'])
 
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -223,6 +237,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Start session checking
         self.start_session_checking()
 
+        # Set last call time to an initial value
+        self._last_call_time = time.time()
+
         # Enter main loop
         self._loop.run()
 
@@ -231,11 +248,14 @@ class FleetCommanderDbusService(dbus.service.Object):
         Get a libvirtcontroller instance
         """
         hypervisor = self.db.config['hypervisor']
-        return libvirtcontroller.LibVirtController(self.state_dir, hypervisor['username'], hypervisor['host'], hypervisor['mode'])
+        return libvirtcontroller.LibVirtController(
+            self.state_dir, hypervisor['username'],
+            hypervisor['host'], hypervisor['mode'])
 
     def get_public_key(self):
         # Initialize LibVirtController to create keypair if needed
-        ctrlr = libvirtcontroller.LibVirtController(self.state_dir, None, None, 'system')
+        ctrlr = libvirtcontroller.LibVirtController(
+            self.state_dir, None, None, 'system')
         with open(ctrlr.public_key_file, 'r') as fd:
             public_key = fd.read().strip()
             fd.close()
@@ -320,6 +340,8 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Checks currently running sessions and destroy temporary ones on timeout
         """
+        logging.debug(
+            'Last call time: %s' % self._last_call_time)
         time_passed = time.time() - self._last_heartbeat
         logging.debug(
             'Checking running sessions. Time passed: %s' % time_passed)
@@ -345,11 +367,18 @@ class FleetCommanderDbusService(dbus.service.Object):
                             logging.error(
                                 'Error destroying session with UUID %s: %s' %
                                 (domain_uuid, e))
-            logging.debug(
-                'Resetting timer for session check')
-            self._last_heartbeat = time.time()
+            if time.time() - self._last_call_time > self.auto_quit_timeout:
+                # Quit service
+                logging.debug(
+                    'Closing Fleet Commander Admin service due to inactivity')
+                self._loop.quit()
+            else:
+                logging.debug(
+                    'Resetting timer for session check')
+                self._last_heartbeat = time.time()
         return True
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetInitialValues(self):
@@ -361,6 +390,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         }
         return json.dumps(state)
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
     def HeartBeat(self):
@@ -370,19 +400,23 @@ class FleetCommanderDbusService(dbus.service.Object):
             'Heartbeat: %s' % self._last_heartbeat)
         return True
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
     def CheckNeedsConfiguration(self):
         return 'hypervisor' not in self.db.config
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetPublicKey(self):
         return self.get_public_key()
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def CheckHypervisorConfig(self, jsondata):
+        logging.debug('Checking hypervisor configuration')
         data = json.loads(jsondata)
         errors = {}
 
@@ -401,11 +435,13 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         return json.dumps({'status': True})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetHypervisorConfig(self):
         return json.dumps(self.get_hypervisor_config())
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def SetHypervisorConfig(self, jsondata):
@@ -414,6 +450,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.db.config['hypervisor'] = data
         return json.dumps({'status': True})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def CheckKnownHost(self, hostname):
@@ -443,6 +480,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         else:
             return json.dumps({'status': True})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def AddKnownHost(self, hostname):
@@ -466,6 +504,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         return json.dumps({'status': True})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='sss', out_signature='s')
     def InstallPubkey(self, hostname, user, passwd):
@@ -483,6 +522,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'error': 'Error installing public key'
             })
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def SaveProfile(self, profiledata):
@@ -490,8 +530,8 @@ class FleetCommanderDbusService(dbus.service.Object):
             'Data received for saving profile: %s' % profiledata)
 
         data = json.loads(profiledata)
-
-        # TODO: Update profile for given name if exists
+        logging.debug(
+            'Data after JSON decoding: %s' % data)
 
         profile = {
             'name': data['name'],
@@ -508,17 +548,35 @@ class FleetCommanderDbusService(dbus.service.Object):
                 None, [u.strip() for u in data['hostgroups'].split(",")]),
         }
 
+        logging.debug(
+            'Profile built to be saved: %s' % profile)
+
+        name = profile['name']
+
+        if 'oldname' in data:
+            logging.debug(
+                'Profile is being renamed from %s to %s' % (
+                    data['oldname'], name))
+            profile['oldname'] = data['oldname']
+
         try:
             logging.debug('Saving profile into IPA server')
             self.ipa.save_profile(profile)
             return json.dumps({'status': True})
-        except Exception, e:
-            logging.error('Error creating profile %s: %s' % (name, e))
+        except fcfreeipa.RenameToExistingException, e:
+            logging.error('Error saving profile %s: %s' % (name, e))
             return json.dumps({
                 'status': False,
-                'error': 'Can not write new profile'
+                'error': '%s' % e
+            })
+        except Exception, e:
+            logging.error('Error saving profile %s: %s' % (name, e))
+            return json.dumps({
+                'status': False,
+                'error': 'Can not save profile.'
             })
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetProfiles(self):
@@ -536,6 +594,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'error': 'Error reading profiles index'
             })
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def GetProfile(self, name):
@@ -553,6 +612,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'error': 'Error reading profile %s' % name,
             })
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def DeleteProfile(self, name):
@@ -564,6 +624,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             logging.error('Error removing profile %s: %s' % (name, e))
             return json.dumps({'status': False})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def ListDomains(self):
@@ -576,6 +637,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'error': 'Error retrieving domains'
             })
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='s')
     def SessionStart(self, domain_uuid):
@@ -606,6 +668,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         return json.dumps({'status': True, 'port': port})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def SessionStop(self):
@@ -615,6 +678,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         else:
             return json.dumps({'status': False, 'error': msg})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='s')
     def SessionSave(self, uid, data):
@@ -673,6 +737,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         return json.dumps({'status': True})
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='s', out_signature='b')
     def IsSessionActive(self, uuid):
@@ -696,11 +761,13 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug('Given session uuid not found in domains')
         return False
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='i')
     def GetChangeListenerPort(self):
         return self.webservice_port
 
+    @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetGOAProviders(self):

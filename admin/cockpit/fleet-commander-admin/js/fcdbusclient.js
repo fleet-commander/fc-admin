@@ -34,7 +34,7 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     readycb(resp);
   }).fail(function(err){
     DEBUG > 0 && console.log('FC: Failed to connect to Dbus service');
-    errorcb(err)
+    errorhandler(err)
   });
 
   // TODO: Bind event in proxy status change and show connection error curtain

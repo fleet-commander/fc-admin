@@ -112,6 +112,9 @@ def parse_config(config_file=None):
         'tmp_session_destroy_timeout': section.get(
             'tmp_session_destroy_timeout',
             constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT),
+        'auto_quit_timeout': section.get(
+            'auto_quit_timeout',
+            constants.DEFAULT_AUTO_QUIT_TIMEOUT),
     }
 
     if not args['client_data_url'][-1] == args['client_data_url'][0] == '/':
