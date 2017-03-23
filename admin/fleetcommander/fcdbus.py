@@ -475,7 +475,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     'Error getting hypervisor fingerprint: %s' % e)
                 return json.dumps({
                     'status': False,
-                    'error': 'Error getting hypervisor fingerprint'
+                    'error': 'Error connecting to SSH service.'
                 })
         else:
             return json.dumps({'status': True})
