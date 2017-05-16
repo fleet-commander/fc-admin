@@ -235,7 +235,7 @@ class SSHController(object):
                 username,
                 hostname,
                 port
-            ), env={'LANG': 'C'})
+            ), env={'PATH': os.environ['PATH'], 'LANG': 'C'})
 
             def execute_command(command, final=False):
                 logging.debug('Executing command: "%s"' % command)
