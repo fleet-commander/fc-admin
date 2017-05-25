@@ -43,6 +43,12 @@ class FreeIPAErrors(object):
     class DuplicateEntry(Exception):
         pass
 
+    class ConversionError(Exception):
+        pass
+
+    class ValidationError(Exception):
+        pass
+
 
 class FreeIPARPCClient(object):
 
@@ -63,8 +69,33 @@ class FreeIPACommand(object):
 
     data = None
 
+    global_policy = 1
+
     def ping(self):
         return
+
+    def deskprofileconfig_show(self):
+        return {
+            'result': {
+                'ipadeskprofilepriority': (unicode(self.global_policy),)
+            }
+        }
+
+    def deskprofileconfig_mod(self, ipadeskprofilepriority):
+        if type(ipadeskprofilepriority) is not int:
+            raise FreeIPAErrors.ConversionError(
+                "invalid 'priority': must be an integer")
+        else:
+            if ipadeskprofilepriority == self.global_policy:
+                raise FreeIPAErrors.EmptyModlist(
+                    "no modifications to be performed")
+            if ipadeskprofilepriority < 1:
+                raise FreeIPAErrors.ValidationError(
+                    "invalid 'priority': must be at least 1")
+            if ipadeskprofilepriority > 24:
+                raise FreeIPAErrors.ValidationError(
+                    "invalid 'priority': can be at most 24")
+        self.global_policy = ipadeskprofilepriority
 
     def user_show(self, user):
         if user in self.data.users:
@@ -116,10 +147,10 @@ class FreeIPACommand(object):
                 u'ipadeskdata': (unicode(ipadeskdata),),
             }
 
-    def deskprofile_mod(self, name, description, ipadeskdata):
-        if name in self.data.profiles:
-            self.data.profiles[name]['description'] = (unicode(description),)
-            self.data.profiles[name]['ipadeskdata'] = (unicode(ipadeskdata),)
+    def deskprofile_mod(self, cn, description, ipadeskdata):
+        if cn in self.data.profiles:
+            self.data.profiles[cn]['description'] = (unicode(description),)
+            self.data.profiles[cn]['ipadeskdata'] = (unicode(ipadeskdata),)
         else:
             raise FreeIPAErrors.NotFound()
 
@@ -222,10 +253,10 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofilerule_mod(self, name,
+    def deskprofilerule_mod(self, cn,
                             ipadeskprofiletarget, ipadeskprofilepriority):
-        if name in self.data.profilerules:
-            self.data.profilerules[name]['priority'] = ipadeskprofilepriority
+        if cn in self.data.profilerules:
+            self.data.profilerules[cn]['priority'] = ipadeskprofilepriority
         else:
             raise FreeIPAErrors.NotFound()
 

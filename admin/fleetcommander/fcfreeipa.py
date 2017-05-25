@@ -22,7 +22,6 @@
 
 import json
 import logging
-import uuid
 
 from ipalib import api
 from ipalib import errors
@@ -235,6 +234,22 @@ class FreeIPAConnector(object):
             host=map(unicode, hdif),
             hostgroup=map(unicode, hgdif)
         )
+
+    def get_global_policy(self):
+        policydata = api.Command.deskprofileconfig_show()
+        return int(policydata['result']['ipadeskprofilepriority'][0])
+
+    def set_global_policy(self, policy):
+        try:
+            api.Command.deskprofileconfig_mod(
+                ipadeskprofilepriority=policy)
+        except errors.EmptyModlist:
+            pass
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error setting global policy to %s: %s' % (
+                    policy, e))
+            raise e
 
     def save_profile(self, profile):
         name = profile['name']
