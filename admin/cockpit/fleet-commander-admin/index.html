@@ -17,6 +17,58 @@
   <body>
 
     <div id="main-container" class="page-ct">
+
+      <!-- Modal dialog for global policy configuration -->
+      <div id="global-policy-config-modal" class="modal fade" tabindex='-1'>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" translatable="yes">Global policy configuration</h4>
+            </div>
+
+            <div class="modal-body">
+              <div id="global-policy-group" class="form-group">
+                <label for="policy" class="control-label" translatable="yes">Global policy for profiles</label>
+                <select id="policy" name="policy" class="form-control">
+                  <option value="1">User-Group-Host-Hostgroup</option>
+                  <option value="2">User-Group-Hostgroup-Host</option>
+                  <option value="3">User-Host-Group-Hostgroup</option>
+                  <option value="4">User-Host-Hostgroup-Group</option>
+                  <option value="5">User-Hostgroup-Group-Host</option>
+                  <option value="6">User-Hostgroup-Host-Group</option>
+                  <option value="7">Group-User-Host-Hostgroup</option>
+                  <option value="8">Group-User-Hostgroup-Host</option>
+                  <option value="9">Group-Host-User-Hostgroup</option>
+                  <option value="10">Group-Host-Hostgroup-User</option>
+                  <option value="11">Group-Hostgroup-User-Host</option>
+                  <option value="12">Group-Hostgroup-Host-User</option>
+                  <option value="13">Host-User-Group-Hostgroup</option>
+                  <option value="14">Host-User-Hostgroup-Group</option>
+                  <option value="15">Host-Group-User-Hostgroup</option>
+                  <option value="16">Host-Group-Hostgroup-User</option>
+                  <option value="17">Host-Hostgroup-User-Group</option>
+                  <option value="18">Host-Hostgroup-Group-User</option>
+                  <option value="19">Hostgroup-User-Group-Host</option>
+                  <option value="20">Hostgroup-User-Host-Group</option>
+                  <option value="21">Hostgroup-Group-User-Host</option>
+                  <option value="22">Hostgroup-Group-Host-User</option>
+                  <option value="23">Hostgroup-Host-User-Group</option>
+                  <option value="24">Hostgroup-Host-Group-User</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
+              <button id="save-global-policy-config" class="btn btn-primary" translatable="yes">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
       <!-- Modal dialog for hypervisor configuration -->
       <div id="hypervisor-config-modal" class="modal fade" tabindex='-1'>
         <div class="modal-dialog">
@@ -267,6 +319,7 @@
       <div class="container-fluid">
         <div class="text-right">
           <button id="show-add-profile" class="btn btn-default pull-left" translatable="yes">Add Profile</button>
+          <button id="show-global-policy-config" class="btn btn-default" translatable="yes">Global policy</button>
           <button id="show-hypervisor-config" class="btn btn-default" translatable="yes">Settings</button>
         </div>
         <div>

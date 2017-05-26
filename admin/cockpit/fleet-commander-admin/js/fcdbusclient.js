@@ -106,6 +106,22 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
+  this.GetGlobalPolicy = function(cb, errcb) {
+    self._proxy.GetGlobalPolicy().done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errorhandler);
+  }
+
+  this.SetGlobalPolicy = function(policy, cb, errcb) {
+    self._proxy.SetGlobalPolicy(policy).done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errorhandler);
+  }
+
   // Profile management methods
   this.GetProfiles = function(cb, errcb) {
     self._proxy.GetProfiles().done(

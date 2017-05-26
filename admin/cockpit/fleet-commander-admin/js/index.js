@@ -388,11 +388,37 @@ function showDomainSelection() {
   });
 }
 
+// Global policy configuration
+function showGlobalPolicyConfig() {
+  fc.GetGlobalPolicy(function(resp){
+    if (resp.status) {
+      $('#policy').val(resp.policy);
+      $('#global-policy-config-modal').modal('show');
+    } else {
+      showMessageDialog(_('Error getting global policy'), _('Error'));
+    }
+  })
+
+}
+
+function saveGlobalPolicyConfig() {
+  var policy = parseInt($('#policy').val());
+  fc.SetGlobalPolicy(policy, function(resp){
+    if (!resp.status) {
+      showMessageDialog(_('Error setting global policy'), _('Error'));
+    }
+    $('#global-policy-config-modal').modal('hide');
+  })
+}
+
+
 /*******************************************************************************
  * Initialization
  ******************************************************************************/
 $(document).ready (function () {
   // Bind events
+  $('#show-global-policy-config').click(showGlobalPolicyConfig);
+  $('#save-global-policy-config').click(saveGlobalPolicyConfig);
   $('#show-hypervisor-config').click(showHypervisorConfig);
   $('#save-hypervisor-config').click(saveHypervisorConfig);
   $('#show-add-profile').click(showAddProfile);
