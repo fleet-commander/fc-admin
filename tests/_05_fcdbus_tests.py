@@ -51,13 +51,27 @@ class TestDbusService(unittest.TestCase):
     TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
     SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'
 
+    DUMMY_PROFILE_NAME = 'foo'
     DUMMY_PROFILE_PAYLOAD = {
-        "profile-name": "foo",
-        "profile-desc": "bar",
-        "users":        "user1,user2,user3",
-        "groups":       "group1,group2",
-        "priority":      51,
-        "hosts":      "testhost1,testhost2",
+        'name': DUMMY_PROFILE_NAME,
+        'description': 'bar',
+        'priority': 51,
+        'settings': {},
+        'users': 'user1,user2,user3',
+        'groups': 'group1,group2',
+        'hosts': 'testhost1,testhost2',
+        'hostgroups': 'testhostgroup1,testhostgroup2',
+    }
+
+    DUMMY_PROFILE_DATA = {
+        'name': DUMMY_PROFILE_NAME,
+        'description': 'bar',
+        'priority': 51,
+        'settings': {},
+        'groups': ['group1', 'group2'],
+        'hostgroups': ['testhostgroup1', 'testhostgroup2'],
+        'hosts': ['testhost1', 'testhost2'],
+        'users': ['user1', 'user2', 'user3'],
     }
 
     MAX_DBUS_CHECKS = 10
@@ -109,9 +123,8 @@ class TestDbusService(unittest.TestCase):
         checks = 0
         while True:
             try:
-                c = fcdbus.FleetCommanderDbusClient()
-                print fcdbus.DBUS_BUS_NAME
-                c.get_public_key()
+                self.c = fcdbus.FleetCommanderDbusClient()
+                self.c.get_public_key()
                 break
             except:
                 checks += 1
@@ -120,7 +133,7 @@ class TestDbusService(unittest.TestCase):
                 else:
                     raise Exception(
                         'Test error: ' +
-                        'DBUS Service is getting too much to start')
+                        'DBUS Service is taking too much to start')
 
         self.ssh = sshcontroller.SSHController()
         self.known_hosts_file = os.path.join(
@@ -129,7 +142,7 @@ class TestDbusService(unittest.TestCase):
     def tearDown(self):
         # Kill service
         self.service.kill()
-        #shutil.rmtree(self.test_directory)
+        shutil.rmtree(self.test_directory)
 
     def get_data_from_file(self, path):
         """
@@ -137,9 +150,29 @@ class TestDbusService(unittest.TestCase):
         """
         return json.loads(open(path).read())
 
-    def configure_hypervisor(self, c):
+    def get_profile_data(self, profile_name):
+        filepath = os.path.join(self.test_directory, 'freeipamock-data.json')
+        data = self.get_data_from_file(filepath)
+        if profile_name in data['profiles'] and profile_name in data['profilerules']:
+
+            profile_data = {
+                'name': data['profiles'][profile_name]['cn'][0],
+                'description': data['profiles'][profile_name]['description'][0],
+                'settings': json.loads(
+                    data['profiles'][profile_name]['ipadeskdata'][0]),
+            }
+
+            profile_data.update(data['profilerules'][profile_name])
+            profile_data['users'].sort()
+            profile_data['groups'].sort()
+            profile_data['hosts'].sort()
+            profile_data['hostgroups'].sort()
+            return profile_data
+        return None
+
+    def configure_hypervisor(self):
         # Configure hypervisor
-        c.set_hypervisor_config({
+        self.c.set_hypervisor_config({
             'host': 'myhost',
             'username': 'valid_user',
             'mode': 'session',
@@ -147,24 +180,19 @@ class TestDbusService(unittest.TestCase):
         })
 
     def test_00_get_initial_values(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         state = {
             'debuglevel' : "debug",
             'defaults' : {
                 'profilepriority' : 50,
             }
         }
-
-        self.assertEqual(json.loads(c.get_initial_values()), state)
+        self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
     def test_01_get_public_key(self):
-        c = fcdbus.FleetCommanderDbusClient()
-        self.assertEqual(c.get_public_key(), 'PUBLIC_KEY')
+        self.assertEqual(self.c.get_public_key(), 'PUBLIC_KEY')
 
     def test_02_get_hypervisor_config(self):
-        c = fcdbus.FleetCommanderDbusClient()
-        self.assertEqual(c.get_hypervisor_config(), {
+        self.assertEqual(self.c.get_hypervisor_config(), {
             'pubkey': 'PUBLIC_KEY',
             'host': '',
             'username': '',
@@ -173,8 +201,6 @@ class TestDbusService(unittest.TestCase):
         })
 
     def test_03_check_hypervisor_config(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -184,7 +210,7 @@ class TestDbusService(unittest.TestCase):
         # Set invalid host data
         idata = data.copy()
         idata['host'] = 'invalid_host'
-        resp = c.check_hypervisor_config(idata)
+        resp = self.c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(
             resp['errors'], {'host': 'Invalid hostname specified'})
@@ -192,7 +218,7 @@ class TestDbusService(unittest.TestCase):
         # Set invalid username data
         idata = data.copy()
         idata['username'] = 'invalid#username'
-        resp = c.check_hypervisor_config(idata)
+        resp = self.c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(
             resp['errors'], {'username': 'Invalid username specified'})
@@ -200,13 +226,11 @@ class TestDbusService(unittest.TestCase):
         # Set invalid session data
         idata = data.copy()
         idata['mode'] = 'invalidmode'
-        resp = c.check_hypervisor_config(idata)
+        resp = self.c.check_hypervisor_config(idata)
         self.assertFalse(resp['status'])
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
 
     def test_04_set_hypervisor_config(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -218,17 +242,15 @@ class TestDbusService(unittest.TestCase):
         dataresp['pubkey'] = 'PUBLIC_KEY'
 
         # Set data
-        resp = c.set_hypervisor_config(data)
+        resp = self.c.set_hypervisor_config(data)
         self.assertTrue(resp['status'])
 
         # Retrieve configuration and compare
-        self.assertEqual(c.get_hypervisor_config(), dataresp)
+        self.assertEqual(self.c.get_hypervisor_config(), dataresp)
 
     def test_05_check_known_host(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         # Check not known host
-        resp = c.check_known_host('localhost')
+        resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
         self.assertEqual(resp['fprint'], '2048 SHA256:HASH localhost (RSA)\n')
         self.assertEqual(resp['keys'], 'localhost ssh-rsa KEY\n')
@@ -238,28 +260,24 @@ class TestDbusService(unittest.TestCase):
             self.known_hosts_file, 'localhost ssh-rsa KEY\n')
 
         # Check already known host
-        resp = c.check_known_host('localhost')
+        resp = self.c.check_known_host('localhost')
         self.assertTrue(resp['status'])
 
     def test_06_add_known_host(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         # Check not known host
-        resp = c.check_known_host('localhost')
+        resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
 
         # Add host to known hosts
-        c.add_known_host('localhost')
+        self.c.add_known_host('localhost')
 
         # Check already known host
-        resp = c.check_known_host('localhost')
+        resp = self.c.check_known_host('localhost')
         self.assertTrue(resp['status'])
 
     def test_07_install_public_key(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
         # Test install with bad credentials
-        resp = c.install_pubkey(
+        resp = self.c.install_pubkey(
             'localhost',
             'username',
             'badpassword',
@@ -267,199 +285,102 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
 
         # Test install with correct credentials
-        resp = c.install_pubkey(
+        resp = self.c.install_pubkey(
             'localhost',
             'username',
             'password',
         )
         self.assertTrue(resp['status'])
 
-    def test_08_new_profile(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_08_save_profile(self):
         # Create a new profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
-        uid = self.get_data_from_file(self.INDEX_FILE)[0]['url'].split('.')[0]
-        self.assertEqual(resp['uid'], uid)
+        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
     def test_09_delete_profile(self):
-        c = fcdbus.FleetCommanderDbusClient()
         # Delete unexistent profile
-        resp = c.delete_profile('fakeuid')
+        resp = self.c.delete_profile('fakeuid')
         self.assertTrue(resp['status'])
         # Delete existent profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        resp = c.delete_profile(resp['uid'])
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
+        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertEqual(data, self.DUMMY_PROFILE_DATA)
+        resp = self.c.delete_profile(self.DUMMY_PROFILE_NAME)
         self.assertTrue(resp['status'])
+        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertEqual(data, None)
 
-    def test_10_profile_props(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
-
-        # Ammend name
-        resp = c.profile_props({'profile-name': 'mynewname'}, uid)
-        self.assertTrue(resp['status'])
-        self.assertEqual(self.get_data_from_file(PROFILE_FILE)['name'], 'mynewname')
-
-        # Check index file is being updated accordingly
-        entry = {'url': '%s.json' % uid, 'displayName': 'wrongDisplayName'}
-        for e in self.get_data_from_file(self.INDEX_FILE):
-            if e['url'] == '%s.json' % uid:
-                entry = e
-                break;
-        self.assertEqual(entry['displayName'], 'mynewname')
-
-        # Ammend description
-        resp = c.profile_props({'profile-desc': 'somedesc'}, uid)
-        self.assertTrue(resp['status'])
-        self.assertEqual(self.get_data_from_file(PROFILE_FILE)['description'], 'somedesc')
-
-        # Ammend users
-        resp = c.profile_props({'users': 'u1,u2,u3'}, uid)
-        self.assertTrue(resp['status'])
-        self.assertEqual(self.get_data_from_file(self.APPLIES_FILE)[uid]['users'], ['u1', 'u2', 'u3'])
-
-        # Ammend groups
-        resp = c.profile_props({'groups': 'g1,g2,g3'}, uid)
-        self.assertTrue(resp['status'])
-        self.assertEqual(self.get_data_from_file(self.APPLIES_FILE)[uid]['groups'], ['g1', 'g2', 'g3'])
-
-    def test_11_list_domains(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_10_list_domains(self):
         # Try to get domains without configuring hypervisor
-        resp = c.list_domains()
+        resp = self.c.list_domains()
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Error retrieving domains')
 
         # Configure hypervisor
-        self.configure_hypervisor(c)
+        self.configure_hypervisor()
 
         # Get domains
-        resp = c.list_domains()
+        resp = self.c.list_domains()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['domains'], MockLibVirtController.DOMAINS_LIST)
 
-    def test_12_session_start(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_11_session_start(self):
         # Configure hypervisor
-        self.configure_hypervisor(c)
-
+        self.configure_hypervisor()
         # Start session
-        resp = c.session_start(self.TEMPLATE_UUID)
+        resp = self.c.session_start(self.TEMPLATE_UUID)
         self.assertTrue(resp['status'])
         self.assertEqual(resp['port'], 0)
-
         # Try to start another session
-        resp = c.session_start(self.TEMPLATE_UUID)
+        resp = self.c.session_start(self.TEMPLATE_UUID)
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
-    def test_13_session_stop(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_12_session_stop(self):
         # Configure hypervisor
-        self.configure_hypervisor(c)
-
+        self.configure_hypervisor()
         # Stop without previous session start
-        resp = c.session_stop()
+        resp = self.c.session_stop()
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'There was no session started')
-
         # Stop previous started session
-        c.session_start(self.TEMPLATE_UUID)
-        resp = c.session_stop()
+        self.c.session_start(self.TEMPLATE_UUID)
+        resp = self.c.session_stop()
         self.assertTrue(resp['status'])
-
         # Stop again
-        resp = c.session_stop()
+        resp = self.c.session_stop()
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'There was no session started')
 
-    def test_15_highlighted_apps(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_13_empty_session_save(self):
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
-
-#        # Add GNOME Software overrides
-        highlightedapps = ['foo.desktop', 'bar.desktop', 'baz.desktop']
-        highlightedappsstring = "['foo.desktop','bar.desktop','baz.desktop']"
-        resp = c.highlighted_apps(highlightedapps, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 1)
-        self.assertEqual(
-            profile['settings']['org.gnome.gsettings'][0]['key'],
-            '/org/gnome/software/popular-overrides')
-        self.assertEqual(
-            profile['settings']['org.gnome.gsettings'][0]['value'],
-            highlightedappsstring)
-
-        # Modify overrides
-        highlightedapps = ['foo.desktop']
-        highlightedappsstring = "['foo.desktop']"
-        resp = c.highlighted_apps(highlightedapps, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        self.assertEqual(
-            profile['settings']['org.gnome.gsettings'][0]["value"],
-            highlightedappsstring)
-
-        # Empty overrides
-        highlightedapps = []
-        resp = c.highlighted_apps(highlightedapps, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        self.assertEqual(len(profile['settings']['org.gnome.gsettings']), 0)
-
-    def test_16_empty_session_save(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
-
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
-        self.configure_hypervisor(c)
+        self.configure_hypervisor()
         # Start a session
-        c.session_start(self.TEMPLATE_UUID)
-
+        self.c.session_start(self.TEMPLATE_UUID)
         # Save empty session
-        resp = c.session_save(uid, {})
+        resp = self.c.session_save(self.DUMMY_PROFILE_NAME, {})
         self.assertTrue(resp['status'])
+        # Check profile is unmodified?
+        data = self.get_profile_data(
+            self.DUMMY_PROFILE_NAME)
+        self.assertEqual(data['settings'], {})
 
-    def test_17_session_save(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_14_session_save(self):
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
-
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
-        self.configure_hypervisor(c)
+        self.configure_hypervisor()
         # Start a session
-        c.session_start(self.TEMPLATE_UUID)
+        self.c.session_start(self.TEMPLATE_UUID)
 
-        gsettings = self.get_data_from_file(PROFILE_FILE)['settings']
+        gsettings = self.get_profile_data(self.DUMMY_PROFILE_NAME)['settings']
         self.assertEqual(gsettings, {})
 
         # Save session
-        # TODO: Settings for session saving
         settings = {
             'org.gnome.gsettings': [{
                 'value': True,
@@ -467,158 +388,61 @@ class TestDbusService(unittest.TestCase):
                 'signature': 'b'
             }]
         }
-        resp = c.session_save(uid, settings)
+        resp = self.c.session_save(self.DUMMY_PROFILE_NAME, settings)
         self.assertTrue(resp['status'])
 
-        gsettings = self.get_data_from_file(
-            PROFILE_FILE)['settings']['org.gnome.gsettings']
+        gsettings = self.get_profile_data(
+            self.DUMMY_PROFILE_NAME)['settings']['org.gnome.gsettings']
         self.assertEqual(len(gsettings), 1)
         self.assertEqual(gsettings[0]['value'], True)
         self.assertEqual(gsettings[0]['signature'], 'b')
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
-    def test_18_get_profiles(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_15_get_profiles(self):
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profiles data
-        resp = c.get_profiles()
-
+        resp = self.c.get_profiles()
         # Check profiles data
         self.assertTrue(resp['status'])
-        self.assertEqual(resp['data'], [{
-            'url': '%s.json' % uid,
-            'displayName': 'foo'
-        }])
+        self.assertEqual(resp['data'], [[
+            self.DUMMY_PROFILE_NAME,
+            self.DUMMY_PROFILE_PAYLOAD['description']
+        ]])
 
-    def test_19_get_profile(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_16_get_profile(self):
         # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        # Get profiles data
-        resp = c.get_profile(uid)
-
-        # Check profiles data
+        resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
+        # Get profile data
+        resp = self.c.get_profile(self.DUMMY_PROFILE_NAME)
+        # Check profile data
         self.assertTrue(resp['status'])
-        self.assertEqual(resp['data'], {
-            'settings': {},
-            'uid': uid,
-            'name': 'foo',
-            'description': 'bar',
-            'users': ['user1', 'user2', 'user3'],
-            'groups': ['group1', 'group2'],
-            'priority': 51,
-            'hosts': ['testhost1','testhost2'],
+        self.assertEqual(resp['data'], self.DUMMY_PROFILE_DATA)
 
-        })
-
-    def test_20_get_profile_applies(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        # Get profiles data
-        resp = c.get_profile_applies(uid)
-
-        # Check profiles data
-        self.assertTrue(resp['status'])
-        self.assertEqual(resp['data'], {
-            'users': ['user1', 'user2', 'user3'],
-            'groups': ['group1', 'group2'],
-            'hosts': ['testhost1','testhost2'],
-        })
-
-    def test_21_get_goa_providers(self):
-        c = fcdbus.FleetCommanderDbusClient()
-        resp = c.get_goa_providers()
+    def test_17_get_goa_providers(self):
+        resp = self.c.get_goa_providers()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
-    def test_22_goa_accounts(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
-        # Create a profile
-        resp = c.new_profile(self.DUMMY_PROFILE_PAYLOAD)
-        uid = resp['uid']
-
-        PROFILE_FILE = os.path.join(self.args['profiles_dir'], uid + '.json')
-
-        account1_id = 'Account account_fc_1432373432_0'
-        account1 = {
-            'Provider': 'provider',
-            'MailEnabled': False,
-            'DocumentsEnabled': True,
-            'ContactsEnabled': False
-        }
-
-        account2_id = 'Account account_fc_1432883432_0'
-        account2 = {
-            'Provider': 'pizza_provider',
-            'PepperoniEnabled': False,
-            'CheeseEnabled': True,
-            'HotdogEnabled': False
-        }
-
-        accounts = {
-            account1_id: account1,
-            account2_id: account2
-        }
-
-        # Add GOA accounts
-        resp = c.goa_accounts(accounts, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        goa_accounts = profile['settings']['org.gnome.online-accounts']
-        self.assertEqual(len(goa_accounts), 2)
-        self.assertEqual(goa_accounts[account1_id], account1)
-        self.assertEqual(goa_accounts[account2_id], account2)
-
-        # Modify accounts
-        del accounts[account1_id]
-        resp = c.goa_accounts(accounts, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        goa_accounts = profile['settings']['org.gnome.online-accounts']
-        self.assertEqual(len(goa_accounts), 1)
-        self.assertEqual(goa_accounts[account2_id], account2)
-
-        # Empty accounts
-        accounts = {}
-        resp = c.goa_accounts(accounts, uid)
-        self.assertTrue(resp['status'])
-        profile = self.get_data_from_file(PROFILE_FILE)
-        goa_accounts = profile['settings']['org.gnome.online-accounts']
-        self.assertEqual(len(goa_accounts), 0)
-
-    def test_23_is_session_active(self):
-        c = fcdbus.FleetCommanderDbusClient()
-
+    def test_18_is_session_active(self):
         # Configure hypervisor
-        self.configure_hypervisor(c)
+        self.configure_hypervisor()
 
         # Check current session active without starting any
-        resp = c.is_session_active()
+        resp = self.c.is_session_active()
         self.assertFalse(resp)
 
         # Check current session active after started current session
-        c.session_start(self.TEMPLATE_UUID)
-        resp = c.is_session_active()
+        self.c.session_start(self.TEMPLATE_UUID)
+        resp = self.c.is_session_active()
         self.assertTrue(resp)
 
         # Check non existent session by its uuid
-        resp = c.is_session_active('unkknown')
+        resp = self.c.is_session_active('unknown')
         self.assertFalse(resp)
 
         # Check existent session by its uuid
-        resp = c.is_session_active('')
+        resp = self.c.is_session_active('')
         self.assertTrue(resp)
 
 if __name__ == '__main__':

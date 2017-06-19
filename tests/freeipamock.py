@@ -20,16 +20,52 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+import os
+import logging
+import json
+
 
 class FreeIPAData(object):
 
-    def __init__(self):
+    def __init__(self, datadir=None):
+        self.datadir = datadir
+        # Data storage
         self.users = ['admin', 'guest', ]
         self.groups = ['admins', 'editors', ]
         self.hosts = ['client1', ]
         self.hostgroups = ['ipaservers', ]
         self.profiles = {}
         self.profilerules = {}
+        self.global_policy = 1
+
+    def get_json(self):
+        return json.dumps({
+            'users': self.users,
+            'groups': self.groups,
+            'hosts': self.hosts,
+            'hostgroups': self.hostgroups,
+            'profiles': self.profiles,
+            'profilerules': self.profilerules,
+            'global_policy': self.global_policy,
+        })
+
+    def save_to_datadir(self, filename='freeipamock-data.json'):
+        if self.datadir is not None:
+            path = os.path.join(self.datadir, filename)
+            with open(path, 'wb') as fd:
+                fd.write(self.get_json())
+                fd.close()
+                logging.debug('FreeIPA mock data saved to %s' % path)
+
+    # Decorator for exporting data to file
+    @classmethod
+    def export_data(cls, fun):
+        def wrapper(self, *args, **kwargs):
+            result = fun(self, *args, **kwargs)
+            # Save data storaged in data member
+            self.data.save_to_datadir()
+            return result
+        return wrapper
 
 
 class FreeIPAErrors(object):
@@ -69,24 +105,23 @@ class FreeIPACommand(object):
 
     data = None
 
-    global_policy = 1
-
     def ping(self):
         return
 
     def deskprofileconfig_show(self):
         return {
             'result': {
-                'ipadeskprofilepriority': (unicode(self.global_policy),)
+                'ipadeskprofilepriority': (unicode(self.data.global_policy),)
             }
         }
 
+    @FreeIPAData.export_data
     def deskprofileconfig_mod(self, ipadeskprofilepriority):
         if type(ipadeskprofilepriority) is not int:
             raise FreeIPAErrors.ConversionError(
                 "invalid 'priority': must be an integer")
         else:
-            if ipadeskprofilepriority == self.global_policy:
+            if ipadeskprofilepriority == self.data.global_policy:
                 raise FreeIPAErrors.EmptyModlist(
                     "no modifications to be performed")
             if ipadeskprofilepriority < 1:
@@ -95,7 +130,7 @@ class FreeIPACommand(object):
             if ipadeskprofilepriority > 24:
                 raise FreeIPAErrors.ValidationError(
                     "invalid 'priority': can be at most 24")
-        self.global_policy = ipadeskprofilepriority
+        self.data.global_policy = ipadeskprofilepriority
 
     def user_show(self, user):
         if user in self.data.users:
@@ -137,6 +172,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofile_add(self, name, description, ipadeskdata):
         if name in self.data.profiles:
             raise FreeIPAErrors.DuplicateEntry()
@@ -147,6 +183,7 @@ class FreeIPACommand(object):
                 u'ipadeskdata': (unicode(ipadeskdata),),
             }
 
+    @FreeIPAData.export_data
     def deskprofile_mod(self, cn, description, ipadeskdata):
         if cn in self.data.profiles:
             self.data.profiles[cn]['description'] = (unicode(description),)
@@ -154,6 +191,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofilerule_add(self, name,
                             ipadeskprofiletarget, ipadeskprofilepriority):
         if name in self.data.profilerules:
@@ -167,6 +205,7 @@ class FreeIPACommand(object):
                 'hostgroups': [],
             }
 
+    @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
         if name in self.data.profilerules:
             self.data.profilerules[name]['users'].extend(user)
@@ -178,6 +217,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
             self.data.profilerules[name]['hosts'].extend(host)
@@ -189,6 +229,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofilerule_remove_user(self, name, user, group):
         if name in self.data.profilerules:
             users = set(self.data.profilerules[name]['users']) - set(user)
@@ -198,6 +239,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofilerule_remove_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
             hosts = set(self.data.profilerules[name]['hosts']) - set(host)
@@ -208,10 +250,12 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofile_del(self, name):
         if name in self.data.profiles:
             del(self.data.profiles[name])
 
+    @FreeIPAData.export_data
     def deskprofilerule_del(self, name):
         if name in self.data.profilerules:
             del(self.data.profilerules[name])
@@ -253,6 +297,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    @FreeIPAData.export_data
     def deskprofilerule_mod(self, cn,
                             ipadeskprofiletarget, ipadeskprofilepriority):
         if cn in self.data.profilerules:

@@ -31,9 +31,15 @@ sys.path.append(PYTHONPATH)
 # Fleet commander imports
 from fleetcommander import fcdbus
 
+# Mock freeipa
+import freeipamock
+fcdbus.fcfreeipa.api = freeipamock.FreeIPAMock
+fcdbus.fcfreeipa.errors = freeipamock.FreeIPAErrors
+
 # Change bus names
 fcdbus.DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderTest'
 fcdbus.DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderTest'
+
 
 class MockLibVirtController(object):
 
@@ -78,7 +84,6 @@ class MockLibVirtController(object):
             if d['uuid'] == uuid:
                 self.DOMAINS_LIST.remove(d)
 
-
 # Mock libvirt controller
 fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
 
@@ -93,10 +98,12 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'data_dir': test_directory,
             'client_data_url': '/',
             'tmp_session_destroy_timeout': 60,
+            'auto_quit_timeout': 60,
             'default_profile_priority': 50,
             # Force state directory
             'state_dir': test_directory,
         }
+        freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData(test_directory)
 
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')

@@ -124,6 +124,12 @@ class FleetCommanderDbusClient(object):
             host, user, passwd
         ))
 
+    def get_global_policy(self):
+        return json.loads(self.iface.GetGlobalPolicy())
+
+    def set_global_policy(self, policy):
+        return json.loads(self.iface.SetGlobalPolicy(policy))
+
     def save_profile(self, profiledata):
         return json.loads(self.iface.SaveProfile(json.dumps(profiledata)))
 
@@ -520,6 +526,39 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({
                 'status': False,
                 'error': 'Error installing public key'
+            })
+
+    @set_last_call_time
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def GetGlobalPolicy(self):
+        logging.debug('Getting global policy')
+        try:
+            policy = self.ipa.get_global_policy()
+            return json.dumps({'status': True, 'policy': policy})
+        except Exception, e:
+            logging.error('Error getting global policy: %s' % e)
+            return json.dumps({
+                'status': False,
+                'error': 'Error getting global policy'
+            })
+
+    @set_last_call_time
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='q', out_signature='s')
+    def SetGlobalPolicy(self, policy):
+        logging.debug(
+            'Setting policy to %s' % policy)
+
+        try:
+            self.ipa.set_global_policy(int(policy))
+            return json.dumps({'status': True})
+        except Exception, e:
+            logging.error(
+                'Error setting gloal policy to %s: %s' % (policy, e))
+            return json.dumps({
+                'status': False,
+                'error': 'Error setting given global policy'
             })
 
     @set_last_call_time
