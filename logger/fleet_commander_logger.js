@@ -125,14 +125,15 @@ var SpicePortManager = function(path) {
   this.queue = [];
   this.timeout = 0;
   this.path = path;
-  debug("SPICE Port: Using '" + this.path + "' for submitting changes")
+  debug("SPICE Port: Using '" + this.path + "' for submitting changes");
   this.file = Gio.file_new_for_path(this.path);
   this.stream = this.file.append_to(Gio.FileCreateFlags.NONE, null);
 }
 
 SpicePortManager.prototype._perform_submits = function () {
-    if (this.queue.length < 1)
-        return false;
+    if (this.queue.length < 1) {
+      return false;
+    }
 
     debug("SPICE Port: Performing changes submission");
     while (this.queue.length > 0) {
@@ -140,15 +141,12 @@ SpicePortManager.prototype._perform_submits = function () {
       debug("SPICE Port: Submitting change " + elem.ns + ":");
       debug(elem.data);
       debug("SPICE Port: Remaining elements: " + this.queue.length);
-
       let payload = JSON.stringify(elem);
-
       // Write change to port
       this.stream.write(payload, null);
     }
     GLib.source_remove(this.timeout);
     this.timeout = 0;
-
     return true;
 }
 
@@ -538,9 +536,9 @@ GSettingsLogger.prototype._libreoffice_change = function(path, keys) {
     builder.end_object();
 
     generator.set_root(builder.get_root());
-    let data = generator.to_data(null)[0];
+    let finaldata = generator.to_data(null)[0];
 
-    this.connmgr.submit_change ("org.libreoffice.registry", data);
+    this.connmgr.submit_change ("org.libreoffice.registry", finaldata);
   }.bind(this));
 }
 
