@@ -140,27 +140,31 @@ function deployProfile() {
       collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };
 
+  var uid = sessionStorage.getItem("fc.session.profile_uid");
+
+  DEBUG > 0 && console.log('FC: Saving live session settings')
+
   showSpinnerDialog(
     _('Saving settings to profile. Please wait...'),
     _('Saving settings'))
 
   $('#event-logs').modal('hide');
 
-  stopLiveSession(function () {
-    var uid = sessionStorage.getItem("fc.session.profile_uid");
-    DEBUG > 0 && console.log('FC: Saving live session settings')
-    fc.SessionSave(uid, changesets, function(resp){
-        if (resp.status) {
-          DEBUG > 0 && console.log('FC: Saved live session settings')
-          location.href='index.html'
-        } else {
-          showMessageDialog(_('Error saving session'), _('Error'));
-          $('#spinner-dialog-modal').modal('hide');
-        }
-    }, function(){
-      console.log('FC: Error saving live session settings')
-    });
+  fc.SessionSave(uid, changesets, function(resp){
+      if (resp.status) {
+        $('#spinner-dialog-modal').modal('hide');
+        showMessageDialog(_('Settings has been saved'), _('Settings saved'));
+        DEBUG > 0 && console.log('FC: Saved live session settings')
+      } else {
+        $('#spinner-dialog-modal').modal('hide');
+        showMessageDialog(_('Error saving settings'), _('Error'));
+      }
+  }, function(){
+    console.log('FC: Error saving live session settings')
+    $('#spinner-dialog-modal').modal('hide');
+    showMessageDialog(_('Error saving settings'), _('Error'));
   });
+
 }
 
 $(document).ready (function () {
