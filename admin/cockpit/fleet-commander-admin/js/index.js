@@ -302,15 +302,18 @@ function saveProfile() {
     data.settings = {}
   }
 
+  $('#profile-modal').modal('hide');
+  showSpinnerDialog(_('Saving profile'))
+
   fc.SaveProfile(data, function(resp) {
-    console.log('REEIVED RESP', resp)
     if (resp.status) {
-      $('#profile-modal').modal('hide');
       // Refresh profiles
       refreshProfileList();
     } else {
       showMessageDialog(_('Error saving profile') + ': ' + resp.error, _('Error'));
+      $('#profile-modal').modal('show');
     }
+    $('#spinner-dialog-modal').modal('hide');
   });
 }
 
@@ -475,8 +478,8 @@ $(document).ready (function () {
     $('#main-container').hide()
     console.log(err);
     showCurtain(
-      _('Can not connect with Fleet Commander service'),
-      _('Can\'t connect to Fleet Commander'),
+      _('Error during service connection. Check system logs for details'),
+      _('Can\'t initialize Fleet Commander'),
       null,
       {
         'dbus-retry': {

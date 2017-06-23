@@ -37,6 +37,7 @@ window.alert = function(message) {
 }
 
 function startLiveSession() {
+  showSpinnerDialog(_('Connecting to virtual machine'))
   // Stop any previous session
   stopLiveSession(function(){
     var domain = sessionStorage.getItem("fc.session.domain")
@@ -44,12 +45,12 @@ function startLiveSession() {
       if (resp.status) {
         fcsc = new FleetCommanderSpiceClient(
           location.hostname, resp.port, function () {
-            console.log('CAGADA')
-            stopLiveSession
+            stopLiveSession()
           });
         startHeartBeat();
       } else {
         showMessageDialog(resp.error, _('Error'));
+        $('#spinner-dialog-modal').modal('hide');
       }
     })
   });
@@ -143,6 +144,8 @@ function deployProfile() {
     _('Saving settings to profile. Please wait...'),
     _('Saving settings'))
 
+  $('#event-logs').modal('hide');
+
   stopLiveSession(function () {
     var uid = sessionStorage.getItem("fc.session.profile_uid");
     DEBUG > 0 && console.log('FC: Saving live session settings')
@@ -152,6 +155,7 @@ function deployProfile() {
           location.href='index.html'
         } else {
           showMessageDialog(_('Error saving session'), _('Error'));
+          $('#spinner-dialog-modal').modal('hide');
         }
     }, function(){
       console.log('FC: Error saving live session settings')
