@@ -37,9 +37,6 @@ class RenameToExistingException(Exception):
 
 class FreeIPAConnector(object):
 
-    def __init__(self):
-        self.connect()
-
     def connect(self):
         """
         Connect to FreeIPA server
@@ -48,14 +45,13 @@ class FreeIPAConnector(object):
             if not api.isdone('bootstrap'):
                 api.bootstrap(context='cli', log=None)
                 api.finalize()
-
             if not api.Backend.rpcclient.isconnected():
                 api.Backend.rpcclient.connect()
             api.Command.ping()
         except Exception, e:
-            logging. error(
+            logging.error(
                 'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
-            raise IPAConnectionError('Error connecting to FreeIPA')
+            raise
 
     def check_user_exists(self, username):
         try:

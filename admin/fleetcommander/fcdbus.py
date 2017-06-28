@@ -95,6 +95,9 @@ class FleetCommanderDbusClient(object):
     def get_initial_values(self):
         return self.iface.GetInitialValues()
 
+    def do_ipa_connection(self):
+        return self.iface.DoIPAConnection()
+
     def heartbeat(self):
         return self.iface.HeartBeat()
 
@@ -398,6 +401,24 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='', out_signature='s')
+    def DoIPAConnection(self):
+        logging.debug('Connecting to IPA server')
+        try:
+            self.ipa.connect()
+            return json.dumps({
+                'status': True
+            })
+        except Exception, e:
+            logging.debug(
+                'IPA server connection failed: %s' % e)
+            return json.dumps({
+                'status': False,
+                'error': 'Error connecting to IPA server'
+            })
+
+    @set_last_call_time
+    @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='b')
     def HeartBeat(self):
         # Update last heartbeat time
@@ -547,6 +568,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='q', out_signature='s')
     def SetGlobalPolicy(self, policy):
+
         logging.debug(
             'Setting policy to %s' % policy)
 

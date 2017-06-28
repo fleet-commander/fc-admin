@@ -188,10 +188,15 @@ class TestDbusService(unittest.TestCase):
         }
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
-    def test_01_get_public_key(self):
+    def test_01_do_ipa_connection(self):
+        self.assertEqual(json.loads(self.c.do_ipa_connection()), {
+            'status': True
+        })
+
+    def test_02_get_public_key(self):
         self.assertEqual(self.c.get_public_key(), 'PUBLIC_KEY')
 
-    def test_02_get_hypervisor_config(self):
+    def test_03_get_hypervisor_config(self):
         self.assertEqual(self.c.get_hypervisor_config(), {
             'pubkey': 'PUBLIC_KEY',
             'host': '',
@@ -200,7 +205,7 @@ class TestDbusService(unittest.TestCase):
             'needcfg': True,
         })
 
-    def test_03_check_hypervisor_config(self):
+    def test_04_check_hypervisor_config(self):
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -230,7 +235,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
 
-    def test_04_set_hypervisor_config(self):
+    def test_05_set_hypervisor_config(self):
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -248,7 +253,7 @@ class TestDbusService(unittest.TestCase):
         # Retrieve configuration and compare
         self.assertEqual(self.c.get_hypervisor_config(), dataresp)
 
-    def test_05_check_known_host(self):
+    def test_06_check_known_host(self):
         # Check not known host
         resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
@@ -263,7 +268,7 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.check_known_host('localhost')
         self.assertTrue(resp['status'])
 
-    def test_06_add_known_host(self):
+    def test_07_add_known_host(self):
         # Check not known host
         resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
@@ -275,7 +280,7 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.check_known_host('localhost')
         self.assertTrue(resp['status'])
 
-    def test_07_install_public_key(self):
+    def test_08_install_public_key(self):
         # Test install with bad credentials
         resp = self.c.install_pubkey(
             'localhost',
@@ -292,14 +297,14 @@ class TestDbusService(unittest.TestCase):
         )
         self.assertTrue(resp['status'])
 
-    def test_08_save_profile(self):
+    def test_09_save_profile(self):
         # Create a new profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
         data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
-    def test_09_delete_profile(self):
+    def test_10_delete_profile(self):
         # Delete unexistent profile
         resp = self.c.delete_profile('fakeuid')
         self.assertTrue(resp['status'])
@@ -312,7 +317,7 @@ class TestDbusService(unittest.TestCase):
         data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
         self.assertEqual(data, None)
 
-    def test_10_list_domains(self):
+    def test_11_list_domains(self):
         # Try to get domains without configuring hypervisor
         resp = self.c.list_domains()
         self.assertFalse(resp['status'])
@@ -326,7 +331,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         self.assertEqual(resp['domains'], MockLibVirtController.DOMAINS_LIST)
 
-    def test_11_session_start(self):
+    def test_12_session_start(self):
         # Configure hypervisor
         self.configure_hypervisor()
         # Start session
@@ -338,7 +343,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'Session already started')
 
-    def test_12_session_stop(self):
+    def test_13_session_stop(self):
         # Configure hypervisor
         self.configure_hypervisor()
         # Stop without previous session start
@@ -354,7 +359,7 @@ class TestDbusService(unittest.TestCase):
         self.assertFalse(resp['status'])
         self.assertEqual(resp['error'], 'There was no session started')
 
-    def test_13_empty_session_save(self):
+    def test_14_empty_session_save(self):
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
@@ -369,7 +374,7 @@ class TestDbusService(unittest.TestCase):
             self.DUMMY_PROFILE_NAME)
         self.assertEqual(data['settings'], {})
 
-    def test_14_session_save(self):
+    def test_15_session_save(self):
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
@@ -398,7 +403,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(gsettings[0]['signature'], 'b')
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
-    def test_15_get_profiles(self):
+    def test_16_get_profiles(self):
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profiles data
@@ -410,7 +415,7 @@ class TestDbusService(unittest.TestCase):
             self.DUMMY_PROFILE_PAYLOAD['description']
         ]])
 
-    def test_16_get_profile(self):
+    def test_17_get_profile(self):
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profile data
@@ -419,12 +424,12 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         self.assertEqual(resp['data'], self.DUMMY_PROFILE_DATA)
 
-    def test_17_get_goa_providers(self):
+    def test_18_get_goa_providers(self):
         resp = self.c.get_goa_providers()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
-    def test_18_is_session_active(self):
+    def test_19_is_session_active(self):
         # Configure hypervisor
         self.configure_hypervisor()
 

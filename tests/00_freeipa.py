@@ -42,37 +42,7 @@ class TestFreeIPA(unittest.TestCase):
 
     maxDiff = None
 
-    # ipa = FreeIPAConnector()
-    #
-    # print(ipa.check_user_exists('admin'))
-    # print(ipa.check_group_exists('admins'))
-    # print(ipa.check_host_exists('client1'))
-    # print(ipa.check_hostgroup_exists('ipaservers2'))
-    # ipa.save_profile({
-    #     'uid': 'MYUID',
-    #     'description': 'Hola',
-    #     'priority': 100,
-    #     'settings': {
-    #         'org.freedesktop.NetworkManager': [],
-    #         'org.gnome.gsettings': [
-    #             {
-    #                 'schema': 'org.gnome.desktop.notifications.application',
-    #                 'key': '/org/gnome/desktop/notifications/application/abrt-applet/application-id',
-    #                 'value': "'abrt-applet.desktop'",
-    #                 'signature': 's',
-    #             }
-    #         ],
-    #     },
-    #     'users': ['guest', 'pepe', 'admin', ],
-    #     'groups': ['admins', 'editors', ],
-    #     'hosts': ['client1', ],
-    #     'hostgroups': ['ipaservers', ],
-    # })
-    # print(ipa.get_profile('MYUID'))
-    # ipa.del_profile('MYUID')
-
     TEST_PROFILE = {
-        #'uid': 'Test Profile',
         'name': 'Test Profile',
         'description': 'My test profile',
         'priority': 100,
@@ -108,7 +78,6 @@ class TestFreeIPA(unittest.TestCase):
     }
 
     TEST_PROFILE_MOD = {
-        #'uid': 'Test Profile',
         'name': 'Test Profile',
         'description': 'Test profile modified',
         'priority': 50,
@@ -145,6 +114,7 @@ class TestFreeIPA(unittest.TestCase):
 
     def setUp(self):
         self.ipa = fcfreeipa.FreeIPAConnector()
+        self.ipa.connect()
         freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData()
 
     def test_01_check_user_exists(self):

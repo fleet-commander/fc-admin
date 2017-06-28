@@ -310,6 +310,15 @@ class FreeIPAMock(object):
 
     Backend = FreeIPABackend
     Command = FreeIPACommand()
+    _connected = False
+
+    @staticmethod
+    def connect():
+        FreeIPAMock._connected = True
+
+    @staticmethod
+    def is_connected():
+        return FreeIPAMock._connected
 
     @staticmethod
     def isdone(parm):
