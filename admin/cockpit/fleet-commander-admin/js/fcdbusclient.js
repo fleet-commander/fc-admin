@@ -39,9 +39,17 @@ function FleetCommanderDbusClient(readycb, errorcb) {
 
   // TODO: Bind event in proxy status change and show connection error curtain
 
-  // Hypervisor configuration methods
+  // Initialization methods
   this.GetInitialValues = function(cb, errcb) {
     self._proxy.GetInitialValues().done(
+      function(resp) {
+        cb(JSON.parse(resp));
+      }
+    ).fail(errorhandler);
+  }
+
+  this.DoIPAConnection = function(cb, errcb) {
+    self._proxy.DoIPAConnection().done(
       function(resp) {
         cb(JSON.parse(resp));
       }
@@ -55,7 +63,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
       }
     ).fail(errorhandler);
   }
-
 
   // Hypervisor configuration methods
   this.GetHypervisorConfig = function(cb, errcb) {
@@ -213,6 +220,11 @@ function FleetCommanderDbusClient(readycb, errorcb) {
         cb(JSON.parse(resp));
       }
     ).fail(errorhandler);
+  }
+
+  // Quit method
+  this.Quit = function(cb, errcb) {
+    self._proxy.Quit().done(cb).fail(errorhandler);
   }
 
 }

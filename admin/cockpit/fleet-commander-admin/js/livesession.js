@@ -215,15 +215,35 @@ $(document).ready (function () {
 
     fc.GetInitialValues(function(resp) {
       setDebugLevel(resp.debugLevel);
-    });
 
-    $('#main-container').show();
-    startLiveSession();
-    // Error catchall to workarount "oops" message in cockpit
-    window.onerror = function(message, url, lineNumber) {
-      DEBUG > 0 && console.error('Live session error: (', lineNumber, ' ', url, ') ', message);
-      return true;
-    };
+      // Try FreeIPA connection
+      fc.DoIPAConnection(function(resp) {
+          if (resp.status) {
+            $('#main-container').show();
+            startLiveSession();
+            // Error catchall to workarount "oops" message in cockpit
+            window.onerror = function(message, url, lineNumber) {
+              DEBUG > 0 && console.error('Live session error: (', lineNumber, ' ', url, ') ', message);
+              return true;
+            };
+          } else {
+            fc.Quit();
+            $('#main-container').hide()
+            console.log(resp.error);
+            showCurtain(
+              _('Error connecting to IPA server. Check system logs for details'),
+              _('Error connecting to IPA server'),
+              null,
+              {
+                'dbus-retry': {
+                  text: 'Retry connection',
+                  class: 'btn-primary',
+                  callback: function(){ location.reload() }},
+              });
+          }
+      })
+
+    });
   }, function(){
     $('#main-container').hide()
     showCurtain(

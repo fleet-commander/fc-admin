@@ -466,13 +466,32 @@ $(document).ready (function () {
 
       setDebugLevel(resp.debugLevel);
 
-
-      checkHypervisorConfig();
-      initialize_goa();
-      refreshProfileList(function() {
-        $('#main-container').show();
-        $('#curtain').hide();
+      // Try FreeIPA connection
+      fc.DoIPAConnection(function(resp) {
+          if (resp.status) {
+            checkHypervisorConfig();
+            initialize_goa();
+            refreshProfileList(function() {
+              $('#main-container').show();
+              $('#curtain').hide();
+            });
+          } else {
+            fc.Quit();
+            $('#main-container').hide()
+            console.log(resp.error);
+            showCurtain(
+              _('Error connecting to IPA server. Check system logs for details'),
+              _('Error connecting to IPA server'),
+              null,
+              {
+                'dbus-retry': {
+                  text: 'Retry connection',
+                  class: 'btn-primary',
+                  callback: function(){ location.reload() }},
+              });
+          }
       });
+
     });
   }, function(err){
     $('#main-container').hide()
