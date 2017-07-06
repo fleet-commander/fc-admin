@@ -152,6 +152,21 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    def host_find(self, sizelimit):
+        count = len(self.data.hosts)
+        result = []
+        for host in self.data.hosts:
+            result.append({
+                'fqdn': (host,)
+            })
+        res = {
+            u'count': count,
+            u'summary': u'%s Hosts matched' % count,
+            u'result': tuple(result),
+            u'truncated': False
+        }
+        return res
+
     def host_show(self, host):
         if host in self.data.hosts:
             return {
@@ -162,6 +177,12 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
+    def hostgroup_add(self, hostgroup):
+        if hostgroup in self.data.hostgroups:
+            raise DuplicateEntry('Hostgroup "%s" already exists' % hostgroup)
+        else:
+            self.data.hostgroups.append(hostgroup)
+
     def hostgroup_show(self, hostgroup):
         if hostgroup in self.data.hostgroups:
             return {
@@ -171,6 +192,21 @@ class FreeIPACommand(object):
             }
         else:
             raise FreeIPAErrors.NotFound()
+
+    def hostgroup_add_member(self, hostgroup, host):
+        pass
+
+    def automember_add(self, name, type):
+        pass
+
+    def automember_del(self, name, type):
+        pass
+
+    def automember_add_condition(self, name, type, key, automemberinclusiveregex):
+        pass
+
+    def automember_remove_condition(self, name, type, key):
+        pass
 
     @FreeIPAData.export_data
     def deskprofile_add(self, name, description, ipadeskdata):
@@ -262,7 +298,7 @@ class FreeIPACommand(object):
         else:
             raise FreeIPAErrors.NotFound()
 
-    def deskprofile_find(self, criteria, all):
+    def deskprofile_find(self, criteria, sizelimit, all):
         count = len(self.data.profiles.keys())
         res = {
             u'count': count,

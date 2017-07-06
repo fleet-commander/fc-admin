@@ -27,6 +27,12 @@ from ipalib import api
 from ipalib import errors
 
 
+FC_WILDCARD_HOSTGROUP = u'fc_all_hosts'
+
+
+logging.getLogger().setLevel(logging.DEBUG)
+
+
 class IPAConnectionError(Exception):
     pass
 
@@ -37,7 +43,7 @@ class RenameToExistingException(Exception):
 
 class FreeIPAConnector(object):
 
-    def connect(self):
+    def connect(self, sanity_check=True):
         """
         Connect to FreeIPA server
         """
@@ -48,6 +54,9 @@ class FreeIPAConnector(object):
             if not api.Backend.rpcclient.isconnected():
                 api.Backend.rpcclient.connect()
             api.Command.ping()
+            # Sanity check
+            if sanity_check:
+                self._do_sanity_check()
         except Exception, e:
             logging.error(
                 'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
@@ -231,6 +240,113 @@ class FreeIPAConnector(object):
             hostgroup=map(unicode, hgdif)
         )
 
+    def _get_all_hosts(self):
+        try:
+            hosts = []
+            for host in api.Command.host_find(sizelimit=0)['result']:
+                hosts.append(host['fqdn'][0])
+            return hosts
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error getting hosts list')
+            raise
+
+    def _create_automember_wildcard_hostgroup(self):
+        """
+        Initialize an automember hostgroup for Fleet Commander and
+        add all current machines into it
+        """
+
+        # Create hostgroup
+        logging.debug(
+            'FreeIPAConnector: Creating fleet commander wildcard hostgroup "%s"' % FC_WILDCARD_HOSTGROUP)
+        try:
+            logging.debug(
+                'FreeIPAConnector: Creating wildcard hostgroup "%s"' % FC_WILDCARD_HOSTGROUP)
+            api.Command.hostgroup_add(FC_WILDCARD_HOSTGROUP)
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error creating fleet commander wildcard hostgroup "%s": %s' % (
+                    FC_WILDCARD_HOSTGROUP, e))
+            _rollback()
+            raise e
+        # Create automember rule
+        try:
+            logging.debug(
+                'FreeIPAConnector: Creating automember rule')
+            api.Command.automember_add(FC_WILDCARD_HOSTGROUP, type=u'hostgroup')
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error creating automember rule for wildcard hostgroup: %s' % e)
+            _rollback()
+            raise e
+        # Create automember rule condition
+        try:
+            logging.debug(
+                'FreeIPAConnector: Creating automember condition')
+            api.Command.automember_add_condition(FC_WILDCARD_HOSTGROUP, type=u'hostgroup', key=u'fqdn', automemberinclusiveregex=u'.*')
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error creating automember rule for wildcard hostgroup: %s' % e)
+            _rollback()
+            raise e
+        # Add all hosts to hostgroup
+        try:
+            logging.debug(
+                'FreeIPAConnector: Adding all existent hosts to wildcard group')
+            hosts = self._get_all_hosts()
+            api.Command.hostgroup_add_member(FC_WILDCARD_HOSTGROUP, host=hosts)
+        except Exception, e:
+            logging.error(
+                'FreeIPAConnector: Error adding hosts to wildcard hostgroup: %s' % e)
+            raise e
+
+    def _remove_automember_wildcard_hostgroup(self):
+        logging.debug(
+            'FreeIPAConnector: Cleaning fleet commander wildcard hostgroup creation')
+        try:
+            logging.debug(
+                'FreeIPAConnector: Cleaning automember condition')
+            api.Command.automember_remove_condition(
+                FC_WILDCARD_HOSTGROUP, key=u'fqdn', type=u'hostgroup')
+        except Exception, e:
+            pass
+        try:
+            logging.debug(
+                'FreeIPAConnector: Cleaning automember rule')
+            api.Command.automember_del(
+                FC_WILDCARD_HOSTGROUP, type=u'hostgroup')
+        except Exception, e:
+            pass
+        try:
+            logging.debug(
+                'FreeIPAConnector: Cleaning wildcard host group')
+            api.Command.hostgroup_del(FC_WILDCARD_HOSTGROUP)
+        except Exception, e:
+            pass
+
+    def _do_sanity_check(self):
+        """
+        Checks IPA server environment and sanity
+        """
+        logging.debug(
+            'FreeIPAConnector: Starting sanity check')
+        # Check freeipa-desktop-profile plugin installation
+        if not hasattr(api.Command, 'deskprofileconfig_show'):
+            raise IPAConnectionError(
+                'freeipa-desktop-profile is not installed in FreeIPA server')
+        # Check if wildcard group is present
+        if not self.check_hostgroup_exists(FC_WILDCARD_HOSTGROUP):
+            # Try to create it
+            try:
+                self._create_automember_wildcard_hostgroup()
+            except Exception, e:
+                # Rollback changes
+                self._remove_automember_wildcard_hostgroup()
+                raise IPAConnectionError(
+                    'Could not initialize Fleet Commander wildcard hostgroup')
+        return None
+
     def get_global_policy(self):
         policydata = api.Command.deskprofileconfig_show()
         return int(policydata['result']['ipadeskprofilepriority'][0])
@@ -248,6 +364,9 @@ class FreeIPAConnector(object):
             raise e
 
     def save_profile(self, profile):
+        # Check if we need to add the wildcard hostgroup
+        if not profile['hosts'] and not profile['hostgroups']:
+            profile['hostgroups'].append(FC_WILDCARD_HOSTGROUP)
         name = profile['name']
         # Check if profile has an "oldname" field so we need to rename it
         if 'oldname' in profile and name != profile['oldname']:
@@ -303,7 +422,7 @@ class FreeIPAConnector(object):
 
     def get_profiles(self):
         try:
-            results = api.Command.deskprofile_find('', all=True)
+            results = api.Command.deskprofile_find('', sizelimit=0, all=True)
         except Exception, e:
             logging.error(
                 'FreeIPAConnector: Error getting profiles: %s - %s' % (
@@ -366,5 +485,7 @@ class FreeIPAConnector(object):
             applies['hosts'] = [
                 x.split('.')[0] for x in rule['memberhost_host']]
         if 'memberhost_hostgroup' in rule:
-            applies['hostgroups'] = rule['memberhost_hostgroup']
+            # Load hostgroups only if they are not the wildcard group
+            if rule['memberhost_hostgroup'] != [FC_WILDCARD_HOSTGROUP]:
+                applies['hostgroups'] = rule['memberhost_hostgroup']
         return applies

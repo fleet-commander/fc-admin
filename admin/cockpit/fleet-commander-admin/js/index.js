@@ -454,8 +454,8 @@ $(document).ready (function () {
   });
 
   showCurtain(
+    _('Fleet commander is initializing needed data. This action can last for some time depending on your system configuration. Please, be patient.'),
     _('Connecting to Fleet Commander service. Please wait...'),
-    _('Connecting'),
     'spinner');
 
   // Create a Fleet Commander dbus client instance

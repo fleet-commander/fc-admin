@@ -114,8 +114,8 @@ class TestFreeIPA(unittest.TestCase):
 
     def setUp(self):
         self.ipa = fcfreeipa.FreeIPAConnector()
-        self.ipa.connect()
         freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData()
+        self.ipa.connect()
 
     def test_01_check_user_exists(self):
         # Check existent user
