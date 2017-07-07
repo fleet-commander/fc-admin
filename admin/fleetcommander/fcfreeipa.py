@@ -22,6 +22,7 @@
 
 import json
 import logging
+from functools import wraps
 
 from ipalib import api
 from ipalib import errors
@@ -31,6 +32,15 @@ FC_WILDCARD_HOSTGROUP = u'fc_all_hosts'
 
 
 logging.getLogger().setLevel(logging.DEBUG)
+
+
+def connection_required(f):
+    @wraps(f)
+    def wrapped(obj, *args, **kwargs):
+        if not api.isdone('bootstrap'):
+            obj.connect()
+        return f(obj, *args, **kwargs)
+    return wrapped
 
 
 class IPAConnectionError(Exception):
@@ -61,41 +71,6 @@ class FreeIPAConnector(object):
             logging.error(
                 'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
             raise
-
-    def check_user_exists(self, username):
-        try:
-            result = api.Command.user_show(unicode(username))
-            return True
-        except errors.NotFound:
-            return False
-
-    def check_group_exists(self, groupname):
-        try:
-            result = api.Command.group_show(unicode(groupname))
-            return True
-        except errors.NotFound:
-            return False
-
-    def check_host_exists(self, hostname):
-        try:
-            result = api.Command.host_show(unicode(hostname))
-            return True
-        except errors.NotFound:
-            return False
-
-    def check_hostgroup_exists(self, groupname):
-        try:
-            result = api.Command.hostgroup_show(unicode(groupname))
-            return True
-        except errors.NotFound:
-            return False
-
-    def check_profile_exists(self, name):
-        try:
-            result = api.Command.deskprofile_show(unicode(name), all=False)
-            return True
-        except errors.NotFound:
-            return False
 
     def _create_profile(self, profile):
         name = unicode(profile['name'])
@@ -201,7 +176,7 @@ class FreeIPAConnector(object):
 
         # Get current users, groups, hosts and hostgroups for this rule
         rule = self.get_profile_rule(name)
-        applies = self.get_profile_applies_from_rule(rule)
+        applies = self._get_profile_applies_from_rule(rule)
         # Get users and groups to add
         udif = set(profile['users']) - set(applies['users'])
         gdif = set(profile['groups']) - set(applies['groups'])
@@ -336,7 +311,12 @@ class FreeIPAConnector(object):
             raise IPAConnectionError(
                 'freeipa-desktop-profile is not installed in FreeIPA server')
         # Check if wildcard group is present
-        if not self.check_hostgroup_exists(FC_WILDCARD_HOSTGROUP):
+        try:
+            result = api.Command.hostgroup_show(FC_WILDCARD_HOSTGROUP)
+            hostgroup_exists = True
+        except errors.NotFound:
+            hostgroup_exists = False
+        if not hostgroup_exists:
             # Try to create it
             try:
                 self._create_automember_wildcard_hostgroup()
@@ -347,10 +327,77 @@ class FreeIPAConnector(object):
                     'Could not initialize Fleet Commander wildcard hostgroup')
         return None
 
+    def _get_profile_applies_from_rule(self, rule):
+        applies = {
+            'users': [],
+            'groups': [],
+            'hosts': [],
+            'hostgroups': [],
+        }
+        if 'memberuser_user' in rule:
+            applies['users'] = rule['memberuser_user']
+        if 'memberuser_group' in rule:
+            applies['groups'] = rule['memberuser_group']
+        if 'memberhost_host' in rule:
+            # Remove domain part from hostnames
+            applies['hosts'] = [
+                x.split('.')[0] for x in rule['memberhost_host']]
+        if 'memberhost_hostgroup' in rule:
+            # Load hostgroups only if they are not the wildcard group
+            if rule['memberhost_hostgroup'] != (FC_WILDCARD_HOSTGROUP,):
+                applies['hostgroups'] = rule['memberhost_hostgroup']
+            else:
+                logging.debug(
+                    'FreeIPAConnector: Removed wildcard group from profile applies')
+
+        return applies
+
+    @connection_required
+    def check_user_exists(self, username):
+        try:
+            result = api.Command.user_show(unicode(username))
+            return True
+        except errors.NotFound:
+            return False
+
+    @connection_required
+    def check_group_exists(self, groupname):
+        try:
+            result = api.Command.group_show(unicode(groupname))
+            return True
+        except errors.NotFound:
+            return False
+
+    @connection_required
+    def check_host_exists(self, hostname):
+        try:
+            result = api.Command.host_show(unicode(hostname))
+            return True
+        except errors.NotFound:
+            return False
+
+    @connection_required
+    def check_hostgroup_exists(self, groupname):
+        try:
+            result = api.Command.hostgroup_show(unicode(groupname))
+            return True
+        except errors.NotFound:
+            return False
+
+    @connection_required
+    def check_profile_exists(self, name):
+        try:
+            result = api.Command.deskprofile_show(unicode(name), all=False)
+            return True
+        except errors.NotFound:
+            return False
+
+    @connection_required
     def get_global_policy(self):
         policydata = api.Command.deskprofileconfig_show()
         return int(policydata['result']['ipadeskprofilepriority'][0])
 
+    @connection_required
     def set_global_policy(self, policy):
         try:
             api.Command.deskprofileconfig_mod(
@@ -363,10 +410,14 @@ class FreeIPAConnector(object):
                     policy, e))
             raise e
 
+    @connection_required
     def save_profile(self, profile):
         # Check if we need to add the wildcard hostgroup
         if not profile['hosts'] and not profile['hostgroups']:
             profile['hostgroups'].append(FC_WILDCARD_HOSTGROUP)
+            logging.debug(
+                'FreeIPAConnector: Added wildcard hostgroup to profile applies')
+
         name = profile['name']
         # Check if profile has an "oldname" field so we need to rename it
         if 'oldname' in profile and name != profile['oldname']:
@@ -400,6 +451,7 @@ class FreeIPAConnector(object):
                     'FreeIPAConnector: Profile %s does not exist. Creating' % name)
                 return self._create_profile(profile)
 
+    @connection_required
     def del_profile(self, name):
         name = unicode(name)
         logging.debug(
@@ -420,6 +472,7 @@ class FreeIPAConnector(object):
                 'FreeIPAConnector: Error removing rule for profile %s. %s - %s' % (
                     name, e, e.__class__))
 
+    @connection_required
     def get_profiles(self):
         try:
             results = api.Command.deskprofile_find('', sizelimit=0, all=True)
@@ -438,6 +491,7 @@ class FreeIPAConnector(object):
                 )
             return resultlist
 
+    @connection_required
     def get_profile(self, name):
         name = unicode(name)
         try:
@@ -454,11 +508,14 @@ class FreeIPAConnector(object):
             'priority': int(rule['ipadeskprofilepriority'][0]),
             'settings': json.loads(data['ipadeskdata'][0]),
         }
-        applies = self.get_profile_applies_from_rule(rule)
+        applies = self._get_profile_applies_from_rule(rule)
         profile.update(applies)
         return profile
 
+    @connection_required
     def get_profile_rule(self, name):
+        logging.debug(
+            'FreeIPAConnector: Getting profile rule for ""%s"' % name)
         name = unicode(name)
         try:
             result = api.Command.deskprofilerule_show(name, all=True)
@@ -467,25 +524,6 @@ class FreeIPAConnector(object):
                 'Error getting rule for profile %s: %s. %s' % (
                     name, e, e.__class__))
             raise e
-        return result['result']
-
-    def get_profile_applies_from_rule(self, rule):
-        applies = {
-            'users': [],
-            'groups': [],
-            'hosts': [],
-            'hostgroups': [],
-        }
-        if 'memberuser_user' in rule:
-            applies['users'] = rule['memberuser_user']
-        if 'memberuser_group' in rule:
-            applies['groups'] = rule['memberuser_group']
-        if 'memberhost_host' in rule:
-            # Remove domain part from hostnames
-            applies['hosts'] = [
-                x.split('.')[0] for x in rule['memberhost_host']]
-        if 'memberhost_hostgroup' in rule:
-            # Load hostgroups only if they are not the wildcard group
-            if rule['memberhost_hostgroup'] != [FC_WILDCARD_HOSTGROUP]:
-                applies['hostgroups'] = rule['memberhost_hostgroup']
-        return applies
+        rule = result['result']
+        logging.debug('FreeIPAConnector: Obtained rule data: %s' % rule)
+        return rule

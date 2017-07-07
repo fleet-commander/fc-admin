@@ -202,17 +202,6 @@ class TestFreeIPA(unittest.TestCase):
             'ipadeskprofilepriority': (self.TEST_PROFILE['priority'],)
         })
 
-    def test_10_get_profile_applies_from_rule(self):
-        self.ipa.save_profile(self.TEST_PROFILE)
-        rule = self.ipa.get_profile_rule(self.TEST_PROFILE['name'])
-        applies = self.ipa.get_profile_applies_from_rule(rule)
-        self.assertEqual(applies, {
-            'users': self.TEST_PROFILE['users'],
-            'groups': self.TEST_PROFILE['groups'],
-            'hosts': self.TEST_PROFILE['hosts'],
-            'hostgroups': self.TEST_PROFILE['hostgroups'],
-        })
-
     def test_11_get_profile(self):
         name = self.TEST_PROFILE['name']
         self.ipa.save_profile(self.TEST_PROFILE)
