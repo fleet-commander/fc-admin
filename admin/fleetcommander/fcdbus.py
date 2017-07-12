@@ -35,8 +35,6 @@ import dbus.service
 import dbus.mainloop.glib
 
 import gi
-gi.require_version('Soup', '2.4')
-from gi.repository import GObject, Gio, Soup
 
 import sshcontroller
 import libvirtcontroller
