@@ -30,28 +30,35 @@ var state = {
   }
 };
 /*******************************************************************************
- * Hypervisor configuration
+ * Application configuration
  ******************************************************************************/
 
 function checkHypervisorConfig(cb) {
   // Show hypervisor dialog if not configured
   fc.GetHypervisorConfig(function(data) {
     if (data.needcfg) {
-      showHypervisorConfig();
+      showFCSettings();
     } else {
       if (cb) cb(data)
     }
   });
 }
 
-function showHypervisorConfig() {
+function showFCSettings() {
   fc.GetHypervisorConfig(function(resp) {
-    clearModalFormErrors('hypervisor-config-modal')
+    clearModalFormErrors('fc-settings-modal')
     $('#host').val(resp.host);
     $('#username').val(resp.username);
     $('#mode option[value="' + resp.mode + '"]').prop('selected', true);
     $('#pubkey').html(resp.pubkey);
-    $('#hypervisor-config-modal').modal('show');
+    fc.GetGlobalPolicy(function(resp){
+      if (resp.status) {
+        $('#policy').val(resp.policy);
+      } else {
+        showMessageDialog(_('Error getting global policy'), _('Error'));
+      }
+    })
+    $('#fc-settings-modal').modal('show');
   });
 }
 
@@ -89,10 +96,10 @@ function addToKnownHosts(hostname, cb, data) {
   });
 }
 
-function saveHypervisorConfig(cb) {
+function saveFCSettings(cb) {
   DEBUG > 0 && console.log('FC: Saving hypervisor configuration');
 
-  clearModalFormErrors('hypervisor-config-modal');
+  clearModalFormErrors('fc-settings-modal');
 
   var data = {
     host: $('#host').val(),
@@ -101,11 +108,18 @@ function saveHypervisorConfig(cb) {
     domains: {}
   }
 
-  function saveHypervisorFinal(data) {
+  var policy = parseInt($('#policy').val());
+
+  function saveSettingsFinal(data) {
     fc.SetHypervisorConfig(data, function(resp) {
       if (resp.status) {
-        $('#hypervisor-config-modal').modal('hide');
-        if (typeof(cb) == 'function') cb();
+        fc.SetGlobalPolicy(policy, function(resp){
+          if (!resp.status) {
+            showMessageDialog(_('Error setting global policy'), _('Error'));
+          }
+          $('#fc-settings-modal').modal('hide');
+          if (typeof(cb) == 'function') cb();
+        })
       } else {
         showMessageDialog(resp.error, _('Error'))
       }
@@ -114,7 +128,7 @@ function saveHypervisorConfig(cb) {
 
   fc.CheckHypervisorConfig(data, function(resp) {
     if (resp.status) {
-      checkKnownHost(data.host, saveHypervisorFinal, data);
+      checkKnownHost(data.host, saveSettingsFinal, data);
     } else {
       $.each(resp.errors, function( key, value ) {
         addFormError(key, value);
@@ -124,9 +138,9 @@ function saveHypervisorConfig(cb) {
 }
 
 function showPubkeyInstall() {
-  saveHypervisorConfig(function(){
+  saveFCSettings(function(){
     $('#pubkey-install-password').val('');
-    $('#hypervisor-config-modal').modal('hide');
+    $('#fc-settings-modal').modal('hide');
     $('#pubkey-install-modal').modal('show');
   });
 }
@@ -134,7 +148,7 @@ function showPubkeyInstall() {
 function cancelPubkeyInstall() {
   $('#message-dialog-modal').modal('hide');
   $('#pubkey-install-modal').modal('hide');
-  $('#hypervisor-config-modal').modal('show');
+  $('#fc-settings-modal').modal('show');
 }
 
 function installPubkey() {
@@ -422,8 +436,8 @@ $(document).ready (function () {
   // Bind events
   $('#show-global-policy-config').click(showGlobalPolicyConfig);
   $('#save-global-policy-config').click(saveGlobalPolicyConfig);
-  $('#show-hypervisor-config').click(showHypervisorConfig);
-  $('#save-hypervisor-config').click(saveHypervisorConfig);
+  $('#show-fc-settings').click(showFCSettings);
+  $('#save-fc-settings').click(saveFCSettings);
   $('#show-add-profile').click(showAddProfile);
   $('#save-new-profile').click(saveProfile);
   $('#save-existing-profile').click(saveProfile);
@@ -441,7 +455,7 @@ $(document).ready (function () {
     if(code == 13) installPubkey();
   });
 
-  $("#hypervisor-config-modal").on('shown.bs.modal', function () {
+  $("#fc-settings-modal").on('shown.bs.modal', function () {
     $('#host').focus();
   });
 

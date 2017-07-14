@@ -18,16 +18,18 @@
 
     <div id="main-container" class="page-ct">
 
-      <!-- Modal dialog for global policy configuration -->
-      <div id="global-policy-config-modal" class="modal fade" tabindex='-1'>
+      <!-- Modal dialog for settings -->
+      <div id="fc-settings-modal" class="modal fade" tabindex='-1'>
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-              <h4 class="modal-title" translatable="yes">Global policy configuration</h4>
+              <h4 class="modal-title" translatable="yes">Settings</h4>
             </div>
 
             <div class="modal-body">
+
+              <h3 translatable="yes">Global Policy</h3>
               <div id="global-policy-group" class="form-group">
                 <label for="policy" class="control-label" translatable="yes">Global policy for profiles</label>
                 <select id="policy" name="policy" class="form-control">
@@ -57,28 +59,10 @@
                   <option value="24">Hostgroup-Host-Group-User</option>
                 </select>
               </div>
-            </div>
 
-            <div class="modal-footer">
-              <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-              <button id="save-global-policy-config" class="btn btn-primary" translatable="yes">Save</button>
-            </div>
-          </div>
-        </div>
-      </div>
+              <hr>
 
-
-
-      <!-- Modal dialog for hypervisor configuration -->
-      <div id="hypervisor-config-modal" class="modal fade" tabindex='-1'>
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-              <h4 class="modal-title" translatable="yes">Hypervisor configuration</h4>
-            </div>
-
-            <div class="modal-body">
+              <h3 translatable="yes">Hypervisor configuration</h3>
               <div id="host-group" class="form-group">
                 <label for="host" class="control-label" translatable="yes">Fleet Commander virtual environment host</label>
                 <input id="host" name="host" placeholder="enter hostname or ip address" type="hostname" class="form-control">
@@ -116,7 +100,7 @@
 
             <div class="modal-footer">
               <button class="btn btn-default" data-dismiss="modal" translatable="yes">Cancel</button>
-              <button id="save-hypervisor-config" class="btn btn-primary" translatable="yes">Save</button>
+              <button id="save-fc-settings" class="btn btn-primary" translatable="yes">Save</button>
             </div>
           </div>
         </div>
@@ -319,8 +303,7 @@
       <div class="container-fluid">
         <div class="text-right">
           <button id="show-add-profile" class="btn btn-default pull-left" translatable="yes">Add Profile</button>
-          <button id="show-global-policy-config" class="btn btn-default" translatable="yes">Global policy</button>
-          <button id="show-hypervisor-config" class="btn btn-default" translatable="yes">Settings</button>
+          <button id="show-fc-settings" class="btn btn-default" translatable="yes">Settings</button>
         </div>
         <div>
           <h2 translatable="yes">Profiles</h2>
