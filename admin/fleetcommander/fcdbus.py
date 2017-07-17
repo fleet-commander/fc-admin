@@ -35,6 +35,7 @@ import dbus.service
 import dbus.mainloop.glib
 
 import gi
+from gi.repository import GObject
 
 import sshcontroller
 import libvirtcontroller
