@@ -1,0 +1,18 @@
+<component type="addon">
+  <id>org.freedesktop.FleetCommander.admin</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>Fleet Commander</name>
+  <summary>
+    Manage desktop configuration for a large network
+  </summary>
+  <description>
+    <p>
+      Fleet Commander is an application that allows you to manage the
+      desktop configuration of a large network of users and
+      workstations/laptops. It is primarily targeted to Linux systems
+      based on the GNOME desktop.
+    </p>
+  </description>
+  <extends>cockpit.desktop</extends>
+  <launchable type="cockpit-manifest">fleet-commander-admin</launchable>
+</component>

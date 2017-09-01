@@ -20,13 +20,17 @@ fleet_commander_dbus_shellwrapperdir = ${libexecdir}
 fleet_commander_dbus_shellwrapper_in_files = fleet-commander-admin.in
 fleet_commander_dbus_shellwrapper_DATA = fleet-commander-admin
 
+fleet_commander_metainfodir = ${datarootdir}/metainfo
+fleet_commander_metainfo_DATA = org.freedesktop.FleetCommander.admin.metainfo.xml
+
 EXTRA_DIST = \
 	$(fleet_commander_logger_desktop_in_files)     \
 	$(fleet_commander_admin_config_in_files)       \
 	$(fleet_commander_dbus_service_in_files)       \
 	$(fleet_commander_goa_providers_DATA)          \
 	$(fleet_commander_udev_rules_DATA)             \
-	$(fleet_commander_dbus_shellwrapper_in_files)
+	$(fleet_commander_dbus_shellwrapper_in_files)  \
+	$(fleet_commander_metainfo_DATA)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
