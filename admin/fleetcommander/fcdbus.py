@@ -48,7 +48,6 @@ import fcfreeipa
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
 HOSTNAME_AND_PORT_REGEX = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(\:[0-9]{1,5})*$')
-CLIENTDATA_REGEX = re.compile(r'^(?P<filename>(index|applies|[0-9]+)\.json)')
 
 DBUS_BUS_NAME = 'org.freedesktop.FleetCommander'
 DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommander'
@@ -85,11 +84,13 @@ class FleetCommanderDbusClient(object):
         while time.time() - t < self.CONNECTION_TIMEOUT:
             try:
                 self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
-                self.iface = dbus.Interface(self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+                self.iface = dbus.Interface(
+                    self.obj, dbus_interface=DBUS_INTERFACE_NAME)
                 return
-            except:
+            except Exception, e:
                 pass
-        raise Exception('Timed out trying to connect to fleet commander dbus service')
+        raise Exception(
+            'Timed out trying to connect to fleet commander dbus service')
 
     def get_initial_values(self):
         return self.iface.GetInitialValues()
@@ -745,7 +746,8 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug('FC: Saving session')
         try:
             profile = self.ipa.get_profile(uid)
-        except:
+        except Excepion, e:
+            logging.debug('Could not parse profile %s: %s' % (uid, e))
             return json.dumps({
                 'status': False,
                 'error': 'Could not parse profile %s' % uid
@@ -756,7 +758,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Handle changesets
         try:
             changesets = json.loads(data)
-        except:
+        except Exception, e:
+            logging.debug(
+                'Could not parse changeset: %s. Data: %s' % (e, data))
             return json.dumps({
                 'status': False,
                 'error': 'Could not parse changesets: %s' % data
