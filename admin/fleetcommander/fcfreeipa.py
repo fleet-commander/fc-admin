@@ -87,25 +87,38 @@ class FreeIPAConnector(object):
         # Save rule for profile
         logging.debug(
             'FreeIPAConnector: Creating profile rule for %s' % name)
+
+        parms = {
+            'ipadeskprofiletarget': name,
+            'ipadeskprofilepriority': profile['priority'],
+        }
+
+        if profile['hosts'] == [] and profile['hostgroups'] == []:
+            parms['hostcategory'] = u'all'
+
         api.Command.deskprofilerule_add(
-            name,
-            ipadeskprofiletarget=name,
-            ipadeskprofilepriority=profile['priority'])
+            name, **parms)
+
         # Save rules for users
         users = map(unicode, profile['users'])
         groups = map(unicode, profile['groups'])
         logging.debug(
-            'FreeIPAConnector: Creating users rules for profile %s: %s, %s' % (
+            'FreeIPAConnector: Setting users/groups for profile %s: %s, %s' % (
                 name, users, groups))
         api.Command.deskprofilerule_add_user(name, user=users, group=groups)
-        # Save rules for hosts
-        hosts = map(unicode, profile['hosts'])
-        hostgroups = map(unicode, profile['hostgroups'])
-        logging.debug(
-            'FreeIPAConnector: Creating hosts rules for profile %s: %s, %s' % (
-                name, hosts, hostgroups))
-        api.Command.deskprofilerule_add_host(
-            name, host=hosts, hostgroup=hostgroups)
+
+        # Save rules for hosts if needed
+        if 'hostcategory' not in parms:
+            hosts = map(unicode, profile['hosts'])
+            hostgroups = map(unicode, profile['hostgroups'])
+            logging.debug(
+                'FreeIPAConnector: Setting hosts for profile %s: %s, %s' % (
+                    name, hosts, hostgroups))
+            api.Command.deskprofilerule_add_host(
+                name, host=hosts, hostgroup=hostgroups)
+        else:
+            logging.debug(
+                'FreeIPAConnector: Skipping hosts for profile %s' % name)
 
     def _update_profile(self, profile, oldname=None):
         name = unicode(profile['name'])
@@ -143,19 +156,25 @@ class FreeIPAConnector(object):
         parms = {
             'cn': name,
             'ipadeskprofiletarget': name,
-            'ipadeskprofilepriority': profile['priority']
+            'ipadeskprofilepriority': profile['priority'],
         }
 
         if oldname is not None:
             # Update profile renaming it
             logging.debug(
-                'FreeIPAConnector: Updating profile rule %s and renaming to %s' % (
+                'FreeIPAConnector: Updating rule %s and renaming to %s' % (
                     oldname, name))
             parms['cn'] = oldname
             parms['rename'] = name
         else:
             logging.debug(
-                'FreeIPAConnector: Updating profile rules for %s' % name)
+                'FreeIPAConnector: Updating rule for %s' % name)
+
+        # If not hosts, set hostcategory to all
+        if profile['hosts'] == [] and profile['hostgroups'] == []:
+            parms['hostcategory'] = u'all'
+        else:
+            parms['hostcategory'] = None
 
         try:
             api.Command.deskprofilerule_mod(**parms)
@@ -163,7 +182,7 @@ class FreeIPAConnector(object):
             pass
         except Exception, e:
             logging.error(
-                'FreeIPAConnector: Error updating rule for profile %s: %s - %s' % (
+                'FreeIPAConnector: Error updating rule %s: %s - %s' % (
                     name, e, e.__class__))
             raise e
 
@@ -189,24 +208,50 @@ class FreeIPAConnector(object):
             group=map(unicode, gdif)
         )
 
-        # Get hosts and hostgroups to add
-        hdif = set(profile['hosts']) - set(applies['hosts'])
-        hgdif = set(profile['hostgroups']) - set(applies['hostgroups'])
-        # Add the hosts and hostgroups to rule
-        api.Command.deskprofilerule_add_host(
-            name,
-            host=map(unicode, hdif),
-            hostgroup=map(unicode, hgdif)
-        )
-        # Get hosts and hostgroups to remove
-        hdif = set(applies['hosts']) - set(profile['hosts'])
-        hgdif = set(applies['hostgroups']) - set(profile['hostgroups'])
-        # Remove hosts and hostgroups from rule
-        api.Command.deskprofilerule_remove_host(
-            name,
-            host=map(unicode, hdif),
-            hostgroup=map(unicode, hgdif)
-        )
+        if parms['hostcategory'] == 'all':
+            api.Command.deskprofilerule_remove_host(
+                name,
+                host=map(unicode, applies['hosts']),
+                hostgroup=map(unicode, applies['hostgroups'])
+            )
+        else:
+            # Get hosts and hostgroups to add
+            hdif = set(profile['hosts']) - set(applies['hosts'])
+            hgdif = set(profile['hostgroups']) - set(applies['hostgroups'])
+            # Add the hosts and hostgroups to rule
+            api.Command.deskprofilerule_add_host(
+                name,
+                host=map(unicode, hdif),
+                hostgroup=map(unicode, hgdif)
+            )
+            # Get hosts and hostgroups to remove
+            hdif = set(applies['hosts']) - set(profile['hosts'])
+            hgdif = set(applies['hostgroups']) - set(profile['hostgroups'])
+            # Remove hosts and hostgroups from rule
+            api.Command.deskprofilerule_remove_host(
+                name,
+                host=map(unicode, hdif),
+                hostgroup=map(unicode, hgdif)
+            )
+
+            # Check final hosts and set hostcategory to all if needed
+            rule = self.get_profile_rule(name)
+            applies = self._get_profile_applies_from_rule(rule)
+            logging.debug(
+                'FreeIPAConnector: Applies after update: %s' % applies)
+            if applies['hosts'] == [] and applies['hostgroups'] == []:
+                logging.debug(
+                    'FreeIPAConnector: Setting hostcategory to all')
+                parms['hostcategory'] = u'all'
+                try:
+                    api.Command.deskprofilerule_mod(**parms)
+                except errors.EmptyModlist:
+                    pass
+                except Exception, e:
+                    logging.error(
+                        'FreeIPAConnector: Error updating rule %s: %s - %s' % (
+                            name, e, e.__class__))
+                    raise e
 
     def _get_all_hosts(self):
         try:
@@ -408,7 +453,7 @@ class FreeIPAConnector(object):
     @connection_required
     def get_profile_rule(self, name):
         logging.debug(
-            'FreeIPAConnector: Getting profile rule for ""%s"' % name)
+            'FreeIPAConnector: Getting profile rule for %s"' % name)
         name = unicode(name)
         try:
             result = api.Command.deskprofilerule_show(name, all=True)

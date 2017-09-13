@@ -229,12 +229,14 @@ class FreeIPACommand(object):
 
     @FreeIPAData.export_data
     def deskprofilerule_add(self, name,
-                            ipadeskprofiletarget, ipadeskprofilepriority):
+                            ipadeskprofiletarget, ipadeskprofilepriority,
+                            hostcategory=None):
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
         else:
             self.data.profilerules[name] = {
                 'priority': ipadeskprofilepriority,
+                'hostcategory': hostcategory,
                 'users': [],
                 'groups': [],
                 'hosts': [],
@@ -244,9 +246,11 @@ class FreeIPACommand(object):
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
         if name in self.data.profilerules:
+            user = list(set(user).intersection(set(self.data.users)))
             self.data.profilerules[name]['users'].extend(user)
             self.data.profilerules[name]['users'] = list(
                 set(self.data.profilerules[name]['users']))
+            group = list(set(group).intersection(set(self.data.groups)))
             self.data.profilerules[name]['groups'].extend(group)
             self.data.profilerules[name]['groups'] = list(
                 set(self.data.profilerules[name]['groups']))
@@ -256,9 +260,11 @@ class FreeIPACommand(object):
     @FreeIPAData.export_data
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
+            host = list(set(host).intersection(set(self.data.hosts)))
             self.data.profilerules[name]['hosts'].extend(host)
             self.data.profilerules[name]['hosts'] = list(
                 set(self.data.profilerules[name]['hosts']))
+            hostgroup = list(set(hostgroup).intersection(set(self.data.hostgroups)))
             self.data.profilerules[name]['hostgroups'].extend(hostgroup)
             self.data.profilerules[name]['hostgroups'] = list(
                 set(self.data.profilerules[name]['hostgroups']))
@@ -335,9 +341,11 @@ class FreeIPACommand(object):
 
     @FreeIPAData.export_data
     def deskprofilerule_mod(self, cn,
-                            ipadeskprofiletarget, ipadeskprofilepriority):
+                            ipadeskprofiletarget, ipadeskprofilepriority,
+                            hostcategory=None):
         if cn in self.data.profilerules:
             self.data.profilerules[cn]['priority'] = ipadeskprofilepriority
+            self.data.profilerules[cn]['hostcategory'] = hostcategory
         else:
             raise FreeIPAErrors.NotFound()
 

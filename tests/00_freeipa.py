@@ -71,6 +71,7 @@ class TestFreeIPA(unittest.TestCase):
 
     SAVED_PROFILERULE_DATA = {
         'priority': 100,
+        'hostcategory': None,
         'users': ['admin', 'guest'],
         'groups': ['admins', 'editors'],
         'hosts': ['client1'],
@@ -106,6 +107,7 @@ class TestFreeIPA(unittest.TestCase):
 
     SAVED_PROFILERULE_DATA_MOD = {
         'priority': 50,
+        'hostcategory': None,
         'users': ['admin', ],
         'groups': ['admins', 'editors'],
         'hosts': ['client1'],
@@ -226,6 +228,37 @@ class TestFreeIPA(unittest.TestCase):
         # More than 24
         with self.assertRaises(freeipamock.FreeIPAErrors.ValidationError):
             self.ipa.set_global_policy(25)
+
+    def test_14_hostcategory_setting(self):
+        # Adding a profile without hosts sets hostcategory to all
+        no_hosts_profile = self.TEST_PROFILE.copy()
+        no_hosts_profile['hosts'] = []
+        no_hosts_profile['hostgroups'] = []
+        self.ipa.save_profile(no_hosts_profile)
+        profilerules = freeipamock.FreeIPACommand.data.profilerules
+        profiledata = profilerules[self.TEST_PROFILE['name']]
+        self.assertEqual(profiledata['hostcategory'], 'all')
+        self.ipa.del_profile(self.TEST_PROFILE['name'])
+        # Adding a profile with hosts removes hostcategory
+        self.ipa.save_profile(self.TEST_PROFILE)
+        profiledata = profilerules[self.TEST_PROFILE['name']]
+        self.assertEqual(profiledata['hostcategory'], None)
+        # Modifying a profile to have no hosts sets hostcategory to all
+        self.ipa.save_profile(no_hosts_profile)
+        profiledata = profilerules[self.TEST_PROFILE['name']]
+        self.assertEqual(profiledata['hostcategory'], 'all')
+        # Modifying a profile with no hosts to have some removes hostcategory
+        self.ipa.save_profile(self.TEST_PROFILE)
+        profiledata = profilerules[self.TEST_PROFILE['name']]
+        self.assertEqual(profiledata['hostcategory'], None)
+        # Modifying a profile with invalid hosts that lead to no hosts
+        # sets hostcategory to all
+        wrong_hosts_profile = self.TEST_PROFILE.copy()
+        wrong_hosts_profile['hosts'] = ['nonexisting']
+        wrong_hosts_profile['hostgroups'] = []
+        self.ipa.save_profile(wrong_hosts_profile)
+        profiledata = profilerules[self.TEST_PROFILE['name']]
+        self.assertEqual(profiledata['hostcategory'], 'all')
 
 if __name__ == '__main__':
     unittest.main()
