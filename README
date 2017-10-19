@@ -13,7 +13,7 @@ Fleet Commander consists on two components:
 * and a client side daemon that runs on every host of the network.
 
 Fleet Commander relies on libvirt and KVM to generate the profile data
-dinamically from a template VM running the same environment as the rest of the
+dynamically from a template VM running the same environment as the rest of the
 network.
 
 SETUP
@@ -64,7 +64,7 @@ you can enable fleet commander executing the following command as root:
     /usr/share/cockpit/
 ```
 
-Then, logout from cockpit if you are already logged in, and whe you login
+Then, logout from cockpit if you are already logged in, and when you login
 again Fleet Commander will be available under Tools option.
 
 Once in Fleet Commander, just follow the on-screen instructions.
