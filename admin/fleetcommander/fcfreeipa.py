@@ -22,6 +22,7 @@
 import json
 import logging
 from functools import wraps
+import base64
 
 from ipalib import api
 from ipalib import errors
@@ -52,7 +53,7 @@ class FreeIPAConnector(object):
         """
         try:
             if not api.isdone('bootstrap'):
-                api.bootstrap(context='cli', log=None)
+                api.bootstrap(context='fleetcommander', log=None)
                 api.finalize()
             if not api.Backend.rpcclient.isconnected():
                 api.Backend.rpcclient.connect()
@@ -73,7 +74,8 @@ class FreeIPAConnector(object):
             api.Command.deskprofile_add(
                 name,
                 description=unicode(profile['description']),
-                ipadeskdata=json.dumps(profile['settings'])
+                ipadeskdata=unicode(
+                    base64.b64encode(json.dumps(profile['settings'])))
             )
             self._create_profile_rules(profile)
         except Exception, e:
@@ -126,7 +128,8 @@ class FreeIPAConnector(object):
         parms = {
             'cn': name,
             'description': unicode(profile['description']),
-            'ipadeskdata': json.dumps(profile['settings'])
+            'ipadeskdata': unicode(
+                base64.b64encode(json.dumps(profile['settings'])))
         }
 
         if oldname is not None:
