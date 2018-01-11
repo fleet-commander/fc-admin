@@ -1,10 +1,11 @@
 {
     "version": 0,
 
-    "tools": {
+    "dashboard": {
         "fleet-commander": {
             "label": "Fleet Commander",
-            "path": "index.html"
+            "path": "index.html",
+            "icon": "fa-paper-plane"
         }
     },
 
