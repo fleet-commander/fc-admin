@@ -21,10 +21,12 @@
  */
 
 const System = imports.system;
+const Lang = imports.lang;
 
 const GLib = imports.gi.GLib;
 const Gio  = imports.gi.Gio;
 const Json = imports.gi.Json;
+
 
 let NM   = imports.gi.NM;
 
@@ -642,6 +644,161 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
     this.dconf_subscription_id = 0;
 }
 
+
+var ChromiumLogger = function (connmgr, datadir, namespace, interval) {
+    this.datadir = datadir || GLib.getenv('HOME') + '/.config/chromium';
+    this.local_state_retry_interval = interval || 2000;
+    this.namespace = namespace || "org.chromium.Policies";
+    this.previous_prefs = {};
+    this.monitored_sessions = {};
+    this.file_monitors = {};
+    this.local_state_path = this.datadir + '/Local State';
+
+    debug('Constructing ChromiumLogger with local state on "' + this.datadir + '"');
+
+    this.connmgr = connmgr;
+
+    // Load policy list file
+    var contents = null;
+    var datadirs = GLib.get_system_data_dirs();
+    for (let dir in datadirs) {
+        debug('Looking for chromium policies file at ' + datadirs[dir]);
+        try {
+            contents = GLib.file_get_contents(
+                datadirs[dir] + 'fleet-commander-logger/fc-chromium-policies.json')[1];
+            break;
+        } catch (e) {}
+    }
+
+    if (contents == null) {
+        printerr('WARNING: ChromiumLogger can\'t locate policies file. Chromium/Chrome support has been disabled.')
+        return
+    }
+    this.policy_map = JSON.parse(contents);
+
+    this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
+                                     this.local_state_retry_interval,
+                                     this._setup_local_state_file_monitor.bind(this));
+
+}
+
+ChromiumLogger.prototype._setup_local_state_file_monitor = function () {
+    // Load local state file and set a file monitor on it
+    var local_state_file = Gio.File.new_for_path(this.local_state_path);
+    debug('Checking local state file');
+    if (local_state_file.query_exists(null)) {
+        this._local_state_file_updated(null, local_state_file, null, null);
+        this.file_monitors[this.local_state_path] = new FileMonitor(this.local_state_path, Lang.bind(this, this._local_state_file_updated));
+        return false;
+    }
+    debug('Local state file does not exist. Retrying in ' + this.local_state_retry_interval + 'ms');
+    return true;
+}
+
+ChromiumLogger.prototype.get_preference_value = function (prefs, preference) {
+    // Split preference by dot separator
+    var prefpath = preference.split('.');
+    var current = prefs;
+    for (let item in prefpath) {
+        try {
+            // Get value from preferences
+            current = current[prefpath[item]];
+        } catch (e) {
+            // Preference is not in preferences data
+            return null;
+        }
+    }
+    return current;
+}
+
+ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT || eventType == null) {
+        if (eventType == null) {
+            debug('Reading local state file "' + file.get_path() + '"');
+        } else {
+            debug('Local state file "' + file.get_path() + '" changed. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        }
+        // Read local state file data
+        var data = JSON.parse(file.load_contents(null)[1]);
+        // Get currently running sessions
+        var sessions = data['profile']['last_active_profiles'];
+        for (let session in sessions) {
+            var sess = sessions[session]
+            var path = this.datadir + '/' + sess + '/Preferences';
+            if (!(path in this.monitored_sessions)) {
+                debug('New session "' + sess + '" started. Monitoring session preferences file at "' + path + '"');
+                // Load preferences to detect further changes
+                var prefs = JSON.parse(Gio.File.new_for_path(path).load_contents(null)[1]);
+                var prefdata = {}
+                for (let preference in this.policy_map) {
+                    prefdata[preference] =  this.get_preference_value(prefs, preference);
+                }
+                this.monitored_sessions[path] = prefdata;
+                // Add file monitoring to preferences file
+                this.file_monitors[path] = new FileMonitor(path, Lang.bind(this, this._preferences_file_updated));
+            }
+        }
+    }
+}
+
+ChromiumLogger.prototype.load_preferences = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+        var path = file.get_path();
+        debug('Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        var prefs = JSON.parse(file.load_contents(null)[1]);
+        for (let preference in this.policy_map) {
+            var value = this.get_preference_value(prefs, preference);
+            if (value != null) {
+                var prev = null;
+                if (preference in this.monitored_sessions[path]) {
+                    prev = this.monitored_sessions[path][preference];
+                }
+                debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
+                if (value != prev) {
+                    // Submit this config change
+                    var policy = this.policy_map[preference];
+                    this.submit_config_change(policy, value);
+                }
+                this.monitored_sessions[path][preference] = value;
+            }
+        }
+    }
+}
+
+
+ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+        var path = file.get_path();
+        debug('Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        var prefs = JSON.parse(file.load_contents(null)[1]);
+        for (let preference in this.policy_map) {
+            var value = this.get_preference_value(prefs, preference);
+            if (value != null) {
+                var prev = null;
+                if (preference in this.monitored_sessions[path]) {
+                    prev = this.monitored_sessions[path][preference];
+                }
+                debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
+                if (value != prev) {
+                    // Submit this config change
+                    var policy = this.policy_map[preference];
+                    this.submit_config_change(policy, value);
+                }
+                this.monitored_sessions[path][preference] = value;
+            }
+        }
+    }
+}
+
+ChromiumLogger.prototype.submit_config_change = function (k, v) {
+    var payload = {
+        key: k,
+        value: v
+    };
+    this.connmgr.submit_change (this.namespace, JSON.stringify(payload));
+}
+
+
 if (GLib.getenv('FC_TESTING') == null) {
   parse_args ();
   if (!_use_devfile) {
@@ -652,6 +809,10 @@ if (GLib.getenv('FC_TESTING') == null) {
   let connmgr = new SpicePortManager(_spiceport_path);
   let gsetlogger = new GSettingsLogger(connmgr);
   let nmlogger = new NMLogger (connmgr);
-
+  let chromiumlogger = new ChromiumLogger(connmgr);
+  // Chrome variant
+  // let chromelogger = new ChromiumLogger(connmgr,
+  //   GLib.getenv('HOME') + '/.config/google-chrome',
+  //       'com.google.chrome.Policies');
   ml.run();
 }

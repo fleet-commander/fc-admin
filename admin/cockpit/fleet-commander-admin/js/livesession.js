@@ -28,6 +28,10 @@ var collectors = {
     new BaseCollector('org.gnome.gsettings'),
   'org.libreoffice.registry':
     new BaseCollector('org.libreoffice.registry'),
+  'org.chromium.Policies':
+    new BaseCollector('org.chromium.Policies'),
+  'com.google.chrome.Policies':
+    new BaseCollector('com.google.chrome.Policies'),
   'org.freedesktop.NetworkManager':
     new NMCollector('org.freedesktop.NetworkManager'),
 }
@@ -88,6 +92,14 @@ function populateChanges() {
   populateSectionChanges('#gsettings-event-list',
     collectors['org.gnome.gsettings'].dump_changes());
 
+  DEBUG > 0 && console.log('FC: Populating Chromium change list');
+  populateSectionChanges('#chromium-event-list',
+    collectors['org.chromium.Policies'].dump_changes());
+
+  DEBUG > 0 && console.log('FC: Populating Chrome change list');
+  populateSectionChanges('#chrome-event-list',
+    collectors['com.google.chrome.Policies'].dump_changes());
+
   DEBUG > 0 && console.log('FC: Populating NetworkManager change list');
   populateSectionChanges('#networkmanager-event-list',
     collectors['org.freedesktop.NetworkManager'].dump_changes());
@@ -117,6 +129,8 @@ function reviewAndSubmit() {
 function deployProfile() {
   var gsettings = [];
   var libreoffice = [];
+  var chromium = [];
+  var chrome = [];
   var networkmanager = [];
 
   $.each($('#gsettings-event-list input[data-id]:checked'), function (i,e) {
@@ -127,6 +141,14 @@ function deployProfile() {
     libreoffice.push($(this).attr('data-id'));
   });
 
+  $.each($('#chromium-event-list input[data-id]:checked'), function (i,e) {
+    chromium.push($(this).attr('data-id'));
+  })
+
+  $.each($('#chrome-event-list input[data-id]:checked'), function (i,e) {
+    chrome.push($(this).attr('data-id'));
+  })
+
   $.each($('#networkmanager-event-list input[data-id]:checked'), function (i,e) {
     networkmanager.push($(this).attr('data-id'));
   });
@@ -136,6 +158,10 @@ function deployProfile() {
       collectors['org.gnome.gsettings'].get_changeset(gsettings),
     'org.libreoffice.registry':
       collectors['org.libreoffice.registry'].get_changeset(libreoffice),
+    'org.chromium.Policies':
+      collectors['org.chromium.Policies'].get_changeset(chromium),
+    'com.google.chrome.Policies':
+      collectors['com.google.chrome.Policies'].get_changeset(chrome),
     'org.freedesktop.NetworkManager':
       collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };

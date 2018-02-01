@@ -1,5 +1,6 @@
-TESTS_ENVIRONMENT = export PATH=$(abs_top_srcdir)/tests/tools:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export GJS_PATH=$(abs_top_srcdir)/logger; export FC_TESTING=true;
-TESTS = 00_database.py 00_freeipa.py 00_profilemanager.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_nm.js 04_libvirt_controller.py 05_fcdbus.sh
+TESTS_ENVIRONMENT = export PATH=$(abs_top_srcdir)/tests/tools:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export GJS_PATH=$(abs_top_srcdir)/logger; export FC_TESTING=true; export XDG_DATA_DIRS=$(abs_top_srcdir)/tests/data/;
+TESTS = 00_database.py 00_freeipa.py 00_profilemanager.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.js 03_logger_nm.js 03_logger_chromium.js 04_libvirt_controller.py 05_fcdbus.sh
+
 
 EXTRA_DIST =                       \
 	$(TESTS)                         \
@@ -15,6 +16,7 @@ EXTRA_DIST =                       \
 	data/libvirt_domain-modified.xml \
 	data/libvirt_domain-nospice.xml  \
 	data/fc_goa_providers_test.ini   \
+	data/fleet-commander-logger/fc-chromium-policies.json   \
 	tools/websockify                 \
 	tools/systemctl                  \
 	tools/ssh                        \
