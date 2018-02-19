@@ -649,8 +649,9 @@ var ChromiumLogger = function (connmgr, datadir, namespace, interval) {
     this.datadir = datadir || GLib.getenv('HOME') + '/.config/chromium';
     this.local_state_retry_interval = interval || 2000;
     this.namespace = namespace || "org.chromium.Policies";
-    this.previous_prefs = {};
-    this.monitored_sessions = {};
+    this.monitored_preferences = {};
+    this.monitored_bookmarks = {};
+    this.initial_bookmarks = {};
     this.file_monitors = {};
     this.local_state_path = this.datadir + '/Local State';
 
@@ -676,10 +677,11 @@ var ChromiumLogger = function (connmgr, datadir, namespace, interval) {
     }
     this.policy_map = JSON.parse(contents);
 
-    this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
-                                     this.local_state_retry_interval,
-                                     this._setup_local_state_file_monitor.bind(this));
-
+    if (!this._setup_local_state_file_monitor()) {
+        this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
+                                         this.local_state_retry_interval,
+                                         this._setup_local_state_file_monitor.bind(this));
+    }
 }
 
 ChromiumLogger.prototype._setup_local_state_file_monitor = function () {
@@ -724,47 +726,34 @@ ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, ot
         var sessions = data['profile']['last_active_profiles'];
         for (let session in sessions) {
             var sess = sessions[session]
-            var path = this.datadir + '/' + sess + '/Preferences';
-            if (!(path in this.monitored_sessions)) {
-                debug('New session "' + sess + '" started. Monitoring session preferences file at "' + path + '"');
+            var prefs_path = this.datadir + '/' + sess + '/Preferences';
+            var bmarks_path = this.datadir + '/' + sess + '/Bookmarks';
+            if (!(prefs_path in this.monitored_preferences)) {
+                debug('New session "' + sess + '" started');
+                // Preferences monitoring
+                debug('Monitoring session preferences file at "' + prefs_path + '"');
                 // Load preferences to detect further changes
-                var prefs = JSON.parse(Gio.File.new_for_path(path).load_contents(null)[1]);
+                var prefs = JSON.parse(Gio.File.new_for_path(prefs_path).load_contents(null)[1]);
                 var prefdata = {}
                 for (let preference in this.policy_map) {
                     prefdata[preference] =  this.get_preference_value(prefs, preference);
                 }
-                this.monitored_sessions[path] = prefdata;
+                this.monitored_preferences[prefs_path] = prefdata;
                 // Add file monitoring to preferences file
-                this.file_monitors[path] = new FileMonitor(path, Lang.bind(this, this._preferences_file_updated));
+                this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._preferences_file_updated));
+
+                // Bookmarks monitoring
+                debug('Monitoring session bookmarks file at "' + bmarks_path + '"');
+                // Load bookmarks to detect further changes
+                var bmarks = JSON.parse(Gio.File.new_for_path(bmarks_path).load_contents(null)[1]);
+                this.initial_bookmarks[bmarks_path] = this.parse_bookmarks(bmarks);
+                this.monitored_bookmarks[bmarks_path] = [];
+                // Add file monitoring to bookmarks file
+                this.file_monitors[bmarks_path] = new FileMonitor(bmarks_path, Lang.bind(this, this._bookmarks_file_updated));
             }
         }
     }
 }
-
-ChromiumLogger.prototype.load_preferences = function (monitor, file, otherfile, eventType) {
-    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
-        var path = file.get_path();
-        debug('Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
-        var prefs = JSON.parse(file.load_contents(null)[1]);
-        for (let preference in this.policy_map) {
-            var value = this.get_preference_value(prefs, preference);
-            if (value != null) {
-                var prev = null;
-                if (preference in this.monitored_sessions[path]) {
-                    prev = this.monitored_sessions[path][preference];
-                }
-                debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
-                if (value != prev) {
-                    // Submit this config change
-                    var policy = this.policy_map[preference];
-                    this.submit_config_change(policy, value);
-                }
-                this.monitored_sessions[path][preference] = value;
-            }
-        }
-    }
-}
-
 
 ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, otherfile, eventType) {
     if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
@@ -775,8 +764,8 @@ ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, ot
             var value = this.get_preference_value(prefs, preference);
             if (value != null) {
                 var prev = null;
-                if (preference in this.monitored_sessions[path]) {
-                    prev = this.monitored_sessions[path][preference];
+                if (preference in this.monitored_preferences[path]) {
+                    prev = this.monitored_preferences[path][preference];
                 }
                 debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
                 if (value != prev) {
@@ -784,9 +773,30 @@ ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, ot
                     var policy = this.policy_map[preference];
                     this.submit_config_change(policy, value);
                 }
-                this.monitored_sessions[path][preference] = value;
+                this.monitored_preferences[path][preference] = value;
             }
         }
+    }
+}
+
+ChromiumLogger.prototype._bookmarks_file_updated = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+        let path = file.get_path();
+        debug('Bookmarks file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        let bookmarks = this.parse_bookmarks(
+            JSON.parse(file.load_contents(null)[1]));
+        let diff = this.get_modified_bookmarks(this.initial_bookmarks[path], bookmarks);
+        let deploy = this.deploy_bookmarks(diff);
+        this.monitored_bookmarks[path] = deploy;
+        // Append all sessions
+        let bookmarks_data = [];
+        for (let i in this.monitored_bookmarks) {
+            debug('Appending bookmarks from session ' + i);
+            Array.prototype.push.apply(
+                bookmarks_data,
+                this.monitored_bookmarks[i])
+        }
+        this.submit_config_change('ManagedBookmarks', bookmarks_data);
     }
 }
 
@@ -798,6 +808,80 @@ ChromiumLogger.prototype.submit_config_change = function (k, v) {
     this.connmgr.submit_change (this.namespace, JSON.stringify(payload));
 }
 
+ChromiumLogger.prototype.parse_bookmarks = function (bookmarks) {
+    let flattened_bookmarks = [];
+    for(let root in bookmarks['roots']) {
+        var parsed = this.parse_bookmarks_tree([], bookmarks['roots'][root]);
+        Array.prototype.push.apply(
+            flattened_bookmarks, parsed);
+    }
+    return flattened_bookmarks;
+}
+
+ChromiumLogger.prototype.parse_bookmarks_tree = function (path, leaf) {
+    if (leaf.type == 'folder') {
+        let nextpath = path.slice();
+        nextpath.push(leaf.name);
+        debug('Processing bookmarks path ' + nextpath.toSource());
+        let children = [];
+        for(let i in leaf.children) {
+            Array.prototype.push.apply(
+                children, this.parse_bookmarks_tree(nextpath, leaf.children[i]));
+        }
+        return children;
+    } else if (leaf.type == 'url') {
+        debug('Parsing bookmarks leaf ' + leaf.name);
+        return [
+            JSON.stringify([path, leaf.id, leaf.url, leaf.name])
+        ]
+    }
+}
+
+ChromiumLogger.prototype.get_modified_bookmarks = function(bmarks1, bmarks2) {
+    let diff = bmarks2.slice();
+    for (let i in bmarks1) {
+        let index = diff.indexOf(bmarks1[i]);
+        if (index != -1) {
+            diff.splice(index, 1);
+        }
+    }
+    return diff;
+}
+
+ChromiumLogger.prototype.deploy_bookmarks = function(bookmarks) {
+    function insert_object(data, path, url, name) {
+        debug('Inserting bookmark ' + name + ' (' + url + ') at ' + path.toSource());
+        if (path != []) {
+            let children = data;
+            for (let i in path) {
+                debug('Checking path ' + path[i]);
+                let found = false;
+                for (let j in children) {
+                    if (children[j]['name'] == path[i]) {
+                        children = children[j]['children'];
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    let folder = {'name': path[i], 'children': []};
+                    children.push(folder);
+                    children = folder.children;
+                }
+            }
+            children.push({'name': name, 'url': url});
+        } else {
+            data.push({'name': name, 'url': url});
+        }
+    }
+
+    let deploy = [];
+    for (let i in bookmarks) {
+        let obj = JSON.parse(bookmarks[i]);
+        insert_object(deploy, obj[0].slice(1), obj[2], obj[3]);
+    }
+    return deploy;
+}
 
 if (GLib.getenv('FC_TESTING') == null) {
   parse_args ();
@@ -811,8 +895,8 @@ if (GLib.getenv('FC_TESTING') == null) {
   let nmlogger = new NMLogger (connmgr);
   let chromiumlogger = new ChromiumLogger(connmgr);
   // Chrome variant
-  // let chromelogger = new ChromiumLogger(connmgr,
-  //   GLib.getenv('HOME') + '/.config/google-chrome',
-  //       'com.google.chrome.Policies');
+  let chromelogger = new ChromiumLogger(connmgr,
+    GLib.getenv('HOME') + '/.config/google-chrome',
+        'com.google.chrome.Policies');
   ml.run();
 }
