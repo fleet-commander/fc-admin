@@ -82,6 +82,8 @@ function startHeartBeat() {
 function populateChanges() {
   $('#gsettings-event-list').html('');
   $('#libreoffice-event-list').html('');
+  $('#chromium-event-list').html('');
+  $('#chrome-event-list').html('');
   $('#networkmanager-event-list').html('');
 
   DEBUG > 0 && console.log('FC: Populating LibreOffice change list');
