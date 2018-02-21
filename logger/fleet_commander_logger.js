@@ -645,15 +645,19 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 }
 
 
-var ChromiumLogger = function (connmgr, datadir, namespace, interval) {
+var ChromiumLogger = function (connmgr, datadir, namespace, interval, bookmarks_interval) {
     this.datadir = datadir || GLib.getenv('HOME') + '/.config/chromium';
+    this.local_state_path = this.datadir + '/Local State';
     this.local_state_retry_interval = interval || 2000;
     this.namespace = namespace || "org.chromium.Policies";
     this.monitored_preferences = {};
+    this.bookmarks_paths = [];
+    this.bookmarks_retry_interval = bookmarks_interval || 2000;
     this.monitored_bookmarks = {};
     this.initial_bookmarks = {};
     this.file_monitors = {};
-    this.local_state_path = this.datadir + '/Local State';
+    this.local_state_timeout = null;
+    this.bookmarks_timeout = null;
 
     debug('Constructing ChromiumLogger with local state on "' + this.datadir + '"');
 
@@ -678,7 +682,7 @@ var ChromiumLogger = function (connmgr, datadir, namespace, interval) {
     this.policy_map = JSON.parse(contents);
 
     if (!this._setup_local_state_file_monitor()) {
-        this.timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
+        this.local_state_timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
                                          this.local_state_retry_interval,
                                          this._setup_local_state_file_monitor.bind(this));
     }
@@ -695,6 +699,20 @@ ChromiumLogger.prototype._setup_local_state_file_monitor = function () {
     }
     debug('Local state file does not exist. Retrying in ' + this.local_state_retry_interval + 'ms');
     return true;
+}
+
+ChromiumLogger.prototype._setup_bookmarks_file_monitor = function (bmarks_path) {
+    let bmarks_file = Gio.File.new_for_path(bmarks_path);
+    if (bmarks_file.query_exists(null)) {
+        debug('Reading initial information from bookmarks file ' + bmarks_path);
+        let bmarks = JSON.parse(Gio.File.new_for_path(bmarks_path).load_contents(null)[1]);
+        this.initial_bookmarks[bmarks_path] = this.parse_bookmarks(bmarks);
+    } else {
+        debug('Bookmarks file at ' + bmarks_path + ' does not exist (yet)');
+        this.initial_bookmarks[bmarks_path] = [];
+    }
+    debug('Setting up file monitor at ' + bmarks_path);
+    this.file_monitors[bmarks_path] = new FileMonitor(bmarks_path, Lang.bind(this, this._bookmarks_file_updated));
 }
 
 ChromiumLogger.prototype.get_preference_value = function (prefs, preference) {
@@ -741,15 +759,8 @@ ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, ot
                 this.monitored_preferences[prefs_path] = prefdata;
                 // Add file monitoring to preferences file
                 this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._preferences_file_updated));
-
-                // Bookmarks monitoring
-                debug('Monitoring session bookmarks file at "' + bmarks_path + '"');
-                // Load bookmarks to detect further changes
-                var bmarks = JSON.parse(Gio.File.new_for_path(bmarks_path).load_contents(null)[1]);
-                this.initial_bookmarks[bmarks_path] = this.parse_bookmarks(bmarks);
-                this.monitored_bookmarks[bmarks_path] = [];
                 // Add file monitoring to bookmarks file
-                this.file_monitors[bmarks_path] = new FileMonitor(bmarks_path, Lang.bind(this, this._bookmarks_file_updated));
+                this._setup_bookmarks_file_monitor(bmarks_path);
             }
         }
     }
@@ -781,22 +792,26 @@ ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, ot
 
 ChromiumLogger.prototype._bookmarks_file_updated = function (monitor, file, otherfile, eventType) {
     if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
-        let path = file.get_path();
-        debug('Bookmarks file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
-        let bookmarks = this.parse_bookmarks(
-            JSON.parse(file.load_contents(null)[1]));
-        let diff = this.get_modified_bookmarks(this.initial_bookmarks[path], bookmarks);
-        let deploy = this.deploy_bookmarks(diff);
-        this.monitored_bookmarks[path] = deploy;
-        // Append all sessions
-        let bookmarks_data = [];
-        for (let i in this.monitored_bookmarks) {
-            debug('Appending bookmarks from session ' + i);
-            Array.prototype.push.apply(
-                bookmarks_data,
-                this.monitored_bookmarks[i])
+        if (file.query_exists(null)) {
+            let path = file.get_path();
+            debug('Bookmarks file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+            let bookmarks = this.parse_bookmarks(
+                JSON.parse(file.load_contents(null)[1]));
+            let diff = this.get_modified_bookmarks(this.initial_bookmarks[path], bookmarks);
+            let deploy = this.deploy_bookmarks(diff);
+            this.monitored_bookmarks[path] = deploy;
+            // Append all sessions
+            let bookmarks_data = [];
+            for (let i in this.monitored_bookmarks) {
+                debug('Appending bookmarks from session ' + i);
+                Array.prototype.push.apply(
+                    bookmarks_data,
+                    this.monitored_bookmarks[i])
+            }
+            this.submit_config_change('ManagedBookmarks', bookmarks_data);
+        } else {
+            debug('Bookmarks file ' + path + ' updated but does not exist. Skipping.');
         }
-        this.submit_config_change('ManagedBookmarks', bookmarks_data);
     }
 }
 
