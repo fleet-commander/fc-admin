@@ -109,5 +109,107 @@ class NetworkManagerChangeMergerTest(BaseMergerTest):
         return (changeset1, changeset2)
 
 
+class ChromiumMergerTest(BaseMergerTest):
+
+    MERGER_CLASS = mergers.ChromiumChangeMerger
+    BASIC_CHANGE = {
+        'key': '/foo/bar',
+        'value': False,
+        'signature': 'b'
+    }
+
+    KEY_NAME = 'key'
+    KEY_LIST = [
+        'NeverGonnaGiveYouUp',
+        'NeverGonnaLetYouDown',
+        'NeverGonnaRunAroundAndDesertYou']
+
+    KEY_LIST_2 = [
+        'NeverGonnaGiveYouUp',
+        'NeverGonnaRunAroundAndDesertYou',
+        'NeverGonnaTellALieAndHurtYou']
+
+    BOOKMARKS_CHANGE1 = {
+        'key': 'ManagedBookmarks',
+        'value': [
+            {'name': 'Fedora', 'children': [
+                {'name': 'Get Fedora', 'url': 'https://getfedora.org/'},
+                {'name': 'Fedora Project', 'url': 'https://start.fedoraproject.org/'}
+                ]
+            },
+            {'name':'FreeIPA','url':'http://freeipa.org'},
+            {'name':'Fleet Commander Github','url':'https://github.com/fleet-commander/'}
+        ]
+    }
+
+    BOOKMARKS_CHANGE2 = {
+        'key': 'ManagedBookmarks',
+        'value': [
+            {'name':'Fedora','children': [
+                {'name':'Get Fedora NOW!!!','url':'https://getfedora.org/'},
+                {'name':'Fedora Project','url':'https://start.fedoraproject.org/'},
+                {'name':'The Chromium Projects','url':'https://www.chromium.org/'},
+                {'name':'SSSD','url':'pagure.org/SSSD'}
+                ]
+            },
+            {'name':'FreeIPA','url':'http://freeipa.org'},
+            {'name':'Fleet Commander Docs','url':'http://fleet-commander.org/documentation.html'}
+        ]
+    }
+
+    BOOKMARKS_CHANGE_MERGED = {
+        'key': 'ManagedBookmarks',
+        'value': [
+            {'name':'Fedora','children': [
+                {'name': 'Get Fedora', 'url': 'https://getfedora.org/'},
+                {'name':'Fedora Project','url':'https://start.fedoraproject.org/'},
+                {'name':'Get Fedora NOW!!!','url':'https://getfedora.org/'},
+                {'name':'The Chromium Projects','url':'https://www.chromium.org/'},
+                {'name':'SSSD','url':'pagure.org/SSSD'}
+                ]
+            },
+            {'name':'FreeIPA','url':'http://freeipa.org'},
+            {'name':'Fleet Commander Github','url':'https://github.com/fleet-commander/'},
+            {'name':'Fleet Commander Docs','url':'http://fleet-commander.org/documentation.html'}
+        ]
+    }
+
+    def setUp(self):
+        self.merger = self.MERGER_CLASS()
+
+    def generate_changesets(self):
+        # Generate a changeset
+        change1, change2, change3 = self.generate_changes()
+
+        # Generate some changes for merging
+        change1b, change3b, change4 = self.generate_changes(
+            self.KEY_LIST_2)
+        change1b['value'] = True
+        change3b['value'] = True
+
+        changeset1 = [change1, change2, change3, self.BOOKMARKS_CHANGE1]
+        changeset2 = [change1b, change3b, change4, self.BOOKMARKS_CHANGE2]
+        return (changeset1, changeset2)
+
+    def test_00_merge_bookmarks(self):
+        result = self.merger.merge_bookmarks(
+            self.BOOKMARKS_CHANGE1['value'],
+            self.BOOKMARKS_CHANGE2['value'])
+
+        self.assertEqual(result, self.BOOKMARKS_CHANGE_MERGED['value'])
+
+
+    def test_01_merge(self):
+        changeset1, changeset2 = self.generate_changesets()
+
+        merged = self.merger.merge(changeset1, changeset2)
+        merged.sort()
+        expected = [changeset2[0], changeset1[1],
+            changeset2[1], changeset2[2], self.BOOKMARKS_CHANGE_MERGED]
+        expected.sort()
+
+        self.assertEqual(len(merged), 5)
+        self.assertEqual(merged, expected)
+
 if __name__ == '__main__':
     unittest.main()

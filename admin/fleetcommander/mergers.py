@@ -20,6 +20,8 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 #
 
+import itertools
+import logging
 
 class BaseChangeMerger(object):
     """
@@ -65,3 +67,46 @@ class NetworkManagerChangeMerger(BaseChangeMerger):
     Network manager change merger class
     """
     KEY_NAME = 'uuid'
+
+
+class ChromiumChangeMerger(BaseChangeMerger):
+    """
+    Chromium/Chrome change merger class
+    """
+    KEY_NAME = 'key'
+
+    def merge(self, *args):
+        """
+        Merge changesets in the given order
+        """
+        index = {}
+        bookmarks = []
+        for changeset in args:
+            for change in changeset:
+                key = self.get_key_from_change(change)
+                if key == 'ManagedBookmarks':
+                    bookmarks = self.merge_bookmarks(bookmarks, change['value'])
+                    change = {self.KEY_NAME: key, 'value': bookmarks}
+                index[key] = change
+        return index.values()
+
+    def merge_bookmarks(self, a, b):
+        for elem_b in b:
+            logging.debug('Processing %s' % elem_b)
+            if 'children' in elem_b:
+                merged = False
+                for elem_a in a:
+                    if elem_a['name'] == elem_b['name'] and 'children' in elem_a:
+                        logging.debug(
+                            'Processing children of %s' % elem_b['name'])
+                        elem_a['children'] = self.merge_bookmarks(
+                            elem_a['children'], elem_b['children'])
+                        merged = True
+                        break
+                if not merged:
+                    a.append(elem_b)
+            else:
+                if elem_b not in a:
+                    a.append(elem_b)
+        logging.debug('Returning %s' % a)
+        return a
