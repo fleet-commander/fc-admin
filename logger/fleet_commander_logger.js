@@ -648,11 +648,9 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 var ChromiumLogger = function (connmgr, datadir, namespace, interval, bookmarks_interval) {
     this.datadir = datadir || GLib.getenv('HOME') + '/.config/chromium';
     this.local_state_path = this.datadir + '/Local State';
-    this.local_state_retry_interval = interval || 2000;
     this.namespace = namespace || "org.chromium.Policies";
     this.monitored_preferences = {};
     this.bookmarks_paths = [];
-    this.bookmarks_retry_interval = bookmarks_interval || 2000;
     this.monitored_bookmarks = {};
     this.initial_bookmarks = {};
     this.file_monitors = {};
@@ -681,24 +679,28 @@ var ChromiumLogger = function (connmgr, datadir, namespace, interval, bookmarks_
     }
     this.policy_map = JSON.parse(contents);
 
-    if (!this._setup_local_state_file_monitor()) {
-        this.local_state_timeout = GLib.timeout_add (GLib.PRIORITY_DEFAULT,
-                                         this.local_state_retry_interval,
-                                         this._setup_local_state_file_monitor.bind(this));
-    }
+    this._setup_local_state_file_monitor();
 }
 
 ChromiumLogger.prototype._setup_local_state_file_monitor = function () {
     // Load local state file and set a file monitor on it
     var local_state_file = Gio.File.new_for_path(this.local_state_path);
-    debug('Checking local state file');
-    if (local_state_file.query_exists(null)) {
-        this._local_state_file_updated(null, local_state_file, null, null);
-        this.file_monitors[this.local_state_path] = new FileMonitor(this.local_state_path, Lang.bind(this, this._local_state_file_updated));
-        return false;
+    this._local_state_file_updated(null, local_state_file, null, null);
+    this.file_monitors[this.local_state_path] = new FileMonitor(this.local_state_path, Lang.bind(this, this._local_state_file_updated));
+}
+
+ChromiumLogger.prototype._setup_preferences_file_monitor = function (prefs_path) {
+    let prefs_file = Gio.File.new_for_path(prefs_path);
+    if (prefs_file.query_exists(null)) {
+        debug('Reading initial information from preferences file ' + prefs_path);
+        let prefs = JSON.parse(Gio.File.new_for_path(prefs_path).load_contents(null)[1]);
+        this.monitored_preferences[prefs_path] = prefs;
+    } else {
+        debug('Preferences file at ' + prefs_path + ' does not exist (yet)');
+        this.monitored_preferences[prefs_path] = {};
     }
-    debug('Local state file does not exist. Retrying in ' + this.local_state_retry_interval + 'ms');
-    return true;
+    debug('Setting up file monitor at ' + prefs_path);
+    this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._bookmarks_file_updated));
 }
 
 ChromiumLogger.prototype._setup_bookmarks_file_monitor = function (bmarks_path) {
@@ -738,54 +740,62 @@ ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, ot
         } else {
             debug('Local state file "' + file.get_path() + '" changed. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
         }
-        // Read local state file data
-        var data = JSON.parse(file.load_contents(null)[1]);
-        // Get currently running sessions
-        var sessions = data['profile']['last_active_profiles'];
-        for (let session in sessions) {
-            var sess = sessions[session]
-            var prefs_path = this.datadir + '/' + sess + '/Preferences';
-            var bmarks_path = this.datadir + '/' + sess + '/Bookmarks';
-            if (!(prefs_path in this.monitored_preferences)) {
-                debug('New session "' + sess + '" started');
-                // Preferences monitoring
-                debug('Monitoring session preferences file at "' + prefs_path + '"');
-                // Load preferences to detect further changes
-                var prefs = JSON.parse(Gio.File.new_for_path(prefs_path).load_contents(null)[1]);
-                var prefdata = {}
-                for (let preference in this.policy_map) {
-                    prefdata[preference] =  this.get_preference_value(prefs, preference);
+        if (file.query_exists(null)) {
+            // Read local state file data
+            var data = JSON.parse(file.load_contents(null)[1]);
+            // Get currently running sessions
+            var sessions = data['profile']['last_active_profiles'];
+            for (let session in sessions) {
+                var sess = sessions[session]
+                var prefs_path = this.datadir + '/' + sess + '/Preferences';
+                var bmarks_path = this.datadir + '/' + sess + '/Bookmarks';
+                if (!(prefs_path in this.monitored_preferences)) {
+                    debug('New session "' + sess + '" started');
+                    // Preferences monitoring
+                    debug('Monitoring session preferences file at "' + prefs_path + '"');
+                    // Load preferences to detect further changes
+                    var prefs = JSON.parse(Gio.File.new_for_path(prefs_path).load_contents(null)[1]);
+                    var prefdata = {}
+                    for (let preference in this.policy_map) {
+                        prefdata[preference] =  this.get_preference_value(prefs, preference);
+                    }
+                    this.monitored_preferences[prefs_path] = prefdata;
+                    // Add file monitoring to preferences file
+                    this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._preferences_file_updated));
+                    // Add file monitoring to bookmarks file
+                    this._setup_bookmarks_file_monitor(bmarks_path);
                 }
-                this.monitored_preferences[prefs_path] = prefdata;
-                // Add file monitoring to preferences file
-                this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._preferences_file_updated));
-                // Add file monitoring to bookmarks file
-                this._setup_bookmarks_file_monitor(bmarks_path);
             }
+        } else {
+            debug('Local state file ' + file.get_path() + 'is not present (yet)');
         }
     }
 }
 
 ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, otherfile, eventType) {
     if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
-        var path = file.get_path();
         debug('Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
-        var prefs = JSON.parse(file.load_contents(null)[1]);
-        for (let preference in this.policy_map) {
-            var value = this.get_preference_value(prefs, preference);
-            if (value != null) {
-                var prev = null;
-                if (preference in this.monitored_preferences[path]) {
-                    prev = this.monitored_preferences[path][preference];
+        if (file.query_exists(null)) {
+            var path = file.get_path();
+            var prefs = JSON.parse(file.load_contents(null)[1]);
+            for (let preference in this.policy_map) {
+                var value = this.get_preference_value(prefs, preference);
+                if (value != null) {
+                    var prev = null;
+                    if (preference in this.monitored_preferences[path]) {
+                        prev = this.monitored_preferences[path][preference];
+                    }
+                    debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
+                    if (value != prev) {
+                        // Submit this config change
+                        var policy = this.policy_map[preference];
+                        this.submit_config_change(policy, value);
+                    }
+                    this.monitored_preferences[path][preference] = value;
                 }
-                debug(preference + ' = ' + value + ' (previous: ' + prev + ')')
-                if (value != prev) {
-                    // Submit this config change
-                    var policy = this.policy_map[preference];
-                    this.submit_config_change(policy, value);
-                }
-                this.monitored_preferences[path][preference] = value;
             }
+        } else {
+            debug('Preferences file ' + file.get_path() + 'is not present (yet)');
         }
     }
 }
@@ -796,6 +806,7 @@ ChromiumLogger.prototype._bookmarks_file_updated = function (monitor, file, othe
             let path = file.get_path();
             debug('Bookmarks file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
             let bookmarks = this.parse_bookmarks(
+
                 JSON.parse(file.load_contents(null)[1]));
             let diff = this.get_modified_bookmarks(this.initial_bookmarks[path], bookmarks);
             let deploy = this.deploy_bookmarks(diff);
