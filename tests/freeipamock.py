@@ -23,7 +23,7 @@
 import os
 import logging
 import json
-
+import base64
 
 class FreeIPAData(object):
 
@@ -94,6 +94,8 @@ class FreeIPARPCClient(object):
 
     @staticmethod
     def connect():
+        print "CONNECTING"
+        logging.debug('Mocking IPA connection')
         return
 
 
@@ -316,7 +318,9 @@ class FreeIPACommand(object):
 
     def deskprofile_show(self, name, all):
         if name in self.data.profiles:
-            return {'result': self.data.profiles[name]}
+            profile = self.data.profiles[name].copy()
+            profile['ipadeskdata'] = (base64.b64decode(profile['ipadeskdata'][0]),)
+            return {'result': profile}
         else:
             raise FreeIPAErrors.NotFound()
 

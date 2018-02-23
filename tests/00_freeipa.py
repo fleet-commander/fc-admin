@@ -26,7 +26,7 @@ import tempfile
 import shutil
 import unittest
 import json
-
+import base64
 import freeipamock
 
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
@@ -66,7 +66,7 @@ class TestFreeIPA(unittest.TestCase):
     SAVED_PROFILE_DATA = {
         u'cn': (TEST_PROFILE['name'],),
         u'description': (TEST_PROFILE['description'],),
-        u'ipadeskdata': (json.dumps(TEST_PROFILE['settings']),),
+        u'ipadeskdata': (base64.b64encode(json.dumps(TEST_PROFILE['settings'])),),
     }
 
     SAVED_PROFILERULE_DATA = {
@@ -102,7 +102,7 @@ class TestFreeIPA(unittest.TestCase):
     SAVED_PROFILE_DATA_MOD = {
         u'cn': (TEST_PROFILE_MOD['name'],),
         u'description': (TEST_PROFILE_MOD['description'],),
-        u'ipadeskdata': (json.dumps(TEST_PROFILE_MOD['settings']),),
+        u'ipadeskdata': (base64.b64encode(json.dumps(TEST_PROFILE_MOD['settings'])),),
     }
 
     SAVED_PROFILERULE_DATA_MOD = {
