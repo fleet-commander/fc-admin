@@ -28,14 +28,14 @@ const Gio  = imports.gi.Gio;
 const Json = imports.gi.Json;
 
 
-let NM   = imports.gi.NM;
+var NM   = imports.gi.NM;
 
 //Global constants
-let RETRY_INTERVAL = 1000;
-let SUBMIT_PATH    = '/changes/submit/';
-let DEV_PATH       = '/dev/virtio-ports/';
-let DEV_PREFIX     = 'fleet-commander_';
-let HOME_DIR       = GLib.get_home_dir () + "/";
+var RETRY_INTERVAL = 1000;
+var SUBMIT_PATH    = '/changes/submit/';
+var DEV_PATH       = '/dev/virtio-ports/';
+var DEV_PREFIX     = 'fleet-commander_';
+var HOME_DIR       = GLib.get_home_dir () + "/";
 
 //Mainloop
 const ml = imports.mainloop;
