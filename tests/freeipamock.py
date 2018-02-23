@@ -236,6 +236,8 @@ class FreeIPACommand(object):
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
         else:
+            logging.debug(
+                'IPAMock: profile rule for %s' % name)
             self.data.profilerules[name] = {
                 'priority': ipadeskprofilepriority,
                 'hostcategory': hostcategory,
@@ -247,7 +249,12 @@ class FreeIPACommand(object):
 
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
+        logging.debug(
+            'IPAMock: Adding users and groups to rule %s, %s, %s' % (name, user, group))
         if name in self.data.profilerules:
+            logging.debug(
+                'IPAMock: profile rule data before adding user/group data for %s: %s' % (
+                    name, self.data.profilerules[name]))
             user = list(set(user).intersection(set(self.data.users)))
             self.data.profilerules[name]['users'].extend(user)
             self.data.profilerules[name]['users'] = list(
@@ -256,12 +263,17 @@ class FreeIPACommand(object):
             self.data.profilerules[name]['groups'].extend(group)
             self.data.profilerules[name]['groups'] = list(
                 set(self.data.profilerules[name]['groups']))
+            logging.debug(
+                'IPAMock: profile rule data after adding user/group data for %s: %s' % (
+                    name, self.data.profilerules[name]))
         else:
             raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
+            logging.debug(
+                'IPAMock: Adding hosts and hostgroups to rule %s, %s, %s' % (name, host, hostgroup))
             host = list(set(host).intersection(set(self.data.hosts)))
             self.data.profilerules[name]['hosts'].extend(host)
             self.data.profilerules[name]['hosts'] = list(

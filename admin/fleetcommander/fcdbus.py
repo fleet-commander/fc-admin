@@ -746,7 +746,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug('FC: Saving session')
         try:
             profile = self.ipa.get_profile(uid)
-        except Excepion, e:
+        except Exception, e:
             logging.debug('Could not parse profile %s: %s' % (uid, e))
             return json.dumps({
                 'status': False,

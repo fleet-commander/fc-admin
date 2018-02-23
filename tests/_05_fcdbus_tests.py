@@ -30,6 +30,7 @@ import time
 import unittest
 import json
 import urllib2
+import base64
 
 import dbus
 
@@ -57,10 +58,10 @@ class TestDbusService(unittest.TestCase):
         'description': 'bar',
         'priority': 51,
         'settings': {},
-        'users': 'user1,user2,user3',
-        'groups': 'group1,group2',
-        'hosts': 'testhost1,testhost2',
-        'hostgroups': 'testhostgroup1,testhostgroup2',
+        'users': 'admin,unknownuser,guest',
+        'groups': 'editors',
+        'hosts': 'client1,unknownhost',
+        'hostgroups': 'unknowngroup',
     }
 
     DUMMY_PROFILE_DATA = {
@@ -68,10 +69,11 @@ class TestDbusService(unittest.TestCase):
         'description': 'bar',
         'priority': 51,
         'settings': {},
-        'groups': ['group1', 'group2'],
-        'hostgroups': ['testhostgroup1', 'testhostgroup2'],
-        'hosts': ['testhost1', 'testhost2'],
-        'users': ['user1', 'user2', 'user3'],
+        'hostcategory': None,
+        'groups': ['editors',],
+        'hostgroups': [],
+        'hosts': ['client1'],
+        'users': ['admin', 'guest',],
     }
 
     MAX_DBUS_CHECKS = 10
@@ -159,9 +161,9 @@ class TestDbusService(unittest.TestCase):
                 'name': data['profiles'][profile_name]['cn'][0],
                 'description': data['profiles'][profile_name]['description'][0],
                 'settings': json.loads(
-                    data['profiles'][profile_name]['ipadeskdata'][0]),
+                    base64.b64decode(
+                        data['profiles'][profile_name]['ipadeskdata'][0])),
             }
-
             profile_data.update(data['profilerules'][profile_name])
             profile_data['users'].sort()
             profile_data['groups'].sort()
@@ -422,7 +424,9 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.get_profile(self.DUMMY_PROFILE_NAME)
         # Check profile data
         self.assertTrue(resp['status'])
-        self.assertEqual(resp['data'], self.DUMMY_PROFILE_DATA)
+        profile = self.DUMMY_PROFILE_DATA.copy()
+        del(profile['hostcategory'])
+        self.assertEqual(resp['data'], profile)
 
     def test_18_get_goa_providers(self):
         resp = self.c.get_goa_providers()
