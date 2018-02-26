@@ -18,6 +18,10 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+body.fleet-commander .modal {
+    padding-top: 140px;
+}
+
 #main-container, #curtain {
   display: none;
 }

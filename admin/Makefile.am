@@ -17,6 +17,8 @@ fc_admin_consts_DATA = fleetcommander/constants.py
 
 fc_jsdir   = ${datarootdir}/cockpit/fleet-commander-admin/js
 fc_js_DATA = \
+	cockpit/fleet-commander-admin/js/jquery-3.3.1.min.js \
+	cockpit/fleet-commander-admin/js/bootstrap-4.0.0.min.js \
 	cockpit/fleet-commander-admin/js/base.js \
 	cockpit/fleet-commander-admin/js/fcdbusclient.js \
 	cockpit/fleet-commander-admin/js/fcspiceclient.js \
@@ -93,6 +95,7 @@ fc_cockpit_DATA = \
 
 fc_cssdir = ${datarootdir}/cockpit/fleet-commander-admin/css
 fc_css_DATA = \
+	cockpit/fleet-commander-admin/css/bootstrap-4.0.0.min.css \
 	cockpit/fleet-commander-admin/css/main.css
 
 EXTRA_DIST = \

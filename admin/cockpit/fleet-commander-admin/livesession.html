@@ -2,8 +2,12 @@
   <head>
     <title translatable="yes">Fleet Commander - Live session</title>
     <meta charset="utf-8">
+    <script src="js/jquery-3.3.1.min.js"></script>
+
+    <link href="css/bootstrap-4.0.0.min.css" type="text/css" rel="stylesheet">
+    <script src="js/bootstrap-4.0.0.min.js"></script>
+
     <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
-    <script src="../base1/jquery.js"></script>
     <script src="../base1/cockpit.js"></script>
 
     <!-- spice-html5 -->
@@ -45,7 +49,7 @@
     <script src="js/collectors.js"></script>
     <script src="js/livesession.js"></script>
   </head>
-  <body class="page-ct">
+  <body class="page-ct fleet-commander">
 
     <!-- Message curtain -->
     <div id="curtain" class="curtains-ct blank-slate-pf">
@@ -97,7 +101,6 @@
         <div id="event-logs-dialog" class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <button id="close-review" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
               <h4 class="modal-title" translatable="yes">Profile Changes</h4>
             </div>
             <div class="modal-body">
