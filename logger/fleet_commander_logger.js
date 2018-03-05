@@ -45,6 +45,9 @@ var _debug = false;
 var _use_devfile = true;
 var _spiceport_path = DEV_PATH + 'org.freedesktop.FleetCommander.0'
 
+
+var TESTING = GLib.getenv('FC_TESTING') != null;
+
 function debug (msg) {
   if (!_debug)
     return;
@@ -908,7 +911,168 @@ ChromiumLogger.prototype.deploy_bookmarks = function(bookmarks) {
     return deploy;
 }
 
-if (GLib.getenv('FC_TESTING') == null) {
+var FirefoxLogger = function (connmgr, datadir, namespace) {
+    this.datadir = datadir || GLib.get_home_dir() + '/.mozilla/firefox';
+    this.profiles_path = this.datadir + '/profiles.ini';
+    this.namespace = namespace || 'org.mozilla.firefox';
+    this.monitored_preferences = {};
+    this.file_monitors = {};
+    // Testing facilities
+    this.default_profile_initialized = false;
+    this.__test_profiles_file_updated = null;
+    this.default_profile_prefs_initialized = false;
+    this.__test_prefs_file_updated = null;
+
+    debug('Constructing FirefoxLogger with data directory "' + this.datadir + '"');
+
+    this.connmgr = connmgr;
+
+    // Monitor profiles file
+    this._setup_profiles_file_monitor();
+
+}
+
+FirefoxLogger.prototype._setup_profiles_file_monitor = function () {
+    // Set a file monitor on profiles file
+    var file = Gio.File.new_for_path(this.profiles_path);
+    this._profiles_file_updated(null, file, null, null);
+    if (!this.default_profile_initialized) {
+        this.file_monitors[this.profiles_path] = new FileMonitor(
+            this.profiles_path, Lang.bind(this, this._profiles_file_updated));
+    }
+}
+
+FirefoxLogger.prototype._setup_preferences_file_monitor = function (prefs_path) {
+    if (!(prefs_path in this.monitored_preferences)) {
+        let prefs_file = Gio.File.new_for_path(prefs_path);
+        if (prefs_file.query_exists(null)) {
+            debug('Reading initial information from preferences file ' + prefs_path);
+            let prefs = this.load_firefox_preferences(prefs_file.load_contents(null)[1]);
+            this.monitored_preferences = prefs;
+            this.default_profile_prefs_initialized = true;
+        } else {
+            debug('Preferences file at ' + prefs_path + ' does not exist (yet)');
+        }
+        debug('Setting up file monitor at ' + prefs_path);
+        this.file_monitors[prefs_path] = new FileMonitor(prefs_path, Lang.bind(this, this._preferences_file_updated));
+    }
+}
+
+FirefoxLogger.prototype._profiles_file_updated = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT || eventType == null) {
+        let path = file.get_path();
+        if (eventType == null) {
+            debug('Reading Firefox profile file "' + path + '"');
+        } else {
+            debug('Firefox profile file "' + path + '" changed. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        }
+        if (file.query_exists(null)) {
+            if (!this.default_profile_initialized ) {
+                // Read profiles file and get default profile
+                let defaultprofile = this.get_default_profile_path()
+                if (defaultprofile != null) {
+                    let prefs_path = defaultprofile + '/prefs.js';
+                    // Preferences monitoring
+                    debug('Monitoring Firefox preferences file at ' + prefs_path);
+                    this._setup_preferences_file_monitor(prefs_path);
+                    this.default_profile_initialized = true;
+                } else {
+                    debug('No default profile found at profiles file');
+                }
+            }
+        } else {
+            debug('Firefox profiles file ' + file.get_path() + ' is not present (yet)');
+        }
+        if (TESTING && this.__test_profiles_file_updated != null) this.__test_profiles_file_updated();
+    }
+}
+
+FirefoxLogger.prototype._preferences_file_updated = function (monitor, file, otherfile, eventType) {
+    if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+        let path = file.get_path();
+        debug('Firefox Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+        if (file.query_exists(null)) {
+            let prefs = this.load_firefox_preferences(file.load_contents(null)[1]);
+            for (let preference in prefs) {
+                var value = prefs[preference];
+                if (preference in this.monitored_preferences) {
+                    var prev = this.monitored_preferences[preference];
+                    if (value != prev) {
+                        // Submit this config change
+                        this.submit_config_change(preference, value);
+                    }
+                } else {
+                    // Submit this setting
+                    this.submit_config_change(preference, value);
+                }
+                this.monitored_preferences[preference] = value;
+            }
+            this.default_profile_prefs_initialized = true;
+        } else {
+            debug('Firefox Preferences file ' + path + ' is not present (yet)');
+        }
+        if (TESTING && this.__test_prefs_file_updated != null) this.__test_prefs_file_updated();
+    }
+}
+
+FirefoxLogger.prototype.get_default_profile_path = function () {
+    let kf = new GLib.KeyFile();
+
+    try {
+        if (!kf.load_from_file (this.profiles_path, GLib.KeyFileFlags.NONE)) {
+            debug('Could not open/parse ' + this.profiles_path);
+            return null;
+        }
+    } catch (e) {
+        debug('Could not open/parse ' + this.profiles_path);
+        return null;
+    }
+
+    let groups = kf.get_groups()[0];
+    for (let i in groups) {
+        try {
+            if (kf.get_string(groups[i], "Default") != 1)
+                continue;
+        } catch (err) {
+            continue;
+        }
+        return this.datadir + '/' +  kf.get_string(groups[i], "Path");
+    }
+    // This should never happen
+    debug('There was no profile in ' + this.profiles_path + ' with Default=1');
+    return null;
+}
+
+FirefoxLogger.prototype.load_firefox_preferences = function (data) {
+    let pref_start = 'user_pref("';
+    let pref_end = ');\n';
+    let prefs = {};
+    let strdata = data.toString();
+    let lines = strdata.match(/^.*([\n\r]+|$)/gm);
+    for (let i in lines) {
+        let line = lines[i];
+        if (line.startsWith(pref_start) && line.endsWith(pref_end)) {
+            // Remove start and end
+            line = line.slice(pref_start.length);
+            line = line.slice(0, -pref_end.length);
+            // split by fist comma
+            let values = line.split(',');
+            prefs[values[0].trim().slice(0, -1)] = values[1].trim();
+        }
+    }
+    return prefs;
+}
+
+FirefoxLogger.prototype.submit_config_change = function (k, v) {
+    var payload = {
+        key: k,
+        value: v
+    };
+    this.connmgr.submit_change (this.namespace, JSON.stringify(payload));
+}
+
+
+if (!TESTING) {
   parse_args ();
   if (!_use_devfile) {
     _spiceport_path = '/tmp/org.freedesktop.FleetCommander.0';
@@ -923,5 +1087,7 @@ if (GLib.getenv('FC_TESTING') == null) {
   let chromelogger = new ChromiumLogger(connmgr,
     GLib.getenv('HOME') + '/.config/google-chrome',
         'com.google.chrome.Policies');
+  let firefoxlogger = new FirefoxLogger(connmgr);
+
   ml.run();
 }

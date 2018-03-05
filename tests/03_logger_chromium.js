@@ -17,6 +17,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * Authors: Alberto Ruiz <aruiz@redhat.com>
+ *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
 const GLib           = imports.gi.GLib;

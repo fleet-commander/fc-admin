@@ -32,6 +32,8 @@ var collectors = {
     new BaseCollector('org.chromium.Policies'),
   'com.google.chrome.Policies':
     new BaseCollector('com.google.chrome.Policies'),
+  'org.mozilla.firefox':
+    new BaseCollector('org.mozilla.firefox'),
   'org.freedesktop.NetworkManager':
     new NMCollector('org.freedesktop.NetworkManager'),
 }
@@ -84,6 +86,7 @@ function populateChanges() {
   $('#libreoffice-event-list').html('');
   $('#chromium-event-list').html('');
   $('#chrome-event-list').html('');
+  $('#firefox-event-list').html('');
   $('#networkmanager-event-list').html('');
 
   DEBUG > 0 && console.log('FC: Populating LibreOffice change list');
@@ -101,6 +104,10 @@ function populateChanges() {
   DEBUG > 0 && console.log('FC: Populating Chrome change list');
   populateSectionChanges('#chrome-event-list',
     collectors['com.google.chrome.Policies'].dump_changes());
+
+  DEBUG > 0 && console.log('FC: Populating Firefox change list');
+  populateSectionChanges('#firefox-event-list',
+   collectors['org.mozilla.firefox'].dump_changes());
 
   DEBUG > 0 && console.log('FC: Populating NetworkManager change list');
   populateSectionChanges('#networkmanager-event-list',
@@ -133,6 +140,7 @@ function deployProfile() {
   var libreoffice = [];
   var chromium = [];
   var chrome = [];
+  var firefox = [];
   var networkmanager = [];
 
   $.each($('#gsettings-event-list input[data-id]:checked'), function (i,e) {
@@ -151,6 +159,10 @@ function deployProfile() {
     chrome.push($(this).attr('data-id'));
   })
 
+  $.each($('#firefox-event-list input[data-id]:checked'), function (i,e) {
+    firefox.push($(this).attr('data-id'));
+  })
+
   $.each($('#networkmanager-event-list input[data-id]:checked'), function (i,e) {
     networkmanager.push($(this).attr('data-id'));
   });
@@ -164,6 +176,8 @@ function deployProfile() {
       collectors['org.chromium.Policies'].get_changeset(chromium),
     'com.google.chrome.Policies':
       collectors['com.google.chrome.Policies'].get_changeset(chrome),
+    'org.mozilla.firefox':
+      collectors['org.mozilla.firefox'].get_changeset(firefox),
     'org.freedesktop.NetworkManager':
       collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };

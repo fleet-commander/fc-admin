@@ -110,3 +110,9 @@ class ChromiumChangeMerger(BaseChangeMerger):
                     a.append(elem_b)
         logging.debug('Returning %s' % a)
         return a
+
+class FirefoxChangeMerger(BaseChangeMerger):
+    """
+    Network manager change merger class
+    """
+    pass

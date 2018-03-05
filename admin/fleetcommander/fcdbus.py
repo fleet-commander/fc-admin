@@ -227,6 +227,8 @@ class FleetCommanderDbusService(dbus.service.Object):
                 mergers.ChromiumChangeMerger(),
             'com.google.chrome.Policies':
                 mergers.ChromiumChangeMerger(),
+            'org.mozilla.firefox':
+                mergers.FirefoxChangeMerger(),
             'org.freedesktop.NetworkManager':
                 mergers.NetworkManagerChangeMerger(),
         }
