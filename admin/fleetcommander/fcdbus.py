@@ -794,10 +794,15 @@ class FleetCommanderDbusService(dbus.service.Object):
                 logging.debug('FC: Adding new changeset into profile')
                 profile['settings'][ns] = changeset
             else:
-                logging.debug('FC: Merging changeset into profile')
-                profile['settings'][ns] = self.changemergers[ns].merge(
-                    profile['settings'][ns],
-                    changeset)
+                if ns in self.changemergers:
+                    logging.debug('FC: Merging changeset into profile')
+                    profile['settings'][ns] = self.changemergers[ns].merge(
+                        profile['settings'][ns],
+                        changeset)
+                else:
+                    logging.debug(
+                        'FC: No merger found for %s. Replacing changes' % ns)
+                    profile['settings'][ns] = changeset
 
         logging.debug('FC: Saving profile')
         self.ipa.save_profile(profile)
