@@ -223,6 +223,10 @@ class FleetCommanderDbusService(dbus.service.Object):
                 mergers.GSettingsChangeMerger(),
             'org.libreoffice.registry':
                 mergers.LibreOfficeChangeMerger(),
+            'org.chromium.Policies':
+                mergers.ChromiumChangeMerger(),
+            'com.google.chrome.Policies':
+                mergers.ChromiumChangeMerger(),
             'org.freedesktop.NetworkManager':
                 mergers.NetworkManagerChangeMerger(),
         }
