@@ -645,7 +645,7 @@ GSettingsLogger.prototype._bus_name_disappeared_cb = function (connection, bus_n
 }
 
 
-var ChromiumLogger = function (connmgr, datadir, namespace, interval, bookmarks_interval) {
+var ChromiumLogger = function (connmgr, datadir, namespace) {
     this.datadir = datadir || GLib.getenv('HOME') + '/.config/chromium';
     this.local_state_path = this.datadir + '/Local State';
     this.namespace = namespace || "org.chromium.Policies";
@@ -654,8 +654,6 @@ var ChromiumLogger = function (connmgr, datadir, namespace, interval, bookmarks_
     this.monitored_bookmarks = {};
     this.initial_bookmarks = {};
     this.file_monitors = {};
-    this.local_state_timeout = null;
-    this.bookmarks_timeout = null;
 
     debug('Constructing ChromiumLogger with local state on "' + this.datadir + '"');
 
@@ -735,10 +733,11 @@ ChromiumLogger.prototype.get_preference_value = function (prefs, preference) {
 
 ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, otherfile, eventType) {
     if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT || eventType == null) {
+        var path = file.get_path();
         if (eventType == null) {
-            debug('Reading local state file "' + file.get_path() + '"');
+            debug('Reading local state file "' + path + '"');
         } else {
-            debug('Local state file "' + file.get_path() + '" changed. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
+            debug('Local state file "' + path + '" changed. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
         }
         if (file.query_exists(null)) {
             // Read local state file data
@@ -767,16 +766,16 @@ ChromiumLogger.prototype._local_state_file_updated = function (monitor, file, ot
                 }
             }
         } else {
-            debug('Local state file ' + file.get_path() + 'is not present (yet)');
+            debug('Local state file ' + path + ' is not present (yet)');
         }
     }
 }
 
 ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, otherfile, eventType) {
     if (eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+        var path = file.get_path();
         debug('Preference file ' + path + ' notifies changes done hint. ' + monitor + ' ' +  file + ' ' + otherfile + ' ' + eventType);
         if (file.query_exists(null)) {
-            var path = file.get_path();
             var prefs = JSON.parse(file.load_contents(null)[1]);
             for (let preference in this.policy_map) {
                 var value = this.get_preference_value(prefs, preference);
@@ -795,7 +794,7 @@ ChromiumLogger.prototype._preferences_file_updated = function (monitor, file, ot
                 }
             }
         } else {
-            debug('Preferences file ' + file.get_path() + 'is not present (yet)');
+            debug('Preferences file ' + path + ' is not present (yet)');
         }
     }
 }
