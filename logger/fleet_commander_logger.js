@@ -1053,11 +1053,20 @@ FirefoxLogger.prototype.load_firefox_preferences = function (data) {
         let line = lines[i];
         if (line.startsWith(pref_start) && line.endsWith(pref_end)) {
             // Remove start and end
-            line = line.slice(pref_start.length);
-            line = line.slice(0, -pref_end.length);
-            // split by fist comma
-            let values = line.split(',');
-            prefs[values[0].trim().slice(0, -1)] = values[1].trim();
+            let linedata = line.slice(pref_start.length - 1);
+            linedata = linedata.slice(0, -pref_end.length);
+            // Prepare JSON data
+            linedata = '{"data": [' + String.raw`${linedata}` + ']}';
+            // Get key and value
+            try {
+                debug('Parsing preference data: ' + linedata);
+                pref = JSON.parse(linedata);
+                let key = pref.data[0];
+                let value = pref.data[1];
+                prefs[key] = value;
+            } catch (er) {
+                debug('Preference parse error. Ignoring ' + line + ' - ' + er);
+            }
         }
     }
     return prefs;
