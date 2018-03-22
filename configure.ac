@@ -64,7 +64,6 @@ AC_PYTHON_MODULE([dbusmock])
 privlibexecdir='${libexecdir}'
 xdgconfigdir='${sysconfdir}'/xdg
 adminstatedir='${localstatedir}'/lib/fleet-commander-admin
-profilesdir='${localstatedir}'/lib/fleet-commander-admin/profiles
 databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
 fcadmindir='${datarootdir}'/fleet-commander-admin
@@ -75,7 +74,6 @@ cockpitdir='${datarootdir}'/cockpit
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
 AC_SUBST(adminstatedir)
-AC_SUBST(profilesdir)
 AC_SUBST(databasefile)
 AC_SUBST(fchomedir)
 AC_SUBST(fcadmindir)
@@ -86,7 +84,6 @@ AC_SUBST(fcconfigfile)
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
 AS_AC_EXPAND(ADMINSTATEDIR, "$adminstatedir")
-AS_AC_EXPAND(PROFILESDIR, "$profilesdir")
 AS_AC_EXPAND(DATABASEFILE, "$databasefile")
 AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCADMINDIR, "$fcadmindir")
