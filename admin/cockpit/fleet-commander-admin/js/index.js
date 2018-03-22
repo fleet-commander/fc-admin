@@ -320,6 +320,7 @@ function saveProfile() {
   showSpinnerDialog(_('Saving profile'))
 
   fc.SaveProfile(data, function(resp) {
+    $('#spinner-dialog-modal').modal('hide');
     if (resp.status) {
       // Refresh profiles
       refreshProfileList();
@@ -327,7 +328,6 @@ function saveProfile() {
       showMessageDialog(_('Error saving profile') + ': ' + resp.error, _('Error'));
       $('#profile-modal').modal('show');
     }
-    $('#spinner-dialog-modal').modal('hide');
   });
 }
 
