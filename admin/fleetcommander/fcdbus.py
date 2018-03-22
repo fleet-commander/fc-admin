@@ -208,9 +208,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Load FreeIPA connector
         self.ipa = fcfreeipa.FreeIPAConnector()
 
-        # # Load previous missing profiles data for retrocompatibility
-        # self.profiles.load_missing_profiles_data()
-
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
 
