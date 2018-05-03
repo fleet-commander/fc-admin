@@ -2,6 +2,7 @@
   <id>org.freedesktop.FleetCommander.admin</id>
   <metadata_license>CC0-1.0</metadata_license>
   <name>Fleet Commander</name>
+  <icon type="local">/usr/share/pixmaps/fc-admin.png</icon>
   <summary>
     Manage desktop configuration for a large network
   </summary>
