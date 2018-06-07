@@ -65,7 +65,7 @@ if [ $? -ne 0 ] ; then
   exit 1
 fi
 
-$TOPSRCDIR/tests/_01_logger_test_suite.js
+$TOPSRCDIR/tests/_01_logger_test_suite.py
 RET=$?
 
 rm -rf $GSETTINGS_SCHEMA_DIR

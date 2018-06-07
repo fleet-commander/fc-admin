@@ -2,7 +2,7 @@
 Type=Application
 Name=Fleet Commander Session Logger
 Icon=preferences-desktop-screensaver
-Exec=@PRIVLIBEXECDIR@/fleet_commander_logger.js
+Exec=@PRIVLIBEXECDIR@/fleet-commander-logger
 OnlyShowIn=GNOME;
 NoDisplay=true
 X-GNOME-Autostart-Phase=Applications

@@ -19,7 +19,7 @@ fdo_bus = dbus.service.BusName("org.freedesktop.ScreenSaver",
                                do_not_queue=True)
 
 screensaver = dbusmock.mockobject.DBusMockObject(fdo_bus,
-                                                 "/ScreenSaver",
+                                                 "/org/freedesktop/ScreenSaver",
                                                  "org.freedesktop.ScreenSaver",
                                                  {})
 screensaver.AddMethods("org.freedesktop.ScreenSaver", [
