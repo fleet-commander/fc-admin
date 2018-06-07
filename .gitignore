@@ -18,6 +18,7 @@ configure
 data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin
+data/fleet-commander-logger
 install-sh
 missing
 fleet-commander*.tar.[gx]z
