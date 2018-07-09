@@ -90,7 +90,11 @@ class SpicePortManager(object):
         self.queue = []
         self.timeout = 0
 
-        self.fd = open(self.path, 'wb', 0)
+        try:
+            self.fd = open(self.path, 'wb', 0)
+        except FileNotFoundError as e:
+            logging.error('Can\'t open device file %s. Use -n or --no-dev for non Fleet Commander VM session' % self.path)
+            sys.exit(1)
 
     def _perform_submits(self):
         if len(self.queue) < 1:
