@@ -726,14 +726,17 @@ class ChromiumLogger(object):
         """
         policy_map = None
         for dirpath in GLib.get_system_data_dirs():
-            logging.debug("Looking for chromium policies file at %s" % dirpath);
+            logging.debug("Looking for chromium policies file at %s" % dirpath)
+            filepath = os.path.join(dirpath, 'fleet-commander-logger/fc-chromium-policies.json')
             try:
-                filepath = os.path.join(dirpath, 'fleet-commander-logger/fc-chromium-policies.json')
-                contents = GLib.file_get_contents(filepath)[1];
-                policy_map = json.loads(contents)
-                break;
+                with open(filepath, 'r') as fd:
+                    contents = fd.read()
+                    policy_map = json.loads(contents)
+                    fd.close()
+                logging.debug('Loaded chromium policies file at %s' % filepath)
+                break
             except Exception as e:
-                pass
+                logging.debug('Can not open chromium policies file at %s: %s' % (filepath, e))
         return policy_map
 
     def _setup_local_state_file_monitor(self):
