@@ -54,7 +54,6 @@ fi
 AM_PATH_PYTHON([2],, [:])
 AC_PYTHON_MODULE([pexpect], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
-AC_PYTHON_MODULE([gobject], [mandatory])
 AC_PYTHON_MODULE([gi], [mandatory])
 AC_PYTHON_MODULE([libvirt], [mandatory])
 AC_PYTHON_MODULE([dbusmock])
