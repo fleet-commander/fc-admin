@@ -20,6 +20,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 #
 
+from __future__ import absolute_import
 import itertools
 import logging
 
@@ -45,7 +46,7 @@ class BaseChangeMerger(object):
             for change in changeset:
                 key = self.get_key_from_change(change)
                 index[key] = change
-        return index.values()
+        return list(index.values())
 
 
 class GSettingsChangeMerger(BaseChangeMerger):
@@ -88,7 +89,7 @@ class ChromiumChangeMerger(BaseChangeMerger):
                     bookmarks = self.merge_bookmarks(bookmarks, change['value'])
                     change = {self.KEY_NAME: key, 'value': bookmarks}
                 index[key] = change
-        return index.values()
+        return list(index.values())
 
     def merge_bookmarks(self, a, b):
         for elem_b in b:

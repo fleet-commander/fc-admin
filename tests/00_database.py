@@ -21,6 +21,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 # Python imports
+from __future__ import absolute_import
 import sys
 import os
 import json
@@ -53,7 +54,7 @@ class TestDBManager(unittest.TestCase):
         'testkeystr': 'strvalue',
         'testkeyunicode': 'unicodevalue',
         'testkeyint': 42,
-        'testkeylong': long(42),
+        'testkeylong': int(42),
         'testkeyfloat': 42.0,
         'testkeytuple': ('foo', 42, 'bar'),
         'testkeylist': ['foo', 42, 'bar'],
@@ -101,7 +102,7 @@ class TestDBManager(unittest.TestCase):
         self.assertEqual(value, 'anotherstrvalue')
 
     def test_06_config_dictionary_iteration(self):
-        items = self.db.config.items()
+        items = list(self.db.config.items())
         self.assertEqual(len([x for x in items]), 8)
         for item in items:
             self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])

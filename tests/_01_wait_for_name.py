@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import dbus
 import time
 import sys
+from six.moves import range
 
 if __name__ == '__main__':
     session = dbus.Bus()

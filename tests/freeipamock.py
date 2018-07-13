@@ -19,10 +19,12 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import os
 import logging
 import json
 import base64
+import six
 
 class FreeIPAData(object):
 
@@ -111,7 +113,7 @@ class FreeIPACommand(object):
     def deskprofileconfig_show(self):
         return {
             'result': {
-                'ipadeskprofilepriority': (unicode(self.data.global_policy),)
+                'ipadeskprofilepriority': (six.text_type(self.data.global_policy),)
             }
         }
 
@@ -136,7 +138,7 @@ class FreeIPACommand(object):
         if user in self.data.users:
             return {
                 u'result': {},
-                u'value': unicode(user),
+                u'value': six.text_type(user),
                 u'summary': None
             }
         else:
@@ -146,7 +148,7 @@ class FreeIPACommand(object):
         if group in self.data.groups:
             return {
                 u'result': {},
-                u'value': unicode(group),
+                u'value': six.text_type(group),
                 u'summary': None
             }
         else:
@@ -171,7 +173,7 @@ class FreeIPACommand(object):
         if host in self.data.hosts:
             return {
                 u'result': {},
-                u'value': unicode(host),
+                u'value': six.text_type(host),
                 u'summary': None
             }
         else:
@@ -187,7 +189,7 @@ class FreeIPACommand(object):
         if hostgroup in self.data.hostgroups:
             return {
                 u'result': {},
-                u'value': unicode(hostgroup),
+                u'value': six.text_type(hostgroup),
                 u'summary': None
             }
         else:
@@ -214,16 +216,16 @@ class FreeIPACommand(object):
             raise FreeIPAErrors.DuplicateEntry()
         else:
             self.data.profiles[name] = {
-                u'cn': (unicode(name),),
-                u'description': (unicode(description),),
-                u'ipadeskdata': (unicode(ipadeskdata),),
+                u'cn': (six.text_type(name),),
+                u'description': (six.text_type(description),),
+                u'ipadeskdata': (six.text_type(ipadeskdata),),
             }
 
     @FreeIPAData.export_data
     def deskprofile_mod(self, cn, description, ipadeskdata):
         if cn in self.data.profiles:
-            self.data.profiles[cn]['description'] = (unicode(description),)
-            self.data.profiles[cn]['ipadeskdata'] = (unicode(ipadeskdata),)
+            self.data.profiles[cn]['description'] = (six.text_type(description),)
+            self.data.profiles[cn]['ipadeskdata'] = (six.text_type(ipadeskdata),)
         else:
             raise FreeIPAErrors.NotFound()
 
@@ -317,7 +319,7 @@ class FreeIPACommand(object):
             raise FreeIPAErrors.NotFound()
 
     def deskprofile_find(self, criteria, sizelimit, all):
-        count = len(self.data.profiles.keys())
+        count = len(list(self.data.profiles.keys()))
         res = {
             u'count': count,
             u'summary': u'%s Desktop Profiles matched' % count,

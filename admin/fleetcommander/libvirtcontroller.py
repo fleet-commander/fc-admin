@@ -19,6 +19,8 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import signal
 import time
@@ -30,7 +32,7 @@ import logging
 
 import libvirt
 
-import sshcontroller
+from . import sshcontroller
 
 class LibVirtControllerException(Exception):
     pass
@@ -299,7 +301,7 @@ class LibVirtController(object):
             try:
                 return dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None)
             except Exception as e:
-                print e
+                print(e)
                 return dom.name()
 
         domainlist = [{
