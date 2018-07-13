@@ -1,7 +1,6 @@
 autoconf
 automake
 autoconf-archive
-pygobject2
 libvirt-python
 python-dbusmock
 python-gobject
