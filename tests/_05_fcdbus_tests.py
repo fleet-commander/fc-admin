@@ -29,10 +29,7 @@ import subprocess
 import time
 import unittest
 import json
-import urllib2
 import base64
-
-import dbus
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)

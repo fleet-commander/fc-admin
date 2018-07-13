@@ -34,13 +34,14 @@ class SQLiteDict(object):
 
     _SUPPORTED_TYPES = {
         'int':     int,
-        'long':    int,
+        'long':    int if six.PY3 else long,
         'float':   float,
         'str':     str,
         'unicode': six.text_type,
         'tuple':   tuple,
         'list':    list,
         'dict':    dict,
+        'bytes':   bytes,
     }
 
     _SERIALIZED_TYPES = ['tuple', 'list', 'dict']
@@ -175,12 +176,16 @@ class BaseDBManager(object):
     SQLITE_TYPE_MATCHES = {
         None:    'NULL',
         int:     'INTEGER',
-        int:    'INTEGER',
         float:   'REAL',
         str:     'TEXT',
         six.text_type: 'TEXT',
-        buffer:  'BLOB'
+        memoryview:  'BLOB'
     }
+    if six.PY3:
+        SQLITE_TYPE_MATCHES[bytes] = 'BLOB'
+    else:
+        SQLITE_TYPE_MATCHES[buffer] = 'BLOB'
+        SQLITE_TYPE_MATCHES[long] = 'INTEGER'
 
     def __init__(self, database):
         """

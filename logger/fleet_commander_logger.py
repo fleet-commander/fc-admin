@@ -881,7 +881,7 @@ class ChromiumLogger(object):
                 self.monitored_bookmarks[path] = deploy
                 # Append all sessions
                 bookmarks_data = []
-                print(("MONITORED:", self.monitored_bookmarks))
+                print("MONITORED:", self.monitored_bookmarks)
                 for session, bmarks in sorted(self.monitored_bookmarks.items()):
                     logging.debug("Appending bookmarks from session %s" % session)
                     bookmarks_data.extend(bmarks)
