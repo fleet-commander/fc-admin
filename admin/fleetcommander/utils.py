@@ -35,7 +35,7 @@ try:
 except ImportError:
     from six.moves.configparser import ConfigParser, ParsingError
 
-import constants
+from . import constants
 
 
 def get_data_from_file(path):
