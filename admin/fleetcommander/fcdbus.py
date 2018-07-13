@@ -19,6 +19,7 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import sys
 import os
 import signal
@@ -37,13 +38,14 @@ import dbus.mainloop.glib
 import gi
 from gi.repository import GObject
 
-import sshcontroller
-import libvirtcontroller
-from database import DBManager
-from utils import get_ip_address, get_data_from_file
-import mergers
-from goa import GOAProvidersLoader
-import fcfreeipa
+from . import sshcontroller
+from . import libvirtcontroller
+from .database import DBManager
+from .utils import get_ip_address, get_data_from_file
+from . import mergers
+from .goa import GOAProvidersLoader
+from . import fcfreeipa
+from six.moves import filter
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -87,7 +89,7 @@ class FleetCommanderDbusClient(object):
                 self.iface = dbus.Interface(
                     self.obj, dbus_interface=DBUS_INTERFACE_NAME)
                 return
-            except Exception, e:
+            except Exception as e:
                 pass
         raise Exception(
             'Timed out trying to connect to fleet commander dbus service')
@@ -375,7 +377,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     if current_uuid != domain_uuid:
                         try:
                             ctrlr.session_stop(domain_uuid)
-                        except Exception, e:
+                        except Exception as e:
                             logging.error(
                                 'Error destroying session with UUID %s: %s' %
                                 (domain_uuid, e))
@@ -412,7 +414,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({
                 'status': True
             })
-        except Exception, e:
+        except Exception as e:
             logging.debug(
                 'IPA server connection failed: %s' % e)
             return json.dumps({
@@ -500,7 +502,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     'fprint': fprint,
                     'keys': key_data,
                 })
-            except Exception, e:
+            except Exception as e:
                 logging.error(
                     'Error getting hypervisor fingerprint: %s' % e)
                 return json.dumps({
@@ -525,7 +527,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 self.ssh.add_to_known_hosts(
                     self.known_hosts_file,
                     host, port)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Error adding host to known hosts: %s' % e)
                 return json.dumps({
                     'status': False,
@@ -544,7 +546,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             self.ssh.install_pubkey(
                 pubkey, user, passwd, host, port)
             return json.dumps({'status': True})
-        except Exception, e:
+        except Exception as e:
             logging.error(
                 'Error installing public key: %s' % e)
             return json.dumps({
@@ -560,7 +562,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             policy = self.ipa.get_global_policy()
             return json.dumps({'status': True, 'policy': policy})
-        except Exception, e:
+        except Exception as e:
             logging.error('Error getting global policy: %s' % e)
             return json.dumps({
                 'status': False,
@@ -578,7 +580,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             self.ipa.set_global_policy(int(policy))
             return json.dumps({'status': True})
-        except Exception, e:
+        except Exception as e:
             logging.error(
                 'Error setting gloal policy to %s: %s' % (policy, e))
             return json.dumps({
@@ -602,14 +604,10 @@ class FleetCommanderDbusService(dbus.service.Object):
             'description': data['description'],
             'priority': int(data['priority']),
             'settings': data['settings'],
-            'groups': filter(
-                None, [g.strip() for g in data['groups'].split(",")]),
-            'users': filter(
-                None, [u.strip() for u in data['users'].split(",")]),
-            'hosts': filter(
-                None, [u.strip() for u in data['hosts'].split(",")]),
-            'hostgroups': filter(
-                None, [u.strip() for u in data['hostgroups'].split(",")]),
+            'groups': [_f for _f in [g.strip() for g in data['groups'].split(",")] if _f],
+            'users': [_f for _f in [u.strip() for u in data['users'].split(",")] if _f],
+            'hosts': [_f for _f in [u.strip() for u in data['hosts'].split(",")] if _f],
+            'hostgroups': [_f for _f in [u.strip() for u in data['hostgroups'].split(",")] if _f],
         }
 
         logging.debug(
@@ -627,13 +625,13 @@ class FleetCommanderDbusService(dbus.service.Object):
             logging.debug('Saving profile into IPA server')
             self.ipa.save_profile(profile)
             return json.dumps({'status': True})
-        except fcfreeipa.RenameToExistingException, e:
+        except fcfreeipa.RenameToExistingException as e:
             logging.error('Error saving profile %s: %s' % (name, e))
             return json.dumps({
                 'status': False,
                 'error': '%s' % e
             })
-        except Exception, e:
+        except Exception as e:
             logging.error('Error saving profile %s: %s' % (name, e))
             return json.dumps({
                 'status': False,
@@ -651,7 +649,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': True,
                 'data': profiles
             })
-        except Exception, e:
+        except Exception as e:
             logging.error('Error reading profiles from IPA: %s' % e)
             return json.dumps({
                 'status': False,
@@ -669,7 +667,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': True,
                 'data': profile
             })
-        except Exception, e:
+        except Exception as e:
             logging.error('Error reading profile %s from IPA: %s' % (name, e))
             return json.dumps({
                 'status': False,
@@ -684,7 +682,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             self.ipa.del_profile(name)
             return json.dumps({'status': True})
-        except Exception, e:
+        except Exception as e:
             logging.error('Error removing profile %s: %s' % (name, e))
             return json.dumps({'status': False})
 
@@ -749,7 +747,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug('FC: Saving session')
         try:
             profile = self.ipa.get_profile(uid)
-        except Exception, e:
+        except Exception as e:
             logging.debug('Could not parse profile %s: %s' % (uid, e))
             return json.dumps({
                 'status': False,
@@ -761,7 +759,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Handle changesets
         try:
             changesets = json.loads(data)
-        except Exception, e:
+        except Exception as e:
             logging.debug(
                 'Could not parse changeset: %s. Data: %s' % (e, data))
             return json.dumps({
@@ -849,7 +847,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': True,
                 'providers': loader.get_providers()
             })
-        except Exception, e:
+        except Exception as e:
             logging.error('Error getting GOA providers data: %s' % e)
             return json.dumps({
                 'status': False,
@@ -868,7 +866,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     # Fleet commander imports
-    from utils import parse_config
+    from .utils import parse_config
 
     parser = ArgumentParser(description='Fleet Commander Admin dbus service')
     parser.add_argument(

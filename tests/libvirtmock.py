@@ -19,6 +19,7 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import os
 import sys
 import pickle

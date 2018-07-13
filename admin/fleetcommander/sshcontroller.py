@@ -19,11 +19,13 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import os
 import subprocess
 import tempfile
 import logging
 import pexpect
+import six
 
 
 class SSHControllerException(Exception):
@@ -54,7 +56,7 @@ class SSHController(object):
         prog = subprocess.Popen(
             [
                 self.SSH_KEYGEN_COMMAND,
-                '-b', unicode(key_size),
+                '-b', six.text_type(key_size),
                 '-t', 'rsa',
                 '-f', private_key_file,
                 '-q',
@@ -70,7 +72,7 @@ class SSHController(object):
         prog = subprocess.Popen(
             [
                 self.SSH_KEYSCAN_COMMAND,
-                '-p', unicode(port),
+                '-p', six.text_type(port),
                 hostname,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -140,7 +142,7 @@ class SSHController(object):
         """
         try:
             key_data = self.scan_host_keys(hostname, port)
-        except Exception, e:
+        except Exception as e:
             raise SSHControllerException(
                 'Error getting host key data: %s' % e)
         return self.get_fingerprint_from_key_data(key_data)
@@ -155,7 +157,7 @@ class SSHController(object):
         ]
         ssh_command_end = [
             '%s@%s' % (username, hostname),
-            '-p', unicode(port),
+            '-p', six.text_type(port),
             command,
         ]
 
@@ -167,7 +169,7 @@ class SSHController(object):
 
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(['-o', '%s=%s' % (k, unicode(v))])
+            ssh_command_start.extend(['-o', '%s=%s' % (k, six.text_type(v))])
         ssh_command_start.extend(ssh_command_end)
         # Execute command
         prog = subprocess.Popen(
@@ -190,7 +192,7 @@ class SSHController(object):
         ]
         ssh_command_end = [
             '%s@%s' % (username, hostname),
-            '-p', unicode(port),
+            '-p', six.text_type(port),
             '-L', '%s:%s:%s:%s' % (local_host, local_port,
                                    tunnel_host, tunnel_port),
             '-N'
@@ -203,7 +205,7 @@ class SSHController(object):
             ['-o', 'PasswordAuthentication=no'])
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(['-o', '%s=%s' % (k, unicode(v))])
+            ssh_command_start.extend(['-o', '%s=%s' % (k, six.text_type(v))])
         ssh_command_start.extend(ssh_command_end)
 
         # Execute SSH and bring up tunnel
@@ -262,7 +264,7 @@ class SSHController(object):
             execute_command('echo "%s" >> ~/.ssh/authorized_keys' % pub_key)
             execute_command('chmod 600 ~/.ssh/authorized_keys')
             execute_command('exit', final=True)
-        except Exception, e:
+        except Exception as e:
             logging.error('Error installing SSH public key: %s' % e)
             raise SSHControllerException(
                 'Error installing SSH public key: %s' % e)

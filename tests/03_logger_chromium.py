@@ -21,6 +21,8 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 # Python imports
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 import json
@@ -566,11 +568,11 @@ class TestChromiumLogger(unittest.TestCase):
 
         data = mgr.pop()
         received = json.dumps([data[0], json.loads(data[1])], sort_keys=True)
-        print("EXPECTED: %s" % json.dumps(
+        print(("EXPECTED: %s" % json.dumps(
             [chromium_logger.namespace,
                 { "key": "ManagedBookmarks", "value": DEPLOY_DIFF_BOOKMARKS_DATA}],
-            sort_keys=True))
-        print("RECEIVED: %s" % received)
+            sort_keys=True)))
+        print(("RECEIVED: %s" % received))
 
         self.assertEqual(
             json.dumps(
