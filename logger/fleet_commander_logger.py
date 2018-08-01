@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 #
@@ -43,6 +43,13 @@ gi.require_version('NM', '1.0')
 from gi.repository import GLib
 from gi.repository import Gio
 from gi.repository import NM
+
+
+# Python 2 compat
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 class RemoteConnectionWorkaround(object):
@@ -892,7 +899,7 @@ class ChromiumLogger(object):
 
     def parse_bookmarks_tree(self, path, leaf):
         if leaf["type"] == "folder":
-            nextpath = path.copy()
+            nextpath = path[:]
             nextpath.append(leaf["name"])
             logging.debug("Processing bookmarks path %s" % nextpath)
             children = []
@@ -905,7 +912,7 @@ class ChromiumLogger(object):
                 json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]
 
     def get_modified_bookmarks(self, bmarks1, bmarks2):
-        diff = bmarks2.copy()
+        diff = bmarks2[:]
         for bmark in bmarks1:
             if bmark in diff:
                 diff.remove(bmark)
@@ -993,7 +1000,8 @@ class FirefoxLogger(object):
             "key": k,
             "value": v
         }
-        self.connmgr.submit_change(self.namespace, json.dumps(payload))
+        self.connmgr.submit_change(
+            self.namespace, json.dumps(payload, sort_keys=True))
 
     def _setup_profiles_file_monitor(self):
         # Set a file monitor on profiles file
@@ -1076,7 +1084,7 @@ class FirefoxLogger(object):
                 else:
                     logging.debug(
                         "New preferences loaded. Checking for changes")
-                    for preference in prefs:
+                    for preference in prefs.keys():
                         value = prefs[preference]
                         if preference in self.monitored_preferences[path]:
                             prev = self.monitored_preferences[path][preference]

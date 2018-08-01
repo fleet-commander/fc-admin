@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vi:ts=2 sw=2 sts=2
 
@@ -523,26 +523,40 @@ class TestFirefoxLogger(unittest.TestCase):
         self.assertEqual(3, len(mgr.log))
 
         # Config changes should be submitted
-        self.assertEqual(
+        settings = [
             json.dumps(
-                ["org.mozilla.firefox",
-                    '{"key": "accessibility.typeaheadfind.flashBar", "value": 1}'],
-                sort_keys=True),
-            json.dumps(mgr.pop(), sort_keys=True))
+                [
+                    "org.mozilla.firefox",
+                    json.dumps(
+                        {
+                            "key": "accessibility.typeaheadfind.flashBar",
+                            "value": 1
+                        }, sort_keys=True)
+                ]),
+            json.dumps(
+                [
+                    "org.mozilla.firefox",
+                    json.dumps(
+                        {
+                            "key": "browser.newtabpage.enhanced",
+                            "value": True
+                        }, sort_keys=True)
+                ]),
+            json.dumps(
+                [
+                    "org.mozilla.firefox",
+                    json.dumps(
+                        {
+                            "key": "browser.newtabpage.testValue",
+                            "value": 1
+                        }, sort_keys=True)
+                ]),
+        ]
 
-        self.assertEqual(
-            json.dumps(
-                ["org.mozilla.firefox",
-                    '{"key": "browser.newtabpage.enhanced", "value": true}'],
-                sort_keys=True),
-            json.dumps(mgr.pop(), sort_keys=True))
-
-        self.assertEqual(
-            json.dumps(
-                ["org.mozilla.firefox",
-                    '{"key": "browser.newtabpage.testValue", "value": 1}'],
-                sort_keys=True),
-            json.dumps(mgr.pop(), sort_keys=True))
+        while len(mgr.log) > 0:
+            setting = mgr.log.pop(0)
+            jsonsetting = json.dumps(setting)
+            self.assertTrue(jsonsetting in settings)
 
         # Changes queue length should be 0
         self.assertEqual(0, len(mgr.log))
