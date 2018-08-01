@@ -16,7 +16,7 @@ fleet_commander_goa_providers_DATA = fc-goa-providers.ini
 fleet_commander_chromium_policiesdir = ${datarootdir}/fleet-commander-logger
 fleet_commander_chromium_policies_DATA = fc-chromium-policies.json
 
-fleet_commander_udev_rulesdir = ${sysconfdir}/udev/rules.d/
+fleet_commander_udev_rulesdir = ${prefix}/lib/udev/rules.d/
 fleet_commander_udev_rules_DATA = 81-fleet-commander-logger.rules
 
 fleet_commander_dbus_shellwrapperdir = ${libexecdir}
