@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 
@@ -112,6 +111,7 @@ class TestDbusService(unittest.TestCase):
 
         # Open service
         self.service = subprocess.Popen([
+            os.environ['PYTHON'],
             os.path.join(
                 os.environ['TOPSRCDIR'],
                 'tests/test_fcdbus_service.py'),

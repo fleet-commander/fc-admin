@@ -50,10 +50,10 @@ kill $DBUS_SESSION_BUS_PID
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
-$TOPSRCDIR/tests/_01_mock_dbus.py > /dev/null 2> /dev/null &
+$PYTHON $TOPSRCDIR/tests/_01_mock_dbus.py > /dev/null 2> /dev/null &
 DBUS_MOCK_PID=$!
 
-$TOPSRCDIR/tests/_01_wait_for_name.py
+$PYTHON $TOPSRCDIR/tests/_01_wait_for_name.py
 if [ $? -ne 0 ] ; then
   echo "Failed to acquire bus name org.freedesktop.ScreenSaver"
   exit 1
@@ -65,7 +65,7 @@ if [ $? -ne 0 ] ; then
   exit 1
 fi
 
-$TOPSRCDIR/tests/_01_logger_test_suite.py
+$PYTHON $TOPSRCDIR/tests/_01_logger_test_suite.py
 RET=$?
 
 rm -rf $GSETTINGS_SCHEMA_DIR

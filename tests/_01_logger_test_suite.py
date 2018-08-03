@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # vi:ts=2 sw=2 sts=2
 
