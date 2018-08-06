@@ -17,10 +17,7 @@ EXTRA_DIST =                         \
 	data/libvirt_domain-nospice.xml  \
 	data/fc_goa_providers_test.ini   \
 	data/fleet-commander-logger/fc-chromium-policies.json   \
-	tools/websockify                 \
-	tools/systemctl                  \
 	tools/ssh                        \
 	tools/ssh-keygen                 \
 	tools/ssh-keyscan                \
-	tools/ssh-session-mock           \
-	tools/ip
+	tools/ssh-session-mock
