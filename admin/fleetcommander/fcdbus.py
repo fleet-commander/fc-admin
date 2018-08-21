@@ -193,7 +193,15 @@ class FleetCommanderDbusService(dbus.service.Object):
                 self.home_dir, '.local/share/fleetcommander')
 
         if not os.path.exists(self.state_dir):
-            os.makedirs(self.state_dir)
+            raise Exception(
+                '%s directory does not exit.\n'
+                'In order to have the directory automatically created you '
+                'have the following options:\n'
+                '- install freeipa-server using `--mkenablehomedir`;\n'
+                '- call: `authconfig --enablemkhomedir --update`;\n'
+                '- call: `authselect select sssd with-mkhomedir`;\n'
+                'The user will have to log into the system in order to have '
+                'their home directory created!' % (self.home_dir))
 
         self.database_path = os.path.join(self.state_dir, 'fleetcommander.db')
 
