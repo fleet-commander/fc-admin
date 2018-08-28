@@ -22,27 +22,25 @@
 # Python imports
 from __future__ import absolute_import
 import os
-import sys
 import shutil
 import tempfile
 import subprocess
 import time
 import unittest
 import json
-import urllib2
-import base64
-
-import dbus
-
-PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
-sys.path.append(PYTHONPATH)
+import logging
 
 # Fleet commander imports
-from fleetcommander import fcdbus
 from fleetcommander import sshcontroller
+from fleetcommander import fcdbus
 
 # Tests imports
 from test_fcdbus_service import MockLibVirtController
+
+# Set logging level to debug
+log = logging.getLogger()
+level = logging.getLevelName('DEBUG')
+log.setLevel(level)
 
 
 class TestDbusService(unittest.TestCase):
@@ -70,10 +68,10 @@ class TestDbusService(unittest.TestCase):
         'priority': 51,
         'settings': {},
         'hostcategory': None,
-        'groups': ['editors',],
+        'groups': ['editors', ],
         'hostgroups': [],
         'hosts': ['client1'],
-        'users': ['admin', 'guest',],
+        'users': ['admin', 'guest', ],
     }
 
     MAX_DBUS_CHECKS = 10
@@ -147,19 +145,23 @@ class TestDbusService(unittest.TestCase):
         """
         Reads JSON file contents
         """
-        return json.loads(open(path).read())
+        with open(path, 'r') as fd:
+            data = fd.read()
+            fd.close()
+        return json.loads(data)
 
     def get_profile_data(self, profile_name):
         filepath = os.path.join(self.test_directory, 'freeipamock-data.json')
         data = self.get_data_from_file(filepath)
-        if profile_name in data['profiles'] and profile_name in data['profilerules']:
+        if profile_name in data['profiles'] \
+                and profile_name in data['profilerules']:
 
             profile_data = {
                 'name': data['profiles'][profile_name]['cn'][0],
-                'description': data['profiles'][profile_name]['description'][0],
+                'description':
+                    data['profiles'][profile_name]['description'][0],
                 'settings': json.loads(
-                    base64.b64decode(
-                        data['profiles'][profile_name]['ipadeskdata'][0])),
+                        data['profiles'][profile_name]['ipadeskdata'][0]),
             }
             profile_data.update(data['profilerules'][profile_name])
             profile_data['users'].sort()
@@ -179,23 +181,27 @@ class TestDbusService(unittest.TestCase):
         })
 
     def test_00_get_initial_values(self):
+        logging.debug("TEST 00")
         state = {
-            'debuglevel' : "debug",
-            'defaults' : {
-                'profilepriority' : 50,
+            'debuglevel': "debug",
+            'defaults': {
+                'profilepriority': 50,
             }
         }
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
     def test_01_do_ipa_connection(self):
+        logging.debug("TEST 01")
         self.assertEqual(json.loads(self.c.do_ipa_connection()), {
             'status': True
         })
 
     def test_02_get_public_key(self):
+        logging.debug("TEST 02")
         self.assertEqual(self.c.get_public_key(), 'PUBLIC_KEY')
 
     def test_03_get_hypervisor_config(self):
+        logging.debug("TEST 03")
         self.assertEqual(self.c.get_hypervisor_config(), {
             'pubkey': 'PUBLIC_KEY',
             'host': '',
@@ -205,6 +211,7 @@ class TestDbusService(unittest.TestCase):
         })
 
     def test_04_check_hypervisor_config(self):
+        logging.debug("TEST 04")
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -235,6 +242,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['errors'], {'mode': 'Invalid session type'})
 
     def test_05_set_hypervisor_config(self):
+        logging.debug("TEST 05")
         data = {
             'host': 'localhost',
             'username': 'valid_user',
@@ -253,6 +261,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(self.c.get_hypervisor_config(), dataresp)
 
     def test_06_check_known_host(self):
+        logging.debug("TEST 06")
         # Check not known host
         resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
@@ -268,6 +277,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
 
     def test_07_add_known_host(self):
+        logging.debug("TEST 07")
         # Check not known host
         resp = self.c.check_known_host('localhost')
         self.assertFalse(resp['status'])
@@ -280,6 +290,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
 
     def test_08_install_public_key(self):
+        logging.debug("TEST 08")
         # Test install with bad credentials
         resp = self.c.install_pubkey(
             'localhost',
@@ -297,6 +308,7 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
 
     def test_09_save_profile(self):
+        logging.debug("TEST 09")
         # Create a new profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
@@ -304,19 +316,22 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
     def test_10_delete_profile(self):
+        logging.debug("TEST 10")
         # Delete unexistent profile
         resp = self.c.delete_profile('fakeuid')
         self.assertTrue(resp['status'])
         # Delete existent profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertTrue(data is not None)
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
         resp = self.c.delete_profile(self.DUMMY_PROFILE_NAME)
         self.assertTrue(resp['status'])
         data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
-        self.assertEqual(data, None)
+        self.assertTrue(data is None)
 
     def test_11_list_domains(self):
+        logging.debug("TEST 11")
         # Try to get domains without configuring hypervisor
         resp = self.c.list_domains()
         self.assertFalse(resp['status'])
@@ -331,6 +346,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['domains'], MockLibVirtController.DOMAINS_LIST)
 
     def test_12_session_start(self):
+        logging.debug("TEST 12")
         # Configure hypervisor
         self.configure_hypervisor()
         # Start session
@@ -343,6 +359,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['error'], 'Session already started')
 
     def test_13_session_stop(self):
+        logging.debug("TEST 13")
         # Configure hypervisor
         self.configure_hypervisor()
         # Stop without previous session start
@@ -359,6 +376,7 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['error'], 'There was no session started')
 
     def test_14_empty_session_save(self):
+        logging.debug("TEST 14")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
@@ -369,19 +387,21 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.session_save(self.DUMMY_PROFILE_NAME, {})
         self.assertTrue(resp['status'])
         # Check profile is unmodified?
-        data = self.get_profile_data(
-            self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertTrue(data is not None)
         self.assertEqual(data['settings'], {})
 
     def test_15_session_save(self):
+        logging.debug("TEST 15")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
         self.configure_hypervisor()
         # Start a session
         self.c.session_start(self.TEMPLATE_UUID)
-
-        gsettings = self.get_profile_data(self.DUMMY_PROFILE_NAME)['settings']
+        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertTrue(data is not None)
+        gsettings = data['settings']
         self.assertEqual(gsettings, {})
 
         # Save session
@@ -394,15 +414,16 @@ class TestDbusService(unittest.TestCase):
         }
         resp = self.c.session_save(self.DUMMY_PROFILE_NAME, settings)
         self.assertTrue(resp['status'])
-
-        gsettings = self.get_profile_data(
-            self.DUMMY_PROFILE_NAME)['settings']['org.gnome.gsettings']
+        profdata = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        self.assertTrue(profdata is not None)
+        gsettings = profdata['settings']['org.gnome.gsettings']
         self.assertEqual(len(gsettings), 1)
         self.assertEqual(gsettings[0]['value'], True)
         self.assertEqual(gsettings[0]['signature'], 'b')
         self.assertEqual(gsettings[0]['key'], '/foo/bar')
 
     def test_16_get_profiles(self):
+        logging.debug("TEST 16")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profiles data
@@ -415,6 +436,7 @@ class TestDbusService(unittest.TestCase):
         ]])
 
     def test_17_get_profile(self):
+        logging.debug("TEST 17")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profile data
@@ -426,11 +448,13 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp['data'], profile)
 
     def test_18_get_goa_providers(self):
+        logging.debug("TEST 18")
         resp = self.c.get_goa_providers()
         self.assertTrue(resp['status'])
         self.assertEqual(resp['providers'], self.DUMMY_GOA_PROVIDERS_DATA)
 
     def test_19_is_session_active(self):
+        logging.debug("TEST 19")
         # Configure hypervisor
         self.configure_hypervisor()
 
@@ -450,6 +474,7 @@ class TestDbusService(unittest.TestCase):
         # Check existent session by its uuid
         resp = self.c.is_session_active('')
         self.assertTrue(resp)
+
 
 if __name__ == '__main__':
     unittest.main()

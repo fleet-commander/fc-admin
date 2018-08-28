@@ -305,8 +305,8 @@ class GSettingsLogger(object):
             data = Gio.DataInputStream.new (stdout_pipe)
             variant_string = data.read_until ("\0", None)[0]
 
-            if variant_string == None:
-                printerr ("There was an error reading dconf key " + path + key)
+            if variant_string is None:
+                logging.error("There was an error reading dconf key %s%s" (path, key))
                 return
 
             if variant_string.endswith("\n"):
@@ -318,7 +318,7 @@ class GSettingsLogger(object):
             except Exception as e:
                 logging.error(
                     "There was an error parsing the variant string from the \
-                        dconf read output for '%s%s':" % (path, key))
+                        dconf read output for '%s%s': %s" % (path, key, e))
                 logging.error(variant_string)
                 return
 
@@ -381,7 +381,8 @@ class GSettingsLogger(object):
             logging.debug("Checking match with schema %s" % schema_name)
             schema = self.schema_source.lookup(schema_name, True)
             if schema is not None:
-                key_eval = [key in schema for key in keys]
+                schema_keys = schema.list_keys()
+                key_eval = [key in schema_keys for key in keys]
                 if False not in key_eval:
                     logging.debug("Schema %s is a valid candidate" % schema_name)
                     candidates.append(schema_name)

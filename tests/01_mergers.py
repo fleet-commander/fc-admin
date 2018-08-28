@@ -35,6 +35,8 @@ from fleetcommander import mergers
 
 class BaseMergerTest(unittest.TestCase):
 
+    maxDiff = None
+
     MERGER_CLASS = mergers.BaseChangeMerger
     BASIC_CHANGE = {
         'key': '/foo/bar',
@@ -75,12 +77,12 @@ class BaseMergerTest(unittest.TestCase):
         changeset1, changeset2 = self.generate_changesets()
 
         merged = self.merger.merge(changeset1, changeset2)
-        merged.sort()
         expected = [changeset2[0], changeset1[1], changeset2[1], changeset2[2]]
-        expected.sort()
 
         self.assertEqual(len(merged), 4)
-        self.assertEqual(merged, expected)
+        self.assertEqual(
+            sorted(merged, key=lambda k: k[self.KEY_NAME]),
+            sorted(expected, key=lambda k: k[self.KEY_NAME]))
 
 
 class NetworkManagerChangeMergerTest(BaseMergerTest):
@@ -204,13 +206,13 @@ class ChromiumMergerTest(BaseMergerTest):
         changeset1, changeset2 = self.generate_changesets()
 
         merged = self.merger.merge(changeset1, changeset2)
-        merged.sort()
         expected = [changeset2[0], changeset1[1],
             changeset2[1], changeset2[2], self.BOOKMARKS_CHANGE_MERGED]
-        expected.sort()
 
         self.assertEqual(len(merged), 5)
-        self.assertEqual(merged, expected)
+        self.assertEqual(
+            sorted(merged, key=lambda k: k[self.KEY_NAME]),
+            sorted(expected, key=lambda k: k[self.KEY_NAME]))
 
 if __name__ == '__main__':
     unittest.main()

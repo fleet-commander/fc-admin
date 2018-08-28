@@ -128,7 +128,7 @@ class LibvirtDomainMocker(object):
         self.domain_name = root.find('name').text
         self.domain_title = root.find('title').text
         self.domain_uuid = root.find('uuid').text
-        self.xmldata = ET.tostring(root)
+        self.xmldata = ET.tostring(root).decode()
         self.active = True
         self.transient = False
 

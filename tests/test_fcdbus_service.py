@@ -23,12 +23,9 @@
 from __future__ import absolute_import
 import os
 import sys
-import logging
-
-PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
-sys.path.append(PYTHONPATH)
 
 # Fleet commander imports
+from fleetcommander import sshcontroller
 from fleetcommander import fcdbus
 
 # Mock freeipa
@@ -84,6 +81,7 @@ class MockLibVirtController(object):
             if d['uuid'] == uuid:
                 self.DOMAINS_LIST.remove(d)
 
+
 # Mock libvirt controller
 fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
 
@@ -103,7 +101,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             # Force state directory
             'state_dir': test_directory,
         }
-        freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData(test_directory)
+        freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData(
+            test_directory)
 
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
@@ -119,7 +118,8 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         Just mock ssh command execution
         """
         if password != 'password':
-            raise ssh.SSHControllerException('Invalid credentials')
+            raise sshcontroller.SSHControllerException('Invalid credentials')
+
 
 if __name__ == '__main__':
     TestFleetCommanderDbusService(sys.argv[1]).run()

@@ -21,13 +21,13 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
+import six
 import os
 import sys
 import tempfile
 import shutil
 import unittest
 import json
-import base64
 import freeipamock
 
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
@@ -64,19 +64,22 @@ class TestFreeIPA(unittest.TestCase):
         'hostgroups': sorted(['ipaservers', ]),
     }
 
+    PROFILE_JSON_DATA = json.dumps(TEST_PROFILE['settings'])
+
     SAVED_PROFILE_DATA = {
-        u'cn': (TEST_PROFILE['name'],),
-        u'description': (TEST_PROFILE['description'],),
-        u'ipadeskdata': (base64.b64encode(json.dumps(TEST_PROFILE['settings'])),),
+        'cn': (TEST_PROFILE['name'],),
+        'description': (TEST_PROFILE['description'],),
+        'ipadeskdata': (
+            PROFILE_JSON_DATA,)
     }
 
     SAVED_PROFILERULE_DATA = {
         'priority': 100,
         'hostcategory': None,
-        'users': ['admin', 'guest'],
-        'groups': ['admins', 'editors'],
-        'hosts': ['client1'],
-        'hostgroups': ['ipaservers'],
+        'users': sorted(['admin', 'guest']),
+        'groups': sorted(['admins', 'editors']),
+        'hosts': sorted(['client1']),
+        'hostgroups': sorted(['ipaservers']),
     }
 
     TEST_PROFILE_MOD = {
@@ -100,19 +103,21 @@ class TestFreeIPA(unittest.TestCase):
         'hostgroups': sorted(['ipaservers', ]),
     }
 
+    PROFILE_MOD_JSON_DATA = json.dumps(TEST_PROFILE_MOD['settings'])
+
     SAVED_PROFILE_DATA_MOD = {
         u'cn': (TEST_PROFILE_MOD['name'],),
         u'description': (TEST_PROFILE_MOD['description'],),
-        u'ipadeskdata': (base64.b64encode(json.dumps(TEST_PROFILE_MOD['settings'])),),
+        u'ipadeskdata': (PROFILE_MOD_JSON_DATA,),
     }
 
     SAVED_PROFILERULE_DATA_MOD = {
         'priority': 50,
         'hostcategory': None,
-        'users': ['admin', ],
-        'groups': ['admins', 'editors'],
-        'hosts': ['client1'],
-        'hostgroups': ['ipaservers'],
+        'users': sorted(['admin', ]),
+        'groups': sorted(['admins', 'editors']),
+        'hosts': sorted(['client1']),
+        'hostgroups': sorted(['ipaservers']),
     }
 
     def setUp(self):

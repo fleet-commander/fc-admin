@@ -56,6 +56,12 @@ class TestSSHController(unittest.TestCase):
         '-L %(local_host)s:%(local_port)s:%(tunnel_host)s:%(tunnel_port)s -N\n'
     ])
 
+    def __init__(self, *args, **kwargs):
+        super(TestSSHController, self).__init__(*args, **kwargs)
+        # Python 3 compatibility
+        if not hasattr(self, 'assertRaisesRegex'):
+            self.assertRaisesRegex = self.assertRaisesRegexp
+
     def setUp(self):
         self.test_directory = tempfile.mkdtemp(prefix='fc-ssh-test')
 
@@ -86,7 +92,10 @@ class TestSSHController(unittest.TestCase):
         ssh.generate_ssh_keypair(self.private_key_file)
         # Check parameters
         self.assertTrue(os.path.exists(self.ssh_keygen_parms_file))
-        parms = open(self.ssh_keygen_parms_file).read()
+        with open(self.ssh_keygen_parms_file, 'r') as fd:
+            parms = fd.read()
+            fd.close()
+
         self.assertEqual(parms, self.SSH_KEYGEN_PARMS % self.private_key_file)
 
     def test_01_scan_host_keys(self):
@@ -99,7 +108,9 @@ class TestSSHController(unittest.TestCase):
         self.assertEqual(keys, self.SSH_KEYSCAN_OUTPUT % hostname)
         # Check parameters
         self.assertTrue(os.path.exists(self.ssh_keyscan_parms_file))
-        parms = open(self.ssh_keyscan_parms_file).read()
+        with open(self.ssh_keyscan_parms_file, 'r') as fd:
+            parms = fd.read()
+            fd.close()
         self.assertEqual(parms, self.SSH_KEYSCAN_PARMS % (port, hostname))
 
     def test_02_add_known_host(self):
@@ -111,12 +122,16 @@ class TestSSHController(unittest.TestCase):
         ssh.add_to_known_hosts(self.known_hosts_file, hostname, port)
         # Check known hosts file exists
         self.assertTrue(os.path.exists(self.known_hosts_file))
-        keys = open(self.known_hosts_file).read()
+        with open(self.known_hosts_file, 'r') as fd:
+            keys = fd.read()
+            fd.close()
         # Check keys data
         self.assertEqual(keys, self.SSH_KEYSCAN_OUTPUT % hostname)
         # Add another host
         ssh.add_to_known_hosts(self.known_hosts_file, hostname2, port2)
-        keys = open(self.known_hosts_file).read()
+        with open(self.known_hosts_file, 'r') as fd:
+            keys = fd.read()
+            fd.close()
         # Check keys data
         self.assertEqual(
             keys,
@@ -263,7 +278,7 @@ class TestSSHController(unittest.TestCase):
         # Change ssh command for session mocking
         ssh.SSH_COMMAND = 'ssh-session-mock'
         # Use bad credentials
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
           sshcontroller.SSHControllerException,
           'Invalid credentials'):
             ssh.install_pubkey(

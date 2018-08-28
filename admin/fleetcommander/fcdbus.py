@@ -20,14 +20,10 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
-import sys
 import os
-import signal
 import json
 import logging
-import subprocess
 import re
-import uuid
 import time
 from functools import wraps
 
@@ -35,17 +31,14 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 
-import gi
 from gi.repository import GObject
 
 from . import sshcontroller
 from . import libvirtcontroller
 from .database import DBManager
-from .utils import get_ip_address, get_data_from_file
 from . import mergers
 from .goa import GOAProvidersLoader
 from . import fcfreeipa
-from six.moves import filter
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -72,7 +65,7 @@ class FleetCommanderDbusClient(object):
     """
 
     DEFAULT_BUS = dbus.SessionBus
-    CONNECTION_TIMEOUT = 2
+    CONNECTION_TIMEOUT = 1
 
     def __init__(self, bus=None):
         """
@@ -89,7 +82,7 @@ class FleetCommanderDbusClient(object):
                 self.iface = dbus.Interface(
                     self.obj, dbus_interface=DBUS_INTERFACE_NAME)
                 return
-            except Exception as e:
+            except Exception:
                 pass
         raise Exception(
             'Timed out trying to connect to fleet commander dbus service')
@@ -604,10 +597,14 @@ class FleetCommanderDbusService(dbus.service.Object):
             'description': data['description'],
             'priority': int(data['priority']),
             'settings': data['settings'],
-            'groups': [_f for _f in [g.strip() for g in data['groups'].split(",")] if _f],
-            'users': [_f for _f in [u.strip() for u in data['users'].split(",")] if _f],
-            'hosts': [_f for _f in [u.strip() for u in data['hosts'].split(",")] if _f],
-            'hostgroups': [_f for _f in [u.strip() for u in data['hostgroups'].split(",")] if _f],
+            'groups': [_f for _f in [
+                elem.strip() for elem in data['groups'].split(",")] if _f],
+            'users': [_f for _f in [
+                elem.strip() for elem in data['users'].split(",")] if _f],
+            'hosts': [_f for _f in [
+                elem.strip() for elem in data['hosts'].split(",")] if _f],
+            'hostgroups': [_f for _f in [
+                elem.strip() for elem in data['hostgroups'].split(",")] if _f],
         }
 
         logging.debug(
@@ -712,8 +709,6 @@ class FleetCommanderDbusService(dbus.service.Object):
                 'status': False,
                 'error': 'Session already started'
             })
-
-        hypervisor = self.get_hypervisor_config()
 
         try:
             lvirtctrlr = self.get_libvirt_controller()

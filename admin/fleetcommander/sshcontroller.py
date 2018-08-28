@@ -79,7 +79,7 @@ class SSHController(object):
         out, error = prog.communicate()
         prog.wait()
         if prog.returncode == 0:
-            return out
+            return out.decode()
         else:
             raise SSHControllerException(
                 'Error getting host keys: %s' % error)
@@ -131,7 +131,7 @@ class SSHController(object):
         prog.wait()
         os.remove(tmpfile)
         if prog.returncode == 0:
-            return out
+            return out.decode()
         else:
             raise SSHControllerException(
                 'Error generating fingerprint from key data: %s' % error)

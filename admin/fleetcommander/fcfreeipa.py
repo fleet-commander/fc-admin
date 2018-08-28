@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import json
 import logging
 from functools import wraps
-import base64
 
 from ipalib import api
 from ipalib import errors
@@ -69,17 +68,25 @@ class FreeIPAConnector(object):
                 'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
             raise
 
+    def _prepare_profile_base_args(self, profile):
+        name = six.text_type(profile['name'])
+        settings = json.dumps(profile['settings']).encode()
+        return {
+            'cn': name,
+            'description': profile['description'],
+            'ipadeskdata': settings
+        }
+
     def _create_profile(self, profile):
         name = six.text_type(profile['name'])
         logging.debug(
-            'FreeIPAConnector: Creating profile %s' % name)
+            'FreeIPAConnector: Creating profile %s with data: %s' % (
+                name, profile))
+
+        base_args = self._prepare_profile_base_args(profile)
+
         try:
-            api.Command.deskprofile_add(
-                name,
-                description=six.text_type(profile['description']),
-                ipadeskdata=six.text_type(
-                    base64.b64encode(json.dumps(profile['settings'])))
-            )
+            api.Command.deskprofile_add(**base_args)
             self._create_profile_rules(profile)
         except Exception as e:
             logging.error(
@@ -128,25 +135,20 @@ class FreeIPAConnector(object):
     def _update_profile(self, profile, oldname=None):
         name = six.text_type(profile['name'])
 
-        parms = {
-            'cn': name,
-            'description': six.text_type(profile['description']),
-            'ipadeskdata': six.text_type(
-                base64.b64encode(json.dumps(profile['settings'])))
-        }
+        base_args = self._prepare_profile_base_args(profile)
 
         if oldname is not None:
-            parms['cn'] = oldname
-            parms['rename'] = name
+            base_args['cn'] = oldname
+            base_args['rename'] = name
             # Update profile renaming it
             logging.debug(
                 'FreeIPAConnector: Updating profile %s and renaming to %s' % (
                     oldname, name))
-        else:
-            logging.debug(
-                'FreeIPAConnector: Updating profile %s' % name)
+        logging.debug(
+            'FreeIPAConnector: Updating profile %s with data: %s' % (
+                name, profile))
         try:
-            api.Command.deskprofile_mod(**parms)
+            api.Command.deskprofile_mod(**base_args)
         except errors.EmptyModlist:
             pass
         except Exception as e:
@@ -446,6 +448,9 @@ class FreeIPAConnector(object):
             raise e
         rule = self.get_profile_rule(name)
         data = result['result']
+
+        logging.debug('Decoding ipadeskdata')
+
         profile = {
             'name': data['cn'][0],
             'description': data.get('description', ('',))[0],

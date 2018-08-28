@@ -45,7 +45,7 @@ log.setLevel(level)
 
 
 def read_file(filename):
-    with open(filename, "rb") as fd:
+    with open(filename, "r") as fd:
         data = fd.read()
         fd.close()
     return data
@@ -60,7 +60,6 @@ class TestConnMgr(unittest.TestCase):
         # Get temporary file
         TMPFILE = Gio.file_new_tmp('fc_logger_spiceport_XXXXXX')
         path = TMPFILE[0].get_path()
-        print(path)
         mgr = FleetCommander.SpicePortManager(path)
         PAYLOAD = '["PAYLOAD"]'
         expected_data = '{"ns": "org.gnome.gsettings", "data": "[\\"PAYLOAD\\"]"}'
@@ -78,7 +77,9 @@ class TestConnMgr(unittest.TestCase):
 
         # Check data has been written to spiceport file
         data = read_file(path)
-        self.assertEqual(expected_data, data)
+        self.assertEqual(
+            json.dumps(json.loads(expected_data)),
+            json.dumps(json.loads(data)))
 
     def test_02_manager_queue(self):
         # Get temporary file

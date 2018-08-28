@@ -19,13 +19,6 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutierrez <ogutierrez@redhat.com>
 
-if [ "x$TOPSRCDIR" = "x" ] ; then
-  TOPSRCDIR=`pwd`/../
-fi
-
-export TOPSRCDIR
-export PYTHONPATH=$TOPSRCDIR/_build/sub/admin/fleetcommander
-
 # We assume dbus-launch never fails
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
