@@ -19,8 +19,10 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import sqlite3
 import json
+import six
 
 SCHEMA_VERSION = 1.0
 
@@ -32,13 +34,14 @@ class SQLiteDict(object):
 
     _SUPPORTED_TYPES = {
         'int':     int,
-        'long':    long,
+        'long':    int if six.PY3 else long,
         'float':   float,
         'str':     str,
-        'unicode': unicode,
+        'unicode': six.text_type,
         'tuple':   tuple,
         'list':    list,
         'dict':    dict,
+        'bytes':   bytes,
     }
 
     _SERIALIZED_TYPES = ['tuple', 'list', 'dict']
@@ -53,9 +56,9 @@ class SQLiteDict(object):
         self.cursor = db.cursor
         # Generate table if not exists
         self.db.create_table(self.TABLE_NAME, **{
-            'key':    unicode,
-            'value':  unicode,
-            'type':   unicode,
+            'key':    six.text_type,
+            'value':  six.text_type,
+            'type':   six.text_type,
         })
 
         if 'SCHEMA_VERSION' not in self:
@@ -94,7 +97,7 @@ class SQLiteDict(object):
             self.__delitem__(key)
 
         valuetype = type(value).__name__
-        if valuetype not in self._SUPPORTED_TYPES.keys():
+        if valuetype not in list(self._SUPPORTED_TYPES.keys()):
             raise ValueError('Type %s is not supported by SQLiteDict' % valuetype)
 
         if valuetype in self._SERIALIZED_TYPES:
@@ -173,12 +176,16 @@ class BaseDBManager(object):
     SQLITE_TYPE_MATCHES = {
         None:    'NULL',
         int:     'INTEGER',
-        long:    'INTEGER',
         float:   'REAL',
         str:     'TEXT',
-        unicode: 'TEXT',
-        buffer:  'BLOB'
+        six.text_type: 'TEXT',
+        memoryview:  'BLOB'
     }
+    if six.PY3:
+        SQLITE_TYPE_MATCHES[bytes] = 'BLOB'
+    else:
+        SQLITE_TYPE_MATCHES[buffer] = 'BLOB'
+        SQLITE_TYPE_MATCHES[long] = 'INTEGER'
 
     def __init__(self, database):
         """

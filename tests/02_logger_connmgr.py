@@ -21,6 +21,8 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 # Python imports
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 import json
@@ -43,10 +45,8 @@ log.setLevel(level)
 
 
 def read_file(filename):
-    with open(filename, "rb") as fd:
-        data = fd.read()
-        fd.close()
-    return data
+    with open(filename, "r") as fd:
+        return fd.read()
 
 
 class TestConnMgr(unittest.TestCase):

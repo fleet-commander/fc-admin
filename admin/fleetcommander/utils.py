@@ -21,19 +21,21 @@
 
 
 # Python imports
+from __future__ import absolute_import
 import os
 import sys
 import logging
 import copy
 import socket
+import six
 
 # Compat between Pyhon 2 and 3
 try:
     from configparser import ConfigParser, ParsingError
 except ImportError:
-    from ConfigParser import ConfigParser, ParsingError
+    from six.moves.configparser import ConfigParser, ParsingError
 
-import constants
+from . import constants
 
 
 def get_data_from_file(path):
@@ -82,7 +84,7 @@ def parse_config(config_file=None):
     except ParsingError:
         logging.error('There was an error parsing %s' % config_file)
         sys.exit(1)
-    except Exception, e:
+    except Exception as e:
         logging.error(
             'There was an unknown error parsing %s: %s' %
             config_file, e)
@@ -129,4 +131,4 @@ def get_ip_address(hostname):
     Returns first IP address for given hostname
     """
     data = socket.gethostbyname(hostname)
-    return unicode(data)
+    return six.text_type(data)

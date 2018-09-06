@@ -19,8 +19,9 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
+from __future__ import absolute_import
 import sys
-from ConfigParser import RawConfigParser, ParsingError
+from six.moves.configparser import RawConfigParser, ParsingError
 import logging
 
 
@@ -37,15 +38,15 @@ class GOAProvidersLoader(object):
         self._configparser = RawConfigParser()
         try:
             self._configparser.read(providers_file)
-        except IOError, e:
+        except IOError as e:
             logging.error(
                 'Could not find GOA providers file %s' % providers_file)
             raise e
-        except ParsingError, e:
+        except ParsingError as e:
             logging.error(
                 'There was an error parsing %s' % providers_file)
             raise e
-        except Exception, e:
+        except Exception as e:
             logging.error(
                 'There was an unknown error parsing %s' % providers_file)
             raise e

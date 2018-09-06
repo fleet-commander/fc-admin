@@ -23,6 +23,8 @@
 
 
 # Python imports
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import getopt
@@ -32,6 +34,7 @@ import json
 import dbus
 
 from dbus.mainloop.glib import DBusGMainLoop
+from six.moves import range
 DBusGMainLoop(set_as_default=True)
 
 # GObject Introspection imports
@@ -378,7 +381,7 @@ class GSettingsLogger(object):
             logging.debug("Checking match with schema %s" % schema_name)
             schema = self.schema_source.lookup(schema_name, True)
             if schema is not None:
-                key_eval = [schema.has_key(key) for key in keys]
+                key_eval = [key in schema for key in keys]
                 if False not in key_eval:
                     logging.debug("Schema %s is a valid candidate" % schema_name)
                     candidates.append(schema_name)

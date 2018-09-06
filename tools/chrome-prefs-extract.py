@@ -23,6 +23,7 @@
 # Source data is got from:
 #    https://cs.chromium.org/chromium/src/chrome/test/data/policy/policy_test_cases.json
 
+from __future__ import absolute_import
 import sys
 import json
 
