@@ -45,10 +45,8 @@ log.setLevel(level)
 
 
 def read_file(filename):
-    with open(filename, "rb") as fd:
-        data = fd.read()
-        fd.close()
-    return data
+    with open(filename, "r") as fd:
+        return fd.read()
 
 
 class TestConnMgr(unittest.TestCase):

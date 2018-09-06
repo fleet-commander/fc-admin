@@ -22,6 +22,7 @@
 from __future__ import absolute_import
 import os
 import subprocess
+import sys
 import tempfile
 import logging
 import pexpect
@@ -49,6 +50,14 @@ class SSHController(object):
         """
         pass
 
+    def _subprocess_communicate(self, prog):
+        out, error = prog.communicate()
+        prog.wait()
+        if six.PY3:
+            out = out.decode(sys.getdefaultencoding())
+            error = error.decode(sys.getdefaultencoding())
+        return out, error
+
     def generate_ssh_keypair(self, private_key_file, key_size=RSA_KEY_SIZE):
         """
         Generates SSH private and public keys
@@ -63,7 +72,7 @@ class SSHController(object):
                 '-N', ''
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
+        out, error = self._subprocess_communicate(prog)
         if prog.returncode != 0:
             raise SSHControllerException(
                 'Error generating keypair: %s' % error)
@@ -76,8 +85,7 @@ class SSHController(object):
                 hostname,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
-        prog.wait()
+        out, error = self._subprocess_communicate(prog)
         if prog.returncode == 0:
             return out
         else:
@@ -89,9 +97,10 @@ class SSHController(object):
         directory = os.path.dirname(known_hosts_file)
         if not os.path.exists(directory):
             os.makedirs(directory)
+        if six.PY3 and isinstance(key_data, bytes):
+            key_data = key_data.decode('ascii')
         with open(known_hosts_file, 'a') as fd:
             fd.write(key_data)
-            fd.close()
 
     def add_to_known_hosts(self, known_hosts_file, hostname, port=DEFAULT_SSH_PORT):
         key_data = self.scan_host_keys(hostname, port)
@@ -105,7 +114,6 @@ class SSHController(object):
             # Check if host exists in file
             with open(known_hosts_file) as fd:
                 lines = fd.readlines()
-                fd.close()
             for line in lines:
                 hosts, keytype, key = line.split()
                 if hostname in hosts.split(','):
@@ -117,9 +125,10 @@ class SSHController(object):
         Get host SSH fingerprint
         """
         tmpfile = tempfile.mktemp(prefix='fc-ssh-keydata')
+        if six.PY3 and isinstance(key_data, bytes):
+            key_data = key_data.decode('ascii')
         with open(tmpfile, 'w') as fd:
             fd.write(key_data)
-            fd.close()
         prog = subprocess.Popen(
             [
                 self.SSH_KEYGEN_COMMAND,
@@ -127,8 +136,7 @@ class SSHController(object):
                 '-f', tmpfile,
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
-        prog.wait()
+        out, error = self._subprocess_communicate(prog)
         os.remove(tmpfile)
         if prog.returncode == 0:
             return out
@@ -174,7 +182,7 @@ class SSHController(object):
         # Execute command
         prog = subprocess.Popen(
             ssh_command_start, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
+        out, error = self._subprocess_communicate(prog)
         if prog.returncode == 0:
             return out
         else:
