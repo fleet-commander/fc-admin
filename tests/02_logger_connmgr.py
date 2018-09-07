@@ -1,4 +1,4 @@
-#!./python-wrapper.sh
+#!/usr/bin/env python-wrapper.sh
 # -*- coding: utf-8 -*-
 # vi:ts=2 sw=2 sts=2
 
