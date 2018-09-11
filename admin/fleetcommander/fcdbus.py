@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import
 import os
+import sys
 import json
 import logging
 import re
@@ -178,7 +179,24 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         super(FleetCommanderDbusService, self).__init__()
 
+        # Set log level at initialization
+        self.log_level = args['log_level'].lower()
+        loglevel = getattr(logging, args['log_level'].upper())
+        logging.basicConfig(level=loglevel, format=args['log_format'])
+
         self.home_dir = os.path.expanduser('~')
+
+        if not os.path.exists(self.home_dir):
+            logging.error(
+                '%s directory does not exist.\n'
+                'In order to have home directory automatically created you '
+                'have the following options:\n'
+                '- install freeipa-server using `--mkenablehomedir`;\n'
+                '- call: `authconfig --enablemkhomedir --update`;\n'
+                '- call: `authselect select sssd with-mkhomedir`;\n'
+                'The user will have to log into the system in order to have '
+                'their home directory created!' % (self.home_dir))
+            sys.exit(1)
 
         if 'state_dir' in args:
             self.state_dir = args['state_dir']
@@ -193,10 +211,6 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.database_path = os.path.join(self.state_dir, 'fleetcommander.db')
 
         self.args = args
-
-        self.log_level = args['log_level'].lower()
-        loglevel = getattr(logging, args['log_level'].upper())
-        logging.basicConfig(level=loglevel, format=args['log_format'])
 
         self.default_profile_priority = args['default_profile_priority']
 
