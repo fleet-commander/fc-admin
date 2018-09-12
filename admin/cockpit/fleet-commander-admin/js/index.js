@@ -384,12 +384,15 @@ function showDomainSelection() {
             if (!this.temporary) {
               var wrapper = $('<div></div>', {'class': 'list-group-item'});
               var text = this.name;
-              if (this.active) {
-                text = this.name + ' (' + _('running') + ')';
+              var domain = "";
+              if (!this.active) {
+                domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
+                domain.click(selectDomain);
+              } else {
                 wrapper.addClass('grayed')
+                text = this.name + ' (' + _('running') + ')';
+                domain = $('<span></span>', { text: text, 'data-uuid': this.uuid});
               }
-              domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
-              domain.click(selectDomain);
               domain.appendTo(wrapper);
               wrapper.appendTo(list);
             }
