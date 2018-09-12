@@ -394,6 +394,15 @@ function showDomainSelection() {
               wrapper.appendTo(list);
             }
           });
+
+          // If list is empty, show a message to inform user
+          if (list.html() == '') {
+            var wrapper = $('<div></div>', {'class': 'list-group-item'});
+            var text = $('<span>No template virtual machines found</span>');
+            text.appendTo(wrapper);
+            wrapper.appendTo(list);
+          }
+
         } else {
           $('#domain-selection-modal').modal('hide');
           showMessageDialog(_('Error getting domain list'), _('Error'));
