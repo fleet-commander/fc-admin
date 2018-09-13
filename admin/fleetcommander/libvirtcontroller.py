@@ -99,6 +99,9 @@ class LibVirtController(object):
         #     self.ssh.add_to_known_hosts(
         #         self.known_hosts_file, self.ssh_host, self.ssh_port)
 
+        logging.debug(
+            'libvirtcontroller: Checking remote environment.')
+
         if self.mode == 'session':
             command = 'virsh list > /dev/null && echo %s && [ -S %s ]' % (
                 self.DEFAULT_LIBVIRTD_SOCKET, self.DEFAULT_LIBVIRTD_SOCKET)
@@ -114,9 +117,13 @@ class LibVirtController(object):
                 self.username, self.ssh_host, self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
-            return out.strip()
+            logging.debug(
+                'libvirtcontroller: '
+                'Remote environment OK. %s' % out.strip().decode())
+            return out.strip().decode()
         except Exception as e:
             raise LibVirtControllerException('Error connecting to host: %s' % e)
+
 
     def _connect(self):
         """
@@ -148,6 +155,9 @@ class LibVirtController(object):
             except Exception as e:
                 raise LibVirtControllerException(
                     'Error connecting to host: %s' % e)
+            
+            logging.debug(
+                'libvirtcontroller: Connected to libvirt host.')
         else:
             logging.debug(
                 'libvirtcontroller: Already connected. Reusing connection.')
@@ -235,7 +245,7 @@ class LibVirtController(object):
         graphics.set('type', 'spice')
         graphics.set('autoport', 'yes')
         self._add_spice_port(devs, 'org.freedesktop.FleetCommander.0', 'fc0')
-        return ET.tostring(root)
+        return ET.tostring(root).decode()
 
     def _open_ssh_tunnel(self, host, spice_port):
         """
