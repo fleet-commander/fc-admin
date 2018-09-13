@@ -32,10 +32,11 @@ import logging
 
 # Fleet commander imports
 from fleetcommander import sshcontroller
-from fleetcommander import fcdbus
 
 # Tests imports
 from test_fcdbus_service import MockLibVirtController
+from fcdbusclient import FleetCommanderDbusClient
+
 
 # Set logging level to debug
 log = logging.getLogger()
@@ -120,7 +121,7 @@ class TestDbusService(unittest.TestCase):
         checks = 0
         while True:
             try:
-                self.c = fcdbus.FleetCommanderDbusClient()
+                self.c = FleetCommanderDbusClient()
                 self.c.get_public_key()
                 break
             except:
