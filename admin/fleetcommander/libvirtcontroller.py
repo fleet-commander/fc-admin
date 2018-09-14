@@ -91,7 +91,11 @@ class LibVirtController(object):
 
     def _prepare_remote_env(self):
         """
-        Runs virsh remotely to execute the session daemon and get needed data for connection
+        Runs libvirt remotely to execute the session daemon and get needed
+        data for connection
+
+        Libvirt connection using qemu+ssh requires socket path for session
+        connections.
         """
         # Check if host key is already in known_hosts
         # known = self.ssh.check_known_host(self.known_hosts_file, self.ssh_host)
@@ -103,27 +107,22 @@ class LibVirtController(object):
             'libvirtcontroller: Checking remote environment.')
 
         if self.mode == 'session':
-            command = 'virsh list > /dev/null && echo %s && [ -S %s ]' % (
+            command = 'libvirt -d > /dev/null 2>&1; echo %s && [ -S %s ]' % (
                 self.DEFAULT_LIBVIRTD_SOCKET, self.DEFAULT_LIBVIRTD_SOCKET)
+
+            try:
+                out = self.ssh.execute_remote_command(
+                    command,
+                    self.private_key_file,
+                    self.username, self.ssh_host, self.ssh_port,
+                    UserKnownHostsFile=self.known_hosts_file,
+                )
+                return out.decode().strip()
+            except Exception as e:
+                raise LibVirtControllerException(
+                    'Error connecting to host: %s' % e)
         else:
-            command = 'virsh list > /dev/null'
-
-        error = None
-
-        try:
-            out = self.ssh.execute_remote_command(
-                command,
-                self.private_key_file,
-                self.username, self.ssh_host, self.ssh_port,
-                UserKnownHostsFile=self.known_hosts_file,
-            )
-            logging.debug(
-                'libvirtcontroller: '
-                'Remote environment OK. %s' % out.strip().decode())
-            return out.strip().decode()
-        except Exception as e:
-            raise LibVirtControllerException('Error connecting to host: %s' % e)
-
+            return ''
 
     def _connect(self):
         """
