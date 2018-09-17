@@ -45,6 +45,7 @@ class LibVirtController(object):
 
     RSA_KEY_SIZE = 2048
     DEFAULT_LIBVIRTD_SOCKET = '$XDG_RUNTIME_DIR/libvirt/libvirt-sock'
+    DEFAULT_LIBVIRT_VIDEO_DRIVER = 'virtio'
     LIBVIRT_URL_TEMPLATE = 'qemu+ssh://%s@%s/%s'
     MAX_SESSION_START_TRIES = 3
     SESSION_START_TRIES_DELAY = .1
@@ -55,6 +56,9 @@ class LibVirtController(object):
         """
         Class initialization
         """
+        self._libvirt_socket = ''
+        self._libvirt_video_driver = self.DEFAULT_LIBVIRT_VIDEO_DRIVER
+
         if mode not in ['system', 'session']:
             raise LibVirtControllerException('Invalid libvirt mode selected. Must be "system" or "session"')
         self.mode = mode
@@ -89,25 +93,13 @@ class LibVirtController(object):
         if not os.path.exists(self.private_key_file):
             self.ssh.generate_ssh_keypair(self.private_key_file)
 
-    def _prepare_remote_env(self):
-        """
-        Runs libvirt remotely to execute the session daemon and get needed
-        data for connection
-
-        Libvirt connection using qemu+ssh requires socket path for session
-        connections.
-        """
-        # Check if host key is already in known_hosts
-        # known = self.ssh.check_known_host(self.known_hosts_file, self.ssh_host)
-        # if not known:
-        #     self.ssh.add_to_known_hosts(
-        #         self.known_hosts_file, self.ssh_host, self.ssh_port)
-
-        logging.debug(
-            'libvirtcontroller: Checking remote environment.')
-
+    def _get_libvirt_socket(self):
+        # Get Libvirt socket for session mode
         if self.mode == 'session':
-            command = 'libvirt -d > /dev/null 2>&1; echo %s && [ -S %s ]' % (
+            logging.debug(
+                'libvirtcontroller: '
+                'Getting session mode libvirt socket.')
+            command = '/usr/sbin/libvirtd -d > /dev/null 2>&1; echo %s && [ -S %s ]' % (
                 self.DEFAULT_LIBVIRTD_SOCKET, self.DEFAULT_LIBVIRTD_SOCKET)
 
             try:
@@ -117,12 +109,59 @@ class LibVirtController(object):
                     self.username, self.ssh_host, self.ssh_port,
                     UserKnownHostsFile=self.known_hosts_file,
                 )
-                return out.decode().strip()
+                self._libvirt_socket = out.decode().strip()
+                logging.debug(
+                    'libvirtcontroller: '
+                    'Session mode libvirt socket is %s' % self._libvirt_socket)
             except Exception as e:
                 raise LibVirtControllerException(
-                    'Error connecting to host: %s' % e)
+                    'Error connecting to libvirt host: %s' % e)
         else:
-            return ''
+            logging.debug(
+                'libvirtcontroller: '
+                'Using system mode. No need to check for libvirt socket.')
+            self._libvirt_socket = ''
+
+    def _get_libvirt_video_driver(self):
+        logging.debug(
+            'libvirtcontroller: '
+            'Getting libvirt video driver.')
+
+        command = 'if [ -x /usr/libexec/qemu-kvm ]; ' + \
+            'then cmd="/usr/libexec/qemu-kvm"; ' + \
+            'else cmd="/usr/bin/qemu-kvm"; fi ; ' + \
+            '$cmd -device help 2>&1 | grep "virtio-vga" > /dev/null; ' + \
+            'if [ $? == 0 ]; then echo "virtio"; else echo "qxl"; fi'
+        try:
+            out = self.ssh.execute_remote_command(
+                command,
+                self.private_key_file,
+                self.username, self.ssh_host, self.ssh_port,
+                UserKnownHostsFile=self.known_hosts_file,
+            )
+            self._libvirt_video_driver = out.decode().strip()
+            logging.debug(
+                'libvirtcontroller:'
+                'Using %s video driver.' % self._libvirt_video_driver)
+        except Exception as e:
+            raise LibVirtControllerException(
+                'Error connecting to libvirt host: %s' % e)
+
+    def _prepare_remote_env(self):
+        """
+        Runs libvirt remotely to execute the session daemon and get needed
+        data for connection.
+        Also checks for supported video driver to fallback into QXL if needed
+
+        Libvirt connection using qemu+ssh requires socket path for session
+        connections.
+        """
+        logging.debug(
+            'libvirtcontroller: Checking remote environment.')
+        self._get_libvirt_socket()
+        self._get_libvirt_video_driver()
+        logging.debug(
+            'libvirtcontroller: Ended checking remote environment.')
 
     def _connect(self):
         """
@@ -130,9 +169,12 @@ class LibVirtController(object):
         """
         logging.debug('libvirtcontroller: Connecting to libvirt')
         if self.conn is None:
+
+            # Prepare remote environment
+            self._prepare_remote_env()
+
             logging.debug(
                 'libvirtcontroller: Not connected yet. Prepare connection.')
-            self._libvirt_socket = self._prepare_remote_env()
 
             options = {
                 #'known_hosts': self.known_hosts_file,  # Custom known_hosts file to not alter the default one
@@ -236,7 +278,7 @@ class LibVirtController(object):
         model = ET.SubElement(video, 'model')
         model.set('heads', '1')
         model.set('primary', 'yes')
-        model.set('type', 'virtio')
+        model.set('type', self._libvirt_video_driver)
         # Remove all graphics adapters and create our own
         for elem in devs.findall('graphics'):
             devs.remove(elem)
