@@ -6,6 +6,7 @@ EXTRA_DIST =                         \
 	python-wrapper.sh                \
 	freeipamock.py                   \
 	libvirtmock.py                   \
+	fcdbusclient.py                  \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.py         \
 	_01_wait_for_name.py             \
