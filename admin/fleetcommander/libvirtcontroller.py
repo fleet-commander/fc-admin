@@ -236,7 +236,7 @@ class LibVirtController(object):
         model = ET.SubElement(video, 'model')
         model.set('heads', '1')
         model.set('primary', 'yes')
-        model.set('type', 'virtio')
+        model.set('type', 'qxl')
         # Remove all graphics adapters and create our own
         for elem in devs.findall('graphics'):
             devs.remove(elem)
