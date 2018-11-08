@@ -33,6 +33,7 @@ import dbus.service
 import dbus.mainloop.glib
 
 from gi.repository import GObject
+from gi.repository import Gio
 
 from . import sshcontroller
 from . import libvirtcontroller
@@ -40,6 +41,7 @@ from .database import DBManager
 from . import mergers
 from .goa import GOAProvidersLoader
 from . import fcfreeipa
+from . import fcad
 
 SYSTEM_USER_REGEX = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]{0,30}$')
 IPADDRESS_AND_PORT_REGEX = re.compile(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$')
@@ -107,8 +109,22 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.default_profile_priority = args['default_profile_priority']
 
-        # Load FreeIPA connector
-        self.ipa = fcfreeipa.FreeIPAConnector()
+        # Configure realm connection and information
+        domain, server = self.get_realm_details()
+        self.realm_info = {
+            'domain': domain,
+            'server': server
+        }
+        if server == 'active-directory':
+            # Load Active Directory connector
+            logging.debug('Activating Active Directory domain support for %s' % domain)
+            self.realm_connector = fcad.ADConnector(domain)
+        else:
+            # TODO: Detect unknown server software and do specific error handling
+            # Load FreeIPA connector
+            logging.debug('Activating IPA domain support for %s' % domain)
+            self.realm_connector = fcfreeipa.FreeIPAConnector()
+        
 
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
@@ -156,6 +172,33 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         # Enter main loop
         self._loop.run()
+
+    def get_realm_details(self):
+        sssd_provider = Gio.DBusProxy.new_for_bus_sync(
+                    Gio.BusType.SYSTEM,
+                    Gio.DBusProxyFlags.NONE,
+                    None,
+                    'org.freedesktop.realmd',
+                    '/org/freedesktop/realmd/Sssd',
+                    'org.freedesktop.realmd.Provider',
+                    None)
+        realms = sssd_provider.get_cached_property('Realms')
+        if len(realms) > 0:
+            realm = Gio.DBusProxy.new_for_bus_sync(
+                        Gio.BusType.SYSTEM,
+                        Gio.DBusProxyFlags.NONE,
+                        None,
+                        'org.freedesktop.realmd',
+                        realms[0],
+                        'org.freedesktop.realmd.Realm',
+                        None)
+            domain = str(realm.get_cached_property('Name')).replace('\'', '')
+            details = {str(k):str(v) for k,v in realm.get_cached_property('Details')}
+            server = details.get('server-software', 'ipa')
+            return (domain, server)
+        else:
+            # Return unknown domain and use IPA as directory server
+            return ('UNKNOWN', 'ipa')
 
     def get_libvirt_controller(self):
         """
@@ -300,26 +343,28 @@ class FleetCommanderDbusService(dbus.service.Object):
             'debuglevel': self.log_level,
             'defaults': {
                 'profilepriority': self.default_profile_priority,
-            }
+            },
+            'realm': self.realm_info['domain'],
+            'server_type': self.realm_info['server']
         }
         return json.dumps(state)
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
-    def DoIPAConnection(self):
-        logging.debug('Connecting to IPA server')
+    def DoDomainConnection(self):
+        logging.debug('Connecting to domain server')
         try:
-            self.ipa.connect()
+            self.realm_connector.connect()
             return json.dumps({
                 'status': True
             })
         except Exception as e:
             logging.debug(
-                'IPA server connection failed: %s' % e)
+                'Domain server connection failed: %s' % e)
             return json.dumps({
                 'status': False,
-                'error': 'Error connecting to IPA server'
+                'error': 'Error connecting to domain server'
             })
 
     @set_last_call_time
@@ -460,7 +505,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetGlobalPolicy(self):
         logging.debug('Getting global policy')
         try:
-            policy = self.ipa.get_global_policy()
+            policy = self.realm_connector.get_global_policy()
             return json.dumps({'status': True, 'policy': policy})
         except Exception as e:
             logging.error('Error getting global policy: %s' % e)
@@ -478,7 +523,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             'Setting policy to %s' % policy)
 
         try:
-            self.ipa.set_global_policy(int(policy))
+            self.realm_connector.set_global_policy(int(policy))
             return json.dumps({'status': True})
         except Exception as e:
             logging.error(
@@ -500,6 +545,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             'Data after JSON decoding: %s' % data)
 
         profile = {
+            'cn': data['cn'],
             'name': data['name'],
             'description': data['description'],
             'priority': int(data['priority']),
@@ -517,26 +563,27 @@ class FleetCommanderDbusService(dbus.service.Object):
         logging.debug(
             'Profile built to be saved: %s' % profile)
 
+        cn = profile['cn']
         name = profile['name']
 
         if 'oldname' in data:
             logging.debug(
                 'Profile is being renamed from %s to %s' % (
-                    data['oldname'], name))
+                    data['oldname'], cn))
             profile['oldname'] = data['oldname']
 
         try:
-            logging.debug('Saving profile into IPA server')
-            self.ipa.save_profile(profile)
+            logging.debug('Saving profile into domain server')
+            self.realm_connector.save_profile(profile)
             return json.dumps({'status': True})
         except fcfreeipa.RenameToExistingException as e:
-            logging.error('Error saving profile %s: %s' % (name, e))
+            logging.error('Error saving profile %s (%s): %s' % (cn, name, e))
             return json.dumps({
                 'status': False,
                 'error': '%s' % e
             })
         except Exception as e:
-            logging.error('Error saving profile %s: %s' % (name, e))
+            logging.error('Error saving profile %s: (%s) %s' % (cn, name, e))
             return json.dumps({
                 'status': False,
                 'error': 'Can not save profile.'
@@ -547,14 +594,14 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='', out_signature='s')
     def GetProfiles(self):
         try:
-            profiles = self.ipa.get_profiles()
+            profiles = self.realm_connector.get_profiles()
             logging.debug('Profiles data fetched: %s' % profiles)
             return json.dumps({
                 'status': True,
                 'data': profiles
             })
         except Exception as e:
-            logging.error('Error reading profiles from IPA: %s' % e)
+            logging.error('Error reading profiles from domain server: %s' % e)
             return json.dumps({
                 'status': False,
                 'error': 'Error reading profiles index'
@@ -565,14 +612,14 @@ class FleetCommanderDbusService(dbus.service.Object):
                          in_signature='s', out_signature='s')
     def GetProfile(self, name):
         try:
-            profile = self.ipa.get_profile(name)
+            profile = self.realm_connector.get_profile(name)
             logging.debug('Profile data fetched for %s: %s' % (name, profile))
             return json.dumps({
                 'status': True,
                 'data': profile
             })
         except Exception as e:
-            logging.error('Error reading profile %s from IPA: %s' % (name, e))
+            logging.error('Error reading profile %s from domain server: %s' % (name, e))
             return json.dumps({
                 'status': False,
                 'error': 'Error reading profile %s' % name,
@@ -584,7 +631,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def DeleteProfile(self, name):
         logging.debug('Deleting profile %s' % name)
         try:
-            self.ipa.del_profile(name)
+            self.realm_connector.del_profile(name)
             return json.dumps({'status': True})
         except Exception as e:
             logging.error('Error removing profile %s: %s' % (name, e))
@@ -648,7 +695,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def SessionSave(self, uid, data):
         logging.debug('FC: Saving session')
         try:
-            profile = self.ipa.get_profile(uid)
+            profile = self.realm_connector.get_profile(uid)
         except Exception as e:
             logging.debug('Could not parse profile %s: %s' % (uid, e))
             return json.dumps({
@@ -704,7 +751,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     profile['settings'][ns] = changeset
 
         logging.debug('FC: Saving profile')
-        self.ipa.save_profile(profile)
+        self.realm_connector.save_profile(profile)
         logging.debug('FC: Saved profile')
 
         return json.dumps({'status': True})

@@ -76,8 +76,8 @@ class FleetCommanderDbusClient(object):
     def get_initial_values(self):
         return self.iface.GetInitialValues()
 
-    def do_ipa_connection(self):
-        return self.iface.DoIPAConnection()
+    def do_domain_connection(self):
+        return self.iface.DoDomainConnection()
 
     def heartbeat(self):
         return self.iface.HeartBeat()
