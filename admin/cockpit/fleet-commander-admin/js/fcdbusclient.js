@@ -48,8 +48,8 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     ).fail(errorhandler);
   }
 
-  this.DoIPAConnection = function(cb, errcb) {
-    self._proxy.DoIPAConnection().done(
+  this.DoDomainConnection = function(cb, errcb) {
+    self._proxy.DoDomainConnection().done(
       function(resp) {
         cb(JSON.parse(resp));
       }

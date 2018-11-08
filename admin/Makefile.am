@@ -5,6 +5,7 @@ fc_admin_py_SCRIPTS = \
 	fleetcommander/database.py \
 	fleetcommander/fcdbus.py \
 	fleetcommander/fcfreeipa.py \
+	fleetcommander/fcad.py \
 	fleetcommander/goa.py \
 	fleetcommander/libvirtcontroller.py \
 	fleetcommander/sshcontroller.py \
