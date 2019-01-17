@@ -433,7 +433,7 @@ class FreeIPAConnector(object):
                 if 'description' in res:
                     desc = res['description'][0]
                 resultlist.append(
-                    (res['cn'][0], desc)
+                    (res['cn'][0], res['cn'][0], desc)
                 )
             return resultlist
 
