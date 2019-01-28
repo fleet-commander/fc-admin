@@ -197,7 +197,7 @@ class TestFreeIPA(unittest.TestCase):
         profiles = self.ipa.get_profiles()
         self.assertEqual(
             profiles,
-            [(self.TEST_PROFILE['name'], self.TEST_PROFILE['description'])])
+            [(self.TEST_PROFILE['name'], self.TEST_PROFILE['name'], self.TEST_PROFILE['description'])])
 
     def test_10_get_profile_rule(self):
         self.ipa.save_profile(self.TEST_PROFILE)

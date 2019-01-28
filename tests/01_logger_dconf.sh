@@ -53,7 +53,7 @@ export DBUS_SESSION_BUS_ADDRESS
 $PYTHON $TOPSRCDIR/tests/_01_mock_dbus.py > /dev/null 2> /dev/null &
 DBUS_MOCK_PID=$!
 
-$PYTHON $TOPSRCDIR/tests/_01_wait_for_name.py
+$PYTHON $TOPSRCDIR/tests/_01_wait_for_name.py org.freedesktop.ScreenSaver
 if [ $? -ne 0 ] ; then
   echo "Failed to acquire bus name org.freedesktop.ScreenSaver"
   exit 1

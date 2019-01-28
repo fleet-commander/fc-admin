@@ -193,7 +193,9 @@ class FleetCommanderDbusService(dbus.service.Object):
                         'org.freedesktop.realmd.Realm',
                         None)
             domain = str(realm.get_cached_property('Name')).replace('\'', '')
-            details = {str(k):str(v) for k,v in realm.get_cached_property('Details')}
+            details = {
+                str(k): str(v) for k, v in realm.get_cached_property('Details')
+            }
             server = details.get('server-software', 'ipa')
             return (domain, server)
         else:

@@ -46,6 +46,7 @@ build-rpm.sh
 build-full.sh
 install-rpm.sh
 install-ipamaster.sh
+build-copr.sh
 check.sh
 check-full.sh
 
