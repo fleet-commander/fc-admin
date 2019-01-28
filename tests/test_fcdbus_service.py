@@ -23,19 +23,26 @@
 from __future__ import absolute_import
 import os
 import sys
+import logging
 
 # Fleet commander imports
 from fleetcommander import sshcontroller
 from fleetcommander import fcdbus
 
-# Mock freeipa
-import freeipamock
-fcdbus.fcfreeipa.api = freeipamock.FreeIPAMock
-fcdbus.fcfreeipa.errors = freeipamock.FreeIPAErrors
+# Mock directory system
+import directorymock
+fcdbus.fcfreeipa.FreeIPAConnector = directorymock.DirectoryConnector
+fcdbus.fcad.ADConnector = directorymock.DirectoryConnector
 
 # Change bus names
 fcdbus.DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderTest'
 fcdbus.DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderTest'
+
+
+# Set logging level to debug
+log = logging.getLogger()
+level = logging.getLevelName('DEBUG')
+log.setLevel(level)
 
 
 class MockLibVirtController(object):
@@ -101,8 +108,10 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             # Force state directory
             'state_dir': test_directory,
         }
-        freeipamock.FreeIPACommand.data = freeipamock.FreeIPAData(
+
+        directorymock.DirectoryConnector.data = directorymock.DirectoryData(
             test_directory)
+
 
         super(TestFleetCommanderDbusService, self).__init__(args)
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')

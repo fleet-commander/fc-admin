@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # vi:ts=2 sw=2 sts=2
 
-# Copyright (C) 2015 Red Hat, Inc.
+# Copyright (C) 2018, 2019 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -29,13 +29,18 @@ import tempfile
 from functools import wraps
 
 import dns.resolver
-import ldap, ldap.sasl, ldap.modlist
+
+import ldap
+import ldap.sasl
+import ldap.modlist
+
 import samba
 from samba import param, smb
 from samba.credentials import Credentials, MUST_USE_KERBEROS
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import security
 from samba.ntacls import dsacl2fsacl
+
 
 GPO_SMB_PATH = '\\\\%s\\SysVol\\%s\\Policies\\%s'
 SMB_DIRECTORY_PATH = 'smb://%s/SysVol/%s/Policies/%s'
@@ -55,6 +60,10 @@ FC_GLOBAL_POLICY_PROFILE = {
             'global_policy': FC_GLOBAL_POLICY_DEFAULT,
         },
     },
+    'users': [],
+    'groups': [],
+    'hosts': [],
+    'hostgroups': [],
 }
 
 DEFAULT_GPO_SECURITY_DESCRIPTOR = ''.join([
@@ -124,14 +133,13 @@ class ADConnector(object):
         if self.CACHED_SERVER_NAME is None:
             result = dns.resolver.query(
                 '_ldap._tcp.dc._msdcs.%s' % self.domain.lower(),
-                'SRV')            
+                'SRV')
             self.CACHED_SERVER_NAME = str(result[0].target)[:-1]
         logging.debug('LDAP server: %s' % self.CACHED_SERVER_NAME)
         return self.CACHED_SERVER_NAME
 
     def _generate_gpo_uuid(self):
         return '{%s}' % str(uuid.uuid4()).upper()
-
 
     def _get_smb_connection(self, service='SysVol'):
         # Connect to SMB using kerberos
@@ -216,7 +224,6 @@ class ADConnector(object):
         # Check if we need to set ACLs
         if sddl is not None:
             self._set_smb_permissions(conn, duri, sddl)
-        
         # Copy local data to remote directory
         self._copy_directory_local_to_remote(conn, gpodir, duri, True)
 
@@ -227,9 +234,9 @@ class ADConnector(object):
         fssd = security.descriptor.from_sddl(fsacl, dom_sid)
         # Set ACL
         sio = (security.SECINFO_OWNER |
-                security.SECINFO_GROUP |
-                security.SECINFO_DACL |
-                security.SECINFO_PROTECTED_DACL)
+               security.SECINFO_GROUP |
+               security.SECINFO_DACL |
+               security.SECINFO_PROTECTED_DACL)
         conn.set_acl(duri, fssd, sio)
 
     def _remove_smb_data(self, gpo_uuid):
@@ -238,13 +245,6 @@ class ADConnector(object):
         # Remove directory and its contents
         duri = duri = '%s\\Policies\\%s' % (self.domain, gpo_uuid)
         conn.deltree(duri)
-
-    def _check_profile_exists(self, name):
-        base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
-        filter = '(CN=%s)' % name
-        attrs = ['cn']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
-        return len(resultlist) > 0
 
     def _get_ldap_profile_data(self, filter, controls=None):
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
@@ -287,7 +287,7 @@ class ADConnector(object):
                 gpo_aces += GPO_DACL_ACE % obj['sid']
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj['sid']
             else:
-                logging.warning('User %s does not exist. Ignoring.')
+                logging.warning('User %s does not exist. Ignoring.' % user)
 
         for group in profile['groups']:
             obj = self.get_group(group)
@@ -295,7 +295,7 @@ class ADConnector(object):
                 gpo_aces += GPO_DACL_ACE % obj['sid']
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj['sid']
             else:
-                logging.warning('Group %s does not exist. Ignoring.')
+                logging.warning('Group %s does not exist. Ignoring.' % group)
 
         for host in profile['hosts']:
             obj = self.get_host(host)
@@ -303,7 +303,7 @@ class ADConnector(object):
                 gpo_aces += GPO_DACL_ACE % obj['sid']
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj['sid']
             else:
-                logging.warning('Host %s does not exist. Ignoring.')
+                logging.warning('Host %s does not exist. Ignoring.' % host)
 
         shd = SecurityDescriptorHelper(
             DEFAULT_GPO_SECURITY_DESCRIPTOR % (current_user_sid, current_user_sid, gpo_aces, gpo_access_aces), self)
@@ -401,10 +401,10 @@ class ADConnector(object):
 
     @connection_required
     def del_profile(self, name):
-        dn = "cn=%s,CN=Policies,CN=System,%s" % (name, self._get_domain_dn())
+        dn = "CN=%s,CN=Policies,CN=System,%s" % (name, self._get_domain_dn())
         try:
             self.connection.delete_s(dn)
-        except ldap.LDAPError, e:
+        except ldap.LDAPError as e:
             logging.error('Error deleting %s: %s' % (name, e))
         # Remove samba files
         self._remove_smb_data(name)
@@ -666,78 +666,3 @@ class ACEHelper(object):
 
     def __str__(self):
         return self.ace_string
-
-
-if __name__ == '__main__':
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-
-    test_profile = {
-        'cn': 'Profile display name',
-        'name': 'Profile display name',
-        'description': 'Profile description',
-        'priority': 50,
-        'settings': {
-            'org.gnome.gsettings': {}
-        },
-        'users': ['Pepe',],
-        'groups': [],
-        'hosts': [],
-        'hostgroups': [],
-    }
-
-    connector = ADConnector('FC.AD')
-
-    # Get profiles
-    #user = connector.get_user('Pepe')
-    #pp.pprint(user)
-
-    # host = connector.get_host('FCCLIENT2')
-    # pp.pprint(host)
-
-    # group = connector.get_group('GrupoPrueba2')
-    # pp.pprint(group)
-
-    # Save new profile
-    #test_profile['cn'] = '{3DD38AED-068A-4195-ACC3-3E1BD9DBACFD}'
-    gpo_uuid = connector.save_profile(test_profile)
-    #test_profile['cn'] = gpo_uuid
-    #print('UUID: %s' % gpo_uuid)
-    # Get profile
-    #gpo_uuid = '{3694E9D6-3349-46F0-BC1B-C12D380047D3}'
-    #profile = connector.get_profile(gpo_uuid)
-    #print(profile)
-    # pp.pprint(connector.get_profile(gpo_uuid))
-    # Modify profile
-    # modified_profile = {
-    #     'cn': gpo_uuid,
-    #     'name': 'Modified profile display name',
-    #     'description': 'Modified profile description',
-    #     'settings': {
-    #         'org.gnome.gsettings': {},
-    #         'org.freedesktop.FleetCommander': {}
-    #     }
-    # }
-    # connector.save_profile(modified_profile)
-    # Get profile
-    pp.pprint(connector.get_profile(gpo_uuid))
-
-    # print('BY SID: %s' % user['sid'], connector.get_object_by_sid(user['sid']))
-    # Delete profile
-    connector.del_profile(gpo_uuid)
-    # Get profiles
-    #pp.pprint(connector.get_profiles())
-
-    #print(connector.get_profile('{CF05B6F7-00F8-46F7-9ED3-AB5DD799B56F}'))
-
-    # sids = [
-    #     'S-1-5-21-1754900228-1619607556-2970117160-512', # Domain Administrators (G)
-    #     'S-1-5-21-1754900228-1619607556-2970117160-1110', # Pepe (U)
-    #     'S-1-5-21-1754900228-1619607556-2970117160-519', # Enterprise Admins (G)
-    #     'S-1-5-21-1754900228-1619607556-2970117160-500', # Administrator (U)
-    # ]
-    # for sid in sids:
-    #     print('%s -> %s' % (sid, connector.get_object_by_sid(sid)))
-
-    # gpo_uuid = '{A5B10841-AEB1-4F09-BA21-93820C217110}'
-    # pp.pprint(connector.get_profile(gpo_uuid))

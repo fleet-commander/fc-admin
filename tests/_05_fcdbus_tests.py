@@ -37,7 +37,6 @@ from fleetcommander import sshcontroller
 from test_fcdbus_service import MockLibVirtController
 from fcdbusclient import FleetCommanderDbusClient
 
-
 # Set logging level to debug
 log = logging.getLogger()
 level = logging.getLevelName('DEBUG')
@@ -53,6 +52,7 @@ class TestDbusService(unittest.TestCase):
 
     DUMMY_PROFILE_NAME = 'foo'
     DUMMY_PROFILE_PAYLOAD = {
+        'cn': DUMMY_PROFILE_NAME,
         'name': DUMMY_PROFILE_NAME,
         'description': 'bar',
         'priority': 51,
@@ -64,6 +64,7 @@ class TestDbusService(unittest.TestCase):
     }
 
     DUMMY_PROFILE_DATA = {
+        'cn': DUMMY_PROFILE_NAME,
         'name': DUMMY_PROFILE_NAME,
         'description': 'bar',
         'priority': 51,
@@ -152,7 +153,7 @@ class TestDbusService(unittest.TestCase):
         return json.loads(data)
 
     def get_profile_data(self, profile_name):
-        filepath = os.path.join(self.test_directory, 'freeipamock-data.json')
+        filepath = os.path.join(self.test_directory, 'directorymock-data.json')
         data = self.get_data_from_file(filepath)
         if profile_name in data['profiles'] \
                 and profile_name in data['profilerules']:
@@ -191,9 +192,9 @@ class TestDbusService(unittest.TestCase):
         }
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
-    def test_01_do_ipa_connection(self):
+    def test_01_do_domain_connection(self):
         logging.debug("TEST 01")
-        self.assertEqual(json.loads(self.c.do_ipa_connection()), {
+        self.assertEqual(json.loads(self.c.do_domain_connection()), {
             'status': True
         })
 
