@@ -26,6 +26,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
+import re
 import sys
 import getopt
 import logging
@@ -140,17 +141,44 @@ class ScreenSaverInhibitor(object):
     """
     Screensaver inhibitor class
     """
-    BUS_NAME = "org.freedesktop.ScreenSaver"
-    OBJECT_PATH = "/org/freedesktop/ScreenSaver"
-    INTERFACE_NAME = "org.freedesktop.ScreenSaver"
+    DEFAULT_BUS = "org.freedesktop.ScreenSaver"
+    BUS_NAME = ""
+    OBJECT_PATH = ""
+    INTERFACE_NAME = ""
 
     def __init__(self):
+        self._set_screen_saver()
+
         proxy = dbus.SessionBus().get_object(
             self.BUS_NAME, self.OBJECT_PATH)
         self.iface = dbus.Interface(
             proxy, dbus_interface=self.INTERFACE_NAME)
         self.cookie = None
         self.inhibit()
+
+    def _set_screen_saver(self):
+        session = dbus.SessionBus()
+        try:
+            list_names = session.list_names()
+        except Exception as e:
+            logging.error(
+                "Screensaver: Error searching screensaver: %s" % e)
+            return
+        names = [str(x) for x in list_names]
+        r = re.compile(r"^org\.\w+\.ScreenSaver$")
+        screensavers = list(filter(r.match, names))
+        if not screensavers:
+            logging.error("No ScreenSavers found")
+            return
+
+        logging.debug("Screensavers found: {}".format(", ".join(screensavers)))
+        if self.DEFAULT_BUS in screensavers:
+            self.BUS_NAME = self.DEFAULT_BUS
+        else:
+            self.BUS_NAME = screensavers[0]
+        self.INTERFACE_NAME = self.BUS_NAME
+        self.OBJECT_PATH = "/" + self.BUS_NAME.replace(".", "/")
+        logging.debug("Screensaver: Using {}".format(self.BUS_NAME))
 
     def inhibit(self):
         """
