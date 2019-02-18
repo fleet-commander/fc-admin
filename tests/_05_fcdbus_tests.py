@@ -50,30 +50,29 @@ class TestDbusService(unittest.TestCase):
     TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
     SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'
 
-    DUMMY_PROFILE_NAME = 'foo'
+    DUMMY_PROFILE_CN = 'foo'
     DUMMY_PROFILE_PAYLOAD = {
-        'cn': DUMMY_PROFILE_NAME,
-        'name': DUMMY_PROFILE_NAME,
-        'description': 'bar',
+        'cn': DUMMY_PROFILE_CN,
+        'name': 'bar',
+        'description': 'baz',
         'priority': 51,
         'settings': {},
-        'users': 'admin,unknownuser,guest',
+        'users': 'admin,guest',
         'groups': 'editors',
-        'hosts': 'client1,unknownhost',
-        'hostgroups': 'unknowngroup',
+        'hosts': 'client1,',
+        'hostgroups': '',
     }
 
     DUMMY_PROFILE_DATA = {
-        'cn': DUMMY_PROFILE_NAME,
-        'name': DUMMY_PROFILE_NAME,
-        'description': 'bar',
+        'cn': 'foo',
+        'name': 'bar',
+        'description': 'baz',
         'priority': 51,
         'settings': {},
-        'hostcategory': None,
-        'groups': ['editors', ],
-        'hostgroups': [],
-        'hosts': ['client1'],
         'users': ['admin', 'guest', ],
+        'groups': ['editors', ],
+        'hosts': ['client1', ],
+        'hostgroups': [],
     }
 
     MAX_DBUS_CHECKS = 10
@@ -155,22 +154,8 @@ class TestDbusService(unittest.TestCase):
     def get_profile_data(self, profile_name):
         filepath = os.path.join(self.test_directory, 'directorymock-data.json')
         data = self.get_data_from_file(filepath)
-        if profile_name in data['profiles'] \
-                and profile_name in data['profilerules']:
-
-            profile_data = {
-                'name': data['profiles'][profile_name]['cn'][0],
-                'description':
-                    data['profiles'][profile_name]['description'][0],
-                'settings': json.loads(
-                        data['profiles'][profile_name]['ipadeskdata'][0]),
-            }
-            profile_data.update(data['profilerules'][profile_name])
-            profile_data['users'].sort()
-            profile_data['groups'].sort()
-            profile_data['hosts'].sort()
-            profile_data['hostgroups'].sort()
-            return profile_data
+        if profile_name in data['profiles']:
+            return data['profiles'][profile_name]
         return None
 
     def configure_hypervisor(self):
@@ -188,7 +173,9 @@ class TestDbusService(unittest.TestCase):
             'debuglevel': "debug",
             'defaults': {
                 'profilepriority': 50,
-            }
+            },
+            'realm': 'fc.ipa',
+            'server_type': 'ipa',
         }
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
@@ -314,7 +301,9 @@ class TestDbusService(unittest.TestCase):
         # Create a new profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
-        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_CN)
+        print(data)
+        print(self.DUMMY_PROFILE_DATA)
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
     def test_10_delete_profile(self):
@@ -324,12 +313,12 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp['status'])
         # Delete existent profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
-        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_CN)
         self.assertTrue(data is not None)
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
-        resp = self.c.delete_profile(self.DUMMY_PROFILE_NAME)
+        resp = self.c.delete_profile(self.DUMMY_PROFILE_CN)
         self.assertTrue(resp['status'])
-        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_CN)
         self.assertTrue(data is None)
 
     def test_11_list_domains(self):
@@ -386,10 +375,10 @@ class TestDbusService(unittest.TestCase):
         # Start a session
         self.c.session_start(self.TEMPLATE_UUID)
         # Save empty session
-        resp = self.c.session_save(self.DUMMY_PROFILE_NAME, {})
+        resp = self.c.session_save(self.DUMMY_PROFILE_CN, {})
         self.assertTrue(resp['status'])
         # Check profile is unmodified?
-        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_CN)
         self.assertTrue(data is not None)
         self.assertEqual(data['settings'], {})
 
@@ -401,7 +390,7 @@ class TestDbusService(unittest.TestCase):
         self.configure_hypervisor()
         # Start a session
         self.c.session_start(self.TEMPLATE_UUID)
-        data = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        data = self.get_profile_data(self.DUMMY_PROFILE_CN)
         self.assertTrue(data is not None)
         gsettings = data['settings']
         self.assertEqual(gsettings, {})
@@ -414,9 +403,9 @@ class TestDbusService(unittest.TestCase):
                 'signature': 'b'
             }]
         }
-        resp = self.c.session_save(self.DUMMY_PROFILE_NAME, settings)
+        resp = self.c.session_save(self.DUMMY_PROFILE_CN, settings)
         self.assertTrue(resp['status'])
-        profdata = self.get_profile_data(self.DUMMY_PROFILE_NAME)
+        profdata = self.get_profile_data(self.DUMMY_PROFILE_CN)
         self.assertTrue(profdata is not None)
         gsettings = profdata['settings']['org.gnome.gsettings']
         self.assertEqual(len(gsettings), 1)
@@ -433,7 +422,8 @@ class TestDbusService(unittest.TestCase):
         # Check profiles data
         self.assertTrue(resp['status'])
         self.assertEqual(resp['data'], [[
-            self.DUMMY_PROFILE_NAME,
+            self.DUMMY_PROFILE_CN,
+            self.DUMMY_PROFILE_PAYLOAD['name'],
             self.DUMMY_PROFILE_PAYLOAD['description']
         ]])
 
@@ -442,11 +432,10 @@ class TestDbusService(unittest.TestCase):
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profile data
-        resp = self.c.get_profile(self.DUMMY_PROFILE_NAME)
+        resp = self.c.get_profile(self.DUMMY_PROFILE_CN)
         # Check profile data
         self.assertTrue(resp['status'])
         profile = self.DUMMY_PROFILE_DATA.copy()
-        del(profile['hostcategory'])
         self.assertEqual(resp['data'], profile)
 
     def test_18_get_goa_providers(self):

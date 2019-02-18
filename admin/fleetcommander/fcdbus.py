@@ -117,15 +117,14 @@ class FleetCommanderDbusService(dbus.service.Object):
         }
         if server == 'active-directory':
             # Load Active Directory connector
-            logging.debug('Activating Active Directory domain support for %s' % domain)
+            logging.debug(
+                'Activating Active Directory domain support for %s' % domain)
             self.realm_connector = fcad.ADConnector(domain)
         else:
-            # TODO: Detect unknown server software and do specific error handling
             # Load FreeIPA connector
             logging.debug('Activating IPA domain support for %s' % domain)
             self.realm_connector = fcfreeipa.FreeIPAConnector()
         
-
         self.GOA_PROVIDERS_FILE = os.path.join(
             args['data_dir'], 'fc-goa-providers.ini')
 

@@ -28,6 +28,7 @@ import json
 class DirectoryData(object):
 
     def __init__(self, datadir=None):
+        logging.debug('Directory mock data initialized. Path: %s' % datadir)
         self.datadir = datadir
         # Data storage
         self.global_policy = 1
@@ -73,10 +74,7 @@ class DirectoryConnector(object):
     data = None
 
     def __init__(self, domain=None):
-        self._reset_data()
-
-    def _reset_data(self):
-        self.data = DirectoryData(datadir=)
+        pass
 
     def connect(self, sanity_check=True):
         """
@@ -85,11 +83,11 @@ class DirectoryConnector(object):
         logging.debug('Directory Mock: Connection')
 
     def get_global_policy(self):
-        return self.GLOBAL_POLICY
+        return self.data.global_policy
 
     @DirectoryData.export_data
     def set_global_policy(self, policy):
-        self.GLOBAL_POLICY = policy
+        self.data.global_policy = policy
 
     @DirectoryData.export_data
     def save_profile(self, profile):
@@ -99,38 +97,38 @@ class DirectoryConnector(object):
             # Modifying existing profile
             logging.debug(
                 'Directory Mock: Trying to modify profile with cn %s' % cn)
-            if cn in self.PROFILES:
+            if cn in self.data.profiles:
                 logging.debug(
                     'Directory Mock: Modifying existing profile %s' % cn)
             else:
                 logging.debug(
                     'Directory Mock: Profile %s does not exist. Saving.' % cn)
-            self.PROFILES[cn] = profile
+            self.data.profiles[cn] = profile
         else:
             # Saving new profile
             cn = profile['name']
             logging.debug('Directory Mock: Saving new profile. Using name as new id: %s', cn)
-            self.profiles[cn] = profile
+            self.data.profiles[cn] = profile
         return cn
 
     @DirectoryData.export_data
     def del_profile(self, cn):
         logging.debug('Directory Mock: Deleting profile %s' % cn)
-        if cn in self.PROFILES:
-            del(self.PROFILES[cn])
+        if cn in self.data.profiles:
+            del(self.data.profiles[cn])
 
     def get_profiles(self):
         logging.debug('Directory Mock: Getting profile list')
         profiles = []
-        for cn, profile in self.PROFILES.items():
+        for cn, profile in self.data.profiles.items():
             profiles.append((
                 cn, profile['name'], profile['description']))
         return profiles
 
     def get_profile(self, cn):
         logging.debug('Directory Mock: Getting profile %s' % cn)
-        if cn in self.PROFILES:
-            return self.PROFILES[cn]
+        if cn in self.data.profiles:
+            return self.data.profiles[cn]
 
 
     # def get_profile_rule(self, name):
