@@ -68,6 +68,8 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     LIST_DOMAINS_RETRIES = 2
 
+    REALMD_BUS = Gio.BusType.SYSTEM
+
     def __init__(self, args):
         """
         Class initialization
@@ -174,28 +176,32 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     def get_realm_details(self):
         sssd_provider = Gio.DBusProxy.new_for_bus_sync(
-                    Gio.BusType.SYSTEM,
-                    Gio.DBusProxyFlags.NONE,
-                    None,
-                    'org.freedesktop.realmd',
-                    '/org/freedesktop/realmd/Sssd',
-                    'org.freedesktop.realmd.Provider',
-                    None)
+            self.REALMD_BUS,
+            Gio.DBusProxyFlags.NONE,
+            None,
+            'org.freedesktop.realmd',
+            '/org/freedesktop/realmd/Sssd',
+            'org.freedesktop.realmd.Provider',
+            None)
         realms = sssd_provider.get_cached_property('Realms')
         if len(realms) > 0:
+            logging.debug(
+                'FC: realmd queried. Using realm object %s' % realms[0])
             realm = Gio.DBusProxy.new_for_bus_sync(
-                        Gio.BusType.SYSTEM,
-                        Gio.DBusProxyFlags.NONE,
-                        None,
-                        'org.freedesktop.realmd',
-                        realms[0],
-                        'org.freedesktop.realmd.Realm',
-                        None)
+                self.REALMD_BUS,
+                Gio.DBusProxyFlags.NONE,
+                None,
+                'org.freedesktop.realmd',
+                realms[0],
+                'org.freedesktop.realmd.Realm',
+                None)
             domain = str(realm.get_cached_property('Name')).replace('\'', '')
             details = {
                 str(k): str(v) for k, v in realm.get_cached_property('Details')
             }
             server = details.get('server-software', 'ipa')
+            logging.debug(
+                'FC: Realm details: %s (%s)' % (domain, server))
             return (domain, server)
         else:
             # Return unknown domain and use IPA as directory server

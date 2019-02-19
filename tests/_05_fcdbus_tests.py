@@ -174,8 +174,8 @@ class TestDbusService(unittest.TestCase):
             'defaults': {
                 'profilepriority': 50,
             },
-            'realm': 'fc.ipa',
-            'server_type': 'ipa',
+            'realm': 'fc.directory',
+            'server_type': 'active-directory',
         }
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
@@ -302,8 +302,6 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp['status'])
         data = self.get_profile_data(self.DUMMY_PROFILE_CN)
-        print(data)
-        print(self.DUMMY_PROFILE_DATA)
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
     def test_10_delete_profile(self):

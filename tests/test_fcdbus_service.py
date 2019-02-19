@@ -25,6 +25,8 @@ import os
 import sys
 import logging
 
+from gi.repository import Gio
+
 # Fleet commander imports
 from fleetcommander import sshcontroller
 from fleetcommander import fcdbus
@@ -112,8 +114,10 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         directorymock.DirectoryConnector.data = directorymock.DirectoryData(
             test_directory)
 
+        self.REALMD_BUS = Gio.BusType.SESSION
 
         super(TestFleetCommanderDbusService, self).__init__(args)
+
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
 
         self.GOA_PROVIDERS_FILE = os.path.join(
