@@ -20,8 +20,27 @@
 #          Oliver Gutierrez <ogutierrez@redhat.com>
 
 # We assume dbus-launch never fails
+
+kill $DBUS_SESSION_BUS_PID > /dev/null 2> /dev/null
+
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
+
+
+$PYTHON $TOPSRCDIR/tests/_05_mock_realmd_dbus.py &
+DBUS_MOCK_PID=$!
+
+$PYTHON $TOPSRCDIR/tests/_wait_for_name.py org.freedesktop.realmd
+if [ $? -ne 0 ] ; then
+  echo "Failed to acquire bus name org.freedesktop.realmd"
+  exit 1
+fi
+
+ps -p $DBUS_MOCK_PID > /dev/null 2> /dev/null
+if [ $? -ne 0 ] ; then
+  echo "Failed to launch _05_mock_realmd_dbus.py"
+  exit 1
+fi
 
 # Execute fleet commander dbus service tests
 $PYTHON $TOPSRCDIR/tests/_05_fcdbus_tests.py

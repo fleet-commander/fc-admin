@@ -1,8 +1,16 @@
 from __future__ import absolute_import
+
+import logging
+
 import dbus.service
 import dbusmock
 import dbus.mainloop.glib
 from gi.repository import GLib
+
+# Set logging level to debug
+log = logging.getLogger()
+level = logging.getLevelName('DEBUG')
+log.setLevel(level)
 
 ml = GLib.MainLoop()
 
@@ -17,7 +25,7 @@ bus.add_signal_receiver(
     dbus_interface='org.freedesktop.DBus.Local')
 
 realmd_bus = dbus.service.BusName(
-    "org.freedesktop.realmd",
+    'org.freedesktop.realmd',
     bus,
     allow_replacement=True,
     replace_existing=True,
@@ -26,22 +34,28 @@ realmd_bus = dbus.service.BusName(
 # Provider
 provider = dbusmock.mockobject.DBusMockObject(
     realmd_bus,
-    "/org/freedesktop/realmd/Sssd",
-    "org.freedesktop.realmd.Provider",
-    {})
-
-provider.AddProperty("Realms", ['/org/freedesktop/realmd/Sssd/fc_ipa_X'])
+    '/org/freedesktop/realmd/Sssd',
+    'org.freedesktop.realmd.Provider',
+    {
+        'Realms': ['/org/freedesktop/realmd/Sssd/fc_ipa_X']
+    })
 
 # Realm
 realm = dbusmock.mockobject.DBusMockObject(
     realmd_bus,
-    "/org/freedesktop/realmd/Sssd/fc_ipa_X",
-    "org.freedesktop.realmd.Realm",
-    {})
+    '/org/freedesktop/realmd/Sssd/fc_ipa_X',
+    'org.freedesktop.realmd.Realm',
+    {
+        'Name': 'fc.directory',
+        'Details': [
+            ('server-software', 'active-directory'),
+            ('client-software', 'sssd')
+        ]
+    })
 
-realm.AddProperty("Name", 'fc.ipa')
-realm.AddProperty(
-    "Details", [
-        ('server-software', 'ipa'), ('client-software', 'sssd')])
+
+logging.debug('Configured and running realmd dbus mock')
 
 ml.run()
+
+logging.debug('Quitting realmd dbus mock')
