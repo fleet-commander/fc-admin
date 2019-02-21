@@ -6,11 +6,15 @@ EXTRA_DIST =                         \
 	python-wrapper.sh                \
 	freeipamock.py                   \
 	libvirtmock.py                   \
+	ldapmock.py                      \
+	smbmock.py                       \
+	directorymock.py                 \
 	fcdbusclient.py                  \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.py         \
-	_01_wait_for_name.py             \
+	_wait_for_name.py                \
 	_05_fcdbus_tests.py              \
+	_05_mock_realmd_dbus.py          \
 	test_fcdbus_service.py           \
 	data/test.gschema.xml            \
 	data/libvirt_domain-orig.xml     \

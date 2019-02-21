@@ -49,6 +49,7 @@ GPO_APPLY_GROUP_POLICY_CAR = 'edacfd8f-ffb3-11d1-b41d-00a0c968f939'
 
 FC_PROFILE_PREFIX = '_FC_%s'
 
+FC_GLOBAL_POLICY_NS = 'org.freedesktop.FleetCommander'
 FC_GLOBAL_POLICY_PROFILE_NAME = 'GLOBAL_POLICY__DO_NOT_MODIFY'
 FC_GLOBAL_POLICY_DEFAULT = 1
 FC_GLOBAL_POLICY_PROFILE = {
@@ -56,7 +57,7 @@ FC_GLOBAL_POLICY_PROFILE = {
     'description': 'Fleet Commander global settings profile. DO NOT MODIFY',
     'priority': 50,
     'settings': {
-        'org.freedesktop.FleetCommander': {
+        FC_GLOBAL_POLICY_NS: {
             'global_policy': FC_GLOBAL_POLICY_DEFAULT,
         },
     },
@@ -94,6 +95,7 @@ DEFAULT_PROFILE_JSON_DATA = json.dumps({
     'settings': {}
 })
 
+
 def connection_required(f):
     @wraps(f)
     def wrapped(obj, *args, **kwargs):
@@ -113,12 +115,13 @@ class ADConnector(object):
     def __init__(self, domain):
         logging.debug('Initializing domain %s AD connector' % domain)
         self.domain = domain
+        dn = self._get_domain_dn().encode()
         self.GPO_BASE_ATTRIBUTES = {
-            'objectClass': ['top', 'container', 'groupPolicyContainer'],
-            'flags': '0',
-            'versionNumber': '1',
+            'objectClass': [b'top', b'container', b'groupPolicyContainer'],
+            'flags': b'0',
+            'versionNumber': b'1',
             'objectCategory':
-                'CN=Group-Policy-Container,CN=Schema,CN=Configuration,%s' % self._get_domain_dn(),
+                b'CN=Group-Policy-Container,CN=Schema,CN=Configuration,%s' % dn,
         }
 
     def _get_domain_dn(self):
@@ -152,7 +155,8 @@ class ADConnector(object):
 
     def _load_smb_data(self, gpo_uuid):
         conn = self._get_smb_connection()
-        furi = '%s\\Policies\\%s\\fleet-commander.json' % (self.domain, gpo_uuid)
+        furi = '%s\\Policies\\%s\\fleet-commander.json' % (
+            self.domain, gpo_uuid)
         data = json.loads(conn.loadfile(furi))
         return data
 
@@ -177,7 +181,8 @@ class ADConnector(object):
             fd.close()
         return gpodir
 
-    def _copy_directory_local_to_remote(self, conn, localdir, remotedir, ignore_existing=False):
+    def _copy_directory_local_to_remote(
+            self, conn, localdir, remotedir, ignore_existing=False):
         """
         Copied from Samba netcmd GPO code
         """
@@ -205,11 +210,13 @@ class ADConnector(object):
                         if not ignore_existing:
                             raise
                 else:
-                    data = open(l_name, 'rb').read()
+                    with open(l_name, 'rb') as fd:
+                        data = fd.read()
+                        fd.close()
                     conn.savefile(r_name, data)
 
     def _save_smb_data(self, gpo_uuid, profile, sddl=None):
-        logging.debug('Saving profile settings using samba')
+        logging.debug('Saving profile settings in CIFs share')
 
         # Prepare GPO data locally
         gpodir = self._prepare_gpo_data(profile)
@@ -228,6 +235,7 @@ class ADConnector(object):
         self._copy_directory_local_to_remote(conn, gpodir, duri, True)
 
     def _set_smb_permissions(self, conn, duri, sddl):
+        logging.debug('Setting CIFs permissions for %s' % duri)
         # Generate secuity descriptor from SDDL
         dom_sid = self.get_domain_sid()
         fsacl = dsacl2fsacl(sddl, dom_sid)
@@ -240,6 +248,7 @@ class ADConnector(object):
         conn.set_acl(duri, fssd, sio)
 
     def _remove_smb_data(self, gpo_uuid):
+        logging.debug('Removing CIFs data for GPO %s' % gpo_uuid)
         # Connect to SMB using kerberos
         conn = self._get_smb_connection()
         # Remove directory and its contents
@@ -247,17 +256,20 @@ class ADConnector(object):
         conn.deltree(duri)
 
     def _get_ldap_profile_data(self, filter, controls=None):
+        logging.debug('Getting data from AD LDAP. filter: %s' % filter)
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
         attrs = ['cn', 'displayName', 'description', 'nTSecurityDescriptor']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         if len(resultlist) > 0:
             return resultlist[0][1]
         return None
 
     def _data_to_profile(self, data):
-        cn = data['cn'][0]
-        name = data.get('displayName', (cn, ))[0]
-        desc = data.get('description', ('', ))[0]
+        cn = data['cn'][0].decode()
+        logging.debug('Converting LDAP data for %s to profile' % cn)
+        name = data.get('displayName', (cn, ))[0].decode()
+        desc = data.get('description', (b'', ))[0].decode()
         # Load settings and priority from samba file
         smb_data = self._load_smb_data(cn)
         profile = {
@@ -306,7 +318,9 @@ class ADConnector(object):
                 logging.warning('Host %s does not exist. Ignoring.' % host)
 
         shd = SecurityDescriptorHelper(
-            DEFAULT_GPO_SECURITY_DESCRIPTOR % (current_user_sid, current_user_sid, gpo_aces, gpo_access_aces), self)
+            DEFAULT_GPO_SECURITY_DESCRIPTOR % (
+                current_user_sid, current_user_sid, gpo_aces, gpo_access_aces),
+            self)
         return shd.to_sd()
 
     def connect(self, sanity_check=True):
@@ -328,23 +342,26 @@ class ADConnector(object):
 
     @connection_required
     def get_global_policy(self):
-        ldap_filter = '(displayName=%s)' % (FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME)
+        logging.debug('Getting global policy from AD')
+        ldap_filter = '(displayName=%s)' % (
+            FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME)
         data = self._get_ldap_profile_data(ldap_filter)
         if data:
             profile = self._data_to_profile(data)
-            return profile['settings']['org.freedesktop.FleetCommander']['global_policy']
+            return profile['settings'][FC_GLOBAL_POLICY_NS]['global_policy']
         else:
             return FC_GLOBAL_POLICY_DEFAULT
 
     @connection_required
     def set_global_policy(self, policy):
-        ldap_filter = '(displayName=%s)' % (FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME)
+        ldap_filter = '(displayName=%s)' % (
+            FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME)
         data = self._get_ldap_profile_data(ldap_filter)
         if data:
             profile = self._data_to_profile(data)
         else:
             profile = FC_GLOBAL_POLICY_PROFILE.copy()
-        profile['settings']['org.freedesktop.FleetCommander']['global_policy'] = policy
+        profile['settings'][FC_GLOBAL_POLICY_NS]['global_policy'] = policy
         self.save_profile(profile)
 
     @connection_required
@@ -366,12 +383,16 @@ class ADConnector(object):
             sd = self._security_descriptor_from_profile(profile)
             gpo_uuid = profile['cn']
             ldif = [
-                (ldap.MOD_REPLACE, 'displayName', FC_PROFILE_PREFIX % profile['name'].encode()),
-                (ldap.MOD_REPLACE, 'description', profile['description'].encode()),
-                (ldap.MOD_REPLACE, 'nTSecurityDescriptor', ndr_pack(sd)),
+                (ldap.MOD_REPLACE, 'displayName',
+                    (FC_PROFILE_PREFIX % profile['name']).encode()),
+                (ldap.MOD_REPLACE, 'description',
+                    profile['description'].encode()),
+                (ldap.MOD_REPLACE, 'nTSecurityDescriptor',
+                    ndr_pack(sd)),
             ]
             logging.debug('LDIF data to be sent to LDAP: %s' % ldif)
-            dn = "CN=%s,CN=Policies,CN=System,%s" % (gpo_uuid, self._get_domain_dn())
+            dn = "CN=%s,CN=Policies,CN=System,%s" % (
+                gpo_uuid, self._get_domain_dn())
             logging.debug('Modifying profile under %s' % dn)
             self.connection.modify_s(dn, ldif)
             self._save_smb_data(gpo_uuid, profile, sd.as_sddl())
@@ -381,18 +402,19 @@ class ADConnector(object):
             gpo_uuid = self._generate_gpo_uuid()
             logging.debug('New profile UUID = %s' % gpo_uuid)
             attrs = self.GPO_BASE_ATTRIBUTES.copy()
-            attrs['cn'] = gpo_uuid
-            attrs['displayName'] = FC_PROFILE_PREFIX % profile['name'].encode()
+            attrs['cn'] = gpo_uuid.encode()
+            attrs['displayName'] = (FC_PROFILE_PREFIX % profile['name']).encode()
             attrs['description'] = profile['description'].encode()
-            attrs['gPCFileSysPath'] = GPO_SMB_PATH % (
-                self._get_server_name(), self.domain, gpo_uuid)
+            attrs['gPCFileSysPath'] = (GPO_SMB_PATH % (
+                self._get_server_name(), self.domain, gpo_uuid)).encode()
             logging.debug('Preparing security descriptor')
             sd = self._security_descriptor_from_profile(profile)
             attrs['nTSecurityDescriptor'] = ndr_pack(sd)
             logging.debug('Profile data to be sent to LDAP: %s' % attrs)
             ldif = ldap.modlist.addModlist(attrs)
             logging.debug('LDIF data to be sent to LDAP: %s' % ldif)
-            dn = "CN=%s,CN=Policies,CN=System,%s" % (gpo_uuid, self._get_domain_dn())
+            dn = "CN=%s,CN=Policies,CN=System,%s" % (
+                gpo_uuid, self._get_domain_dn())
             logging.debug('Adding profile under %s' % dn)
             self.connection.add_s(dn, ldif)
             # Save SMB data
@@ -415,14 +437,16 @@ class ADConnector(object):
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
         filter = '(objectclass=groupPolicyContainer)'
         attrs = ['cn', 'displayName', 'description', ]
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         for res in resultlist:
             resdata = res[1]
             if resdata:
-                cn = resdata['cn'][0]
-                name = resdata.get('displayName', (cn,))[0]
-                if name.startswith(FC_PROFILE_PREFIX[:-2]) and name != FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME:
-                    desc = resdata.get('description', ('',))[0]
+                cn = resdata['cn'][0].decode()
+                name = resdata.get('displayName', (cn, ))[0].decode()
+                pname = FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME
+                if name.startswith(FC_PROFILE_PREFIX[:-2]) and name != pname:
+                    desc = resdata.get('description', (b'',))[0].decode()
                     profiles.append(
                         (cn, name[len(FC_PROFILE_PREFIX) - 2:], desc)
                     )
@@ -430,6 +454,7 @@ class ADConnector(object):
 
     @connection_required
     def get_profile(self, cn):
+        logging.debug('Getting profile %s from AD' % cn)
         ldap_filter = '(CN=%s)' % cn
         data = self._get_ldap_profile_data(ldap_filter)
         if data:
@@ -445,7 +470,8 @@ class ADConnector(object):
         base_dn = "CN=Users,%s" % self._get_domain_dn()
         filter = '(&(objectclass=user)(CN=%s))' % username
         attrs = ['cn', 'objectSid']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         if len(resultlist) > 0:
             data = resultlist[0]
             return {
@@ -461,7 +487,8 @@ class ADConnector(object):
         base_dn = "%s" % self._get_domain_dn()
         filter = '(&(objectclass=group)(CN=%s))' % groupname
         attrs = ['cn', 'objectSid']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         resultlist = [x for x in resultlist if x[0] is not None]
         if len(resultlist) > 0:
             data = resultlist[0]
@@ -478,7 +505,8 @@ class ADConnector(object):
         base_dn = "CN=Computers,%s" % self._get_domain_dn()
         filter = '(&(objectclass=computer)(CN=%s))' % hostname
         attrs = ['cn', 'objectSid']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         if len(resultlist) > 0:
             data = resultlist[0]
             return {
@@ -489,11 +517,13 @@ class ADConnector(object):
         else:
             return None
 
-    def get_object_by_sid(self, sid):
+    def get_object_by_sid(self, sid, classes=['computer', 'user', 'group']):
         base_dn = "%s" % self._get_domain_dn()
-        filter = '(&(|(objectclass=computer)(objectclass=user)(objectclass=group))(objectSid=%s))' % sid
+        object_classes = ''.join(['(objectclass=%s)' % x for x in classes])
+        filter = '(&(|%s)(objectSid=%s))' % (object_classes, sid)
         attrs = ['cn', 'objectClass']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
         resultlist = [x for x in resultlist if x[0] is not None]
         if len(resultlist) > 0:
             data = resultlist[0][1]
@@ -511,7 +541,8 @@ class ADConnector(object):
         base_dn = "%s" % self._get_domain_dn()
         filter = '(objectClass=*)'
         attrs = ['objectSid']
-        resultlist = self.connection.search_s(base_dn, ldap.SCOPE_BASE, filter, attrs)
+        resultlist = self.connection.search_s(
+            base_dn, ldap.SCOPE_BASE, filter, attrs)
         return self.get_sid(resultlist[0][1]["objectSid"][0])
 
 
@@ -536,7 +567,8 @@ class SecurityDescriptorHelper(object):
         self.parse_sddl(sddl)
     
     def parse_sddl(self, sddl):
-        logging.debug('Parsing SDDL for security descriptor. Given SDDL: %s' % sddl)
+        logging.debug(
+            'Parsing SDDL for security descriptor. Given SDDL: %s' % sddl)
         # SACLs
         if 'S:' in sddl:    
             sacl_index = sddl.index('S:')
@@ -544,7 +576,8 @@ class SecurityDescriptorHelper(object):
             if '(' in sacl_data:
                 self.sacl_flags = sacl_data[:sacl_data.index('(')]
                 sacl_aces = sacl_data[sacl_data.index('('):]
-                self.sacls = [ACEHelper(x) for x in sacl_aces[1:][:-1].split(')(')]
+                self.sacls = [
+                    ACEHelper(x) for x in sacl_aces[1:][:-1].split(')(')]
             else:
                 self.sacl_flags = sacl_data
         else:
@@ -556,7 +589,8 @@ class SecurityDescriptorHelper(object):
             if '(' in dacl_data:
                 self.dacl_flags = dacl_data[:dacl_data.index('(')]
                 dacl_aces = dacl_data[dacl_data.index('('):]
-                self.dacls = [ACEHelper(x) for x in dacl_aces[1:][:-1].split(')(')]
+                self.dacls = [
+                    ACEHelper(x) for x in dacl_aces[1:][:-1].split(')(')]
             else:
                 self.dacl_flags = dacl_data
         # Group
@@ -592,9 +626,9 @@ class SecurityDescriptorHelper(object):
                     elif 'computer' in obj['objectClass']:
                         hosts.add(obj['cn'])
         applies = {
-            'users': list(users),
-            'groups': list(groups),
-            'hosts': list(hosts),
+            'users': sorted(list(users)),
+            'groups': sorted(list(groups)),
+            'hosts': sorted(list(hosts)),
             'hostgroups': [],
         }
         logging.debug('Retrieved applies: %s' % applies)

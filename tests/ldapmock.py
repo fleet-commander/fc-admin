@@ -68,7 +68,9 @@ class LDAPConnectionMock(object):
             'SASLMock: Incorrect parameters for SASL binding: %s, %s' % (
                 who, sasl_auth))
 
-    def search_s(self, base, scope, filterstr='(objectClass=*)', attrlist=None, attrsonly=0, timeout=-1):
+    def search_s(
+            self, base, scope, filterstr='(objectClass=*)', attrlist=None,
+            attrsonly=0, timeout=-1):
         logging.debug('LDAPMock search_s: %s - %s' % (base, filterstr))
         if base == 'DC=FC,DC=AD':
             groupfilter = '(&(objectclass=group)(CN='
@@ -116,7 +118,7 @@ class LDAPConnectionMock(object):
                 displayname = filterstr[len('(displayName='):-1]
                 # Trying to get a profile by its display name
                 for key, elem in self._domain_data['profiles'].items():
-                    if elem['displayName'][0] == displayname:
+                    if elem['displayName'][0].decode() == displayname:
                         return [(elem['cn'], elem)]
             else:
                 cn = 'CN=%s,CN=Policies,CN=System,DC=FC,DC=AD' % filterstr[4:-1]
@@ -130,7 +132,10 @@ class LDAPConnectionMock(object):
     def modify_s(self, dn, ldif):
         profile = self._domain_data['profiles'][dn]
         for dif in ldif:
-            profile[dif[1]] = (dif[2], )
+            value = (dif[2], )
+            if dif[1] in ['displayName', 'description']:
+                value = (dif[2], )
+            profile[dif[1]] = value
 
     def delete_s(self, dn):
         logging.debug('LDAPMock: delete_s %s' % dn)

@@ -534,7 +534,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             return json.dumps({'status': True})
         except Exception as e:
             logging.error(
-                'Error setting gloal policy to %s: %s' % (policy, e))
+                'Error setting global policy to %s: %s' % (policy, e))
             return json.dumps({
                 'status': False,
                 'error': 'Error setting given global policy'
