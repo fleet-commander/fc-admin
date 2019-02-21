@@ -47,7 +47,7 @@ class SMBMock(object):
     def loadfile(self, furi):
         logging.debug('SMBMock: LOADFILE %s' % furi)
         path = self._translate_path(furi)
-        with open(path, 'r') as fd:
+        with open(path, 'rb') as fd:
             data = fd.read()
             fd.close()
         return data
@@ -55,8 +55,8 @@ class SMBMock(object):
     def savefile(self, furi, data):
         logging.debug('SMBMock: SAVEFILE %s' % furi)
         path = self._translate_path(furi)
-        with open(path, 'w') as fd:
-            fd.write(data.decode())
+        with open(path, 'wb') as fd:
+            fd.write(data)
             fd.close()
         logging.debug('SMBMock: Written %s' % path)
 
