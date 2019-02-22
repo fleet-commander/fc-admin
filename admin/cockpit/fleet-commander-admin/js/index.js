@@ -490,7 +490,7 @@ $(document).ready (function () {
       state.debuglevel = resp.debuglevel
       state.defaults = resp.defaults
 
-      setDebugLevel(resp.debugLevel);
+      setDebugLevel(resp.debuglevel);
 
       // Try FreeIPA connection
       fc.DoIPAConnection(function(resp) {

@@ -285,7 +285,7 @@ $(document).ready (function () {
   fc = new FleetCommanderDbusClient(function(){
 
     fc.GetInitialValues(function(resp) {
-      setDebugLevel(resp.debugLevel);
+      setDebugLevel(resp.debuglevel);
 
       // Try FreeIPA connection
       fc.DoIPAConnection(function(resp) {
