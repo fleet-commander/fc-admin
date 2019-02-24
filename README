@@ -51,12 +51,12 @@ in /dev/virtio-ports
 RUNNING THE ADMIN INTERFACE
 ---------------------------
 
-Fleet commander is a plugin for Cockpit. You should already have an installation
-of cockpit in your machine. If not, install it first following the instructions
+Fleet Commander is a plugin for Cockpit. You should already have an installation
+of Cockpit in your machine. If not, install it first following the instructions
 at http://cockpit-project.org/running.html
 
 If you have used the /usr prefix, Fleet Commander plugin is already installed in
-the cockpit plugin folder. If you chosen something different like /usr/local
+the Cockpit plugin folder. If you chosen something different like /usr/local
 you can enable fleet commander executing the following command as root:
 
 ```
