@@ -114,6 +114,30 @@ function populateChanges() {
     collectors['org.freedesktop.NetworkManager'].dump_changes());
 }
 
+function addSectionCheckbox(section) {
+  var section_header = $(section).prev("h4");
+  var chkbox_container = $(
+    '<div/>',
+    {
+      class: 'list-view-pf-checkbox',
+      id: section.replace("#", "") + '-chkbox-container'
+    }
+  );
+  var checkbox = $('<input/>', {type: 'checkbox'});
+  checkbox.click(function() {
+    var sectionChecked = this.checked;
+    $(section).find('input[type=checkbox]').each(function() {
+      this.checked = sectionChecked;
+    });
+  });
+  chkbox_container.append(checkbox);
+  chkbox_container.insertBefore(section_header);
+}
+
+function removeSectionCheckbox(section) {
+  $(section + '-chkbox-container').remove();
+}
+
 function populateSectionChanges(section, data, only_value) {
   $.each (data, function (i, item) {
     if (only_value) {
@@ -127,6 +151,11 @@ function populateSectionChanges(section, data, only_value) {
     checkbox.attr('data-id', item[0]);
     citem.find('.changekey').html(row);
   });
+
+  removeSectionCheckbox(section);
+  if (data.length) {
+    addSectionCheckbox(section);
+  }
 }
 
 function reviewAndSubmit() {
