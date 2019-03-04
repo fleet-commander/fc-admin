@@ -20,6 +20,7 @@ fc_js_DATA = \
 	cockpit/fleet-commander-admin/js/jquery-3.3.1.min.js \
 	cockpit/fleet-commander-admin/js/bootstrap-4.0.0.min.js \
 	cockpit/fleet-commander-admin/js/base.js \
+	cockpit/fleet-commander-admin/js/dialogs.js \
 	cockpit/fleet-commander-admin/js/fcdbusclient.js \
 	cockpit/fleet-commander-admin/js/fcspiceclient.js \
 	cockpit/fleet-commander-admin/js/collectors.js \

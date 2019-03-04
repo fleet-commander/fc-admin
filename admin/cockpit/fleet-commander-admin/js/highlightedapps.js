@@ -63,13 +63,22 @@ function addHighlightedAppFromEntry () {
   var app = $('#app-name').val ();
 
   if (hasSuffix(app, ".desktop") == false) {
-    showMessageDialog(_('Application identifier must have .desktop extension'), _('Invalid entry'));
+    messageDialog.show(
+      _('Application identifier must have .desktop extension'),
+      _('Invalid entry')
+    );
     return
   } else if (app.indexOf('"') != -1 || app.indexOf("'") != -1) {
-    showMessageDialog(_('Application identifier must not contain quotes'), _('Invalid entry'));
+    messageDialog.show(
+      _('Application identifier must not contain quotes'),
+      _('Invalid entry')
+    );
     return
   } else if ($('#highlighted-apps-list li[data-id="' + app + '"]').length > 0) {
-    showMessageDialog(_('Application identifier is already in favourites'), _('Invalid entry'));
+    messageDialog.show(
+      _('Application identifier is already in favourites'),
+      _('Invalid entry')
+    );
     return
   }
   addHighlightedApp(app);
@@ -90,7 +99,10 @@ function saveHighlightedAppsOld () {
       $('#highlighted-apps-modal').modal('hide');
       $('#profile-modal').modal('show');
     } else {
-      showMessageDialog(_('Error saving highlighted apps'), _('Error'));
+      messageDialog.show(
+        _('Error saving highlighted apps'),
+        _('Error')
+      );
     }
   });
 }

@@ -45,7 +45,9 @@ window.alert = function(message) {
 }
 
 function startLiveSession() {
-  showSpinnerDialog(_('Connecting to virtual machine'))
+  spinnerDialog.show(
+    _('Connecting to virtual machine')
+  );
   // Stop any previous session
   stopLiveSession(function(){
     var domain = sessionStorage.getItem("fc.session.domain")
@@ -57,8 +59,8 @@ function startLiveSession() {
           });
         startHeartBeat();
       } else {
-        showMessageDialog(resp.error, _('Error'));
-        $('#spinner-dialog-modal').modal('hide');
+        messageDialog.show(resp.error, _('Error'));
+        spinnerDialog.close();
       }
     })
   });
@@ -229,9 +231,10 @@ function deployProfile() {
       collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };
 
-  showSpinnerDialog(
+  spinnerDialog.show(
     _('Saving settings to profile. Please wait...'),
-    _('Saving settings'))
+    _('Saving settings')
+  );
 
   $('#event-logs').modal('hide');
 
@@ -243,8 +246,11 @@ function deployProfile() {
           DEBUG > 0 && console.log('FC: Saved live session settings')
           location.href='index.html'
         } else {
-          showMessageDialog(_('Error saving session'), _('Error'));
-          $('#spinner-dialog-modal').modal('hide');
+          messageDialog.show(
+            _('Error saving session'),
+            _('Error')
+          );
+          spinnerDialog.close();
         }
     }, function(){
       console.log('FC: Error saving live session settings')
@@ -258,6 +264,8 @@ $(document).ready (function () {
   $('#review-changes').click(reviewAndSubmit);
   $('#deploy-profile').click(deployProfile);
 
+  spinnerDialog = new SpinnerDialog();
+  messageDialog = new MessageDialog();
 
   // SPICE port changes listeners
   window.addEventListener('spice-port-data', function(event) {
