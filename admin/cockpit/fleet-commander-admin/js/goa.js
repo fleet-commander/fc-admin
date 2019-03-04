@@ -109,13 +109,15 @@ function showGOAAccountEdit(account_id) {
 }
 
 function removeGOAAccount(account_id) {
-  showQuestionDialog(
+  questionDialog.show(
     _('Are you sure you want remove "' + account_id + '"?'),
-    _('Remove GOA account confirmation'),function() {
+    _('Remove GOA account confirmation'),
+    function() {
       delete current_goa_accounts[account_id];
-      $('#message-dialog-modal').modal('hide');
+      questionDialog.close();
       populateGOAAccounts();
-    });
+    }
+  );
 }
 
 function updateProviderServices() {
@@ -158,7 +160,7 @@ function updateOrAddGOAAccount() {
   });
 
   if (repeated) {
-    showMessageDialog(
+    messageDialog.show(
       _('There exists another account for provider ') + provider,
       _('Error'))
       return
@@ -236,10 +238,11 @@ function initialize_goa() {
         showGOAAccounts();
       });
     } else {
-      showMessageDialog(
+      messageDialog.show(
         _('Error loading GOA providers. GOA support will not be available'),
-        _('Error'))
-        $('#show-goa-accounts').hide();
+        _('Error')
+      );
+      $('#show-goa-accounts').hide();
     }
   });
 }

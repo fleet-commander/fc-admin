@@ -39,15 +39,18 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
         self.connecting = null;
         self.noretry = true;
         DEBUG > 0 && console.log('FC: Connection tries timed out');
-        $('#spinner-dialog-modal').modal('hide');
-        showMessageDialog(_('Connection error to virtual machine.'), _('Connection error'));
+        spinnerDialog.close();
+        messageDialog.show(
+          _('Connection error to virtual machine.'),
+          _('Connection error')
+        );
       }, self.conn_timeout);
     }
   }
 
   this.spice_connected = function() {
     DEBUG > 0 && console.log('FC: Connected to virtual machine using SPICE');
-    $('#spinner-dialog-modal').modal('hide');
+    spinnerDialog.close();
     if (self.connecting) {
       clearTimeout(self.connecting);
       self.connecting = null;
@@ -65,22 +68,27 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
             err.message == 'Connection timed out.' ||
             self.sc.state != 'ready')  {
           if (!self.noretry) {
-            showSpinnerDialog(
+            spinnerDialog.show(
               _('Connecting to virtual machine. Please wait...'),
-              _('Reconnecting'))
+              _('Reconnecting')
+	    );
             self.do_connection();
           }
           return
         } else {
-          showMessageDialog(
-            'Connection error to virtual machine', 'Connection error');
+          messageDialog.show(
+            _('Connection error to virtual machine'),
+            _('Connection error')
+          );
         }
       } else {
-        showMessageDialog(
-          'Virtual machine has been stopped', 'Connection error');
+        messageDialog.show(
+          _('Virtual machine has been stopped'),
+          _('Connection error')
+        );
       }
 
-      $('#spinner-dialog-modal').modal('hide');
+      spinnerDialog.close();
       if (self.connecting) {
         clearTimeout(self.connecting);
         self.connecting = null;
@@ -126,9 +134,9 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   this.reconnect = function() {
-    showSpinnerDialog(
+    spinnerDialog.show(
       _('Connecting to virtual machine. Please wait...'),
-      _('Reconnecting'))
+      _('Reconnecting'));
     self.do_connection();
   }
 

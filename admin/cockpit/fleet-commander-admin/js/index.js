@@ -55,7 +55,10 @@ function showFCSettings() {
       if (resp.status) {
         $('#policy').val(resp.policy);
       } else {
-        showMessageDialog(_('Error getting global policy'), _('Error'));
+        messageDialog.show(
+          _('Error getting global policy'),
+          _('Error')
+        );
       }
     })
     $('#fc-settings-modal').modal('show');
@@ -69,16 +72,16 @@ function checkKnownHost(hostname, cb, data) {
       cb(data);
     } else if (resp.error != undefined) {
       // We have an error
-      showMessageDialog(resp.error, _('Error'));
+      messageDialog.show(resp.error, _('Error'));
     } else if (resp.fprint != undefined) {
-      showQuestionDialog(
+      questionDialog.show(
         _('Do you want to add this host to known hosts?') +
           '<p>' + _('Fingerprint data') + ':</p>' +
           '<p>' + resp.fprint + '</p>',
         _('Hypervisor host verification'),
         function(event, dialog) {
           // Add host to known hosts
-          $('#message-dialog-modal').modal('hide');
+          questionDialog.close();
           addToKnownHosts(hostname, cb, data);
         }
       );
@@ -91,7 +94,7 @@ function addToKnownHosts(hostname, cb, data) {
     if (resp.status) {
       cb(data);
     } else {
-      showMessageDialog(resp.error, _('Error'))
+      messageDialog.show(resp.error, _('Error'));
     }
   });
 }
@@ -115,13 +118,16 @@ function saveFCSettings(cb) {
       if (resp.status) {
         fc.SetGlobalPolicy(policy, function(resp){
           if (!resp.status) {
-            showMessageDialog(_('Error setting global policy'), _('Error'));
+            messageDialog.show(
+              _('Error setting global policy'),
+              _('Error')
+            );
           }
           $('#fc-settings-modal').modal('hide');
           if (typeof(cb) == 'function') cb();
         })
       } else {
-        showMessageDialog(resp.error, _('Error'))
+        messageDialog.show(resp.error, _('Error'));
       }
     });
   }
@@ -146,7 +152,7 @@ function showPubkeyInstall() {
 }
 
 function cancelPubkeyInstall() {
-  $('#message-dialog-modal').modal('hide');
+  messageDialog.close();
   $('#pubkey-install-modal').modal('hide');
   $('#fc-settings-modal').modal('show');
 }
@@ -160,22 +166,24 @@ function installPubkey() {
   var pass = $('#pubkey-install-password').val();
   $('#pubkey-install-password').val('');
 
-  showSpinnerDialog(
+  spinnerDialog.show(
     _('Fleet Commander is installing the public key. Please wait'),
-    _('Installing public key'));
+    _('Installing public key')
+  );
 
   fc.InstallPubkey(host, user, pass, function(resp) {
     DEBUG > 0 && console.log('FC: Calling dbus for public key install')
 
-    $('#spinner-dialog-modal').modal('hide');
+    spinnerDialog.close();
 
     if (resp.status) {
-      showMessageDialog(
+      messageDialog.show(
         _('Public key has been installed succesfuly'),
         _('Public key installed'),
-        cancelPubkeyInstall);
+        cancelPubkeyInstall
+      );
     } else {
-      showMessageDialog(resp.error, _('Error'), cancelPubkeyInstall);
+      messageDialog.show(resp.error, _('Error'), cancelPubkeyInstall);
     }
   })
 }
@@ -232,7 +240,7 @@ function refreshProfileList(cb) {
        tr.appendTo('#profile-list');
      });
    } else {
-     showMessageDialog(resp.error, 'Error');
+     messageDialog.show(resp.error, 'Error');
    }
 
    if(cb && typeof(cb) == 'function') {
@@ -277,7 +285,7 @@ function editProfile(uid) {
       // Show profile modal dialog
       $('#profile-modal').modal('show');
     } else {
-      showMessageDialog(_('Error getting profile data'), _('Error'));
+      messageDialog.show(_('Error getting profile data'), _('Error'));
     }
   });
 }
@@ -323,30 +331,33 @@ function saveProfile() {
   }
 
   $('#profile-modal').modal('hide');
-  showSpinnerDialog(_('Saving profile'))
+  spinnerDialog.show(_('Saving profile'));
 
   fc.SaveProfile(data, function(resp) {
-    $('#spinner-dialog-modal').modal('hide');
+    spinnerDialog.close();
     if (resp.status) {
       // Refresh profiles
       refreshProfileList();
     } else {
-      showMessageDialog(_('Error saving profile') + ': ' + resp.error, _('Error'));
+      messageDialog.show(
+        _('Error saving profile') + ': ' + resp.error,
+        _('Error')
+      );
       $('#profile-modal').modal('show');
     }
   });
 }
 
 function removeProfile(uid, displayName) {
-  showQuestionDialog(
+  questionDialog.show(
     _('Are you sure you want to delete profile') + ' "' + displayName + '"?',
     _('Delete profile confirmation'),
     function(){
       fc.DeleteProfile(uid, function(resp){
         refreshProfileList();
-        $('#message-dialog-modal').modal('hide');
+        questionDialog.close();
       });
-    })
+    });
 }
 
 
@@ -359,8 +370,9 @@ function selectDomain() {
   $('#domain-selection-modal').modal('hide');
   sessionStorage.setItem("fc.session.domain", $(this).attr('data-uuid'));
   sessionStorage.setItem("fc.session.profile_uid", currentuid);
-  showSpinnerDialog(
-    _('Starting live session. Please wait...'))
+  spinnerDialog.show(
+    _('Starting live session. Please wait...')
+  );
   setTimeout(function(){
     location.href = "livesession.html";
   }, 500)
@@ -414,7 +426,10 @@ function showDomainSelection() {
 
         } else {
           $('#domain-selection-modal').modal('hide');
-          showMessageDialog(_('Error getting domain list'), _('Error'));
+          messageDialog.show(
+            _('Error getting domain list'),
+            _('Error')
+          );
         }
       });
 
@@ -483,6 +498,10 @@ $(document).ready (function () {
   $("#highlighted-apps-modal").on('shown.bs.modal', function () {
     $('#app-name').focus();
   });
+
+  spinnerDialog = new SpinnerDialog();
+  questionDialog = new QuestionDialog();
+  messageDialog = new MessageDialog();
 
   showCurtain(
     _('Fleet commander is initializing needed data. This action can last for some time depending on your system configuration. Please, be patient.'),
