@@ -218,6 +218,20 @@ function initialize_goa() {
       $('#update-add-goa-account').click(updateOrAddGOAAccount);
       $('#save-goa-accounts').click(saveGOAAccounts);
 
+      $('#goa-accounts-modal').keypress(function(e){
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if(code == 13) {
+          saveGOAAccounts();
+        }
+      });
+
+      $('#goa-account-edit-modal').keypress(function(e){
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if(code == 13) {
+          updateOrAddGOAAccount();
+        }
+      });
+
       $('#goa-account-edit-modal').on('hide.bs.modal', function () {
         showGOAAccounts();
       });
