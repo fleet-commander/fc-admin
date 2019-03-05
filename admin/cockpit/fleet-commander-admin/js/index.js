@@ -468,6 +468,28 @@ $(document).ready (function () {
     if(code == 13) installPubkey();
   });
 
+  $('#profile-modal').keypress(function(e){
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) saveProfile();
+  });
+
+  $('#fc-settings-modal').keypress(function(e){
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) saveFCSettings();
+  });
+
+  $('#add-highlighted-app').keypress(function(e){
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) e.preventDefault();
+  });
+
+  $('#highlighted-apps-modal').keypress(function(e){
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) {
+      saveHighlightedApps();
+    }
+  });
+
   $("#fc-settings-modal").on('shown.bs.modal', function () {
     $('#host').focus();
   });
@@ -478,6 +500,10 @@ $(document).ready (function () {
 
   $("#pubkey-install-modal").on('shown.bs.modal', function () {
     $('#pubkey-install-password').focus();
+  });
+
+  $("#highlighted-apps-modal").on('shown.bs.modal', function () {
+    $('#app-name').focus();
   });
 
   showCurtain(
