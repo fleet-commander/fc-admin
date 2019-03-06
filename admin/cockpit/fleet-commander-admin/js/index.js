@@ -418,42 +418,15 @@ function showDomainSelection() {
   });
 }
 
-// Global policy configuration
-function showGlobalPolicyConfig() {
-  fc.GetGlobalPolicy(function(resp){
-    if (resp.status) {
-      $('#policy').val(resp.policy);
-      $('#global-policy-config-modal').modal('show');
-    } else {
-      showMessageDialog(_('Error getting global policy'), _('Error'));
-    }
-  })
-
-}
-
-function saveGlobalPolicyConfig() {
-  var policy = parseInt($('#policy').val());
-  fc.SetGlobalPolicy(policy, function(resp){
-    if (!resp.status) {
-      showMessageDialog(_('Error setting global policy'), _('Error'));
-    }
-    $('#global-policy-config-modal').modal('hide');
-  })
-}
-
-
 /*******************************************************************************
  * Initialization
  ******************************************************************************/
 $(document).ready (function () {
   // Bind events
-  $('#show-global-policy-config').click(showGlobalPolicyConfig);
-  $('#save-global-policy-config').click(saveGlobalPolicyConfig);
   $('#show-fc-settings').click(showFCSettings);
   $('#save-fc-settings').click(saveFCSettings);
   $('#show-add-profile').click(showAddProfile);
   $('#save-new-profile').click(saveProfile);
-  $('#save-existing-profile').click(saveProfile);
   $('#show-highlighted-apps').click(showHighlightedApps);
   $('#add-highlighted-app').click(addHighlightedAppFromEntry);
   $('#save-highlighted-apps').click(saveHighlightedApps);
@@ -494,7 +467,7 @@ $(document).ready (function () {
       state.server_type = resp.server_type
       // Hide hostgroups if server type is Active Directory
       if (state.server_type == 'active-directory') {
-        $('#profile-hostsgroups-group').hide();
+        $('#profile-hostgroups-group').hide();
       }
 
       setDebugLevel(resp.debuglevel);
