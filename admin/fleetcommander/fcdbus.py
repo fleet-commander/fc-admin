@@ -184,6 +184,14 @@ class FleetCommanderDbusService(dbus.service.Object):
             'org.freedesktop.realmd.Provider',
             None)
         realms = sssd_provider.get_cached_property('Realms')
+
+        if realms is None:
+            logging.error(
+                'It seems that "realmd" package is not installed.'
+                ' "realmd" is used for retreiving information about the Realm.'
+            )
+            sys.exit(1)
+
         if len(realms) > 0:
             logging.debug(
                 'FC: realmd queried. Using realm object %s' % realms[0])
