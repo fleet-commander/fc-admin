@@ -265,7 +265,10 @@ class SSHController(object):
 
             execute_command('mkdir -p ~/.ssh/')
             execute_command('chmod 700 ~/.ssh/')
-            execute_command('echo "%s" >> ~/.ssh/authorized_keys' % pub_key)
+            execute_command(
+                'grep -qF "{key}" {akeys} || echo "{key}" >> {akeys}'.
+                format(key=pub_key, akeys='~/.ssh/authorized_keys')
+            )
             execute_command('chmod 600 ~/.ssh/authorized_keys')
             execute_command('exit', final=True)
         except Exception as e:
