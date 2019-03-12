@@ -244,6 +244,7 @@ function refreshProfileList(cb) {
 function showAddProfile() {
   // Clear current profile
   currentprofile = null;
+  currentuid = null;
   // Clear form data before show
   $('#profile-name').val('');
   $('#profile-desc').val('');
@@ -292,6 +293,10 @@ function saveProfile() {
   if (!$('#profile-priority').val()) {
     addFormError('profile-priority', _('Priority is required'));
     return
+  }
+
+  if (currentuid === null) {
+    currentuid = $('#profile-name').val();
   }
 
   var data = {
