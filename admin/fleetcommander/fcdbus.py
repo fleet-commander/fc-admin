@@ -576,7 +576,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         if 'oldname' in data:
             logging.debug(
                 'Profile is being renamed from %s to %s' % (
-                    data['oldname'], cn))
+                    data['oldname'], name))
             profile['oldname'] = data['oldname']
 
         try:
