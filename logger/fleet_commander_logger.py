@@ -32,6 +32,7 @@ import logging
 import argparse
 import json
 import dbus
+import dbus.service
 
 from dbus.mainloop.glib import DBusGMainLoop
 from six.moves import range
@@ -43,6 +44,7 @@ import gi
 gi.require_version('NM', '1.0')
 
 from gi.repository import GLib
+from gi.repository import GObject
 from gi.repository import Gio
 from gi.repository import NM
 
@@ -52,6 +54,11 @@ try:
     FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
+
+
+DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderLogger'
+DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderLogger'
+DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommanderLogger'
 
 
 class RemoteConnectionWorkaround(object):
@@ -1193,7 +1200,57 @@ class FirefoxLogger(object):
         return prefs
 
 
-class FleetCommanderLogger(object):
+
+class FirefoxBookmarkLogger(object):
+    """
+    Firefox bookmark logger class
+    """
+
+    namespace = 'org.mozilla.firefox.bookmarks'
+
+    def __init__(self, connmgr):
+        self.bookmarks = {}
+        self.connmgr = connmgr
+
+    def submit_config_changes(self):
+        bookmarks = self.bookmarks.values()
+        self.connmgr.submit_change(
+            self.namespace,
+            json.dumps(
+                bookmarks, sort_keys=True))
+
+    def update_bookmark(self, id, title, url, folder=None, placement='toolbar'):
+        self.bookmarks[id] = {
+            'Title': title,
+            'URL': url,
+            'Placement': placement,
+        }
+        if folder:
+            self.bookmarks[id]['Folder'] = folder
+
+    def add(self, id, data):
+        self.bookmarks[id] = data
+        self.update_bookmark()
+
+    def remove(self, id, data):
+        del(self.bookmarks[id])
+    
+    def change(self, id, data):
+        self.bookmarks[id]['title'] = data['title']
+        self.bookmarks[id]['url'] = data['url']
+        # TODO: Folder information
+
+    def move(self, id, data):
+        
+        if id not in self.bookmarks:
+            # If does not exist, treat as an add
+            self.bookmarks[id] = None
+        else:
+            self.bookmarks[id]['parentId'] = data['parentId']
+            self.bookmarks[id]['index'] = data['index']
+
+
+class FleetCommanderLogger(dbus.service.Object):
     """
     Fleet Commander Logger main class
     """
@@ -1220,8 +1277,13 @@ class FleetCommanderLogger(object):
         ChromiumLogger(self.connmgr)
         ChromeLogger(self.connmgr)
         FirefoxLogger(self.connmgr)
+        FirefoxBookmarkLogger(self.connmgr)
 
     def run(self):
+        bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
+        dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
+        #self._loop = GObject.MainLoop()
+
         # Run main loop
         self.ml.run()
 
@@ -1229,6 +1291,30 @@ class FleetCommanderLogger(object):
         # Disable screensaver inhibition after main loop exits
         self.scinhibitor.uninhibit()
         self.ml.quit()
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='')
+    def FirefoxBookmarkAdd(self, bookmark_id, data):
+        logging.debug('Firefox bookmark id {} added'.format(bookmark_id))
+        print(bookmark_id, data)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='')
+    def FirefoxBookmarkRemove(self, bookmark_id, data):
+        logging.debug('Firefox bookmark id {} removed'.format(bookmark_id))
+        print(bookmark_id, data)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='')
+    def FirefoxBookmarkChange(self, bookmark_id, data):
+        logging.debug('Firefox bookmark id {} changed'.format(bookmark_id))
+        print(bookmark_id, data)
+
+    @dbus.service.method(DBUS_INTERFACE_NAME,
+                         in_signature='ss', out_signature='')
+    def FirefoxBookmarkMove(self, bookmark_id, data):
+        logging.debug('Firefox bookmark id {} moved'.format(bookmark_id))
+        print(bookmark_id, data)
 
 
 if __name__ == "__main__":
@@ -1249,3 +1335,4 @@ if __name__ == "__main__":
 
     fcl = FleetCommanderLogger(use_device_file=args.no_devfile)
     fcl.run()
+

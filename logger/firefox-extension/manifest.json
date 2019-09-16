@@ -1,0 +1,30 @@
+{
+
+  "manifest_version": 2,
+  "name": "Fleet Commander firefox bookmark logger extension",
+  "version": "1.0",
+
+  "description": "Enables bookmark monitoring for Fleet Commander logger",
+
+  "permissions": [
+    "bookmarks",
+    "nativeMessaging"
+  ],
+  
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox_bookmark_logger@fleet-commander.org",
+      "strict_min_version": "50.0"
+    }
+  },
+
+  "icons": {
+    "48": "icons/fc-48.png",
+    "96": "icons/fc-96.png"
+  },
+
+  "background": {
+    "scripts": ["bookmarklogger.js"]
+  }
+
+}
