@@ -385,11 +385,16 @@ class ADConnector(object):
             ldif = [
                 (ldap.MOD_REPLACE, 'displayName',
                     (FC_PROFILE_PREFIX % profile['name']).encode()),
-                (ldap.MOD_REPLACE, 'description',
-                    profile['description'].encode()),
                 (ldap.MOD_REPLACE, 'nTSecurityDescriptor',
                     ndr_pack(sd)),
             ]
+            if profile['description']:
+                ldif.append((ldap.MOD_REPLACE, 'description',
+                    profile['description'].encode()))
+            else:
+                ldif.append((ldap.MOD_REPLACE, 'description',
+                    None))
+
             logging.debug('LDIF data to be sent to LDAP: %s' % ldif)
             dn = "CN=%s,CN=Policies,CN=System,%s" % (
                 gpo_uuid, self._get_domain_dn())
