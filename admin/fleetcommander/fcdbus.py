@@ -32,7 +32,7 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 
-from gi.repository import GObject
+from gi.repository import GLib
 from gi.repository import Gio
 
 from . import sshcontroller
@@ -163,7 +163,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
-        self._loop = GObject.MainLoop()
+        self._loop = GLib.MainLoop()
 
         # Start session checking
         self.start_session_checking()
@@ -294,7 +294,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def start_session_checking(self):
         self._last_heartbeat = time.time()
         # Add callback for temporary sessions check
-        self.current_session_checking = GObject.timeout_add(
+        self.current_session_checking = GLib.timeout_add(
             1000, self.check_running_sessions)
         logging.debug(
             'Started session checking')
