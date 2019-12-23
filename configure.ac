@@ -1,4 +1,4 @@
-AC_INIT(fleet-commander-admin, 0.14.1, aruiz@redhat.com)
+AC_INIT(fleet-commander-admin, 0.14.2, aruiz@redhat.com)
 AC_COPYRIGHT([Copyright 2014,2015,2016,2017,2018 Red Hat, Inc.])
 
 AC_PREREQ(2.64)
@@ -67,9 +67,12 @@ databasefile='${localstatedir}'/lib/fleet-commander-admin/database.db
 fchomedir='${localstatedir}'/lib/fleet-commander
 fcadmindir='${datarootdir}'/fleet-commander-admin
 fcpythondir='${datarootdir}'/fleet-commander-admin/python
+fcloggerdir='${datarootdir}'/fleet-commander-logger
 fcloggerpythondir='${datarootdir}'/fleet-commander-logger/python
 fcconfigfile='${sysconfdir}'/xdg/fleet-commander-admin.conf
 cockpitdir='${datarootdir}'/cockpit
+mozillaextensionsdir='${datarootdir}'/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+nativemessagingdir='${libdir}'/mozilla/native-messaging-hosts
 
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
@@ -79,8 +82,11 @@ AC_SUBST(fchomedir)
 AC_SUBST(fcadmindir)
 AC_SUBST(cockpitdir)
 AC_SUBST(fcpythondir)
+AC_SUBST(fcloggerdir)
 AC_SUBST(fcloggerpythondir)
 AC_SUBST(fcconfigfile)
+AC_SUBST(mozillaextensionsdir)
+AC_SUBST(nativemessagingdir)
 
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
@@ -90,8 +96,12 @@ AS_AC_EXPAND(FCHOMEDIR, "$fchomedir")
 AS_AC_EXPAND(FCADMINDIR, "$fcadmindir")
 AS_AC_EXPAND(COCKPITDIR, "$cockpitdir")
 AS_AC_EXPAND(FCPYTHONDIR, "$fcpythondir")
+AS_AC_EXPAND(FCLOGGERDIR, "$fcloggerpythondir")
 AS_AC_EXPAND(FCLOGGERPYTHONDIR, "$fcloggerpythondir")
 AS_AC_EXPAND(FCCONFIGFILE, "$fcconfigfile")
+AS_AC_EXPAND(MOZILLAEXTENSIONSDIR, "$mozillaextensionsdir")
+AS_AC_EXPAND(NATIVEMESSAGINGDIR, "$nativemessagingdir")
+
 
 AC_SUBST(SYSTEMUNITDIR)
 
@@ -107,4 +117,6 @@ data/fleet-commander-admin.conf
 data/org.freedesktop.FleetCommander.service
 data/fleet-commander-admin
 data/fleet-commander-logger
+data/firefox-bookmark-fclogger
+data/firefox_bookmark_fclogger.json
 ])

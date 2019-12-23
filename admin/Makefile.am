@@ -13,7 +13,7 @@ fc_admin_py_SCRIPTS = \
 
 fc_admin_constsdir = ${fcpythondir}/fleetcommander
 fc_admin_consts_in_files = fleetcommander/constants.py.in
-fc_admin_consts_DATA = fleetcommander/constants.py
+fc_admin_consts_SCRIPTS = fleetcommander/constants.py
 
 fc_jsdir   = ${datarootdir}/cockpit/fleet-commander-admin/js
 fc_js_DATA = \
@@ -99,15 +99,15 @@ fc_css_DATA = \
 	cockpit/fleet-commander-admin/css/main.css
 
 EXTRA_DIST = \
-	     $(fc_admin_py_SCRIPTS) \
-	     $(fc_js_DATA) \
-	     $(fc_spicehtml5_DATA) \
-	     $(fc_spicehtml5thirdparty_DATA) \
-	     $(fc_cockpit_DATA) \
-	     $(fc_css_DATA) \
-			 $(fc_goaimg_DATA) \
-			 $(fc_goatelepathyimg_DATA) \
-	     $(fc_admin_consts_in_files)
+	$(fc_admin_py_SCRIPTS) \
+	$(fc_js_DATA) \
+	$(fc_spicehtml5_DATA) \
+	$(fc_spicehtml5thirdparty_DATA) \
+	$(fc_cockpit_DATA) \
+	$(fc_css_DATA) \
+	$(fc_goaimg_DATA) \
+	$(fc_goatelepathyimg_DATA) \
+	$(fc_admin_consts_in_files)
 
-CLEANFILESM = \
-	$(fc_admin_consts_DATA)
+# CLEANFILES = \
+# 	$(fc_admin_consts_SCRIPTS)

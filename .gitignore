@@ -36,6 +36,8 @@ data/fleet-commander-logger.desktop
 data/fleet-commander-admin.conf
 data/fleet-commander-admin
 data/fleet-commander-logger
+data/firefox-bookmark-fclogger
+data/firefox_bookmark_fclogger.json
 tests/data/gschemas.compiled
 fleet-commander*.tar.[gx]z
 id_rsa

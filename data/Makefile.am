@@ -27,6 +27,14 @@ fleet_commander_logger_shellwrapperdir = ${libexecdir}
 fleet_commander_logger_shellwrapper_in_files = fleet-commander-logger.in
 fleet_commander_logger_shellwrapper_DATA = fleet-commander-logger
 
+fleet_commander_firefox_logger_shellwrapperdir = ${libexecdir}
+fleet_commander_firefox_logger_shellwrapper_in_files = firefox-bookmark-fclogger.in
+fleet_commander_firefox_logger_shellwrapper_DATA = firefox-bookmark-fclogger
+
+fleet_commander_firefox_native_manifestdir = ${nativemessagingdir}
+fleet_commander_firefox_native_manifest_in_files = firefox_bookmark_fclogger.json.in
+fleet_commander_firefox_native_manifest_DATA = firefox_bookmark_fclogger.json
+
 fleet_commander_metainfodir = ${datarootdir}/metainfo
 fleet_commander_metainfo_DATA = org.freedesktop.FleetCommander.admin.metainfo.xml
 
@@ -42,9 +50,13 @@ EXTRA_DIST = \
 	$(fleet_commander_udev_rules_DATA)             \
 	$(fleet_commander_dbus_shellwrapper_in_files)  \
 	$(fleet_commander_logger_shellwrapper_in_files)  \
+	$(fleet_commander_firefox_logger_shellwrapper_in_files)  \
+	$(fleet_commander_firefox_native_manifest_in_files)  \
 	$(fleet_commander_metainfo_DATA)               \
 	$(pixmaps_DATA)
 
 CLEANFILES = \
 	$(fleet_commander_logger_desktop_DATA)      \
-	$(fleet_commander_admin_config_DATA)
+	$(fleet_commander_admin_config_DATA) \
+	$(fleet_commander_firefox_native_manifest_DATA)
+
