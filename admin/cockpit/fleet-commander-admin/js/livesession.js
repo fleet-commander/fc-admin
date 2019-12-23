@@ -34,6 +34,8 @@ var collectors = {
     new BaseCollector('com.google.chrome.Policies'),
   'org.mozilla.firefox':
     new BaseCollector('org.mozilla.firefox'),
+  'org.mozilla.firefox.Bookmarks':
+    new FirefoxBookmarksCollector('org.mozilla.firefox.Bookmarks'),
   'org.freedesktop.NetworkManager':
     new NMCollector('org.freedesktop.NetworkManager'),
 }
@@ -87,6 +89,7 @@ function populateChanges() {
   $('#chromium-event-list').html('');
   $('#chrome-event-list').html('');
   $('#firefox-event-list').html('');
+  $('#firefoxbookmarks-event-list').html('');
   $('#networkmanager-event-list').html('');
 
   DEBUG > 0 && console.log('FC: Populating LibreOffice change list');
@@ -108,6 +111,10 @@ function populateChanges() {
   DEBUG > 0 && console.log('FC: Populating Firefox change list');
   populateSectionChanges('#firefox-event-list',
    collectors['org.mozilla.firefox'].dump_changes());
+
+  DEBUG > 0 && console.log('FC: Populating Firefox bookmarks change list');
+  populateSectionChanges('#firefoxbookmarks-event-list',
+  collectors['org.mozilla.firefox.Bookmarks'].dump_changes());
 
   DEBUG > 0 && console.log('FC: Populating NetworkManager change list');
   populateSectionChanges('#networkmanager-event-list',
@@ -170,6 +177,7 @@ function deployProfile() {
   var chromium = [];
   var chrome = [];
   var firefox = [];
+  var firefoxbookmarks = [];
   var networkmanager = [];
 
   $.each($('#gsettings-event-list input[data-id]:checked'), function (i,e) {
@@ -192,6 +200,10 @@ function deployProfile() {
     firefox.push($(this).attr('data-id'));
   })
 
+  $.each($('#firefoxbookmarks-event-list input[data-id]:checked'), function (i,e) {
+    firefoxbookmarks.push($(this).attr('data-id'));
+  })
+
   $.each($('#networkmanager-event-list input[data-id]:checked'), function (i,e) {
     networkmanager.push($(this).attr('data-id'));
   });
@@ -207,6 +219,8 @@ function deployProfile() {
       collectors['com.google.chrome.Policies'].get_changeset(chrome),
     'org.mozilla.firefox':
       collectors['org.mozilla.firefox'].get_changeset(firefox),
+    'org.mozilla.firefox.Bookmarks':
+      collectors['org.mozilla.firefox.Bookmarks'].get_changeset(firefoxbookmarks),
     'org.freedesktop.NetworkManager':
       collectors['org.freedesktop.NetworkManager'].get_changeset(networkmanager)
   };

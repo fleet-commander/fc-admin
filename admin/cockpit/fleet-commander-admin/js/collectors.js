@@ -67,9 +67,10 @@ BaseCollector.prototype = {
 }
 
 
+// Network Manager specific collector
 function NMCollector(namespace) {
   BaseCollector.apply(this, arguments);
-  this. key_name = 'uuid';
+  this.key_name = 'uuid';
 };
 
 NMCollector.prototype = Object.create(BaseCollector.prototype);
@@ -79,4 +80,16 @@ NMCollector.prototype.get_value_from_change = function(change) {
     return change.type + ' - ' + change.id;
   }
   return undefined;
+}
+
+
+// Firefox bookmarks specific collector
+function FirefoxBookmarksCollector(namespace) {
+  BaseCollector.apply(this, arguments);
+};
+
+FirefoxBookmarksCollector.prototype = Object.create(BaseCollector.prototype);
+
+FirefoxBookmarksCollector.prototype.get_value_from_change = function(change) {
+  return change.value.URL + ' - ' + change.value.Title;
 }

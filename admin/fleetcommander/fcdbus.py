@@ -145,6 +145,8 @@ class FleetCommanderDbusService(dbus.service.Object):
                 mergers.ChromiumChangeMerger(),
             'org.mozilla.firefox':
                 mergers.FirefoxChangeMerger(),
+            'org.mozilla.firefox.Bookmarks':
+                mergers.FirefoxBookmarksChangeMerger(),
             'org.freedesktop.NetworkManager':
                 mergers.NetworkManagerChangeMerger(),
         }

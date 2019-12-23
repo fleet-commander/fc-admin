@@ -114,6 +114,14 @@ class ChromiumChangeMerger(BaseChangeMerger):
 
 class FirefoxChangeMerger(BaseChangeMerger):
     """
-    Network manager change merger class
+    Firefox settings change merger class
     """
     pass
+
+
+class FirefoxBookmarksChangeMerger(BaseChangeMerger):
+    """
+    Firefox bookmarks change merger class
+    """
+    pass
+
