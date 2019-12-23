@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/bin/env @PYTHON@ @FCLOGGERPYTHONDIR@/firefox_bookmark_fclogger.py $@

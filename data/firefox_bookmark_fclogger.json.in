@@ -1,0 +1,7 @@
+{
+  "name": "firefox_bookmark_fclogger",
+  "description": "Fleet Commander Firefox Bookmarks Logger native aplication",
+  "type": "stdio",
+  "path": "@PRIVLIBEXECDIR@/firefox-bookmark-fclogger",
+  "allowed_extensions": ["{c73e87a7-b5a1-4b6f-b10b-0bd70241a64d}"]
+}
