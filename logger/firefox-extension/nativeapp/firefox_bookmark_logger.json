@@ -1,7 +1,0 @@
-{
-  "name": "firefox_bookmark_logger",
-  "description": "Fleet Commander Firefox Bookmarks Logger native aplication",
-  "type": "stdio",
-  "path": "/home/oliver/Devel/fc-admin/logger/firefox-extension/nativeapp/firefox_bookmark_logger.py",
-  "allowed_extensions": ["firefox_bookmark_logger@fleet-commander.org"]
-}

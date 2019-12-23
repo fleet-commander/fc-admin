@@ -1200,54 +1200,37 @@ class FirefoxLogger(object):
         return prefs
 
 
-
 class FirefoxBookmarkLogger(object):
     """
     Firefox bookmark logger class
     """
 
-    namespace = 'org.mozilla.firefox.bookmarks'
+    namespace = 'org.mozilla.firefox.Bookmarks'
 
     def __init__(self, connmgr):
         self.bookmarks = {}
         self.connmgr = connmgr
 
-    def submit_config_changes(self):
-        bookmarks = self.bookmarks.values()
-        self.connmgr.submit_change(
-            self.namespace,
-            json.dumps(
-                bookmarks, sort_keys=True))
-
-    def update_bookmark(self, id, title, url, folder=None, placement='toolbar'):
-        self.bookmarks[id] = {
-            'Title': title,
-            'URL': url,
-            'Placement': placement,
+    def submit_config_change(self, id, data):
+        # Prepare data:
+        deserialized_data = json.loads(data)
+        payload_data = {
+            'Title': deserialized_data['title'],
+            'URL': deserialized_data['url'],
+            'Placement': deserialized_data['placement'],
+            'Folder': deserialized_data['folder'],
         }
-        if folder:
-            self.bookmarks[id]['Folder'] = folder
+        payload = json.dumps({
+            'key': id,
+            'value': payload_data,
+        }, sort_keys=True)
+        self.connmgr.submit_change(self.namespace, payload)
 
-    def add(self, id, data):
-        self.bookmarks[id] = data
-        self.update_bookmark()
+    def update(self, id, data):
+        self.submit_config_change(id, data)
 
-    def remove(self, id, data):
-        del(self.bookmarks[id])
-    
-    def change(self, id, data):
-        self.bookmarks[id]['title'] = data['title']
-        self.bookmarks[id]['url'] = data['url']
-        # TODO: Folder information
-
-    def move(self, id, data):
-        
-        if id not in self.bookmarks:
-            # If does not exist, treat as an add
-            self.bookmarks[id] = None
-        else:
-            self.bookmarks[id]['parentId'] = data['parentId']
-            self.bookmarks[id]['index'] = data['index']
+    def remove(self, id):
+        self.submit_config_change(id, None)
 
 
 class FleetCommanderLogger(dbus.service.Object):
@@ -1258,7 +1241,7 @@ class FleetCommanderLogger(dbus.service.Object):
     def __init__(self, use_device_file=True):
         logging.info("Initializing Fleet Commander Logger")
         self.ml = GLib.MainLoop()
-        self.homedir = GLib.get_home_dir();
+        self.homedir = GLib.get_home_dir()
 
         self.testing = "FC_TESTING" in os.environ
 
@@ -1277,7 +1260,7 @@ class FleetCommanderLogger(dbus.service.Object):
         ChromiumLogger(self.connmgr)
         ChromeLogger(self.connmgr)
         FirefoxLogger(self.connmgr)
-        FirefoxBookmarkLogger(self.connmgr)
+        self.firefox_bookmark_logger = FirefoxBookmarkLogger(self.connmgr)
 
     def run(self):
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
@@ -1294,27 +1277,15 @@ class FleetCommanderLogger(dbus.service.Object):
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='ss', out_signature='')
-    def FirefoxBookmarkAdd(self, bookmark_id, data):
-        logging.debug('Firefox bookmark id {} added'.format(bookmark_id))
-        print(bookmark_id, data)
+    def FirefoxBookmarkUpdate(self, bookmark_id, data):
+        logging.debug('Firefox bookmark id {} updated. {}'.format(bookmark_id, data))
+        self.firefox_bookmark_logger.update(bookmark_id, data)
 
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='')
-    def FirefoxBookmarkRemove(self, bookmark_id, data):
-        logging.debug('Firefox bookmark id {} removed'.format(bookmark_id))
-        print(bookmark_id, data)
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='')
-    def FirefoxBookmarkChange(self, bookmark_id, data):
-        logging.debug('Firefox bookmark id {} changed'.format(bookmark_id))
-        print(bookmark_id, data)
-
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='')
-    def FirefoxBookmarkMove(self, bookmark_id, data):
-        logging.debug('Firefox bookmark id {} moved'.format(bookmark_id))
-        print(bookmark_id, data)
+                         in_signature='s', out_signature='')
+    def FirefoxBookmarkRemove(self, bookmark_id):
+        logging.debug('Firefox bookmark id {} removed.'.format(bookmark_id))
+        self.firefox_bookmark_logger.remove(bookmark_id)
 
 
 if __name__ == "__main__":

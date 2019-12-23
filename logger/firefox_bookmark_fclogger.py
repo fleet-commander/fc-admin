@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # vi:ts=4 sw=4 sts=4
 
@@ -48,7 +47,6 @@ def connected_to_dbus_service(f):
 
 
 class FleetCommanderLoggerDbusClient(object):
-
     """
     Fleet commander logger dbus client
     """
@@ -83,23 +81,18 @@ class FleetCommanderLoggerDbusClient(object):
                 logging.debug('Can\'t connect to FC Logger dbus service')
 
     @connected_to_dbus_service
-    def firefox_bookmark_add(self, bookmark_id, data):
-        return self.iface.FirefoxBookmarkAdd(bookmark_id, data)
+    def firefox_bookmark_update(self, bookmark_id, data):
+        return self.iface.FirefoxBookmarkUpdate(bookmark_id, data)
 
     @connected_to_dbus_service
-    def firefox_bookmark_remove(self, bookmark_id, data):
-        return self.iface.FirefoxBookmarkRemove(bookmark_id, data)
-
-    @connected_to_dbus_service
-    def firefox_bookmark_change(self, bookmark_id, data):
-        return self.iface.FirefoxBookmarkChange(bookmark_id, data)
-
-    @connected_to_dbus_service
-    def firefox_bookmark_move(self, bookmark_id, data):
-        return self.iface.FirefoxBookmarkMove(bookmark_id, data)
+    def firefox_bookmark_remove(self, bookmark_id):
+        return self.iface.FirefoxBookmarkRemove(bookmark_id)
 
 
 class FirefoxExtensionMessagingHelper(object):
+    """
+    Firefox messaging helper class
+    """
 
     def __init__(self):
         # Set shortcuts for standard input and output buffers
@@ -148,17 +141,13 @@ fclogger = FleetCommanderLoggerDbusClient()
 while True:
     message = extension.get_message()
     bookmark_id = message['id']
-    bookmark_data = message['data']
-    if message['type'] == 'add':
-        extension.send_message('Received bookmark add command for bookmark id {}'.format(bookmark_id))
-        logging.debug('Sending bookmark add command to FC Logger dbus service')
-        fclogger.firefox_bookmark_add(bookmark_id, json.dumps(bookmark_data))
-    elif message['type'] == 'remove':
+    if message['action'] in ['add', 'change', 'move']:
+        extension.send_message(
+            'Received bookmark {} for bookmark id {}'.format(message['action'], bookmark_id))
+        logging.debug('Sending bookmark {} command to FC Logger dbus service'.format(message['action']))
+        fclogger.firefox_bookmark_update(bookmark_id, json.dumps(message))
+    elif message['action'] == 'remove':
         extension.send_message('Received bookmark remove command for bookmark id {}'.format(bookmark_id))
-        fclogger.firefox_bookmark_remove(bookmark_id, json.dumps(bookmark_data))
-    elif message['type'] == 'change':
-        extension.send_message('Received bookmark change command for bookmark id {}'.format(bookmark_id))
-        fclogger.firefox_bookmark_change(bookmark_id, json.dumps(bookmark_data))
-    elif message['type'] == 'move':
-        extension.send_message('Received bookmark move command for bookmark id {}'.format(bookmark_id))
-        fclogger.firefox_bookmark_move(bookmark_id, json.dumps(bookmark_data))
+        fclogger.firefox_bookmark_remove(bookmark_id)
+    else:
+        logging.debug('Unknown action received from extension')
