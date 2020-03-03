@@ -68,6 +68,131 @@ window.alert = function (message) {
 };
 
 
+function downloadConnectionFile(console_details) {
+    console.log("Generate remote-viewer connection file: ", console_details);
+    var data = '[virt-viewer]\n' +
+        `type=${console_details.type}\n` +
+        `host=${console_details.address}\n` +
+        `tls-port=${console_details.tls_port}\n` +
+        `ca=${console_details.ca_cert}\n` +
+        `host-subject=${console_details.cert_subject}\n` +
+        'delete-this-file=1\n' +
+        'secure-channels=all\n' +
+        'fullscreen=0\n';
+
+    const f = document.createElement('iframe');
+    f.width = '1';
+    f.height = '1';
+    document.body.appendChild(f);
+    f.src = `data:application/x-virt-viewer,${encodeURIComponent(data)}`;
+}
+
+function ParseChange(data) {
+    var msg_text = arraybuffer_to_str_func(new Uint8Array(data));
+    console.log('FC: Parsing data', msg_text);
+    try {
+        var change = JSON.parse(msg_text);
+        if (DEBUG > 0) {
+            console.log('FC: Change parsed', change);
+        }
+        if (collectors[change.ns] !== undefined) {
+            collectors[change.ns].handle_change(JSON.parse(change.data));
+        } else {
+            if (DEBUG > 0) {
+                console.log('FC: Unknown change namespace', change.ns);
+            }
+        }
+    } catch (e) {
+        if (DEBUG > 0) {
+            console.log('FC: Error while parsing change', msg_text);
+        }
+    }
+}
+
+function startSpiceHtml5(conn_details) {
+    // SPICE port changes listeners
+    window.addEventListener('spice-port-data', function (event) {
+        if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
+            if (DEBUG > 0) {
+                console.log(
+                    'FC: Logger data received in spice port',
+                    event.detail.channel.portName,
+                );
+            }
+            ParseChange(event.detail.data);
+        }
+    });
+
+    window.addEventListener('spice-port-event', function (event) {
+        if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
+            if (event.detail.spiceEvent[0] === 0) {
+                if (DEBUG > 0) {
+                    console.log('FC: Logger connected to SPICE channel');
+                }
+            } else if (event.detail.spiceEvent[0] === 1) {
+                if (DEBUG > 0) {
+                    console.log('FC: Logger disconnected from SPICE channel');
+                }
+                stopLiveSession();
+            } else {
+                if (DEBUG > 0) {
+                    console.log(
+                        'FC: Unknown event received in SPICE channel',
+                        event.detail.spiceEvent
+                    );
+                }
+            }
+        }
+    });
+
+    fcsc = new FleetCommanderSpiceClient(
+        conn_details.port, function () {
+            stopLiveSession()
+        },
+    );
+    startHeartBeat();
+}
+
+
+function startRemoteViewer(conn_details) {
+    var console_details = {
+        type: 'spice',
+        address: conn_details.host,
+        tls_port: conn_details.tls_port,
+        ca_cert: conn_details.ca_cert.replace(/\n/g, "\\n"),
+        cert_subject: conn_details.cert_subject,
+    };
+    downloadConnectionFile(console_details);
+
+    var options = {
+        payload: 'stream',
+        protocol: 'binary',
+        unix: conn_details.notify_socket,
+        binary: true,
+    };
+    var channel = cockpit.channel(options);
+
+    channel.addEventListener("ready", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit changes channel is open');
+        }
+    });
+    channel.addEventListener("message", function(event, data) {
+        if (DEBUG > 0) {
+            console.log('FC: Logger data received in unix channel', data);
+        }
+        ParseChange(data);
+    });
+    channel.addEventListener("close", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit changes channel is closed', options);
+        }
+        stopLiveSession()
+    });
+
+    startHeartBeat();
+}
+
 function startHeartBeat() {
     heartbeat = window.setInterval(function () {
         fc.HeartBeat(function (resp) {
@@ -102,13 +227,20 @@ function startLiveSession() {
         var domain = sessionStorage.getItem("fc.session.domain");
         fc.SessionStart(domain, function (resp) {
             if (resp.status) {
-                fcsc = new FleetCommanderSpiceClient(
-                    resp.port,
-                    function () {
-                        stopLiveSession();
-                    }
-                );
-                startHeartBeat();
+                var conn_details = resp.connection_details;
+                var viewers = {
+                    'spice_html5': startSpiceHtml5,
+                    'spice_remote_viewer': startRemoteViewer,
+                };
+                if (conn_details.viewer in viewers === false) {
+                    messageDialog.show(
+                        _('Not supported libvirt viewer:' + conn_details.viewer),
+                        _('Error'));
+                    spinnerDialog.close();
+                    return;
+                }
+                spinnerDialog.close();
+                viewers[conn_details.viewer](conn_details);
             } else {
                 messageDialog.show(resp.error, _('Error'));
                 spinnerDialog.close();
@@ -116,6 +248,7 @@ function startLiveSession() {
         });
     });
 }
+
 
 function reconnectToVM() {
     if (fcsc) {
@@ -333,51 +466,6 @@ $(document).ready(function () {
 
     spinnerDialog = new SpinnerDialog();
     messageDialog = new MessageDialog();
-
-    // SPICE port changes listeners
-    window.addEventListener('spice-port-data', function (event) {
-        if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
-            var msg_text = arraybuffer_to_str_func(new Uint8Array(event.detail.data)),
-                change = JSON.parse(msg_text);
-            if (DEBUG > 0) {
-                console.log('FC: Logger data received in spice port', event.detail.channel.portName, msg_text);
-            }
-            try {
-                if (DEBUG > 0) {
-                    console.log('FC: Change parsed', change);
-                }
-                if (collectors[change.ns] !== undefined) {
-                    collectors[change.ns].handle_change(JSON.parse(change.data));
-                } else {
-                    if (DEBUG > 0) {
-                        console.log('FC: Unknown change namespace', change.ns);
-                    }
-                }
-            } catch (e) {
-                if (DEBUG > 0) {
-                    console.log('FC: Error while parsing change', msg_text);
-                }
-            }
-        }
-    });
-
-    window.addEventListener('spice-port-event', function (event) {
-        if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
-            if (event.detail.spiceEvent[0] === 0) {
-                if (DEBUG > 0) {
-                    console.log('FC: Logger connected to SPICE channel');
-                }
-            } else if (event.detail.spiceEvent[0] === 1) {
-                if (DEBUG > 0) {
-                    console.log('FC: Logger disconnected to SPICE channel');
-                }
-            } else {
-                if (DEBUG > 0) {
-                    console.log('FC: Unknown event received in SPICE channel', event.detail.spiceEvent);
-                }
-            }
-        }
-    });
 
     // Create a Fleet Commander dbus client instance
     fc = new FleetCommanderDbusClient(function () {

@@ -196,14 +196,11 @@ class SSHController:
 
     def open_tunnel(
         self,
-        local_port,
-        tunnel_host,
-        tunnel_port,
+        local_forward,
         private_key_file,
         username,
         hostname,
         port=DEFAULT_SSH_PORT,
-        local_host="127.0.0.1",
         **kwargs
     ):
         """
@@ -217,7 +214,7 @@ class SSHController:
             "-p",
             six.text_type(port),
             "-L",
-            "%s:%s:%s:%s" % (local_host, local_port, tunnel_host, tunnel_port),
+            local_forward,
             "-N",
         ]
 

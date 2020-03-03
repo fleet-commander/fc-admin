@@ -21,11 +21,13 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
+
+from collections import namedtuple
+
 import os
 import signal
 import time
 import uuid
-import socket
 import xml.etree.ElementTree as ET
 import logging
 
@@ -51,6 +53,8 @@ class LibVirtController:
     SESSION_START_TRIES_DELAY = 0.1
     MAX_DOMAIN_UNDEFINE_TRIES = 3
     DOMAIN_UNDEFINE_TRIES_DELAY = 0.1
+    channel = None
+    viewer = None
 
     def __init__(self, data_path, username, hostname, mode):
         """
@@ -97,6 +101,15 @@ class LibVirtController:
 
         self._last_started_domain = None
         self._last_stopped_domain = None
+
+    def add_changes_channel(self, parent, name, domain_name, alias=None):
+        raise NotImplementedError
+
+    def add_spice_listen(self, parent):
+        raise NotImplementedError
+
+    def add_spice_secure(self, elem):
+        raise NotImplementedError
 
     def _get_libvirt_socket(self):
         # Get Libvirt socket for session mode
@@ -221,10 +234,20 @@ class LibVirtController:
             for elem in root.iter("graphics"):
                 try:
                     if elem.attrib["type"] == "spice":
-                        port = elem.attrib["port"]
-                        listen = elem.attrib["listen"]
-                        return (listen, port)
-                except KeyError:
+                        spice_params = namedtuple(
+                            "spice_params",
+                            [
+                                "port",
+                                "tls_port",
+                                "listen",
+                            ],
+                        )
+                        return spice_params(
+                            port=elem.attrib.get("port", None),
+                            tls_port=elem.attrib.get("tlsPort", None),
+                            listen=elem.attrib["listen"],
+                        )
+                except Exception:
                     pass
 
             if tries < self.MAX_SESSION_START_TRIES:
@@ -234,19 +257,6 @@ class LibVirtController:
                 raise LibVirtControllerException(
                     "Can not obtain SPICE URI for virtual session"
                 )
-
-    def _add_spice_port(self, parent, name, alias=None):
-        channel = ET.SubElement(parent, "channel")
-        channel.set("type", "spiceport")
-        source = ET.SubElement(channel, "source")
-        source.set("channel", name)
-        target = ET.SubElement(channel, "target")
-        target.set("type", "virtio")
-        target.set("name", name)
-        target.set("state", "connected")
-        if alias is not None:
-            aliaselem = ET.SubElement(channel, "alias")
-            aliaselem.set("name", alias)
 
     def _generate_new_domain_xml(self, xmldata):
         """
@@ -268,7 +278,8 @@ class LibVirtController:
         newuuid = str(uuid.uuid4())
         root.find("uuid").text = newuuid
         # Change domain name
-        root.find("name").text = "fc-%s" % (newuuid[:8])
+        domain_name = "fc-{}".format(newuuid[:8])
+        root.find("name").text = domain_name
         # Change domain title
         try:
             title = root.find("title").text
@@ -281,6 +292,7 @@ class LibVirtController:
             mac = elem.find("mac")
             if mac is not None:
                 elem.remove(mac)
+
         video = devs.find("video")
         model = video.find("model")
         if model is not None:
@@ -295,39 +307,34 @@ class LibVirtController:
         graphics = ET.SubElement(devs, "graphics")
         graphics.set("type", "spice")
         graphics.set("autoport", "yes")
-        self._add_spice_port(devs, "org.freedesktop.FleetCommander.0", "fc0")
+        self.add_spice_secure(graphics)
+        self.add_spice_listen(graphics)
+        self.add_changes_channel(
+            devs, "org.freedesktop.FleetCommander.0", domain_name, "fc0"
+        )
         return ET.tostring(root).decode()
 
-    def _open_ssh_tunnel(self, host, spice_port):
+    def _open_ssh_tunnel(self, local_forward, **kwargs):
         """
         Open SSH tunnel for spice port
         """
         logging.debug("libvirtcontroller: Opening SSH tunnel")
-        # Get a free random local port
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(("", 0))
-        addr = s.getsockname()
-        local_port = addr[1]
-        s.close()
+        kwargs["UserKnownHostsFile"] = self.known_hosts_file
+
         # Execute SSH and bring up tunnel
         try:
             pid = self.ssh.open_tunnel(
-                local_port,
-                host,
-                spice_port,
+                local_forward,
                 self.private_key_file,
                 self.username,
                 self.ssh_host,
                 self.ssh_port,
-                UserKnownHostsFile=self.known_hosts_file,
+                **kwargs,
             )
             logging.debug(
-                "libvirtcontroller: Tunnel opened %s->%s. PID: %s",
-                local_port,
-                spice_port,
-                pid,
+                "libvirtcontroller: Tunnel opened:%s. PID: %s", local_forward, pid
             )
-            return (local_port, pid)
+            return pid
         except Exception as e:
             raise LibVirtControllerException("Error opening tunnel: %s" % e)
 
@@ -386,6 +393,101 @@ class LibVirtController:
         """
         Start session in virtual machine
         """
+        raise NotImplementedError
+
+    def session_stop(self, identifier, tunnel_pid=None):
+        """
+        Stops session in virtual machine
+        """
+        logging.debug("libvirtcontroller: Stopping session")
+        if tunnel_pid is not None:
+            # Kill ssh tunnel
+            # FIXME: Test pid belonging to ssh
+            try:
+                os.kill(tunnel_pid, signal.SIGKILL)
+            except:
+                pass
+        self._connect()
+        # Get machine by its uuid
+        self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)
+        # Destroy domain
+        self._last_stopped_domain.destroy()
+        # Undefine domain
+        self._undefine_domain(self._last_stopped_domain)
+
+
+class LibVirtTlsSpice(LibVirtController):
+    SPICE_CA_CERT = "/etc/pki/libvirt-spice/ca-cert.pem"
+    SPICE_CERT = "/etc/pki/libvirt-spice/server-cert.pem"
+
+    def __init__(self, data_path, username, hostname, mode):
+        super().__init__(data_path, username, hostname, mode)
+        self.channel = "unix"
+        self.viewer = "spice_remote_viewer"
+
+    def _get_user_runtime_dir(self):
+        logging.debug("libvirtcontroller: " "Getting user runtime directory.")
+        command = 'echo "$XDG_RUNTIME_DIR"'
+
+        try:
+            out = self.ssh.execute_remote_command(
+                command,
+                self.private_key_file,
+                self.username,
+                self.ssh_host,
+                self.ssh_port,
+                UserKnownHostsFile=self.known_hosts_file,
+            )
+            runtimedir = out.decode().strip()
+            logging.debug(
+                "libvirtcontroller: " "Receive user runtime dir %s", runtimedir
+            )
+            if not runtimedir:
+                raise LibVirtControllerException(
+                    "Variable XDG_RUNTIME_DIR is not set on libvirt host"
+                )
+            return runtimedir
+        except Exception as e:
+            raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
+
+    @property
+    def _notify_socket_path(self):
+        if not hasattr(self, "__notify_socket_path"):
+            user_runtimedir = self._get_user_runtime_dir()
+            # pylint: disable=attribute-defined-outside-init
+            self.__notify_socket_path = os.path.join(user_runtimedir, "{}.socket")
+            # pylint: enable=attribute-defined-outside-init
+        return self.__notify_socket_path
+
+    def add_changes_channel(self, parent, name, domain_name, alias=None):
+        channel = ET.SubElement(parent, "channel")
+        channel.set("type", self.channel)
+        source = ET.SubElement(channel, "source")
+        source.set("mode", "bind")
+        source.set("path", self._notify_socket_path.format(domain_name))
+        target = ET.SubElement(channel, "target")
+        target.set("type", "virtio")
+        target.set("name", name)
+        target.set("state", "connected")
+        if alias is not None:
+            aliaselem = ET.SubElement(channel, "alias")
+            aliaselem.set("name", alias)
+
+    def add_spice_listen(self, parent):
+        # listen_address = 'localhost'
+        self._connect()
+        listen_address = self.conn.getHostname()
+        listen = ET.SubElement(parent, "listen")
+        listen.set("type", "address")
+        listen.set("address", listen_address)
+
+    def add_spice_secure(self, elem):
+        elem.set("defaultMode", "secure")
+
+    def session_start(self, identifier):
+        """
+        Start session in virtual machine
+        """
         logging.debug("libvirtcontroller: Starting session")
         self._connect()
         # Get machine by its identifier
@@ -398,33 +500,175 @@ class LibVirtController:
         self._last_started_domain = self.conn.createXML(newxml)
 
         # Get spice host and port
-        spice_host, spice_port = self._get_spice_parms(self._last_started_domain)
+        spice_params = self._get_spice_parms(self._last_started_domain)
 
-        # Create tunnel
-        connection_port, tunnel_pid = self._open_ssh_tunnel(spice_host, spice_port)
+        ca_cert = self._get_spice_ca_cert()
+        cert_subject = self._get_spice_cert_subject()
+
+        local_runtime_dir = os.environ["XDG_RUNTIME_DIR"]
+        # cockpit will read from
+        local_socket = os.path.join(local_runtime_dir, "fc-logger.socket")
+        # fc logger will write to
+        remote_socket = self._notify_socket_path.format(
+            self._last_started_domain.name()
+        )
+        logging.debug(
+            "libvirtcontroller: local user notify socket path: %s", local_socket
+        )
+        local_forward = "{local_socket}:{remote_socket}".format(
+            local_socket=local_socket,
+            remote_socket=remote_socket,
+        )
+
+        tunnel_pid = self._open_ssh_tunnel(local_forward, StreamLocalBindUnlink="yes")
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
+        connection_details = {
+            "host": spice_params.listen,
+            "viewer": self.viewer,
+            "notify_socket": local_socket,
+            "ca_cert": ca_cert,
+            "cert_subject": cert_subject,
+            "tls_port": spice_params.tls_port,
+        }
 
         # Return identifier and spice URI for the new domain
-        return (self._last_started_domain.UUIDString(), connection_port, tunnel_pid)
+        return (self._last_started_domain.UUIDString(), connection_details, tunnel_pid)
 
-    def session_stop(self, identifier, tunnel_pid=None):
+    def _get_spice_ca_cert(self):
+        logging.debug(
+            "libvirtcontroller: " "Getting SPICE CA certificate for FC TLS session."
+        )
+        command = "openssl x509 -in {ca}".format(ca=self.SPICE_CA_CERT)
+
+        try:
+            out = self.ssh.execute_remote_command(
+                command,
+                self.private_key_file,
+                self.username,
+                self.ssh_host,
+                self.ssh_port,
+                UserKnownHostsFile=self.known_hosts_file,
+            )
+            spice_ca = out.decode().strip()
+            logging.debug(
+                "libvirtcontroller: " "Receive SPICE CA certificate %s", spice_ca
+            )
+            return spice_ca
+        except Exception as e:
+            raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
+
+    def _get_spice_cert_subject(self):
+        logging.debug(
+            "libvirtcontroller: "
+            "Getting SPICE certificate subject for FC TLS session."
+        )
+        command = (
+            "openssl x509 -noout -subject -nameopt oneline -nameopt "
+            "-space_eq -in {cert} | sed 's/^subject=//'"
+        ).format(cert=self.SPICE_CERT)
+
+        try:
+            out = self.ssh.execute_remote_command(
+                command,
+                self.private_key_file,
+                self.username,
+                self.ssh_host,
+                self.ssh_port,
+                UserKnownHostsFile=self.known_hosts_file,
+            )
+            cert_subject = out.decode().strip()
+            logging.debug(
+                "libvirtcontroller: " "Receive SPICE CA certificate %s", cert_subject
+            )
+            return cert_subject
+        except Exception as e:
+            raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
+
+
+class LibVirtTunnelSpice(LibVirtController):
+    def __init__(self, data_path, username, hostname, mode):
+        super().__init__(data_path, username, hostname, mode)
+        self.channel = "spiceport"
+        self.viewer = "spice_html5"
+
+    def add_changes_channel(self, parent, name, domain_name, alias=None):
+        channel = ET.SubElement(parent, "channel")
+        channel.set("type", self.channel)
+        source = ET.SubElement(channel, "source")
+        source.set("channel", name)
+        target = ET.SubElement(channel, "target")
+        target.set("type", "virtio")
+        target.set("name", name)
+        target.set("state", "connected")
+        if alias is not None:
+            aliaselem = ET.SubElement(channel, "alias")
+            aliaselem.set("name", alias)
+
+    def add_spice_listen(self, parent):
+        listen_address = "localhost"
+        listen = ET.SubElement(parent, "listen")
+        listen.set("type", "address")
+        listen.set("address", listen_address)
+
+    def add_spice_secure(self, elem):
+        elem.set("defaultMode", "insecure")
+
+    def session_start(self, identifier):
         """
-        Stops session in virtual machine
+        Start session in virtual machine
         """
-        logging.debug("libvirtcontroller: Stopping session")
-        if tunnel_pid is not None:
-            # Kill ssh tunnel
-            # FIXME: Test pid belonging to ssh
-            try:
-                os.kill(tunnel_pid, signal.SIGKILL)
-            except Exception:
-                pass
+        logging.debug("libvirtcontroller: Starting session")
         self._connect()
-        # Get machine by its uuid
-        self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)
-        # Destroy domain
-        self._last_stopped_domain.destroy()
-        # Undefine domain
-        self._undefine_domain(self._last_stopped_domain)
+        # Get machine by its identifier
+        origdomain = self.conn.lookupByUUIDString(identifier)
+
+        # Generate new domain description modifying original XML to use qemu
+        # -snapshot command line
+        newxml = self._generate_new_domain_xml(origdomain.XMLDesc())
+
+        # Create and run new domain from new XML definition
+        self._last_started_domain = self.conn.createXML(newxml)
+
+        # Get spice host and port
+        spice_params = self._get_spice_parms(self._last_started_domain)
+
+        # Get a free random local port
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("", 0))
+        addr = s.getsockname()
+        local_port = addr[1]
+        s.close()
+
+        local_forward = ("localhost:{localport}:" "{remote_host}:{remote_port}").format(
+            localport=local_port,
+            remote_host=spice_params.listen,
+            remote_port=spice_params.port,
+        )
+        tunnel_pid = self._open_ssh_tunnel(local_forward)
+
+        # Make it transient inmediately after started it
+        self._undefine_domain(self._last_started_domain)
+        connection_details = {
+            "host": spice_params.listen,
+            "port": local_port,
+            "viewer": self.viewer,
+        }
+
+        # Return identifier and spice URI for the new domain
+        return (self._last_started_domain.UUIDString(), connection_details, tunnel_pid)
+
+
+def controller(viewer_type, data_path, username, hostname, mode):
+    viewers = {
+        "spice_html5": LibVirtTunnelSpice,
+        "spice_remote_viewer": LibVirtTlsSpice,
+    }
+    if viewer_type not in viewers:
+        raise LibVirtControllerException(
+            "Unsupported libvirt viewer type. Must be in {}".format(
+                ("{}," * len(viewers)).format(*viewers)
+            )
+        )
+    return viewers[viewer_type](data_path, username, hostname, mode)

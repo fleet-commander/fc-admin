@@ -82,6 +82,13 @@
                   <option value="session" translatable="yes">Session</option>
                 </select>
               </div>
+              <div id="viewer-group" class="form-group">
+                <label for="viewer" class="control-label" translatable="yes">Viewer type</label>
+                <select id="viewer" name="viewer" class="form-control">
+                  <option value="spice_html5" selected translatable="yes">browser(spice-html5)</option>
+                  <option value="spice_remote_viewer" translatable="yes">remote-viewer(spice TLS)</option>
+                </select>
+              </div>
               <div id="pubkey-group" class="form-group">
                 <label for="pubkey" class="control-label" translatable="yes">Public key</label> (<a role="button" data-toggle="collapse" href="#pubkey-wrapper" translatable="yes">show</a>)
                 <div id="pubkey-wrapper" class="collapse">
