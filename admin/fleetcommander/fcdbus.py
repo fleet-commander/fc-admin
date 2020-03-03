@@ -216,17 +216,22 @@ class FleetCommanderDbusService(dbus.service.Object):
         Get a libvirtcontroller instance
         """
         hypervisor = self.db.config["hypervisor"]
-        return libvirtcontroller.LibVirtController(
-            self.state_dir,
-            hypervisor["username"],
-            hypervisor["host"],
-            hypervisor["mode"],
+        return libvirtcontroller.controller(
+            viewer_type=hypervisor["viewer"],
+            data_path=self.state_dir,
+            username=hypervisor["username"],
+            hostname=hypervisor["host"],
+            mode=hypervisor["mode"],
         )
 
     def get_public_key(self):
         # Initialize LibVirtController to create keypair if needed
-        ctrlr = libvirtcontroller.LibVirtController(
-            self.state_dir, None, None, "system"
+        ctrlr = libvirtcontroller.controller(
+            viewer_type="spice_html5",
+            data_path=self.state_dir,
+            username=None,
+            hostname=None,
+            mode="system",
         )
         with open(ctrlr.public_key_file, "r") as fd:
             public_key = fd.read().strip()
@@ -246,11 +251,21 @@ class FleetCommanderDbusService(dbus.service.Object):
                     "host": "",
                     "username": "",
                     "mode": "system",
+                    "viewer": "spice_html5",
                     "needcfg": True,
                 }
             )
         else:
             data.update(self.db.config["hypervisor"])
+
+        # upgrade handler
+        if "viewer" not in data:
+            data.update(
+                {
+                    "viewer": "spice_html5",
+                    "needcfg": True,
+                }
+            )
         return data
 
     def get_domains(self, only_temporary=False):
@@ -274,7 +289,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         if (
             "uuid" not in self.db.config
             or "tunnel_pid" not in self.db.config
-            or "port" not in self.db.config
+            or "connection_details" not in self.db.config
         ):
             logging.error("There was no session started")
             return False, "There was no session started"
@@ -284,7 +299,7 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         del self.db.config["uuid"]
         del self.db.config["tunnel_pid"]
-        del self.db.config["port"]
+        del self.db.config["connection_details"]
 
         try:
             self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
@@ -409,6 +424,9 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Check libvirt mode
         if data["mode"] not in ("system", "session"):
             errors["mode"] = "Invalid session type"
+        if data["viewer"] not in ("spice_html5", "spice_remote_viewer"):
+            errors["viewer"] = "Unsupported libvirt viewer type"
+
         if errors:
             return json.dumps({"status": False, "errors": errors})
 
@@ -617,23 +635,24 @@ class FleetCommanderDbusService(dbus.service.Object):
     def SessionStart(self, domain_uuid):
 
         logging.debug("Starting new session")
-
-        if self.db.config.get("port", None) is not None:
+        if self.db.config.get("uuid", None) is not None:
             logging.error("Session already started")
             return json.dumps({"status": False, "error": "Session already started"})
 
         try:
             lvirtctrlr = self.get_libvirt_controller()
-            new_uuid, port, tunnel_pid = lvirtctrlr.session_start(domain_uuid)
+            new_uuid, connection_details, tunnel_pid = lvirtctrlr.session_start(
+                domain_uuid
+            )
         except Exception as e:
             logging.error("Error starting session: %s", e)
             return json.dumps({"status": False, "error": "Error starting session"})
 
         self.db.config["uuid"] = new_uuid
-        self.db.config["port"] = port
+        self.db.config["connection_details"] = connection_details
         self.db.config["tunnel_pid"] = tunnel_pid
 
-        return json.dumps({"status": True, "port": port})
+        return json.dumps({"status": True, "connection_details": connection_details})
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="", out_signature="s")

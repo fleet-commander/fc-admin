@@ -67,6 +67,7 @@ function showFCSettings() {
         $('#host').val(resp.host);
         $('#username').val(resp.username);
         $('#mode option[value="' + resp.mode + '"]').prop('selected', true);
+        $('#viewer option[value="' + resp.viewer + '"]').prop('selected', true);
         $('#pubkey').html(resp.pubkey);
         fc.GetGlobalPolicy(function (resp) {
             if (resp.status) {
@@ -144,6 +145,7 @@ function saveFCSettings(cb) {
             host: $('#host').val(),
             username: $('#username').val(),
             mode: $('#mode').val(),
+            viewer: $('#viewer').val(),
             domains: {}
         },
         policy = parseInt($('#policy').val(), 10);
