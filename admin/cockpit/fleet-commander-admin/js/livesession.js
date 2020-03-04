@@ -146,7 +146,7 @@ function startSpiceHtml5(conn_details) {
     });
 
     fcsc = new FleetCommanderSpiceClient(
-        conn_details.port, function () {
+        conn_details.path, function () {
             stopLiveSession()
         },
     );

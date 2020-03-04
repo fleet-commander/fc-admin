@@ -668,25 +668,23 @@ class LibVirtTunnelSpice(LibVirtController):
         # Get spice host and port
         spice_params = self._get_spice_parms(self._last_started_domain)
 
-        # Get a free random local port
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(("", 0))
-        addr = s.getsockname()
-        local_port = addr[1]
-        s.close()
-
-        local_forward = ("localhost:{localport}:" "{remote_host}:{remote_port}").format(
-            localport=local_port,
-            remote_host=spice_params.listen,
-            remote_port=spice_params.port,
+        local_runtime_dir = os.environ["XDG_RUNTIME_DIR"]
+        # cockpit will read from
+        local_socket = os.path.join(local_runtime_dir, "fc-logger.socket")
+        local_forward = "{local_socket}:{host}:{hostport}".format(
+            local_socket=local_socket,
+            host=spice_params.listen,
+            hostport=spice_params.port,
         )
-        tunnel_cookie = self._open_ssh_tunnel(local_forward)
+        tunnel_cookie = self._open_ssh_tunnel(
+            local_forward, StreamLocalBindUnlink="yes"
+        )
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
         details = {
             "host": spice_params.listen,
-            "port": local_port,
+            "path": local_socket,
             "viewer": self.viewer,
         }
 

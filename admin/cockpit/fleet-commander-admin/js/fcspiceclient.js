@@ -34,7 +34,7 @@
 "use strict";
 
 
-function FleetCommanderSpiceClient(port, error_cb, timeout) {
+function FleetCommanderSpiceClient(path, error_cb, timeout) {
     var self = this;
 
     this.conn_timeout = timeout || 15000; //ms
@@ -132,8 +132,7 @@ function FleetCommanderSpiceClient(port, error_cb, timeout) {
                 JSON.stringify({
                     payload: 'stream',
                     protocol: 'binary',
-                    address: '127.0.0.1',
-                    port: port,
+                    unix: path,
                     binary: 'raw',
                 })
             ),
