@@ -195,11 +195,7 @@ function startRemoteViewer(conn_details) {
 
 function startHeartBeat() {
     heartbeat = window.setInterval(function () {
-        fc.HeartBeat(function (resp) {
-            if (DEBUG > 0) {
-                console.log('FC: Heartbeat:', resp);
-            }
-        });
+        fc.HeartBeat(resp => {});
     }, 1000);
 }
 
