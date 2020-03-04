@@ -42,6 +42,9 @@ class SSHController:
     SSH_COMMAND = "ssh"
     SSH_KEYGEN_COMMAND = "ssh-keygen"
     SSH_KEYSCAN_COMMAND = "ssh-keyscan"
+    CONTROL_SOCKET = os.path.join(
+        os.path.expanduser("~"), ".ssh", "fc-control-ssh-tunnel.socket"
+    )
 
     def __init__(self):
         """
@@ -204,36 +207,90 @@ class SSHController:
         **kwargs
     ):
         """
-        Open a tunnel with given ports and return SSH PID
+        Open a tunnel with given ports and return SSH tunnel cookie
         """
+        # cleanup stale socket if exists otherwise ssh will attempt to use it
+        if os.path.exists(self.CONTROL_SOCKET):
+            os.remove(self.CONTROL_SOCKET)
+
         ssh_command_start = [
             self.SSH_COMMAND,
+            "-i",
+            private_key_file,
+            "-o",
+            "PreferredAuthentications=publickey",
+            "-o",
+            "PasswordAuthentication=no",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-o",
+            "ControlMaster=yes",
+            "-S",
+            self.CONTROL_SOCKET,
         ]
+        # Options
+        for k, v in kwargs.items():
+            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+
         ssh_command_end = [
-            "%s@%s" % (username, hostname),
+            "{user}@{host}".format(user=username, host=hostname),
             "-p",
             six.text_type(port),
             "-L",
             local_forward,
             "-N",
+            "-f",
         ]
 
-        ssh_command_start.extend(["-i", private_key_file])
-        ssh_command_start.extend(["-o", "PreferredAuthentications=publickey"])
-        ssh_command_start.extend(["-o", "PasswordAuthentication=no"])
-        # Options
-        for k, v in kwargs.items():
-            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
         ssh_command_start.extend(ssh_command_end)
 
         # Execute SSH and bring up tunnel
         try:
-            self._tunnel_prog = subprocess.Popen(
-                " ".join(ssh_command_start), shell=True
-            )
-            return self._tunnel_prog.pid
+            subprocess.run(ssh_command_start, check=True)
+            return self.CONTROL_SOCKET
         except Exception as e:
             raise SSHControllerException("Error opening tunnel: %s" % e)
+
+    def close_tunnel(
+        self,
+        control_socket,
+        private_key_file,
+        username,
+        hostname,
+        port=DEFAULT_SSH_PORT,
+        **kwargs
+    ):
+        """
+        Close SSH tunnel via the given SSH control socket
+        """
+        ssh_command_start = [
+            self.SSH_COMMAND,
+            "-i",
+            private_key_file,
+            "-o",
+            "PreferredAuthentications=publickey",
+            "-o",
+            "PasswordAuthentication=no",
+        ]
+        # Options
+        for k, v in kwargs.items():
+            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+
+        ssh_command_end = [
+            "{user}@{host}".format(user=username, host=hostname),
+            "-p",
+            six.text_type(port),
+            "-S",
+            control_socket,
+            "-O",
+            "exit",
+        ]
+
+        ssh_command_start.extend(ssh_command_end)
+        try:
+            subprocess.run(ssh_command_start, check=True)
+        except Exception as e:
+            raise SSHControllerException("Error closing tunnel: %s" % e)
 
     def install_pubkey(
         self,
@@ -242,7 +299,7 @@ class SSHController:
         password,
         hostname,
         port=DEFAULT_SSH_PORT,
-        password_prompt=r".*(P|p)assword:",
+        password_prompt=".*(P|p)assword:",
         command_prompt=r".+[#\$] ",
         **kwargs
     ):
