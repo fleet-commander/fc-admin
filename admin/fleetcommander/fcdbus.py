@@ -257,15 +257,6 @@ class FleetCommanderDbusService(dbus.service.Object):
             )
         else:
             data.update(self.db.config["hypervisor"])
-
-        # upgrade handler
-        if "viewer" not in data:
-            data.update(
-                {
-                    "viewer": "spice_html5",
-                    "needcfg": True,
-                }
-            )
         return data
 
     def get_domains(self, only_temporary=False):
@@ -286,23 +277,19 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     def stop_current_session(self):
 
-        if (
-            "uuid" not in self.db.config
-            or "tunnel_pid" not in self.db.config
-            or "connection_details" not in self.db.config
-        ):
+        if "uuid" not in self.db.config:
             logging.error("There was no session started")
             return False, "There was no session started"
 
         domain_uuid = self.db.config["uuid"]
-        tunnel_pid = self.db.config["tunnel_pid"]
+        tunnel_cookie = self.db.config.get("tunnel_cookie", None)
 
         del self.db.config["uuid"]
-        del self.db.config["tunnel_pid"]
+        del self.db.config["tunnel_cookie"]
         del self.db.config["connection_details"]
 
         try:
-            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_pid)
+            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_cookie)
         except Exception as e:
             logging.error("Error stopping session: %s", e)
             return False, "Error stopping session: %s" % e
@@ -638,18 +625,18 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         try:
             lvirtctrlr = self.get_libvirt_controller()
-            new_uuid, connection_details, tunnel_pid = lvirtctrlr.session_start(
-                domain_uuid
-            )
+            session_params = lvirtctrlr.session_start(domain_uuid)
         except Exception as e:
             logging.error("Error starting session: %s", e)
             return json.dumps({"status": False, "error": "Error starting session"})
 
-        self.db.config["uuid"] = new_uuid
-        self.db.config["connection_details"] = connection_details
-        self.db.config["tunnel_pid"] = tunnel_pid
+        self.db.config["uuid"] = session_params.domain
+        self.db.config["connection_details"] = session_params.details
+        self.db.config["tunnel_cookie"] = session_params.tunnel_cookie
 
-        return json.dumps({"status": True, "connection_details": connection_details})
+        return json.dumps(
+            {"status": True, "connection_details": session_params.details}
+        )
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="", out_signature="s")

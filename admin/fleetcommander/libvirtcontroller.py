@@ -25,7 +25,6 @@ from __future__ import print_function
 from collections import namedtuple
 
 import os
-import signal
 import time
 import uuid
 import xml.etree.ElementTree as ET
@@ -101,6 +100,15 @@ class LibVirtController:
 
         self._last_started_domain = None
         self._last_stopped_domain = None
+
+        self.session_params = namedtuple(
+            "session_params",
+            [
+                "domain",
+                "details",
+                "tunnel_cookie",
+            ],
+        )
 
     def add_changes_channel(self, parent, name, domain_name, alias=None):
         raise NotImplementedError
@@ -314,6 +322,26 @@ class LibVirtController:
         )
         return ET.tostring(root).decode()
 
+    def _close_ssh_tunnel(self, tunnel_cookie):
+        """
+        Close SSH tunnel
+        """
+        logging.debug("libvirtcontroller: Closing SSH tunnel")
+
+        # Execute SSH and close tunnel
+        try:
+            self.ssh.close_tunnel(
+                tunnel_cookie,
+                self.private_key_file,
+                self.username,
+                self.ssh_host,
+                self.ssh_port,
+                UserKnownHostsFile=self.known_hosts_file,
+            )
+            logging.debug("libvirtcontroller: Tunnel closed")
+        except Exception as e:
+            raise LibVirtControllerException("Error closing tunnel: %s" % e)
+
     def _open_ssh_tunnel(self, local_forward, **kwargs):
         """
         Open SSH tunnel for spice port
@@ -323,7 +351,7 @@ class LibVirtController:
 
         # Execute SSH and bring up tunnel
         try:
-            pid = self.ssh.open_tunnel(
+            tunnel_cookie = self.ssh.open_tunnel(
                 local_forward,
                 self.private_key_file,
                 self.username,
@@ -332,9 +360,11 @@ class LibVirtController:
                 **kwargs,
             )
             logging.debug(
-                "libvirtcontroller: Tunnel opened:%s. PID: %s", local_forward, pid
+                "libvirtcontroller: Tunnel opened:%s. SSH control socket: %s",
+                local_forward,
+                tunnel_cookie,
             )
-            return pid
+            return tunnel_cookie
         except Exception as e:
             raise LibVirtControllerException("Error opening tunnel: %s" % e)
 
@@ -395,17 +425,16 @@ class LibVirtController:
         """
         raise NotImplementedError
 
-    def session_stop(self, identifier, tunnel_pid=None):
+    def session_stop(self, identifier, tunnel_cookie=None):
         """
         Stops session in virtual machine
         """
         logging.debug("libvirtcontroller: Stopping session")
-        if tunnel_pid is not None:
+        if tunnel_cookie is not None:
             # Kill ssh tunnel
-            # FIXME: Test pid belonging to ssh
             try:
-                os.kill(tunnel_pid, signal.SIGKILL)
-            except:
+                self._close_ssh_tunnel(tunnel_cookie)
+            except Exception:
                 pass
         self._connect()
         # Get machine by its uuid
@@ -520,11 +549,13 @@ class LibVirtTlsSpice(LibVirtController):
             remote_socket=remote_socket,
         )
 
-        tunnel_pid = self._open_ssh_tunnel(local_forward, StreamLocalBindUnlink="yes")
+        tunnel_cookie = self._open_ssh_tunnel(
+            local_forward, StreamLocalBindUnlink="yes"
+        )
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
-        connection_details = {
+        details = {
             "host": spice_params.listen,
             "viewer": self.viewer,
             "notify_socket": local_socket,
@@ -533,8 +564,11 @@ class LibVirtTlsSpice(LibVirtController):
             "tls_port": spice_params.tls_port,
         }
 
-        # Return identifier and spice URI for the new domain
-        return (self._last_started_domain.UUIDString(), connection_details, tunnel_pid)
+        return self.session_params(
+            domain=self._last_started_domain.UUIDString(),
+            details=details,
+            tunnel_cookie=tunnel_cookie,
+        )
 
     def _get_spice_ca_cert(self):
         logging.debug(
@@ -646,18 +680,21 @@ class LibVirtTunnelSpice(LibVirtController):
             remote_host=spice_params.listen,
             remote_port=spice_params.port,
         )
-        tunnel_pid = self._open_ssh_tunnel(local_forward)
+        tunnel_cookie = self._open_ssh_tunnel(local_forward)
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
-        connection_details = {
+        details = {
             "host": spice_params.listen,
             "port": local_port,
             "viewer": self.viewer,
         }
 
-        # Return identifier and spice URI for the new domain
-        return (self._last_started_domain.UUIDString(), connection_details, tunnel_pid)
+        return self.session_params(
+            domain=self._last_started_domain.UUIDString(),
+            details=details,
+            tunnel_cookie=tunnel_cookie,
+        )
 
 
 def controller(viewer_type, data_path, username, hostname, mode):

@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import sqlite3
 import json
 
-SCHEMA_VERSION = 1.0
+SCHEMA_VERSION = 1.1
 
 
 class SQLiteDict:
@@ -68,8 +68,7 @@ class SQLiteDict:
             schema_version = self["SCHEMA_VERSION"]
             if schema_version != SCHEMA_VERSION:
                 if schema_version < SCHEMA_VERSION:
-                    # TODO: Update schema
-                    pass
+                    self.update_schema()
                 else:
                     # TODO: Raise an error?
                     pass
@@ -159,6 +158,9 @@ class SQLiteDict:
                     value = row[1]
                 yield (row[0], valuetype(value))
 
+    def update_schema(self):
+        self["SCHEMA_VERSION"] = SCHEMA_VERSION
+
 
 class ConfigValues(SQLiteDict):
     """
@@ -166,6 +168,20 @@ class ConfigValues(SQLiteDict):
     """
 
     TABLE_NAME = "config"
+
+    def update_schema(self):
+        # add new 'viewer'
+        hypervisor = self.get("hypervisor", None)
+        if hypervisor is not None:
+            if "viewer" not in hypervisor:
+                hypervisor["viewer"] = "spice_html5"
+                self["hypervisor"] = hypervisor
+
+        # remove old 'tunnel_pid'
+        del self["tunnel_pid"]
+        del self["keys"]
+
+        super().update_schema()
 
 
 class ProfilesData(SQLiteDict):
