@@ -74,6 +74,7 @@ function downloadConnectionFile(console_details) {
         `type=${console_details.type}\n` +
         `host=${console_details.address}\n` +
         `tls-port=${console_details.tls_port}\n` +
+        `password=${console_details.ticket}\n` +
         `ca=${console_details.ca_cert}\n` +
         `host-subject=${console_details.cert_subject}\n` +
         'delete-this-file=1\n' +
@@ -145,8 +146,13 @@ function startSpiceHtml5(conn_details) {
         }
     });
 
+    var details = {
+        path: conn_details.path,
+        ticket: conn_details.ticket,
+    };
+
     fcsc = new FleetCommanderSpiceClient(
-        conn_details.path, function () {
+        details, function () {
             stopLiveSession()
         },
     );
@@ -161,6 +167,7 @@ function startRemoteViewer(conn_details) {
         tls_port: conn_details.tls_port,
         ca_cert: conn_details.ca_cert.replace(/\n/g, "\\n"),
         cert_subject: conn_details.cert_subject,
+        ticket: conn_details.ticket,
     };
     downloadConnectionFile(console_details);
 

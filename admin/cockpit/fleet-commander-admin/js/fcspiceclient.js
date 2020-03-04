@@ -34,7 +34,7 @@
 "use strict";
 
 
-function FleetCommanderSpiceClient(path, error_cb, timeout) {
+function FleetCommanderSpiceClient(details, error_cb, timeout) {
     var self = this;
 
     this.conn_timeout = timeout || 15000; //ms
@@ -132,7 +132,7 @@ function FleetCommanderSpiceClient(path, error_cb, timeout) {
                 JSON.stringify({
                     payload: 'stream',
                     protocol: 'binary',
-                    unix: path,
+                    unix: details.path,
                     binary: 'raw',
                 })
             ),
@@ -156,6 +156,7 @@ function FleetCommanderSpiceClient(path, error_cb, timeout) {
 
         self.sc = new spicehtml5_module.SpiceMainConn({
             uri: cockpit_uri, // 'ws://' + location.hostname + ':' + port,
+            password: details.ticket,
             screen_id: 'spice-screen',
             onsuccess: self.spice_connected,
             onerror: self.spice_error
