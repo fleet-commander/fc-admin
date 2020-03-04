@@ -24,6 +24,7 @@ from __future__ import print_function
 
 from collections import namedtuple
 
+import binascii
 import os
 import time
 import uuid
@@ -118,6 +119,10 @@ class LibVirtController:
 
     def add_spice_secure(self, elem):
         raise NotImplementedError
+
+    def generate_spice_ticket(self):
+        # taken from token_hex (Python3.6+)
+        return binascii.hexlify(os.urandom(16)).decode("ascii")
 
     def _get_libvirt_socket(self):
         # Get Libvirt socket for session mode
@@ -237,26 +242,32 @@ class LibVirtController:
         """
         # Get SPICE uri
         tries = 0
+        spice_params = namedtuple(
+            "spice_params",
+            [
+                "port",
+                "tls_port",
+                "listen",
+                "passwd",
+            ],
+        )
+
         while True:
-            root = ET.fromstring(domain.XMLDesc())
-            for elem in root.iter("graphics"):
-                try:
-                    if elem.attrib["type"] == "spice":
-                        spice_params = namedtuple(
-                            "spice_params",
-                            [
-                                "port",
-                                "tls_port",
-                                "listen",
-                            ],
-                        )
-                        return spice_params(
-                            port=elem.attrib.get("port", None),
-                            tls_port=elem.attrib.get("tlsPort", None),
-                            listen=elem.attrib["listen"],
-                        )
-                except Exception:
-                    pass
+            root = ET.fromstring(domain.XMLDesc(libvirt.VIR_DOMAIN_XML_SECURE))
+            devs = root.find("devices")
+            graphics = devs.find("graphics")
+            try:
+                if graphics.get("type") == "spice":
+                    # listen attribute of graphics itself is deprecated
+                    listen = graphics.find("listen")
+                    return spice_params(
+                        port=graphics.get("port"),
+                        tls_port=graphics.get("tlsPort"),
+                        listen=listen.get("address"),
+                        passwd=graphics.get("passwd"),
+                    )
+            except Exception:
+                pass
 
             if tries < self.MAX_SESSION_START_TRIES:
                 time.sleep(self.SESSION_START_TRIES_DELAY)
@@ -266,7 +277,7 @@ class LibVirtController:
                     "Can not obtain SPICE URI for virtual session"
                 )
 
-    def _generate_new_domain_xml(self, xmldata):
+    def _generate_new_domain_xml(self, xmldata, spice_ticket):
         """
         Generates new domain XML from given XML data
         """
@@ -315,6 +326,7 @@ class LibVirtController:
         graphics = ET.SubElement(devs, "graphics")
         graphics.set("type", "spice")
         graphics.set("autoport", "yes")
+        graphics.set("passwd", spice_ticket)
         self.add_spice_secure(graphics)
         self.add_spice_listen(graphics)
         self.add_changes_channel(
@@ -521,15 +533,23 @@ class LibVirtTlsSpice(LibVirtController):
         self._connect()
         # Get machine by its identifier
         origdomain = self.conn.lookupByUUIDString(identifier)
+        spice_ticket = self.generate_spice_ticket()
 
         # Generate new domain description modifying original XML to use qemu -snapshot command line
-        newxml = self._generate_new_domain_xml(origdomain.XMLDesc())
+        newxml = self._generate_new_domain_xml(
+            origdomain.XMLDesc(), spice_ticket=spice_ticket
+        )
 
         # Create and run new domain from new XML definition
         self._last_started_domain = self.conn.createXML(newxml)
 
         # Get spice host and port
         spice_params = self._get_spice_parms(self._last_started_domain)
+
+        # Make sure spice ticket was properly set,
+        # for example, 'passwd' field has enough length
+        if spice_params.passwd != spice_ticket:
+            raise LibVirtControllerException("Error processing spice ticket")
 
         ca_cert = self._get_spice_ca_cert()
         cert_subject = self._get_spice_cert_subject()
@@ -562,6 +582,7 @@ class LibVirtTlsSpice(LibVirtController):
             "ca_cert": ca_cert,
             "cert_subject": cert_subject,
             "tls_port": spice_params.tls_port,
+            "ticket": spice_ticket,
         }
 
         return self.session_params(
@@ -657,10 +678,13 @@ class LibVirtTunnelSpice(LibVirtController):
         self._connect()
         # Get machine by its identifier
         origdomain = self.conn.lookupByUUIDString(identifier)
+        spice_ticket = self.generate_spice_ticket()
 
         # Generate new domain description modifying original XML to use qemu
         # -snapshot command line
-        newxml = self._generate_new_domain_xml(origdomain.XMLDesc())
+        newxml = self._generate_new_domain_xml(
+            origdomain.XMLDesc(), spice_ticket=spice_ticket
+        )
 
         # Create and run new domain from new XML definition
         self._last_started_domain = self.conn.createXML(newxml)
@@ -686,6 +710,7 @@ class LibVirtTunnelSpice(LibVirtController):
             "host": spice_params.listen,
             "path": local_socket,
             "viewer": self.viewer,
+            "ticket": spice_ticket,
         }
 
         return self.session_params(
