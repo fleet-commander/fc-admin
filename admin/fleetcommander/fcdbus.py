@@ -328,9 +328,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Checks currently running sessions and destroy temporary ones on timeout
         """
-        logging.debug("Last call time: %s", self._last_call_time)
         time_passed = time.time() - self._last_heartbeat
-        logging.debug("Checking running sessions. Time passed: %s", time_passed)
         if time_passed > self.tmp_session_destroy_timeout:
             domains = self.get_domains(only_temporary=True)
             logging.debug("Currently active temporary sessions: %s", domains)
@@ -393,7 +391,6 @@ class FleetCommanderDbusService(dbus.service.Object):
     def HeartBeat(self):
         # Update last heartbeat time
         self._last_heartbeat = time.time()
-        logging.debug("Heartbeat: %s", self._last_heartbeat)
         return True
 
     @set_last_call_time
