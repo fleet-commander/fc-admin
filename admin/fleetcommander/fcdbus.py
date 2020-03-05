@@ -628,7 +628,9 @@ class FleetCommanderDbusService(dbus.service.Object):
             session_params = lvirtctrlr.session_start(domain_uuid)
         except Exception as e:
             logging.error("Error starting session: %s", e)
-            return json.dumps({"status": False, "error": "Error starting session"})
+            return json.dumps(
+                {"status": False, "error": "Error starting session: {}".format(e)}
+            )
 
         self.db.config["uuid"] = session_params.domain
         self.db.config["connection_details"] = session_params.details
