@@ -153,15 +153,6 @@ class ADConnector(object):
     def _generate_gpo_uuid(self):
         return '{%s}' % str(uuid.uuid4()).upper()
 
-    # def _get_smb_connection(self, service='SysVol'):
-    #     # Connect to SMB using kerberos
-    #     parm = param.LoadParm()
-    #     creds = Credentials()
-    #     creds.set_kerberos_state(MUST_USE_KERBEROS)
-    #     creds.guess(parm)
-    #     conn = SMBConn(self._get_server_name(), service, lp=parm, creds=creds)
-    #     return conn
-
     def _get_smb_connection(self, service='SysVol'):
         # Create options like if we were using command line
         parser = optparse.OptionParser()
