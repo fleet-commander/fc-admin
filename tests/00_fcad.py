@@ -73,8 +73,8 @@ class GetpassMock(object):
 
 fcad.getpass = GetpassMock()
 
-# Samba SMB mock
-fcad.smb = smbmock
+# Samba smblib mock
+fcad.libsmb.Conn = smbmock.SMBMock
 
 
 class TestFCAD(unittest.TestCase):
@@ -234,7 +234,7 @@ class TestFCAD(unittest.TestCase):
 
     def _get_cifs_data(self, cn):
         path = os.path.join(
-            fcad.smb.TEMP_DIR,
+            smbmock.TEMP_DIR,
             '%s/Policies' % self.DOMAIN,
             cn,
             'fleet-commander.json')
@@ -251,7 +251,7 @@ class TestFCAD(unittest.TestCase):
         # Reset domain data for each test
         fcad.ldap.DOMAIN_DATA = copy.deepcopy(self.BASE_DOMAIN_DATA)
         # Reset temporary directory for each new test
-        fcad.smb.TEMP_DIR = tempfile.mkdtemp()
+        smbmock.TEMP_DIR = tempfile.mkdtemp()
 
     def test_01_save_profile(self):
         logging.debug('TEST: save_profile')
