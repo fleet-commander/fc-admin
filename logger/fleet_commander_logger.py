@@ -99,6 +99,10 @@ class SpicePortManager:
 
         self.queue = []
         self.timeout = 0
+        self.proto_version = 2
+        self.header = ":FC_PR:{version}:".format(version=self.proto_version)
+        self.suffix = ":FC_MSG_END_DATA:"
+        self.chunk = 2048
 
         try:
             self.fd = open(self.path, "wb", 0)
@@ -111,6 +115,8 @@ class SpicePortManager:
             )
             sys.exit(1)
 
+        self.fd.write(self.header.encode())
+
     def _perform_submits(self):
         if len(self.queue) < 1:
             return False
@@ -121,7 +127,15 @@ class SpicePortManager:
             elem = self.queue.pop(0)
             payload = json.dumps(elem)
             logging.debug("SPICE Port: Submitting change %s", payload)
-            self.fd.write(payload.encode())
+            msg = "{payload}{suffix}".format(
+                payload=payload,
+                suffix=self.suffix,
+            ).encode()
+            for chunk in (
+                msg[i : i + self.chunk] for i in range(0, len(msg), self.chunk)
+            ):
+                logging.debug("Submitting chunk size: %s", len(chunk))
+                self.fd.write(chunk)
 
         GLib.source_remove(self.timeout)
         self.timeout = 0
