@@ -61,6 +61,10 @@ var DEBUG = 0,
             new NMCollector('org.freedesktop.NetworkManager')
     };
 
+const FC_MSG_DELIM = ':FC_MSG_END_DATA:';
+const FC_PROTO_HEADER = ':FC_PR:';
+const FC_PROTO_DEFAULT = 1;
+
 window.alert = function (message) {
     if (DEBUG > 0) {
         console.log('FC: Alert message:' + message);
@@ -89,10 +93,9 @@ function downloadConnectionFile(console_details) {
 }
 
 function ParseChange(data) {
-    var msg_text = arraybuffer_to_str_func(new Uint8Array(data));
-    console.log('FC: Parsing data', msg_text);
+    console.log('FC: Parsing data', data);
     try {
-        var change = JSON.parse(msg_text);
+        let change = JSON.parse(data);
         if (DEBUG > 0) {
             console.log('FC: Change parsed', change);
         }
@@ -105,22 +108,35 @@ function ParseChange(data) {
         }
     } catch (e) {
         if (DEBUG > 0) {
-            console.log('FC: Error while parsing change', msg_text);
+            console.log('FC: Error while parsing change', data);
         }
+        stopLiveSession(() => {
+            messageDialog.show(
+                _('Error parsing change'),
+                _('Error'),
+                () => { location.href = 'index.html'; },
+            );
+        });
     }
 }
 
 function startSpiceHtml5(conn_details) {
     // SPICE port changes listeners
+    let msg = {
+        buffer: '',
+        initial_msg: true,
+        fc_proto_version: FC_PROTO_DEFAULT,
+    };
     window.addEventListener('spice-port-data', function (event) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
+            let msg_text = arraybuffer_to_str_func(new Uint8Array(event.detail.data));
             if (DEBUG > 0) {
                 console.log(
                     'FC: Logger data received in spice port',
                     event.detail.channel.portName,
                 );
             }
-            ParseChange(event.detail.data);
+            parseFCMsg(msg_text, msg);
         }
     });
 
@@ -174,10 +190,17 @@ function startRemoteViewer(conn_details) {
     var options = {
         payload: 'stream',
         protocol: 'binary',
+        batch: 2048,
         unix: conn_details.notify_socket,
         binary: true,
     };
     var channel = cockpit.channel(options);
+
+    let msg = {
+        buffer: '',
+        initial_msg: true,
+        fc_proto_version: FC_PROTO_DEFAULT,
+    };
 
     channel.addEventListener("ready", function(event, options) {
         if (DEBUG > 0) {
@@ -185,10 +208,11 @@ function startRemoteViewer(conn_details) {
         }
     });
     channel.addEventListener("message", function(event, data) {
+        let msg_text = arraybuffer_to_str_func(new Uint8Array(data));
         if (DEBUG > 0) {
             console.log('FC: Logger data received in unix channel', data);
         }
-        ParseChange(data);
+        parseFCMsg(msg_text, msg);
     });
     channel.addEventListener("close", function(event, options) {
         if (DEBUG > 0) {
@@ -198,6 +222,71 @@ function startRemoteViewer(conn_details) {
     });
 
     startHeartBeat();
+}
+
+function parseFCMsg(str, msg) {
+    /*
+     * Protocol 1 assumes atomic data transmission
+     * Protocol 2 process data in chunks
+     */
+    logDebug('FC: Processing msg, length:%s', str.length);
+    if (str === '') {
+        // nothing to do
+        return;
+    }
+
+    if (msg.buffer) {
+        str = msg.buffer + str;
+    }
+
+    if (msg.initial_msg === true) {
+        // detecting protocol version
+        logDebug('FC: Initial message processing');
+        // receive enough characters
+        if (str.startsWith(':') && str.length < FC_PROTO_HEADER.length) {
+            msg.buffer = str;
+            return;
+        }
+
+        let fc_proto_header = str.match(/^:FC_PR:/);
+        if (fc_proto_header === null) {
+            msg.fc_proto_version = FC_PROTO_DEFAULT;
+            logDebug('FC: old fc_proto detected', msg.fc_proto_version);
+            msg.buffer = '';
+        } else {
+            fc_proto = str.match(/(^:FC_PR:(\d+):)/);
+            if (fc_proto === null) {
+                // continue receving
+                msg.buffer = str;
+                return;
+            }
+            msg.fc_proto_version = parseInt(fc_proto[2]);
+            // cut off the proto header
+            str = str.replace(/^:FC_PR:\d+:/, '');
+        }
+        logInfo('FC protocol version', msg.fc_proto_version);
+        msg.initial_msg = false;
+    }
+
+    if (msg.fc_proto_version > FC_PROTO_DEFAULT) {
+      last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
+      if (last_delimiter === -1) {
+          msg.buffer = str;
+          logDebug('FC: Waiting for FC_MSG_DELIM');
+          return;
+      }
+      msg.buffer = str.substring(last_delimiter + FC_MSG_DELIM.length);
+
+      str = str.substring(0, last_delimiter);
+      let lines = str.split(FC_MSG_DELIM);
+      lines.forEach((line) => {
+          if (line) {
+              ParseChange(line);
+          }
+      });
+    } else if (msg.fc_proto_version === FC_PROTO_DEFAULT) {
+        ParseChange(str);
+    }
 }
 
 function startHeartBeat() {
