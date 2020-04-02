@@ -119,10 +119,17 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
   }
 
   try {
-    this.do_connection();
+    self.do_connection();
   } catch (e) {
     console.error('FC: Fatal error:' + e.toString());
     if (error_cb) error_cb();
+  }
+
+  this.reconnect = function() {
+    showSpinnerDialog(
+      _('Connecting to virtual machine. Please wait...'),
+      _('Reconnecting'))
+    self.do_connection();
   }
 
 }

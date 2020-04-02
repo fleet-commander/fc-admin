@@ -64,6 +64,10 @@ function startLiveSession() {
   });
 }
 
+function reconnectToVM() {
+  if (fcsc) fcsc.reconnect();
+}
+
 function stopLiveSession(cb) {
   if (fcsc) fcsc.stop();
   fc.SessionStop(function(resp){
@@ -249,9 +253,11 @@ function deployProfile() {
 }
 
 $(document).ready (function () {
+  $('#reconnect-to-vm').click(reconnectToVM);
   $('#close-live-session').click(stopLiveSession);
   $('#review-changes').click(reviewAndSubmit);
   $('#deploy-profile').click(deployProfile);
+
 
   // SPICE port changes listeners
   window.addEventListener('spice-port-data', function(event) {
