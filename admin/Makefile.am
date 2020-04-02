@@ -26,8 +26,7 @@ fc_js_DATA = \
 	cockpit/fleet-commander-admin/js/index.js \
 	cockpit/fleet-commander-admin/js/highlightedapps.js \
 	cockpit/fleet-commander-admin/js/goa.js \
-	cockpit/fleet-commander-admin/js/livesession.js \
-	cockpit/fleet-commander-admin/js/spice_debug_bypass.js
+	cockpit/fleet-commander-admin/js/livesession.js
 
 fc_goaimgdir   = ${datarootdir}/cockpit/fleet-commander-admin/img/goa
 fc_goaimg_DATA = \
