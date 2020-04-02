@@ -316,8 +316,8 @@ $(document).ready (function () {
             $('#main-container').hide()
             console.log(resp.error);
             showCurtain(
-              _('Error connecting to IPA server. Check system logs for details'),
-              _('Error connecting to IPA server'),
+              _('Error connecting to FC service. Check system logs for details'),
+              _('Error connecting to FC service'),
               null,
               {
                 'dbus-retry': {
