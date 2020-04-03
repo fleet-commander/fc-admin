@@ -509,7 +509,6 @@ class LibVirtTlsSpice(LibVirtController):
         target = ET.SubElement(channel, "target")
         target.set("type", "virtio")
         target.set("name", name)
-        target.set("state", "connected")
         if alias is not None:
             aliaselem = ET.SubElement(channel, "alias")
             aliaselem.set("name", alias)
@@ -656,7 +655,6 @@ class LibVirtTunnelSpice(LibVirtController):
         target = ET.SubElement(channel, "target")
         target.set("type", "virtio")
         target.set("name", name)
-        target.set("state", "connected")
         if alias is not None:
             aliaselem = ET.SubElement(channel, "alias")
             aliaselem.set("name", alias)
