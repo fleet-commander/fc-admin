@@ -44,6 +44,7 @@ var DEBUG = 0,
     spinnerDialog,
     messageDialog,
     heartbeat = null,
+    console_details = null,
     collectors = {
         'org.gnome.gsettings':
             new BaseCollector('org.gnome.gsettings'),
@@ -177,7 +178,7 @@ function startSpiceHtml5(conn_details) {
 
 
 function startRemoteViewer(conn_details) {
-    var console_details = {
+    console_details = {
         type: 'spice',
         address: conn_details.host,
         tls_port: conn_details.tls_port,
@@ -345,6 +346,8 @@ function startLiveSession() {
 function reconnectToVM() {
     if (fcsc) {
         fcsc.reconnect();
+    } else if (console_details) {
+        downloadConnectionFile(console_details);
     }
 }
 
