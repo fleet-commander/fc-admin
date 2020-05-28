@@ -118,7 +118,7 @@ function FleetCommanderSpiceClient(host, port, error_cb, timeout) {
     if (self.sc) self.sc.stop()
     $('#spice-screen').html('');
 
-    self.sc = new SpiceMainConn({
+    self.sc = new spicehtml5_module.SpiceMainConn({
       uri: cockpit_uri, // 'ws://' + location.hostname + ':' + port,
       screen_id: 'spice-screen',
       onsuccess: self.spice_connected,
