@@ -18,6 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+var DEBUG = 0;
 var _ = cockpit.gettext
 var fc = null;
 var fcsc = null;
@@ -270,7 +271,7 @@ $(document).ready (function () {
   // SPICE port changes listeners
   window.addEventListener('spice-port-data', function(event) {
     if (event.detail.channel.portName == 'org.freedesktop.FleetCommander.0') {
-      var msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
+      var msg_text = arraybuffer_to_str_func(new Uint8Array(event.detail.data));
       DEBUG > 0 && console.log(
         'FC: Logger data received in spice port',
         event.detail.channel.portName,

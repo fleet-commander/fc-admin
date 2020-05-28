@@ -30,10 +30,10 @@ function FleetCommanderDbusClient(readycb, errorcb) {
   this._proxy = this._service.proxy();
 
   this._proxy.wait().done(function(resp) {
-    DEBUG > 0 && console.log('FC: Dbus service loaded')
+    console.log('FC: Dbus service loaded')
     readycb(resp);
   }).fail(function(err){
-    DEBUG > 0 && console.log('FC: Failed to connect to Dbus service');
+    console.log('FC: Failed to connect to Dbus service');
     errorhandler(err)
   });
 

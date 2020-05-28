@@ -10,38 +10,31 @@
     <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
     <script src="../base1/cockpit.js"></script>
 
-    <!-- spice-html5 -->
-    <script src="js/spice-html5/spicearraybuffer.js"></script>
-    <script src="js/spice-html5/enums.js"></script>
-    <script src="js/spice-html5/atKeynames.js"></script>
-    <script src="js/spice-html5/utils.js"></script>
-    <script src="js/spice-html5/png.js"></script>
-    <script src="js/spice-html5/lz.js"></script>
-    <script src="js/spice-html5/quic.js"></script>
-    <script src="js/spice-html5/bitmap.js"></script>
-    <script src="js/spice-html5/spicedataview.js"></script>
-    <script src="js/spice-html5/spicetype.js"></script>
-    <script src="js/spice-html5/spicemsg.js"></script>
-    <script src="js/spice-html5/wire.js"></script>
-    <script src="js/spice-html5/spiceconn.js"></script>
-    <script src="js/spice-html5/display.js"></script>
-    <script src="js/spice-html5/port.js"></script>
-    <script src="js/spice-html5/main.js"></script>
-    <script src="js/spice-html5/inputs.js"></script>
-    <script src="js/spice-html5/webm.js"></script>
-    <script src="js/spice-html5/playback.js"></script>
-    <script src="js/spice-html5/simulatecursor.js"></script>
-    <script src="js/spice-html5/cursor.js"></script>
-    <script src="js/spice-html5/thirdparty/jsbn.js"></script>
-    <script src="js/spice-html5/thirdparty/rsa.js"></script>
-    <script src="js/spice-html5/thirdparty/prng4.js"></script>
-    <script src="js/spice-html5/thirdparty/rng.js"></script>
-    <script src="js/spice-html5/thirdparty/sha1.js"></script>
-    <script src="js/spice-html5/ticket.js"></script>
-    <script src="js/spice-html5/resize.js"></script>
-    <script src="js/spice-html5/filexfer.js"></script>
-
     <link href="css/main.css" type="text/css" rel="stylesheet">
+
+    <script type="module">
+      window._spice_has_module_support = true;
+    </script>
+    <script>
+        window.addEventListener("load", function() {
+            if (window._spice_has_module_support) return;
+            var loader = document.createElement("script");
+            loader.src = "js/spice-html5/src/thirdparty/browser-es-module-loader/dist/" +
+                "browser-es-module-loader.js";
+            document.head.appendChild(loader);
+        });
+
+        var spicehtml5_module = null;
+        var arraybuffer_to_str_func = null;
+    </script>
+
+    <script type="module" crossorigin="anonymous">
+        import * as SpiceHtml5 from './js/spice-html5/src/main.js';
+        import { arraybuffer_to_str } from './js/spice-html5/src/utils.js';
+        spicehtml5_module = SpiceHtml5
+        arraybuffer_to_str_func = arraybuffer_to_str
+    </script>
+
     <script src="js/base.js"></script>
     <script src="js/dialogs.js"></script>
     <script src="js/fcdbusclient.js"></script>
