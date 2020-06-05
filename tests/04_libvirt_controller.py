@@ -49,6 +49,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
     def setUp(self):
         self.test_directory = tempfile.mkdtemp(prefix='fc-libvirt-test-%s-' % self.LIBVIRT_MODE)
+        self.maxDiff = None
 
         self.config = {
             'data_path': self.test_directory,

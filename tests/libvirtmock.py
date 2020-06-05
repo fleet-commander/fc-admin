@@ -31,18 +31,31 @@ sys.path.append(PYTHONPATH)
 from fleetcommander.database import BaseDBManager, SQLiteDict
 
 
+def _xmltree_sort(root):
+    for el in root.iter():
+        attrib = el.attrib
+        if len(attrib) > 1:
+            attribs = sorted(attrib.items())
+            attrib.clear()
+            attrib.update(attribs)
+
+
+def _xmltree_to_string(xml_path):
+    tree = ET.parse(xml_path)
+    tree = tree.getroot()
+    _xmltree_sort(tree)
+    return ET.tostring(tree).decode()
+
+
 # Preload needed files
-with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-orig.xml')) as fd:
-    XML_ORIG = fd.read()
-    fd.close()
+XML_ORIG = _xmltree_to_string(os.path.join(os.environ['TOPSRCDIR'],
+                              'tests/data/libvirt_domain-orig.xml'))
 
-with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-modified.xml')) as fd:
-    XML_MODIF = fd.read()
-    fd.close()
+XML_MODIF = _xmltree_to_string(os.path.join(os.environ['TOPSRCDIR'],
+                               'tests/data/libvirt_domain-modified.xml'))
 
-with open(os.path.join(os.environ['TOPSRCDIR'], 'tests/data/libvirt_domain-nospice.xml')) as fd:
-    XML_NO_SPICE = fd.read()
-    fd.close()
+XML_NO_SPICE = _xmltree_to_string(os.path.join(os.environ['TOPSRCDIR'],
+                                  'tests/data/libvirt_domain-nospice.xml'))
 
 TEST_UUID_SPICE = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
 TEST_UUID_NO_SPICE = '0999a0ee-a4c4-11e5-b3a5-68f728db19d3'
@@ -128,9 +141,10 @@ class LibvirtDomainMocker(object):
         self.domain_name = root.find('name').text
         self.domain_title = root.find('title').text
         self.domain_uuid = root.find('uuid').text
-        self.xmldata = ET.tostring(root).decode()
         self.active = True
         self.transient = False
+        _xmltree_sort(root)
+        self.xmldata = ET.tostring(root).decode()
 
     def UUIDString(self):
         return self.domain_uuid
