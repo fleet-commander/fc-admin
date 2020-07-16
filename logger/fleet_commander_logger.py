@@ -147,75 +147,78 @@ class ScreenSaverInhibitor(object):
     """
     Screensaver inhibitor class
     """
-    DEFAULT_BUS = "org.freedesktop.ScreenSaver"
-    BUS_NAME = ""
-    OBJECT_PATH = ""
-    INTERFACE_NAME = ""
+    screensavers = {}
+    ss_regex = re.compile(r"^org\.\w+\.ScreenSaver$")
 
     def __init__(self):
-        self._set_screen_saver()
-
-        proxy = dbus.SessionBus().get_object(
-            self.BUS_NAME, self.OBJECT_PATH)
-        self.iface = dbus.Interface(
-            proxy, dbus_interface=self.INTERFACE_NAME)
-        self.cookie = None
-        self.inhibit()
-
-    def _set_screen_saver(self):
         session = dbus.SessionBus()
+        session.add_match_string("type=signal,member=NameOwnerChanged")
+        session.add_message_filter(self.screensaver_match_cb)
+
         try:
-            list_names = session.list_names()
+            names = session.list_names()
         except Exception as e:
-            logging.error(
-                "Screensaver: Error searching screensaver: %s" % e)
-            return
-        names = [str(x) for x in list_names]
-        r = re.compile(r"^org\.\w+\.ScreenSaver$")
-        screensavers = list(filter(r.match, names))
-        if not screensavers:
-            logging.error("No ScreenSavers found")
+            logging.error("Screensaver: Error searching screensaver: %s" % e)
             return
 
-        logging.debug("Screensavers found: {}".format(", ".join(screensavers)))
-        if self.DEFAULT_BUS in screensavers:
-            self.BUS_NAME = self.DEFAULT_BUS
-        else:
-            self.BUS_NAME = screensavers[0]
-        self.INTERFACE_NAME = self.BUS_NAME
-        self.OBJECT_PATH = "/" + self.BUS_NAME.replace(".", "/")
-        logging.debug("Screensaver: Using {}".format(self.BUS_NAME))
+        for name in names:
+            if self.ss_regex.match(name):
+                self.inhibit(name)
 
-    def inhibit(self):
-        """
-        Inhibits the screensaver for current session
-        """
-        logging.debug("Screensaver Inhibitor: Inhibiting screen saver")
-        if self.cookie is not None:
-            logging.debug("Screensaver Inhibitor: Already inhibited")
+    def screensaver_match_cb(self, bus, message):
+        member = message.get_member()
+        args = message.get_args_list()
+
+        if member == 'NameOwnerChanged' and len(args) >= 3 and self.ss_regex.match(args[0]):
+            owner_name = args[2]
+            ss_bus_name = args[0]
+
+            if (owner_name):
+                self.inhibit(ss_bus_name)
+            else:
+                self.remove(ss_bus_name)
+
+        return True
+
+    def remove(self, bus_name):
+        logging.debug("Remove screensaver %s" % bus_name)
+        self.screensavers.pop(bus_name)
+
+    def inhibit(self, bus_name):
+        if bus_name in self.screensavers:
             return
+
+        self.screensavers[bus_name] = {}
+
+        logging.debug("Inhibiting %s" % bus_name)
+
+        object_path = "/" + bus_name.replace(".", "/")
+        proxy = dbus.SessionBus().get_object(bus_name, object_path)
+
+        ss = self.screensavers[bus_name]
+        ss['iface'] = dbus.Interface(proxy, dbus_interface=bus_name)
 
         try:
-            self.cookie = self.iface.Inhibit(
+            ss['cookie'] = ss['iface'].Inhibit(
                 'org.freedesktop.FleetCommander.Logger',
                 'Preventing Screen locking while Fleet Commander Logger runs')
 
         except Exception as e:
             logging.error(
-                "Screensaver Inhibitor: Error inhibiting screensaver: %s" % e)
+                "Screensaver Inhibitor: Error inhibiting %s: %s" % (bus_name, e))
 
     def uninhibit(self):
-        """
-        Uninhibits the screensaver for current session
-        """
-        logging.debug("Screensaver Inhibitor: Uninhibiting screen saver");
-        try:
-            self.iface.UnInhibit(self.cookie)
+        for name, data in self.screensavers.items():
+            logging.debug("Unihibiting %s" % name)
 
-        except Exception as e:
-            logging.error(
-                "Screensaver Inhibitor: Error uninhibiting screensaver: %s" % e)
-        self.cookie = None
+            try:
+                data['iface'].UnInhibit(data['cookie'])
+
+            except Exception as e:
+                logging.error(
+                    "Screensaver Inhibitor: Error uninhibiting %s: %s" % (name, e))
+
+        self.screensavers.clear()
 
 
 class GSettingsLogger(object):
