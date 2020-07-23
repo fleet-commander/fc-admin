@@ -1013,7 +1013,7 @@ class FirefoxLogger(object):
         self.connmgr = connmgr
         self.datadir = datadir
         self.namespace = namespace
-        self.profiles_path = self.datadir + '/profiles.ini'
+        self.profiles_path = self.datadir + '/installs.ini'
 
         self.monitored_preferences = {}
         self.file_monitors = {}
@@ -1163,12 +1163,10 @@ class FirefoxLogger(object):
         for group in groups:
             logging.debug("Checking profile %s" % group)
             try:
-                if keyfile.get_string(group, "Default") != "1":
-                    continue
+                profile_dir = keyfile.get_string(group, "Default")
+                return os.path.join(self.datadir, profile_dir)
             except Exception:
-                continue
-            return os.path.join(
-                self.datadir, keyfile.get_string(group, "Path"))
+                pass
         # This should never happen
         logging.debug(
             "There was no profile in %s with Default=1" % self.profiles_path)
