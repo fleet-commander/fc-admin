@@ -252,6 +252,10 @@ class LibVirtController(object):
         cmdline = ET.SubElement(root, 'qemu:commandline')
         cmdarg = ET.SubElement(cmdline, 'qemu:arg')
         cmdarg.set('value', '-snapshot')
+        # Remove blockdev capability for snapshot support
+        cpbline = ET.SubElement(root, 'qemu:capabilities')
+        cpbarg = ET.SubElement(cpbline, 'qemu:del')
+        cpbarg.set('capability', 'blockdev')
         # Change domain UUID
         newuuid = str(uuid.uuid4())
         root.find('uuid').text = newuuid
