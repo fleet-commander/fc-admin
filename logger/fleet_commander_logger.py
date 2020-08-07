@@ -1212,6 +1212,8 @@ class FirefoxBookmarkLogger(object):
         self.connmgr = connmgr
 
     def submit_config_change(self, id, data):
+        if data is None:
+            return
         # Prepare data:
         deserialized_data = json.loads(data)
         payload_data = {
