@@ -72,19 +72,9 @@ class MockConnectionManager(object):
 
 
 # Test data
-PROFILES_FILE_CONTENT = """[General]
-StartWithLastProfile=0
-
-[Profile0]
-Name=default
-IsRelative=1
-Path=robuvvg2.default
-Default=1
-
-[Profile1]
-Name=Clean
-IsRelative=1
-Path=bd8ay27s.Clean
+PROFILES_FILE_CONTENT = """[11457493C5A56847]
+Default=subena7v.default-1535448379373
+Locked=1
 """
 
 PROFILES_FILE_CONTENT_NO_DEFAULT = """[General]
@@ -182,19 +172,19 @@ class TestFirefoxLogger(unittest.TestCase):
         # Create profiles file
         if profinit:
             self.file_set_contents(
-                os.path.join(TMPDIR, "profiles.ini"),
+                os.path.join(TMPDIR, "installs.ini"),
                 PROFILES_FILE_CONTENT)
         # Create profile directory
         self.assertEqual(
             0,
             GLib.mkdir_with_parents(
-                os.path.join(TMPDIR, "robuvvg2.default"),
+                os.path.join(TMPDIR, "subena7v.default-1535448379373"),
                 0o755))
 
         # Initialize preferences file
         if prefsinit:
             self.file_set_contents(
-                os.path.join(TMPDIR, "robuvvg2.default", "prefs.js"),
+                os.path.join(TMPDIR, "subena7v.default-1535448379373", "prefs.js"),
                 RAW_PREFS_DATA)
 
         return TMPDIR
@@ -210,12 +200,12 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Get default profile
         self.assertEqual(
-            os.path.join(TMPDIR, "robuvvg2.default"),
+            os.path.join(TMPDIR, "subena7v.default-1535448379373"),
             firefox_logger.get_default_profile_path())
 
         # Try to get a default profile from a file without a default one
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, "installs.ini"),
             PROFILES_FILE_CONTENT_NO_DEFAULT)
         self.assertEqual(
             None,
@@ -223,7 +213,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Try to read a wrong profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, "installs.ini"),
             "RESISTANCE IS FUTILE")
         self.assertEqual(
             None,
@@ -262,7 +252,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # Also there souldn't be any file monitor for it
         self.assertFalse(
             os.path.join(
-                TMPDIR, "/profiles.ini") in firefox_logger.file_monitors)
+                TMPDIR, "/installs.ini") in firefox_logger.file_monitors)
 
         logging.info("End test_03_profiles_file_load")
 
@@ -273,7 +263,7 @@ class TestFirefoxLogger(unittest.TestCase):
         TMPDIR = self.setup_test_directory(False, False)
         # Add profiles file without default profile
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, "installs.ini"),
             PROFILES_FILE_CONTENT_NO_DEFAULT)
         mgr = MockConnectionManager()
         firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
@@ -282,7 +272,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # Also there souldn't be a file monitor for it
         self.assertTrue(
             os.path.join(
-                TMPDIR, "profiles.ini") in firefox_logger.file_monitors)
+                TMPDIR, "installs.ini") in firefox_logger.file_monitors)
 
         logging.info("End test_04_profiles_file_load_wrong")
 
@@ -308,7 +298,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Add profiles file without default profile
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, "installs.ini"),
             PROFILES_FILE_CONTENT_NO_DEFAULT)
 
         # Execute main loop
@@ -335,7 +325,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # File monitor should be set and waiting for changes
         self.assertTrue(
             os.path.join(
-                TMPDIR, "profiles.ini") in firefox_logger.file_monitors)
+                TMPDIR, "installs.ini") in firefox_logger.file_monitors)
 
         # Setup callback for profiles file update
         firefox_logger.test_profiles_file_updated = ml.quit
@@ -347,7 +337,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Add profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, "installs.ini"),
             PROFILES_FILE_CONTENT)
 
         # Execute main loop
@@ -366,7 +356,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         mgr = MockConnectionManager()
         firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-        prefs_path = os.path.join(TMPDIR, "robuvvg2.default/prefs.js")
+        prefs_path = os.path.join(TMPDIR, "subena7v.default-1535448379373/prefs.js")
         # Profiles file is present. It should be initialized
         self.assertTrue(firefox_logger.default_profile_initialized)
 
@@ -414,7 +404,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         mgr = MockConnectionManager()
         firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-        prefs_path = os.path.join(TMPDIR, "robuvvg2.default/prefs.js")
+        prefs_path = os.path.join(TMPDIR, "subena7v.default-1535448379373/prefs.js")
 
         # Profiles file is present. It should be initialized
         self.assertTrue(firefox_logger.default_profile_initialized)
@@ -462,7 +452,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         mgr = MockConnectionManager()
         firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-        prefs_path = os.path.join(TMPDIR, "robuvvg2.default/prefs.js")
+        prefs_path = os.path.join(TMPDIR, "subena7v.default-1535448379373/prefs.js")
 
         # Profiles file is present. It should be initialized
         self.assertTrue(firefox_logger.default_profile_initialized)
@@ -486,7 +476,7 @@ class TestFirefoxLogger(unittest.TestCase):
 
         mgr = MockConnectionManager()
         firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-        prefs_path = os.path.join(TMPDIR, "robuvvg2.default/prefs.js")
+        prefs_path = os.path.join(TMPDIR, "subena7v.default-1535448379373/prefs.js")
 
         # Profiles file is present. It should be initialized
         self.assertTrue(firefox_logger.default_profile_initialized)
