@@ -1016,7 +1016,7 @@ class FirefoxLogger(object):
         self.connmgr = connmgr
         self.datadir = datadir
         self.namespace = namespace
-        self.profiles_path = self.datadir + '/installs.ini'
+        self.profiles_path = os.path.join(self.datadir, 'installs.ini')
 
         self.monitored_preferences = {}
         self.file_monitors = {}
