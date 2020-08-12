@@ -72,15 +72,6 @@ class MockConnectionManager(object):
         ml.quit()
 
 
-class TestScreenSaverInhibitor(unittest.TestCase):
-
-    def test_inhibitor(self):
-        inhibitor = FleetCommander.ScreenSaverInhibitor()
-        self.assertTrue(inhibitor.cookie == 9191);
-        inhibitor.uninhibit()
-        self.assertTrue(inhibitor.cookie is None);
-
-
 class TestDconfLogger(unittest.TestCase):
 
     def setup_dbus_call(self, method, args, glog):
