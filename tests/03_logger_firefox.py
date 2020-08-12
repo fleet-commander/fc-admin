@@ -73,7 +73,6 @@ class MockConnectionManager(object):
 
 # Test data
 
-
 INSTALLS_FILE_CONTENT="""[0123456789ABCDEF]
 Default=robuvvg2.default
 Locked=1"""
