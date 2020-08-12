@@ -72,6 +72,31 @@ class MockConnectionManager(object):
         ml.quit()
 
 
+class TestScreenSaverInhibitor(unittest.TestCase):
+
+    def test_01_inhibitor_init(self):
+        inhibitor = FleetCommander.ScreenSaverInhibitor()
+        self.assertTrue(
+            'org.freedesktop.ScreenSaver' in inhibitor.screensavers)
+        self.assertTrue(
+            inhibitor.screensavers['org.freedesktop.ScreenSaver']['cookie'] == 9191)
+
+    def test_02_inhibitor_unknown_screensaver(self):
+        inhibitor = FleetCommander.ScreenSaverInhibitor()
+        inhibitor.inhibit('org.unknown.FakeScreenSaver')
+        self.assertFalse(
+            'org.unknown.FakeScreenSaver' in inhibitor.screensavers)
+
+    def test_03_inhibitor_uninhibit(self):
+        inhibitor = FleetCommander.ScreenSaverInhibitor()
+        self.assertTrue(
+            'org.freedesktop.ScreenSaver' in inhibitor.screensavers)
+        self.assertTrue(
+            inhibitor.screensavers['org.freedesktop.ScreenSaver']['cookie'] == 9191)
+        inhibitor.uninhibit()
+        self.assertTrue(inhibitor.screensavers == {})
+
+
 class TestDconfLogger(unittest.TestCase):
 
     def setup_dbus_call(self, method, args, glog):
