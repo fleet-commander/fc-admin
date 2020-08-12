@@ -72,34 +72,11 @@ class MockConnectionManager(object):
 
 
 # Test data
-PROFILES_FILE_CONTENT = """[General]
-StartWithLastProfile=0
 
-[Profile0]
-Name=default
-IsRelative=1
-Path=robuvvg2.default
-Default=1
 
-[Profile1]
-Name=Clean
-IsRelative=1
-Path=bd8ay27s.Clean
-"""
-
-PROFILES_FILE_CONTENT_NO_DEFAULT = """[General]
-StartWithLastProfile=0
-
-[Profile0]
-Name=default
-IsRelative=1
-Path=robuvvg2.default
-
-[Profile1]
-Name=Clean
-IsRelative=1
-Path=bd8ay27s.Clean
-"""
+INSTALLS_FILE_CONTENT="""[0123456789ABCDEF]
+Default=robuvvg2.default
+Locked=1"""
 
 RAW_PREFS_DATA = r"""# Mozilla User Preferences
 
@@ -182,8 +159,8 @@ class TestFirefoxLogger(unittest.TestCase):
         # Create profiles file
         if profinit:
             self.file_set_contents(
-                os.path.join(TMPDIR, "profiles.ini"),
-                PROFILES_FILE_CONTENT)
+                os.path.join(TMPDIR, 'installs.ini'),
+                INSTALLS_FILE_CONTENT)
         # Create profile directory
         self.assertEqual(
             0,
@@ -213,17 +190,9 @@ class TestFirefoxLogger(unittest.TestCase):
             os.path.join(TMPDIR, "robuvvg2.default"),
             firefox_logger.get_default_profile_path())
 
-        # Try to get a default profile from a file without a default one
-        self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
-            PROFILES_FILE_CONTENT_NO_DEFAULT)
-        self.assertEqual(
-            None,
-            firefox_logger.get_default_profile_path())
-
         # Try to read a wrong profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
+            os.path.join(TMPDIR, 'installs.ini'),
             "RESISTANCE IS FUTILE")
         self.assertEqual(
             None,
@@ -266,61 +235,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         logging.info("End test_03_profiles_file_load")
 
-    def test_04_profiles_file_load_wrong(self):
-        logging.info("Start test_04_profiles_file_load_wrong")
 
-        # Setup test directory without profile file
-        TMPDIR = self.setup_test_directory(False, False)
-        # Add profiles file without default profile
-        self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
-            PROFILES_FILE_CONTENT_NO_DEFAULT)
-        mgr = MockConnectionManager()
-        firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-        # Profiles file is present but wrong. It shouldn't be initialized
-        self.assertFalse(firefox_logger.default_profile_initialized)
-        # Also there souldn't be a file monitor for it
-        self.assertTrue(
-            os.path.join(
-                TMPDIR, "profiles.ini") in firefox_logger.file_monitors)
-
-        logging.info("End test_04_profiles_file_load_wrong")
-
-    def test_05_profiles_file_monitoring_no_default(self):
-        logging.info("Start test_05_profiles_file_monitoring_no_default")
-
-        # Setup test directory
-        TMPDIR = self.setup_test_directory(False, False)
-
-        mgr = MockConnectionManager()
-        firefox_logger = FleetCommander.FirefoxLogger(mgr, TMPDIR)
-
-        # Profiles file is not present. It should not be initialized
-        self.assertFalse(firefox_logger.default_profile_initialized)
-
-        # Setup callback for profiles file update
-        firefox_logger.test_profiles_file_updated = ml.quit
-
-        # Setup a timeout for this test to quit and fail if timeout is reached
-        timeout = GLib.timeout_add(
-            1000,
-            mainloop_quit_callback)
-
-        # Add profiles file without default profile
-        self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
-            PROFILES_FILE_CONTENT_NO_DEFAULT)
-
-        # Execute main loop
-        ml.run()
-
-        # Default profile should not be initialized yet
-        self.assertFalse(firefox_logger.default_profile_initialized)
-
-        logging.info("End test_05_profiles_file_monitoring_no_default")
-
-
-    def test_06_profiles_file_monitoring(self):
+    def test_04_profiles_file_monitoring(self):
         logging.info("Start test_06_profiles_file_monitoring")
 
         # Setup test directory
@@ -335,7 +251,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # File monitor should be set and waiting for changes
         self.assertTrue(
             os.path.join(
-                TMPDIR, "profiles.ini") in firefox_logger.file_monitors)
+                TMPDIR, 'installs.ini') in firefox_logger.file_monitors)
 
         # Setup callback for profiles file update
         firefox_logger.test_profiles_file_updated = ml.quit
@@ -347,8 +263,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Add profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, "profiles.ini"),
-            PROFILES_FILE_CONTENT)
+            os.path.join(TMPDIR, 'installs.ini'),
+            INSTALLS_FILE_CONTENT)
 
         # Execute main loop
         ml.run()
@@ -358,7 +274,7 @@ class TestFirefoxLogger(unittest.TestCase):
         logging.info("End test_06_profiles_file_monitoring")
 
 
-    def test_07_preferences_file_monitoring_wrong(self):
+    def test_05_preferences_file_monitoring_wrong(self):
         logging.info("Start test_07_preferences_file_monitoring_wrong")
 
         # Setup test directory
@@ -406,7 +322,7 @@ class TestFirefoxLogger(unittest.TestCase):
         logging.info("End test_07_preferences_file_monitoring_wrong")
 
 
-    def test_08_preferences_file_monitoring(self):
+    def test_06_preferences_file_monitoring(self):
         logging.info("Start test_08_preferences_file_monitoring")
 
         # Setup test directory
@@ -454,7 +370,7 @@ class TestFirefoxLogger(unittest.TestCase):
         logging.info("End test_08_preferences_file_monitoring")
 
 
-    def test_09_preferences_file_loading(self):
+    def test_07_preferences_file_loading(self):
         logging.info("Start test_09_preferences_file_loading")
 
         # Setup test directory
@@ -478,7 +394,7 @@ class TestFirefoxLogger(unittest.TestCase):
         logging.info("End test_09_preferences_file_loading")
 
 
-    def test_10_preferences_update(self):
+    def test_08_preferences_update(self):
         logging.info("Start test_10_preferences_update")
 
         # Setup test directory
