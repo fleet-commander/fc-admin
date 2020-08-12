@@ -147,10 +147,17 @@ class ScreenSaverInhibitor(object):
     """
     Screensaver inhibitor class
     """
+
+    known_screensavers = [
+        'org.freedesktop.ScreenSaver',
+        'org.xfce.ScreenSaver',
+        'org.cinnamon.ScreenSaver',
+    ]
+
     screensavers = {}
-    ss_regex = re.compile(r"^org\.\w+\.ScreenSaver$")
 
     def __init__(self):
+        logging.debug('ScreenSaverInhibitor: Initializing screensaver inhibitor')
         session = dbus.SessionBus()
         session.add_match_string("type=signal,member=NameOwnerChanged")
         session.add_message_filter(self.screensaver_match_cb)
@@ -158,65 +165,70 @@ class ScreenSaverInhibitor(object):
         try:
             names = session.list_names()
         except Exception as e:
-            logging.error("Screensaver: Error searching screensaver: %s" % e)
+            logging.error("ScreenSaverInhibitor: Error searching screensaver: %s" % e)
             return
 
+        print(names)
         for name in names:
-            if self.ss_regex.match(name):
+            print(name)
+            print(str(name))
+            if str(name) in self.known_screensavers:
+                print("OHYYEAH!")
                 self.inhibit(name)
 
     def screensaver_match_cb(self, bus, message):
         member = message.get_member()
         args = message.get_args_list()
 
-        if member == 'NameOwnerChanged' and len(args) >= 3 and self.ss_regex.match(args[0]):
+        ss_bus_name = str(args[0])
+        if member == 'NameOwnerChanged' and len(args) >= 3 and ss_bus_name in self.known_screensavers:
             owner_name = args[2]
-            ss_bus_name = args[0]
-
             if (owner_name):
                 self.inhibit(ss_bus_name)
             else:
                 self.remove(ss_bus_name)
-
         return True
 
     def remove(self, bus_name):
-        logging.debug("Remove screensaver %s" % bus_name)
-        self.screensavers.pop(bus_name)
+        logging.debug("ScreenSaverInhibitor: Removing screensaver %s" % bus_name)
+        if bus_name in self.screensavers:
+            self.screensavers.pop(bus_name)
 
     def inhibit(self, bus_name):
-        if bus_name in self.screensavers:
+        if bus_name not in self.known_screensavers:
+            logging.debug(
+                'ScreenSaverInhibitor: Ignoring {} as it is not a known screensaver'.format(bus_name))
             return
+        
+        logging.debug(
+            'ScreenSaverInhibitor: Inhibiting screensaver {}'.format(bus_name))
 
         self.screensavers[bus_name] = {}
-
-        logging.debug("Inhibiting %s" % bus_name)
-
         object_path = "/" + bus_name.replace(".", "/")
-        proxy = dbus.SessionBus().get_object(bus_name, object_path)
-
-        ss = self.screensavers[bus_name]
-        ss['iface'] = dbus.Interface(proxy, dbus_interface=bus_name)
-
         try:
+            proxy = dbus.SessionBus().get_object(bus_name, object_path)
+
+            ss = self.screensavers[bus_name]
+            ss['iface'] = dbus.Interface(proxy, dbus_interface=bus_name)
+
             ss['cookie'] = ss['iface'].Inhibit(
                 'org.freedesktop.FleetCommander.Logger',
                 'Preventing Screen locking while Fleet Commander Logger runs')
-
         except Exception as e:
             logging.error(
-                "Screensaver Inhibitor: Error inhibiting %s: %s" % (bus_name, e))
+                "ScreenSaverInhibitor: Error inhibiting {}: {}".format(bus_name, e))
 
     def uninhibit(self):
         for name, data in self.screensavers.items():
-            logging.debug("Unihibiting %s" % name)
+            logging.debug(
+                "ScreenSaverInhibitor: Unihibiting {}".format(name))
 
             try:
                 data['iface'].UnInhibit(data['cookie'])
 
             except Exception as e:
                 logging.error(
-                    "Screensaver Inhibitor: Error uninhibiting %s: %s" % (name, e))
+                    "ScreenSaverInhibitor: Error uninhibiting {}: {}".format(name, e))
 
         self.screensavers.clear()
 
@@ -1016,7 +1028,7 @@ class FirefoxLogger(object):
         self.connmgr = connmgr
         self.datadir = datadir
         self.namespace = namespace
-        self.profiles_path = self.datadir + '/installs.ini'
+        self.profiles_path = os.path.join(self.datadir, 'installs.ini')
 
         self.monitored_preferences = {}
         self.file_monitors = {}
