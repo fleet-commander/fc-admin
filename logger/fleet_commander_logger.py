@@ -152,6 +152,7 @@ class ScreenSaverInhibitor(object):
         'org.freedesktop.ScreenSaver',
         'org.xfce.ScreenSaver',
         'org.cinnamon.ScreenSaver',
+        'org.mate.ScreenSaver',
     ]
 
     screensavers = {}
