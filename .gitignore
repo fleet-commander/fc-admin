@@ -51,6 +51,3 @@ install-ipamaster.sh
 build-copr.sh
 check.sh
 check-full.sh
-
-# RPM specfile
-fleet-commander-admin.spec
