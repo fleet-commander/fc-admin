@@ -1,0 +1,27 @@
+trigger:
+- master
+
+variables:
+- template: templates/variables-common.yml
+# platform specific variables, links to
+- template: templates/variables.yml
+
+jobs:
+- job: Build_and_Unittests
+  pool:
+    vmImage: $(VM_IMAGE)
+  container:
+    image: $(DOCKER_BUILD_IMAGE)
+  steps:
+    - template: templates/${{ variables.PREPARE_BUILD_TEMPLATE }}
+    - template: templates/${{ variables.CONFIGURE_TEMPLATE }}
+    - script: |
+        set -e
+        make VERBOSE=1 check
+      displayName: Run unittests
+    - template: templates/${{ variables.BUILD_TEMPLATE }}
+    - template: templates/publish-build.yml
+      parameters:
+        artifactName: 'packages-$(Build.BuildId)'
+        targetPath: $(Build.Repository.LocalPath)/dist
+        displayName: Publish packages

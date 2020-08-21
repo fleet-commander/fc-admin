@@ -1,0 +1,8 @@
+steps:
+- script: |
+    set -e
+    printf "Configuring project"
+    git submodule update --init --recursive
+    autoreconf -ifv
+    ./configure
+  displayName: Configure the project

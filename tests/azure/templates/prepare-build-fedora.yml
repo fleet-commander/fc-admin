@@ -1,0 +1,25 @@
+steps:
+- script: |
+    set -e
+    sudo rm -rf /var/cache/dnf/*
+    sudo dnf makecache || :
+    printf "Installing base dev dependencies\n"
+    sudo dnf install -y \
+        'dnf-command(builddep)' \
+        autoconf \
+        autoconf-archive \
+        automake \
+        gettext-devel \
+        make \
+        rpm-build \
+
+    printf "Installing FC dev dependencies\n"
+    sudo dnf builddep -y \
+        --skip-broken \
+        -D "with_check 1" \
+        --spec fleet-commander-admin.spec \
+        --best \
+        --allowerasing \
+        --setopt=install_weak_deps=False \
+
+  displayName: Prepare build environment

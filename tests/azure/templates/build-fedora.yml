@@ -1,0 +1,6 @@
+steps:
+- script: |
+    set -e
+    echo "Running make target 'rpms'"
+    make rpms
+  displayName: Build RPM packages
