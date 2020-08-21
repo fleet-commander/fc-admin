@@ -31,9 +31,19 @@ BuildRequires: python3-pexpect
 BuildRequires: python3-gobject
 BuildRequires: python3-dbus
 BuildRequires: python3-libvirt
-BuildRequires: python3-dns
 BuildRequires: python3-samba
+%endif
+
+%if 0%{?with_check}
+BuildRequires: git
+BuildRequires: python3-dns
 BuildRequires: python3-ldap
+BuildRequires: python3-dbusmock
+BuildRequires: python3-ipalib
+BuildRequires: python3-six
+BuildRequires: NetworkManager-libnm
+BuildRequires: json-glib
+BuildRequires: procps
 %endif
 
 Requires: NetworkManager
