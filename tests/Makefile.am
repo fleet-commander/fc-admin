@@ -1,5 +1,5 @@
 TESTS_ENVIRONMENT = export PATH=$(abs_top_srcdir)/tests/tools:$(abs_top_srcdir)/tests:$(PATH); export TOPSRCDIR=$(abs_top_srcdir); export FC_TESTING=true; export XDG_DATA_DIRS=$(abs_top_srcdir)/tests/data/; export PYTHON=@PYTHON@; export PYTHONPATH=$(abs_top_srcdir)/admin;
-TESTS = 00_database.py 00_freeipa.py 00_fcad.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.py 03_logger_nm.py 03_logger_chromium.py 03_logger_firefox.py 04_libvirt_controller.py 05_fcdbus.sh
+TESTS = 00_database.py 00_freeipa.py 00_fcad.py 00_sshcontroller.py 01_mergers.py 01_logger_dconf.sh 02_logger_connmgr.py 03_logger_nm.sh 03_logger_chromium.py 03_logger_firefox.py 04_libvirt_controller.py 05_fcdbus.sh
 
 EXTRA_DIST =                         \
 	$(TESTS)                         \
