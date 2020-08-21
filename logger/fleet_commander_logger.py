@@ -486,6 +486,8 @@ class NMLogger(object):
     OBJECT_PATH = "/org/freedesktop/NetworkManager/Settings"
     INTERFACE_NAME = "org.freedesktop.NetworkManager.Settings"
 
+    NM_BUS = Gio.BusType.SYSTEM
+
     def __init__(self, connmgr):
         logging.debug("Constructing NetworkManager logger")
         self.connmgr = connmgr
@@ -499,7 +501,7 @@ class NMLogger(object):
         #     self.proxy, dbus_interface=self.INTERFACE_NAME)
         # self.iface.connect_to_signal('NewConnection', self.new_connection_cb)
 
-        self.dbus_conn = Gio.bus_get_sync(Gio.BusType.SYSTEM)
+        self.dbus_conn = Gio.bus_get_sync(self.NM_BUS)
 
         subs_id = self.dbus_conn.signal_subscribe(
             self.BUS_NAME,
@@ -730,7 +732,7 @@ class NMLogger(object):
         conn_path = parameters.get_child_value(0).get_string()
 
         proxy = Gio.DBusProxy.new_for_bus_sync(
-            Gio.BusType.SYSTEM,
+            self.NM_BUS,
             Gio.DBusProxyFlags.NONE,
             None,
             self.BUS_NAME,

@@ -104,6 +104,8 @@ class NMClientMock(object):
 FleetCommander.NM.Client = NMClientMock
 FleetCommander.NM.ConnectionSerializationFlags.ALL = 1
 
+FleetCommander.NMLogger.NM_BUS = Gio.BusType.SESSION
+
 class TestNMLogger(unittest.TestCase):
 
     def serialize_config_object(self, obj):
