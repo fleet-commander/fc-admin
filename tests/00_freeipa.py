@@ -193,7 +193,7 @@ class TestFreeIPA(unittest.TestCase):
         profiles = self.ipa.get_profiles()
         self.assertEqual(profiles, [])
         # Add some profile
-        result = self.ipa.save_profile(self.TEST_PROFILE)
+        self.ipa.save_profile(self.TEST_PROFILE)
         profiles = self.ipa.get_profiles()
         self.assertEqual(
             profiles,

@@ -211,7 +211,6 @@ class TestSSHController(unittest.TestCase):
         username = 'testuser'
         hostname = 'localhost'
         port = '2022'
-        command = 'mycommand'
         optional_local_host = 'myhost'
 
         # Open tunnel without specifying a local host

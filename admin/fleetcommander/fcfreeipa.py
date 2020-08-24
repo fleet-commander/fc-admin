@@ -269,7 +269,7 @@ class FreeIPAConnector(object):
             return hosts
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error getting hosts list')
+                'FreeIPAConnector: Error getting hosts list', e)
             raise
 
     def _do_sanity_check(self):
@@ -307,7 +307,7 @@ class FreeIPAConnector(object):
     @connection_required
     def check_user_exists(self, username):
         try:
-            result = api.Command.user_show(six.text_type(username))
+            api.Command.user_show(six.text_type(username))
             return True
         except errors.NotFound:
             return False
@@ -315,7 +315,7 @@ class FreeIPAConnector(object):
     @connection_required
     def check_group_exists(self, groupname):
         try:
-            result = api.Command.group_show(six.text_type(groupname))
+            api.Command.group_show(six.text_type(groupname))
             return True
         except errors.NotFound:
             return False
@@ -323,7 +323,7 @@ class FreeIPAConnector(object):
     @connection_required
     def check_host_exists(self, hostname):
         try:
-            result = api.Command.host_show(six.text_type(hostname))
+            api.Command.host_show(six.text_type(hostname))
             return True
         except errors.NotFound:
             return False
@@ -331,7 +331,7 @@ class FreeIPAConnector(object):
     @connection_required
     def check_hostgroup_exists(self, groupname):
         try:
-            result = api.Command.hostgroup_show(six.text_type(groupname))
+            api.Command.hostgroup_show(six.text_type(groupname))
             return True
         except errors.NotFound:
             return False
@@ -339,7 +339,7 @@ class FreeIPAConnector(object):
     @connection_required
     def check_profile_exists(self, name):
         try:
-            result = api.Command.deskprofile_show(six.text_type(name), all=False)
+            api.Command.deskprofile_show(six.text_type(name), all=False)
             return True
         except errors.NotFound:
             return False
