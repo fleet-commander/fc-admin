@@ -60,3 +60,14 @@ black:
 blackcheck:
 	$(PYTHON) -m black -v --check --diff \
 	    $(top_srcdir)
+
+.PHONY: jslint
+jslint:
+	FILES=`find $(top_srcdir) \
+	      -path './rpmbuild' -prune -o \
+		  -path './**/spice-html5' -prune -o \
+		  -name '*.min.js' -prune -o \
+	      -name '*.js' -print`; \
+	echo -e "jslinting files:\n$${FILES}\n"; \
+	jslint --version; \
+	jslint $${FILES}
