@@ -11,3 +11,6 @@ variables:
 
   # the template to build FC packages (rpms)
   BUILD_TEMPLATE: ${{ format('build-{0}.yml', variables.FC_PLATFORM) }}
+
+  # the template to install latest Pylint
+  PREPARE_PYLINT_TEMPLATE: ${{ format('prepare-pylint-{0}.yml', variables.FC_PLATFORM) }}

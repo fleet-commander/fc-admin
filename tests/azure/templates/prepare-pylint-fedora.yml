@@ -1,0 +1,13 @@
+steps:
+- script: |
+    set -e
+    printf "Installing pip module\n"
+    sudo dnf install -y \
+        python3-pip \
+
+    printf "Installing latest Pylint\n"
+    pip install \
+        --user --force \
+        pylint \
+
+  displayName: Install latest Pylint
