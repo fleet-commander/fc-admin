@@ -83,8 +83,7 @@ class GOAProvidersLoader(object):
         stripped = identifier.strip()
         if stripped:
             return stripped.title().replace('_', ' ')
-        else:
-            return 'Enabled'
+        return 'Enabled'
 
     def get_providers(self):
         return self._providers

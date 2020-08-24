@@ -391,11 +391,11 @@ class FreeIPAConnector(object):
                 logging.debug(
                     'FreeIPAConnector: Profile %s already exists. Updating' % name)
                 return self._update_profile(profile)
-            else:
-                # Save new
-                logging.debug(
-                    'FreeIPAConnector: Profile %s does not exist. Creating' % name)
-                return self._create_profile(profile)
+            # Save new
+            logging.debug(
+                'FreeIPAConnector: Profile %s does not exist. Creating' % name
+            )
+            return self._create_profile(profile)
 
     @connection_required
     def del_profile(self, name):

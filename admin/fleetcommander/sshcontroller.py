@@ -80,9 +80,9 @@ class SSHController(object):
         prog.wait()
         if prog.returncode == 0:
             return out.decode()
-        else:
-            raise SSHControllerException(
-                'Error getting host keys: %s' % error)
+        raise SSHControllerException(
+            'Error getting host keys: %s' % error
+        )
 
     def add_keys_to_known_hosts(self, known_hosts_file, key_data):
         # First create path if does not exists
@@ -132,9 +132,9 @@ class SSHController(object):
         os.remove(tmpfile)
         if prog.returncode == 0:
             return out.decode()
-        else:
-            raise SSHControllerException(
-                'Error generating fingerprint from key data: %s' % error)
+        raise SSHControllerException(
+            'Error generating fingerprint from key data: %s' % error
+        )
 
     def get_host_fingerprint(self, hostname, port=DEFAULT_SSH_PORT):
         """
@@ -177,9 +177,9 @@ class SSHController(object):
         out, error = prog.communicate()
         if prog.returncode == 0:
             return out
-        else:
-            raise SSHControllerException(
-                'Error executing remote command: %s' % error)
+        raise SSHControllerException(
+            'Error executing remote command: %s' % error
+        )
 
     def open_tunnel(self, local_port, tunnel_host, tunnel_port,
                     private_key_file, username, hostname, port=DEFAULT_SSH_PORT,

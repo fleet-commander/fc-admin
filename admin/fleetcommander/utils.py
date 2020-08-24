@@ -47,10 +47,8 @@ def get_data_from_file(path):
 def test_and_create_file(path, content):
     if os.path.isfile(path):
         return
-    else:
-        with open(path, 'w+') as fd:
-            fd.write(content)
-            fd.close()
+    with open(path, 'w+') as fd:
+        fd.write(content)
 
 
 def write_and_close(path, data):

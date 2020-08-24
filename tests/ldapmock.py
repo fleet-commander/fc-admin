@@ -79,7 +79,7 @@ class LDAPConnectionMock(object):
                     return (
                         ('cn', self._domain_data['domain']),
                     )
-            elif sidfilter in filterstr:
+            if sidfilter in filterstr:
                 filtersid = filterstr[len(sidfilter):-2]
                 for objclass in ['users', 'groups', 'hosts']:
                     for _key, elem in self._domain_data[objclass].items():
@@ -114,7 +114,7 @@ class LDAPConnectionMock(object):
                 for cn, _profile in self._domain_data['profiles'].items():
                     profile_list.append((cn, self._domain_data['profiles'][cn]))
                 return profile_list
-            elif '(displayName=' in filterstr:
+            if '(displayName=' in filterstr:
                 displayname = filterstr[len('(displayName='):-1]
                 # Trying to get a profile by its display name
                 for _key, elem in self._domain_data['profiles'].items():
