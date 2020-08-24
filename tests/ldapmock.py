@@ -82,7 +82,7 @@ class LDAPConnectionMock(object):
             elif sidfilter in filterstr:
                 filtersid = filterstr[len(sidfilter):-2]
                 for objclass in ['users', 'groups', 'hosts']:
-                    for key, elem in self._domain_data[objclass].items():
+                    for _key, elem in self._domain_data[objclass].items():
                         # Use unpacked object sid to avoid use of ndr_unpack
                         if filtersid == elem['unpackedObjectSid']:
                             return [(elem['cn'], elem), ]
@@ -111,13 +111,13 @@ class LDAPConnectionMock(object):
         elif base == 'CN=Policies,CN=System,DC=FC,DC=AD':
             if filterstr == '(objectclass=groupPolicyContainer)':
                 profile_list = []
-                for cn, profile in self._domain_data['profiles'].items():
+                for cn, _profile in self._domain_data['profiles'].items():
                     profile_list.append((cn, self._domain_data['profiles'][cn]))
                 return profile_list
             elif '(displayName=' in filterstr:
                 displayname = filterstr[len('(displayName='):-1]
                 # Trying to get a profile by its display name
-                for key, elem in self._domain_data['profiles'].items():
+                for _key, elem in self._domain_data['profiles'].items():
                     if elem['displayName'][0].decode() == displayname:
                         return [(elem['cn'], elem)]
             else:

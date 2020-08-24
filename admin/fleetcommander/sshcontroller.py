@@ -63,7 +63,7 @@ class SSHController(object):
                 '-N', ''
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, error = prog.communicate()
+        _out, error = prog.communicate()
         if prog.returncode != 0:
             raise SSHControllerException(
                 'Error generating keypair: %s' % error)
@@ -107,7 +107,7 @@ class SSHController(object):
                 lines = fd.readlines()
                 fd.close()
             for line in lines:
-                hosts, keytype, key = line.split()
+                hosts, _keytype, _key = line.split()
                 if hostname in hosts.split(','):
                     return True
         return False

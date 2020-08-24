@@ -256,9 +256,7 @@ class TestFirefoxLogger(unittest.TestCase):
         firefox_logger.test_profiles_file_updated = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
-        timeout = GLib.timeout_add(
-            1000,
-            mainloop_quit_callback)
+        GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Add profiles file
         self.file_set_contents(
@@ -297,9 +295,7 @@ class TestFirefoxLogger(unittest.TestCase):
         firefox_logger.test_prefs_file_updated = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
-        timeout = GLib.timeout_add(
-            1000,
-            mainloop_quit_callback)
+        GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Add profiles file
         self.file_set_contents(
@@ -346,9 +342,7 @@ class TestFirefoxLogger(unittest.TestCase):
         firefox_logger.test_prefs_file_updated = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
-        timeout = GLib.timeout_add(
-            1000,
-            mainloop_quit_callback)
+        GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Add profiles file
         self.file_set_contents(
@@ -418,9 +412,7 @@ class TestFirefoxLogger(unittest.TestCase):
         firefox_logger.test_prefs_file_updated = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
-        timeout = GLib.timeout_add(
-            1000,
-            mainloop_quit_callback)
+        GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Overwrite profiles file with modified data
         self.file_set_contents(

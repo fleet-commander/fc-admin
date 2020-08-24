@@ -109,7 +109,7 @@ class SpicePortManager(object):
         try:
             self.fd = open(self.path, 'wb', 0)
         except FileNotFoundError as e:
-            logging.error('Can\'t open device file %s. Use -n or --no-dev for non Fleet Commander VM session' % self.path)
+            logging.error('Can\'t open device file %s. Use -n or --no-dev for non Fleet Commander VM session' % self.path, e)
             sys.exit(1)
 
     def _perform_submits(self):
@@ -297,7 +297,6 @@ class GSettingsLogger(object):
         # Added what parametwe because it gets 8 nor 7 parms
         path = parameters.get_child_value(0).get_string()
         keys = []
-        tag  = parameters.get_child_value(2).get_string()
         if not path.endswith("/"):
             split = path.split("/")
             keys.append(split.pop())
@@ -307,7 +306,6 @@ class GSettingsLogger(object):
             for i in range(keys_variant.n_children()):
                 keys.append(keys_variant.get_child_value(i).get_string())
                 #keys.append(keys_variant.get_child_value(i).get_string())
-        schema_known = False
 
         logging.debug("dconf Notify: %s" % path)
         logging.debug(">>> Keys: %s" % keys)
@@ -358,9 +356,6 @@ class GSettingsLogger(object):
             if variant_string is None:
                 logging.error("There was an error reading dconf key %s%s" (path, key))
                 return
-
-            if variant_string.endswith("\n"):
-                variantstring = variant_string[:-1]
 
             variant = None
             try:
@@ -503,7 +498,7 @@ class NMLogger(object):
 
         self.dbus_conn = Gio.bus_get_sync(self.NM_BUS)
 
-        subs_id = self.dbus_conn.signal_subscribe(
+        self.dbus_conn.signal_subscribe(
             self.BUS_NAME,
             self.INTERFACE_NAME,
             'NewConnection',
@@ -854,7 +849,7 @@ class ChromiumLogger(object):
             try:
                 # Get value from preferences
                 current = current[item];
-            except Exception as e:
+            except Exception:
                 # Preference is not in preferences data
                 return None
         return current

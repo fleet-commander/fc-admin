@@ -84,7 +84,6 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
     def test_00_initialization(self):
         logging.debug('TEST 00 %s mode' % self.LIBVIRT_MODE)
 
-        ctrlr = self.get_controller(self.config)
         # Check data path creation
         self.assertTrue(os.path.isdir(self.test_directory))
 
@@ -230,7 +229,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         logging.debug('TEST 05 %s mode' % self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
-        uuid, port, pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
+        _uuid, port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
 
         # Test new domain XML generation
         new_domain = ctrlr._last_started_domain
@@ -252,7 +251,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         logging.debug('TEST 06 %s mode' % self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
-        uuid, port, pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
+        uuid, _port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
 
         # We pass None as PID to avoid killing any process
         ctrlr.session_stop(uuid, None)

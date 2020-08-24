@@ -266,7 +266,7 @@ class TestDconfLogger(unittest.TestCase):
         home = GLib.dir_make_tmp("fcmdr-XXXXXX")
 
         mgr = MockConnectionManager()
-        glog = FleetCommander.GSettingsLogger(mgr, home)
+        FleetCommander.GSettingsLogger(mgr, home)
 
         self.assertTrue(
             os.path.exists(
