@@ -28,6 +28,10 @@ jobs:
         set -e
         make VERBOSE=1 check
       displayName: Run unittests
+    - script: |
+        set -e
+        make jslint
+      displayName: jslint sources
     - template: templates/${{ variables.BUILD_TEMPLATE }}
     - template: templates/publish-build.yml
       parameters:
