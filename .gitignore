@@ -12,6 +12,10 @@ install-sh
 missing
 INSTALL
 
+# RPM building
+rpmbuild/
+dist/
+
 # Test suite
 tests/*.trs
 tests/*.log
