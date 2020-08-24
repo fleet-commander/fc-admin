@@ -38,7 +38,6 @@ class UnsupportedType(object):
     """
     Unsupported type for testing
     """
-    pass
 
 
 class TestDBManager(unittest.TestCase):
