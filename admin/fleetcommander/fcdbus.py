@@ -213,9 +213,8 @@ class FleetCommanderDbusService(dbus.service.Object):
             logging.debug(
                 'FC: Realm details: %s (%s)' % (domain, server))
             return (domain, server)
-        else:
-            # Return unknown domain and use IPA as directory server
-            return ('UNKNOWN', 'ipa')
+        # Return unknown domain and use IPA as directory server
+        return ('UNKNOWN', 'ipa')
 
     def get_libvirt_controller(self):
         """
@@ -661,11 +660,10 @@ class FleetCommanderDbusService(dbus.service.Object):
         domains = self.get_domains()
         if domains is not None:
             return json.dumps({'status': True, 'domains': domains})
-        else:
-            return json.dumps({
-                'status': False,
-                'error': 'Error retrieving domains'
-            })
+        return json.dumps({
+            'status': False,
+            'error': 'Error retrieving domains'
+        })
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
@@ -703,8 +701,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         status, msg = self.stop_current_session()
         if status:
             return json.dumps({'status': True})
-        else:
-            return json.dumps({'status': False, 'error': msg})
+        return json.dumps({'status': False, 'error': msg})
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,

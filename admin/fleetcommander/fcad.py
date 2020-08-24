@@ -368,8 +368,7 @@ class ADConnector(object):
         if data:
             profile = self._data_to_profile(data)
             return profile['settings'][FC_GLOBAL_POLICY_NS]['global_policy']
-        else:
-            return FC_GLOBAL_POLICY_DEFAULT
+        return FC_GLOBAL_POLICY_DEFAULT
 
     @connection_required
     def set_global_policy(self, policy):
@@ -503,8 +502,7 @@ class ADConnector(object):
                 'username': data[1]['cn'][0],
                 'sid': self.get_sid(data[1]['objectSid'][0])
             }
-        else:
-            return None
+        return None
 
     @connection_required
     def get_group(self, groupname):
@@ -521,8 +519,7 @@ class ADConnector(object):
                 'groupname': data[1]['cn'][0],
                 'sid': self.get_sid(data[1]['objectSid'][0])
             }
-        else:
-            return None
+        return None
 
     @connection_required
     def get_host(self, hostname):
@@ -538,8 +535,7 @@ class ADConnector(object):
                 'hostname': data[1]['cn'][0],
                 'sid': self.get_sid(data[1]['objectSid'][0])
             }
-        else:
-            return None
+        return None
 
     def get_object_by_sid(self, sid, classes=['computer', 'user', 'group']):
         base_dn = "%s" % self._get_domain_dn()
@@ -555,8 +551,7 @@ class ADConnector(object):
                 'cn': data['cn'][0],
                 'objectClass': data['objectClass']
             }
-        else:
-            return None
+        return None
 
     def get_sid(self, sid_ndr):
         return ndr_unpack(security.dom_sid, sid_ndr)

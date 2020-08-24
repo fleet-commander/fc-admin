@@ -115,8 +115,7 @@ class TestDconfLogger(unittest.TestCase):
                         method, args))
                 getattr(iface, method)(*args)
                 return False
-            else:
-                return True
+            return True
 
         GLib.idle_add(check_dbus_name)
 

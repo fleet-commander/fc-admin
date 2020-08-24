@@ -956,7 +956,7 @@ class ChromiumLogger(object):
             for child in leaf["children"]:
                 children.extend(self.parse_bookmarks_tree(nextpath, child))
             return children
-        elif leaf["type"] == "url":
+        if leaf["type"] == "url":
             logging.debug("Parsing bookmarks leaf %s" % leaf["name"]);
             return [
                 json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]

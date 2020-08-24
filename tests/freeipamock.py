@@ -153,8 +153,7 @@ class FreeIPACommand(object):
                 u'value': six.text_type(user),
                 u'summary': None
             }
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     def group_show(self, group):
         if group in self.data.groups:
@@ -163,8 +162,7 @@ class FreeIPACommand(object):
                 u'value': six.text_type(group),
                 u'summary': None
             }
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     def host_find(self, sizelimit):
         count = len(self.data.hosts)
@@ -188,8 +186,7 @@ class FreeIPACommand(object):
                 u'value': six.text_type(host),
                 u'summary': None
             }
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     def hostgroup_add(self, hostgroup):
         if hostgroup in self.data.hostgroups:
@@ -205,8 +202,7 @@ class FreeIPACommand(object):
                 u'value': six.text_type(hostgroup),
                 u'summary': None
             }
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     def hostgroup_add_member(self, hostgroup, host):
         pass
@@ -354,8 +350,7 @@ class FreeIPACommand(object):
             profile = self.data.profiles[name].copy()
             profile['ipadeskdata'] = (profile['ipadeskdata'][0],)
             return {'result': profile}
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     def deskprofilerule_show(self, name, all):
         if name in self.data.profilerules:
@@ -373,8 +368,7 @@ class FreeIPACommand(object):
                         self.data.profilerules[name]['priority'],),
                 }
             }
-        else:
-            raise FreeIPAErrors.NotFound()
+        raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
     def deskprofilerule_mod(self, cn,
