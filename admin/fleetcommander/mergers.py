@@ -53,14 +53,12 @@ class GSettingsChangeMerger(BaseChangeMerger):
     """
     GSettings change merger class
     """
-    pass
 
 
 class LibreOfficeChangeMerger(BaseChangeMerger):
     """
     LibreOffice change merger class
     """
-    pass
 
 
 class NetworkManagerChangeMerger(BaseChangeMerger):
@@ -116,12 +114,9 @@ class FirefoxChangeMerger(BaseChangeMerger):
     """
     Firefox settings change merger class
     """
-    pass
 
 
 class FirefoxBookmarksChangeMerger(BaseChangeMerger):
     """
     Firefox bookmarks change merger class
     """
-    pass
-

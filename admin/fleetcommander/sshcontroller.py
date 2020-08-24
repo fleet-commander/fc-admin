@@ -47,7 +47,6 @@ class SSHController(object):
         """
         Class initialization
         """
-        pass
 
     def generate_ssh_keypair(self, private_key_file, key_size=RSA_KEY_SIZE):
         """
