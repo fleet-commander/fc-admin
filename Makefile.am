@@ -37,3 +37,15 @@ clean-local:
 	rm -rf "$(RPMBUILD)"
 	rm -rf "$(top_builddir)/dist"
 	rm -f "$(top_builddir)"/$(PACKAGE)-*.tar.gz
+
+.PHONY: pylint
+pylint:
+	FILES=`find $(top_srcdir) \
+	      -type d -exec test -e '{}/__init__.py' \; -print -prune -o \
+	      -path './rpmbuild' -prune -o \
+	      -name '*.py' -print`; \
+	echo -e "Pylinting files:\n$${FILES}\n"; \
+	PYTHONPATH=$(top_srcdir)/admin $(PYTHON) -m pylint --version; \
+	PYTHONPATH=$(top_srcdir)/admin $(PYTHON) -m pylint \
+		--rcfile=$(top_srcdir)/pylintrc \
+		$${FILES}
