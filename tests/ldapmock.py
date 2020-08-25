@@ -23,7 +23,7 @@
 import logging
 
 
-DOMAIN_DATA = None
+DOMAIN_DATA = {}
 
 
 class SASLMock:
