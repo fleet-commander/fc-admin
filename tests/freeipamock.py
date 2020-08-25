@@ -54,19 +54,19 @@ class FreeIPAData(object):
             'profilerules': self.profilerules,
             'global_policy': self.global_policy,
         }
-        logging.debug('IPAMock data to export: %s' % data)
+        logging.debug('IPAMock data to export: %s', data)
         jsondata = json.dumps(data)
-        logging.debug('IPAMock json data to export: %s' % jsondata)
+        logging.debug('IPAMock json data to export: %s', jsondata)
         return jsondata
 
     def save_to_datadir(self, filename='freeipamock-data.json'):
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
-            logging.debug('IPAMock exporting data to %s' % path)
+            logging.debug('IPAMock exporting data to %s', path)
             with open(path, 'w') as fd:
                 fd.write(self.get_json())
                 fd.close()
-                logging.debug('FreeIPA mock data saved to %s' % path)
+                logging.debug('FreeIPA mock data saved to %s', path)
         else:
             logging.debug('IPAMock not exporting data (No datadir)')
 
@@ -222,8 +222,10 @@ class FreeIPACommand(object):
 
     @FreeIPAData.export_data
     def deskprofile_add(self, cn, description, ipadeskdata):
-        logging.debug("IPAMock: deskprofile_add(%s, %s, %s)" % (
-            cn, description, ipadeskdata))
+        logging.debug(
+            "IPAMock: deskprofile_add(%s, %s, %s)",
+            cn, description, ipadeskdata
+        )
         if cn in self.data.profiles:
             raise FreeIPAErrors.DuplicateEntry()
         else:
@@ -232,7 +234,7 @@ class FreeIPACommand(object):
                 'description': (description,),
                 'ipadeskdata': (ipadeskdata.decode(),),
             }
-        logging.debug("IPAMock: Stored data: %s" % self.data.profiles[cn])
+        logging.debug("IPAMock: Stored data: %s", self.data.profiles[cn])
 
     @FreeIPAData.export_data
     def deskprofile_mod(self, cn, description, ipadeskdata):
@@ -249,8 +251,7 @@ class FreeIPACommand(object):
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
         else:
-            logging.debug(
-                'IPAMock: profile rule for %s' % name)
+            logging.debug('IPAMock: profile rule for %s', name)
             self.data.profilerules[name] = {
                 'priority': ipadeskprofilepriority,
                 'hostcategory': hostcategory,
@@ -263,12 +264,14 @@ class FreeIPACommand(object):
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
         logging.debug(
-            'IPAMock: Adding users and groups to rule %s, %s, %s' % (
-                name, user, group))
+            'IPAMock: Adding users and groups to rule %s, %s, %s',
+            name, user, group
+        )
         if name in self.data.profilerules:
             logging.debug(
-                'IPAMock: profile rule before user/group data for %s: %s' % (
-                    name, self.data.profilerules[name]))
+                'IPAMock: profile rule before user/group data for %s: %s',
+                name, self.data.profilerules[name]
+            )
             user = list(set(user).intersection(set(self.data.users)))
             self.data.profilerules[name]['users'].extend(user)
             self.data.profilerules[name]['users'] = sorted(list(
@@ -278,8 +281,9 @@ class FreeIPACommand(object):
             self.data.profilerules[name]['groups'] = sorted(list(
                 set(self.data.profilerules[name]['groups'])))
             logging.debug(
-                'IPAMock: profile rule after user/group data for %s: %s' % (
-                    name, self.data.profilerules[name]))
+                'IPAMock: profile rule after user/group data for %s: %s',
+                name, self.data.profilerules[name]
+            )
         else:
             raise FreeIPAErrors.NotFound()
 
@@ -287,8 +291,9 @@ class FreeIPACommand(object):
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
             logging.debug(
-                'IPAMock: Adding hosts and hostgroups to rule %s, %s, %s' % (
-                    name, host, hostgroup))
+                'IPAMock: Adding hosts and hostgroups to rule %s, %s, %s',
+                name, host, hostgroup
+            )
             host = list(set(host).intersection(set(self.data.hosts)))
             self.data.profilerules[name]['hosts'].extend(host)
             self.data.profilerules[name]['hosts'] = sorted(list(

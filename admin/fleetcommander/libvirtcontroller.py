@@ -112,7 +112,7 @@ class LibVirtController(object):
                 self._libvirt_socket = out.decode().strip()
                 logging.debug(
                     'libvirtcontroller: '
-                    'Session mode libvirt socket is %s' % self._libvirt_socket)
+                    'Session mode libvirt socket is %s', self._libvirt_socket)
             except Exception as e:
                 raise LibVirtControllerException(
                     'Error connecting to libvirt host: %s' % e)
@@ -141,8 +141,9 @@ class LibVirtController(object):
             )
             self._libvirt_video_driver = out.decode().strip()
             logging.debug(
-                'libvirtcontroller:'
-                'Using %s video driver.' % self._libvirt_video_driver)
+                'libvirtcontroller: Using %s video driver.',
+                self._libvirt_video_driver
+            )
         except Exception as e:
             raise LibVirtControllerException(
                 'Error connecting to libvirt host: %s' % e)
@@ -314,8 +315,9 @@ class LibVirtController(object):
                 UserKnownHostsFile=self.known_hosts_file,
             )
             logging.debug(
-                'libvirtcontroller: Tunnel opened %s->%s. PID: %s' % (
-                    local_port, spice_port, pid))
+                'libvirtcontroller: Tunnel opened %s->%s. PID: %s',
+                local_port, spice_port, pid
+            )
             return (local_port, pid)
         except Exception as e:
             raise LibVirtControllerException('Error opening tunnel: %s' % e)
@@ -365,7 +367,7 @@ class LibVirtController(object):
             'active': domain.isActive(),
             'temporary': domain.name().startswith('fc-')
         } for domain in domains]
-        logging.debug('libvirtcontroller: Domains list: %s' % domainlist)
+        logging.debug('libvirtcontroller: Domains list: %s', domainlist)
         return domainlist
 
     def session_start(self, identifier):

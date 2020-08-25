@@ -144,7 +144,10 @@ while True:
     if message['action'] in ['add', 'change', 'move']:
         extension.send_message(
             'Received bookmark {} for bookmark id {}'.format(message['action'], bookmark_id))
-        logging.debug('Sending bookmark {} command to FC Logger dbus service'.format(message['action']))
+        logging.debug(
+            'Sending bookmark %s command to FC Logger dbus service',
+            message['action']
+        )
         fclogger.firefox_bookmark_update(bookmark_id, json.dumps(message))
     elif message['action'] == 'remove':
         extension.send_message('Received bookmark remove command for bookmark id {}'.format(bookmark_id))
