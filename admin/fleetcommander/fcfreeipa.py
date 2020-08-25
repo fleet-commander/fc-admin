@@ -395,9 +395,8 @@ class FreeIPAConnector(object):
                 raise RenameToExistingException(
                     'Profile %s can not be renamed to existing name %s' % (
                         oldname, name))
-            else:
-                # Rename profile
-                return self._update_profile(profile, oldname=oldname)
+            # Rename profile
+            return self._update_profile(profile, oldname=oldname)
         else:
             # Check if profile already exists
             if self.check_profile_exists(name):
