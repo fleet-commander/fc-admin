@@ -30,7 +30,6 @@ import logging
 import unittest
 
 # GObject Introspection imports
-import gi
 from gi.repository import Gio
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'logger')

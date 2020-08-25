@@ -28,8 +28,6 @@ import json
 import logging
 import unittest
 
-import dbus
-
 # GObject Introspection imports
 import gi
 

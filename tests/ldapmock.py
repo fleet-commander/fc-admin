@@ -22,10 +22,6 @@
 # Python imports
 import logging
 
-# LDAP imports
-from ldap import modlist
-from ldap import LDAPError
-
 
 DOMAIN_DATA = None
 

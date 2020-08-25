@@ -21,11 +21,8 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
-import six
 import os
 import sys
-import tempfile
-import shutil
 import unittest
 import json
 import freeipamock

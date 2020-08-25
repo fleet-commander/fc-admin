@@ -30,7 +30,6 @@ import logging
 import unittest
 
 # GObject Introspection imports
-import gi
 from gi.repository import GLib
 from gi.repository import Gio
 

@@ -24,7 +24,6 @@
 from __future__ import absolute_import
 import sys
 import os
-import json
 import unittest
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')

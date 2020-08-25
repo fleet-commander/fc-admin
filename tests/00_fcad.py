@@ -30,6 +30,9 @@ import logging
 import copy
 import json
 
+from ldap import modlist
+from ldap import LDAPError
+
 # Samba imports
 from samba.ndr import ndr_pack
 from samba.dcerpc import security
@@ -49,6 +52,8 @@ log.setLevel(level)
 
 # Mocking assignments
 fcad.ldap = ldapmock
+fcad.ldap.modlist = modlist
+fcad.ldap.LDAPError = LDAPError
 fcad.ldap.sasl = ldapmock.sasl
 
 

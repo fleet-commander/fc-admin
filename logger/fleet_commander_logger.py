@@ -25,9 +25,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
-import re
 import sys
-import getopt
 import logging
 import argparse
 import json
@@ -44,7 +42,6 @@ import gi
 gi.require_version('NM', '1.0')
 
 from gi.repository import GLib
-from gi.repository import GObject
 from gi.repository import Gio
 from gi.repository import NM
 
@@ -1371,7 +1368,6 @@ class FleetCommanderLogger(dbus.service.Object):
     def run(self):
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, DBUS_OBJECT_PATH)
-        #self._loop = GObject.MainLoop()
 
         # Run main loop
         self.ml.run()

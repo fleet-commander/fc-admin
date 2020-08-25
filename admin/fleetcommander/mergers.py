@@ -21,7 +21,6 @@
 #
 
 from __future__ import absolute_import
-import itertools
 import logging
 
 class BaseChangeMerger(object):

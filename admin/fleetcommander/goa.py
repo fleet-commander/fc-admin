@@ -20,7 +20,6 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
-import sys
 from six.moves.configparser import RawConfigParser, ParsingError
 import logging
 
