@@ -49,13 +49,20 @@ class BaseMergerTest(unittest.TestCase):
         self.merger = self.MERGER_CLASS()
 
     def generate_changes(self, keys=None):
+        changes = [{}, {}, {}]
+
         if keys is None:
             keys = self.KEY_LIST
-        changes = []
+
+        if keys:
+            changes = []
+
         for key in keys:
             change = self.BASIC_CHANGE.copy()
             change[self.KEY_NAME] = key
             changes.append(change)
+
+        assert len(changes) == 3
         return changes
 
     def generate_changesets(self):
