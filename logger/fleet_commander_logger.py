@@ -132,7 +132,7 @@ class SpicePortManager(object):
             "Submitting changeset as namespace %s: %s", namespace, data
         )
 
-        self.queue.append({"ns": namespace, "data": data});
+        self.queue.append({"ns": namespace, "data": data})
 
         if len(self.queue) > 0 and self.timeout < 1:
             self.timeout = GLib.timeout_add(
@@ -634,7 +634,7 @@ class NMLogger(object):
             key = child.get_child_value(0).get_string()
 
             if va.lookup_value(key, None) is not None:
-                continue;
+                continue
 
             builder.add_value (child)
 
@@ -790,7 +790,7 @@ class ChromiumLogger(object):
         self.connmgr = connmgr
         self.datadir = datadir
         self.namespace = namespace
-        self.local_state_path = self.datadir + "/Local State";
+        self.local_state_path = self.datadir + "/Local State"
         self.monitored_preferences = {}
         self.initial_bookmarks = {}
         self.monitored_bookmarks = {}
@@ -843,7 +843,7 @@ class ChromiumLogger(object):
         Load local state file and set a file monitor on it
         """
         local_state_file = Gio.File.new_for_path(self.local_state_path)
-        self._local_state_file_updated(None, local_state_file, None, None);
+        self._local_state_file_updated(None, local_state_file, None, None)
         monitor = local_state_file.monitor_file(Gio.FileMonitorFlags.NONE, None)
         self.file_monitors[self.local_state_path] = monitor
         monitor.connect("changed", self._local_state_file_updated)
@@ -884,8 +884,8 @@ class ChromiumLogger(object):
                 "Bookmarks file at %s does not exist (yet)",
                 bmarks_path
             )
-            self.initial_bookmarks[bmarks_path] = [];
-        logging.debug("Setting up file monitor at %s", bmarks_path);
+            self.initial_bookmarks[bmarks_path] = []
+        logging.debug("Setting up file monitor at %s", bmarks_path)
         monitor = bmarks_file.monitor_file(Gio.FileMonitorFlags.NONE, None)
         self.file_monitors[bmarks_path] = monitor
         monitor.connect("changed", self._bookmarks_file_updated)
@@ -893,11 +893,11 @@ class ChromiumLogger(object):
     def get_preference_value(self, prefs, preference):
         # Split preference by dot separator
         prefpath = preference.split('.')
-        current = prefs;
+        current = prefs
         for item in prefpath:
             try:
                 # Get value from preferences
-                current = current[item];
+                current = current[item]
             except Exception:
                 # Preference is not in preferences data
                 return None
@@ -944,11 +944,11 @@ class ChromiumLogger(object):
         )
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT:
             if fileobj.query_exists(None):
-                prefs = json.loads(fileobj.load_contents(None)[1]);
+                prefs = json.loads(fileobj.load_contents(None)[1])
                 logging.debug("PREV: %s", self.monitored_preferences[path])
                 logging.debug("NEW: %s", prefs)
                 for preference in self.policy_map:
-                    value = self.get_preference_value(prefs, preference);
+                    value = self.get_preference_value(prefs, preference)
                     if value != None:
                         logging.debug(
                             "Checking preference %s with value %s",
@@ -956,7 +956,7 @@ class ChromiumLogger(object):
                         )
                         prev = self.get_preference_value(self.monitored_preferences[path], preference)
                         if preference in self.monitored_preferences[path]:
-                            prev = self.monitored_preferences[path][preference];
+                            prev = self.monitored_preferences[path][preference]
                         logging.debug(
                             "%s = %s (previous: %s)", preference, value, prev
                         )
@@ -1011,7 +1011,7 @@ class ChromiumLogger(object):
         for root in bookmarks["roots"]:
             parsed = self.parse_bookmarks_tree([], bookmarks["roots"][root])
             flattened_bookmarks.extend(parsed)
-        return flattened_bookmarks;
+        return flattened_bookmarks
 
 
     def parse_bookmarks_tree(self, path, leaf):
@@ -1024,7 +1024,7 @@ class ChromiumLogger(object):
                 children.extend(self.parse_bookmarks_tree(nextpath, child))
             return children
         if leaf["type"] == "url":
-            logging.debug("Parsing bookmarks leaf %s", leaf["name"]);
+            logging.debug("Parsing bookmarks leaf %s", leaf["name"])
             return [
                 json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]
 
@@ -1050,7 +1050,7 @@ class ChromiumLogger(object):
                     found = False
                     for child in children:
                         if child['name'] == elem:
-                            children = child['children'];
+                            children = child['children']
                             found = True
                             break
                     if not found:
@@ -1258,9 +1258,9 @@ class FirefoxLogger(object):
             logging.debug(
                 "Could not open/parse %s: %s", self.profiles_path, e
             )
-            return None;
+            return None
 
-        groups = keyfile.get_groups()[0];
+        groups = keyfile.get_groups()[0]
         for group in groups:
             logging.debug("Checking profile %s", group)
             try:

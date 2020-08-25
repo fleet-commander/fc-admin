@@ -93,10 +93,10 @@ class NMConnectionMock(object):
 class NMClientMock(object):
 
     def connect(self, s, f):
-        self.handler = f;
+        self.handler = f
 
     def emit_connection_added(self, conn):
-        self.handler(self, conn);
+        self.handler(self, conn)
 
 # Pathching NM library
 FleetCommander.NM.Client = NMClientMock
