@@ -24,7 +24,7 @@ from six.moves.configparser import RawConfigParser, ParsingError
 import logging
 
 
-class GOAProvidersLoader(object):
+class GOAProvidersLoader:
     """
     GOA providers reader
     """

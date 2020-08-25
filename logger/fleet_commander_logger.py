@@ -58,7 +58,7 @@ DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderLogger'
 DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommanderLogger'
 
 
-class RemoteConnectionWorkaround(object):
+class RemoteConnectionWorkaround:
     def __init__(self, proxy):
         self.proxy = proxy
 
@@ -84,7 +84,7 @@ class RemoteConnectionWorkaround(object):
             None)
 
 
-class SpicePortManager(object):
+class SpicePortManager:
     """
     SPICE port manager class
     """
@@ -143,7 +143,7 @@ class SpicePortManager(object):
         self._perform_submits()
 
 
-class ScreenSaverInhibitor(object):
+class ScreenSaverInhibitor:
     """
     Screensaver inhibitor class
     """
@@ -245,7 +245,7 @@ class ScreenSaverInhibitor(object):
         self.screensavers.clear()
 
 
-class GSettingsLogger(object):
+class GSettingsLogger:
 
     BUS_NAME = 'ca.desrt.dconf'
     OBJECT_PATH = '/ca/desrt/dconf/Writer/user'
@@ -503,7 +503,7 @@ class GSettingsLogger(object):
         self.dconf_subscription_id = 0
 
 
-class NMLogger(object):
+class NMLogger:
 
     BUS_NAME = "org.freedesktop.NetworkManager"
     OBJECT_PATH = "/org/freedesktop/NetworkManager/Settings"
@@ -771,7 +771,7 @@ class NMLogger(object):
         connection = RemoteConnectionWorkaround(proxy)
         self.submit_connection(connection)
 
-class ChromiumLogger(object):
+class ChromiumLogger:
     """
     Chromium log target class
     """
@@ -1080,7 +1080,7 @@ class ChromeLogger(ChromiumLogger):
         super(ChromeLogger, self).__init__(connmgr, datadir, namespace)
 
 
-class FirefoxLogger(object):
+class FirefoxLogger:
     def __init__(
         self,
         connmgr,
@@ -1301,7 +1301,7 @@ class FirefoxLogger(object):
         return prefs
 
 
-class FirefoxBookmarkLogger(object):
+class FirefoxBookmarkLogger:
     """
     Firefox bookmark logger class
     """

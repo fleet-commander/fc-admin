@@ -113,7 +113,7 @@ def connection_required(f):
     return wrapped
 
 
-class ADConnector(object):
+class ADConnector:
     """
     Active Directory connector class for Fleet Commander
     """
@@ -565,7 +565,7 @@ class ADConnector(object):
         return self.get_sid(resultlist[0][1]["objectSid"][0])
 
 
-class SecurityDescriptorHelper(object):
+class SecurityDescriptorHelper:
 
     def __init__(self, sd, connector):
         self.connector = connector
@@ -677,7 +677,7 @@ class SecurityDescriptorHelper(object):
         return sd
 
 
-class ACEHelper(object):
+class ACEHelper:
 
     def __init__(self, ace_string):
         # Remove parenthesis from ACE string

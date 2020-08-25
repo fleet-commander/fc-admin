@@ -25,7 +25,7 @@ import logging
 import json
 
 
-class DirectoryData(object):
+class DirectoryData:
 
     def __init__(self, datadir=None):
         logging.debug('Directory mock data initialized. Path: %s', datadir)
@@ -66,7 +66,7 @@ class DirectoryData(object):
         return wrapper
 
 
-class DirectoryConnector(object):
+class DirectoryConnector:
     """
     Directory connector module mocking class
     """

@@ -55,7 +55,7 @@ def mainloop_quit_callback(*args, **kwargs):
     ml.quit()
 
 
-class MockConnectionManager(object):
+class MockConnectionManager:
     """
     Connection Manager mock class
     """

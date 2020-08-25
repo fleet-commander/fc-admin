@@ -58,7 +58,7 @@ def mainloop_quit_callback(*args, **kwargs):
     ml.quit()
 
 
-class MockConnectionManager(object):
+class MockConnectionManager:
     """
     Connection Manager mock class
     """
@@ -75,7 +75,7 @@ class MockConnectionManager(object):
         ml.quit()
 
 
-class NMConnectionMock(object):
+class NMConnectionMock:
     def __init__(self, conn_type, settings, secrets):
         self.type = conn_type
         self.settings = settings
@@ -90,7 +90,7 @@ class NMConnectionMock(object):
     def get_secrets(self, setting, cancellable):
         return self.secrets
 
-class NMClientMock(object):
+class NMClientMock:
 
     def connect(self, s, f):
         self.handler = f

@@ -69,7 +69,7 @@ class State(SQLiteDict):
     TABLE_NAME = 'libvirtmockstate'
 
 
-class LibvirtModuleMocker(object):
+class LibvirtModuleMocker:
 
     db_path = ':memory:'
 
@@ -83,7 +83,7 @@ class LibvirtModuleMocker(object):
         return conn
 
 
-class LibvirtConnectionMocker(object):
+class LibvirtConnectionMocker:
     """
     Class for mocking libvirt connection
     """
@@ -121,7 +121,7 @@ class LibvirtConnectionMocker(object):
         return None
 
 
-class LibvirtDomainMocker(object):
+class LibvirtDomainMocker:
     """
     Class for mocking libvirt domain
     """

@@ -46,7 +46,7 @@ def connected_to_dbus_service(f):
     return wrapped
 
 
-class FleetCommanderLoggerDbusClient(object):
+class FleetCommanderLoggerDbusClient:
     """
     Fleet commander logger dbus client
     """
@@ -89,7 +89,7 @@ class FleetCommanderLoggerDbusClient(object):
         return self.iface.FirefoxBookmarkRemove(bookmark_id)
 
 
-class FirefoxExtensionMessagingHelper(object):
+class FirefoxExtensionMessagingHelper:
     """
     Firefox messaging helper class
     """
