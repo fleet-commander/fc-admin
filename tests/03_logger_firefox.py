@@ -250,7 +250,7 @@ class TestFirefoxLogger(unittest.TestCase):
                 TMPDIR, 'installs.ini') in firefox_logger.file_monitors)
 
         # Setup callback for profiles file update
-        firefox_logger.test_profiles_file_updated = ml.quit
+        firefox_logger.test_profiles_file_updated_cb = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
         GLib.timeout_add(1000, mainloop_quit_callback)
@@ -288,8 +288,8 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps({}),
             json.dumps(firefox_logger.monitored_preferences))
 
-        # Setup callback on profiles file update
-        firefox_logger.test_prefs_file_updated = ml.quit
+        # Setup callback on preferences file update
+        firefox_logger.test_prefs_file_updated_cb = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
         GLib.timeout_add(1000, mainloop_quit_callback)
@@ -335,8 +335,8 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps({}),
             json.dumps(firefox_logger.monitored_preferences))
 
-        # Setup callback on profiles file update
-        firefox_logger.test_prefs_file_updated = ml.quit
+        # Setup callback on preferences file update
+        firefox_logger.test_prefs_file_updated_cb = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
         GLib.timeout_add(1000, mainloop_quit_callback)
@@ -405,8 +405,8 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps({prefs_path: DEFAULT_PREFERENCES_DATA}, sort_keys=True),
             json.dumps(firefox_logger.monitored_preferences, sort_keys=True))
 
-        # Setup callback on profiles file update
-        firefox_logger.test_prefs_file_updated = ml.quit
+        # Setup callback on preferences file update
+        firefox_logger.test_prefs_file_updated_cb = ml.quit
 
         # Setup a timeout for this test to quit and fail if timeout is reached
         GLib.timeout_add(1000, mainloop_quit_callback)
