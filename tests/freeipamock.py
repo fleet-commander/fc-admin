@@ -108,7 +108,6 @@ class FreeIPARPCClient:
     @staticmethod
     def connect():
         logging.debug('Mocking IPA connection')
-        return
 
 
 class FreeIPABackend:
