@@ -397,21 +397,21 @@ class FreeIPAConnector(object):
                         oldname, name))
             # Rename profile
             return self._update_profile(profile, oldname=oldname)
-        else:
-            # Check if profile already exists
-            if self.check_profile_exists(name):
-                # Modify it
-                logging.debug(
-                    'FreeIPAConnector: Profile %s already exists. Updating',
-                    name
-                )
-                return self._update_profile(profile)
-            # Save new
+
+        # Check if profile already exists
+        if self.check_profile_exists(name):
+            # Modify it
             logging.debug(
-                'FreeIPAConnector: Profile %s does not exist. Creating',
+                'FreeIPAConnector: Profile %s already exists. Updating',
                 name
             )
-            return self._create_profile(profile)
+            return self._update_profile(profile)
+        # Save new
+        logging.debug(
+            'FreeIPAConnector: Profile %s does not exist. Creating',
+            name
+        )
+        return self._create_profile(profile)
 
     @connection_required
     def del_profile(self, name):
