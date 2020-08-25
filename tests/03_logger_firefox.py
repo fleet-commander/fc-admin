@@ -26,13 +26,10 @@ import sys
 import os
 import json
 import logging
-import inspect
 import unittest
 
 # GObject Introspection imports
-import gi
 from gi.repository import GLib
-from gi.repository import Gio
 
 PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "logger")
 sys.path.append(PYTHONPATH)

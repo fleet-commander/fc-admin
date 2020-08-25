@@ -25,7 +25,6 @@ import os
 import signal
 import time
 import uuid
-import subprocess
 import socket
 import xml.etree.ElementTree as ET
 import logging

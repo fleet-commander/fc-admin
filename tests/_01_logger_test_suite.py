@@ -30,7 +30,6 @@ import unittest
 import dbus
 
 # GObject Introspection imports
-import gi
 from gi.repository import GLib
 from gi.repository import Gio
 

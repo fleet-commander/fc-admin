@@ -27,8 +27,6 @@ import tempfile
 import shutil
 import unittest
 
-import libvirtmock
-
 sys.path.append(os.path.join(os.environ['TOPSRCDIR'], 'admin'))
 
 from fleetcommander import sshcontroller
