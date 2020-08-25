@@ -28,7 +28,7 @@ import logging
 TEMP_DIR = None
 
 
-class SMBMock(object):
+class SMBMock:
 
     def __init__(self, servername, service, lp, creds, sign=False):
         logging.debug(

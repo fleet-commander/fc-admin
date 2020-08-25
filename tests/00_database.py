@@ -34,7 +34,7 @@ sys.path.append(PYTHONPATH)
 from fleetcommander.database import DBManager
 
 
-class UnsupportedType(object):
+class UnsupportedType:
     """
     Unsupported type for testing
     """

@@ -58,9 +58,9 @@ fcad.ldap.sasl = ldapmock.sasl
 
 
 # DNS resolver mock
-class DNSResolverMock(object):
+class DNSResolverMock:
 
-    class DNSResolverResult(object):
+    class DNSResolverResult:
         target = 'FC.AD/'
 
     def query(self, name, querytype):
@@ -71,7 +71,7 @@ fcad.dns.resolver = DNSResolverMock()
 
 
 # Getpass mock
-class GetpassMock(object):
+class GetpassMock:
     def getuser(self):
         return 'admin'
 

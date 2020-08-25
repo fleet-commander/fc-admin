@@ -37,7 +37,7 @@ class LibVirtControllerException(Exception):
     pass
 
 
-class LibVirtController(object):
+class LibVirtController:
     """
     Libvirt based session controller
     """

@@ -27,7 +27,7 @@ import six
 SCHEMA_VERSION = 1.0
 
 
-class SQLiteDict(object):
+class SQLiteDict:
     """
     Configuration values database handler
     """
@@ -168,7 +168,7 @@ class ProfilesData(SQLiteDict):
     TABLE_NAME = 'profiles'
 
 
-class BaseDBManager(object):
+class BaseDBManager:
     """
     Database manager class
     """

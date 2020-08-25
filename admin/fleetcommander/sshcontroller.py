@@ -32,7 +32,7 @@ class SSHControllerException(Exception):
     pass
 
 
-class SSHController(object):
+class SSHController:
     """
     SSH controller class for common SSH operations
     """

@@ -47,7 +47,7 @@ level = logging.getLevelName('DEBUG')
 log.setLevel(level)
 
 
-class MockLibVirtController(object):
+class MockLibVirtController:
 
     TEMPLATE_UUID = 'e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81'
     SESSION_UUID = 'fefb45d9-5a81-3392-b7bc-e2e37c2d'

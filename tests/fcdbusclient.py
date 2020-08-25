@@ -44,7 +44,7 @@ DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
 DBUS_TESTING_INTERFACE_NAME = 'org.freedesktop.FleetCommanderTest'
 
 
-class FleetCommanderDbusClient(object):
+class FleetCommanderDbusClient:
 
     """
     Fleet commander dbus client

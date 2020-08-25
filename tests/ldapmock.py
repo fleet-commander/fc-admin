@@ -26,7 +26,7 @@ import logging
 DOMAIN_DATA = None
 
 
-class SASLMock(object):
+class SASLMock:
 
     @staticmethod
     def sasl(cb_value_dict, mech):
@@ -37,7 +37,7 @@ class SASLMock(object):
         raise Exception('SASLMock: Auth mechanism is not GSSAPI (Kerberos)')
 
 
-class LDAPConnectionMock(object):
+class LDAPConnectionMock:
 
     protocol_version = 3
 

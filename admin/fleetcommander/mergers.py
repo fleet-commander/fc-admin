@@ -23,7 +23,7 @@
 from __future__ import absolute_import
 import logging
 
-class BaseChangeMerger(object):
+class BaseChangeMerger:
     """
     Base change merger class
     """

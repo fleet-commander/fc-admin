@@ -31,7 +31,7 @@ level = logging.getLevelName('DEBUG')
 log.setLevel(level)
 
 
-class FreeIPAData(object):
+class FreeIPAData:
 
     def __init__(self, datadir=None):
         self.datadir = datadir
@@ -81,7 +81,7 @@ class FreeIPAData(object):
         return wrapper
 
 
-class FreeIPAErrors(object):
+class FreeIPAErrors:
 
     class NotFound(Exception):
         pass
@@ -99,7 +99,7 @@ class FreeIPAErrors(object):
         pass
 
 
-class FreeIPARPCClient(object):
+class FreeIPARPCClient:
 
     @staticmethod
     def isconnected():
@@ -111,11 +111,11 @@ class FreeIPARPCClient(object):
         return
 
 
-class FreeIPABackend(object):
+class FreeIPABackend:
     rpcclient = FreeIPARPCClient
 
 
-class FreeIPACommand(object):
+class FreeIPACommand:
 
     data = None
 
@@ -385,7 +385,7 @@ class FreeIPACommand(object):
             raise FreeIPAErrors.NotFound()
 
 
-class FreeIPAMock(object):
+class FreeIPAMock:
 
     Backend = FreeIPABackend
     Command = FreeIPACommand()

@@ -47,7 +47,7 @@ class RenameToExistingException(Exception):
     pass
 
 
-class FreeIPAConnector(object):
+class FreeIPAConnector:
 
     def connect(self, sanity_check=True):
         """
