@@ -28,7 +28,7 @@ import json
 class DirectoryData(object):
 
     def __init__(self, datadir=None):
-        logging.debug('Directory mock data initialized. Path: %s' % datadir)
+        logging.debug('Directory mock data initialized. Path: %s', datadir)
         self.datadir = datadir
         # Data storage
         self.global_policy = 1
@@ -39,19 +39,19 @@ class DirectoryData(object):
             'policy': self.global_policy,
             'profiles': self.profiles,
         }
-        logging.debug('Directory mock data to export: %s' % data)
+        logging.debug('Directory mock data to export: %s', data)
         jsondata = json.dumps(data)
-        logging.debug('Directory mock JSON data to export: %s' % jsondata)
+        logging.debug('Directory mock JSON data to export: %s', jsondata)
         return jsondata
 
     def save_to_datadir(self, filename='directorymock-data.json'):
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
-            logging.debug('Directory mock exporting data to %s' % path)
+            logging.debug('Directory mock exporting data to %s', path)
             with open(path, 'w') as fd:
                 fd.write(self.get_json())
                 fd.close()
-                logging.debug('Directory mock data saved to %s' % path)
+                logging.debug('Directory mock data saved to %s', path)
         else:
             logging.debug('Directory mock not exporting data (No datadir)')
 
@@ -96,24 +96,30 @@ class DirectoryConnector(object):
         if cn is not None:
             # Modifying existing profile
             logging.debug(
-                'Directory Mock: Trying to modify profile with cn %s' % cn)
+                'Directory Mock: Trying to modify profile with cn %s', cn
+            )
             if cn in self.data.profiles:
                 logging.debug(
-                    'Directory Mock: Modifying existing profile %s' % cn)
+                    'Directory Mock: Modifying existing profile %s', cn
+                )
             else:
                 logging.debug(
-                    'Directory Mock: Profile %s does not exist. Saving.' % cn)
+                    'Directory Mock: Profile %s does not exist. Saving.', cn
+                )
             self.data.profiles[cn] = profile
         else:
             # Saving new profile
             cn = profile['name']
-            logging.debug('Directory Mock: Saving new profile. Using name as new id: %s', cn)
+            logging.debug(
+                'Directory Mock: Saving new profile. Using name as new id: %s', 
+                cn
+            )
             self.data.profiles[cn] = profile
         return cn
 
     @DirectoryData.export_data
     def del_profile(self, cn):
-        logging.debug('Directory Mock: Deleting profile %s' % cn)
+        logging.debug('Directory Mock: Deleting profile %s', cn)
         if cn in self.data.profiles:
             del(self.data.profiles[cn])
 
@@ -126,6 +132,6 @@ class DirectoryConnector(object):
         return profiles
 
     def get_profile(self, cn):
-        logging.debug('Directory Mock: Getting profile %s' % cn)
+        logging.debug('Directory Mock: Getting profile %s', cn)
         if cn in self.data.profiles:
             return self.data.profiles[cn]

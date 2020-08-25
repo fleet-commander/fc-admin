@@ -64,7 +64,7 @@ class MockConnectionManager(object):
         self.log = []
 
     def submit_change(self, namespace, data):
-        logging.debug("Change submitted: %s - %s" % (namespace, data))
+        logging.debug("Change submitted: %s - %s", namespace, data)
         self.log.append([namespace, data])
 
     def pop(self):
@@ -154,7 +154,7 @@ class TestFirefoxLogger(unittest.TestCase):
     def setup_test_directory(self, profinit=True, prefsinit=True):
         # Create a temporary directory for testing
         TMPDIR = GLib.dir_make_tmp("fc_logger_firefox_XXXXXX")
-        logging.debug("Testing data at dir %s" % TMPDIR)
+        logging.debug("Testing data at dir %s", TMPDIR)
         # Create profiles file
         if profinit:
             self.file_set_contents(

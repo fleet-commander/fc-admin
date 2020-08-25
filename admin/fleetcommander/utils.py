@@ -77,14 +77,14 @@ def parse_config(config_file=None):
     try:
         config.read(config_file)
     except IOError:
-        logging.warning('Could not find configuration file %s' % config_file)
+        logging.warning('Could not find configuration file %s', config_file)
     except ParsingError:
-        logging.error('There was an error parsing %s' % config_file)
+        logging.error('There was an error parsing %s', config_file)
         sys.exit(1)
     except Exception as e:
         logging.error(
-            'There was an unknown error parsing %s: %s' %
-            config_file, e)
+            'There was an unknown error parsing %s: %s', config_file, e
+        )
         sys.exit(1)
 
     if config.has_section('admin'):

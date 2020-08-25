@@ -46,7 +46,7 @@ class LDAPConnectionMock(object):
     protocol_version = 3
 
     def __init__(self, server_address):
-        logging.debug('LDAPMock initializing connection: %s' % server_address)
+        logging.debug('LDAPMock initializing connection: %s', server_address)
         self.server_address = server_address
         self.options = {}
         self._domain_data = DOMAIN_DATA
@@ -71,7 +71,7 @@ class LDAPConnectionMock(object):
     def search_s(
             self, base, scope, filterstr='(objectClass=*)', attrlist=None,
             attrsonly=0, timeout=-1):
-        logging.debug('LDAPMock search_s: %s - %s' % (base, filterstr))
+        logging.debug('LDAPMock search_s: %s - %s', base, filterstr)
         if base == 'DC=FC,DC=AD':
             groupfilter = '(&(objectclass=group)(CN='
             sidfilter = '(&(|(objectclass=computer)(objectclass=user)(objectclass=group))(objectSid='
@@ -138,7 +138,7 @@ class LDAPConnectionMock(object):
             profile[dif[1]] = value
 
     def delete_s(self, dn):
-        logging.debug('LDAPMock: delete_s %s' % dn)
+        logging.debug('LDAPMock: delete_s %s', dn)
         if dn in self._domain_data['profiles'].keys():
             del(self._domain_data['profiles'][dn])
 

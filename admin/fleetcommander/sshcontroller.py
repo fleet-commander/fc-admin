@@ -228,7 +228,7 @@ class SSHController(object):
         # Check that pub_key is a real public key by calculating fingerprint
         logging.debug('Verifying public key')
         fp = self.get_fingerprint_from_key_data(pub_key)
-        logging.debug('Public key fingerprint: %s' % fp)
+        logging.debug('Public key fingerprint: %s', fp)
         try:
             # Open connection to given host and simulate a session
             ssh = pexpect.spawn('%s %s@%s -p %s' % (
@@ -243,7 +243,7 @@ class SSHController(object):
             })
 
             def execute_command(command, final=False):
-                logging.debug('Executing command: "%s"' % command)
+                logging.debug('Executing command: "%s"', command)
                 ssh.sendline(command)
                 if not final:
                     ssh.expect(command_prompt)
@@ -271,6 +271,6 @@ class SSHController(object):
             execute_command('chmod 600 ~/.ssh/authorized_keys')
             execute_command('exit', final=True)
         except Exception as e:
-            logging.error('Error installing SSH public key: %s' % e)
+            logging.error('Error installing SSH public key: %s', e)
             raise SSHControllerException(
                 'Error installing SSH public key: %s' % e)

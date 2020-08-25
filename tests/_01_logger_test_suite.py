@@ -50,8 +50,7 @@ ml = GLib.MainLoop()
 
 # Test helpers
 def mainloop_quit_callback(*args, **kwargs):
-    logging.error(
-        "Timed out waiting for DBus call. Test probably failed")
+    logging.error("Timed out waiting for DBus call. Test probably failed")
     ml.quit()
 
 
@@ -111,8 +110,9 @@ class TestDconfLogger(unittest.TestCase):
         def check_dbus_name():
             if glog.dconf_subscription_id != 0:
                 logging.debug(
-                    "Signal registered. Calling '%s' dbus method. Args: %s" % (
-                        method, args))
+                    "Signal registered. Calling '%s' dbus method. Args: %s",
+                    method, args
+                )
                 getattr(iface, method)(*args)
                 return False
             return True

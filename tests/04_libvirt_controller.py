@@ -82,7 +82,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         return ctrlr
 
     def test_00_initialization(self):
-        logging.debug('TEST 00 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 00 %s mode', self.LIBVIRT_MODE)
 
         # Check data path creation
         self.assertTrue(os.path.isdir(self.test_directory))
@@ -95,7 +95,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertFalse(os.path.isdir(badconfig['data_path']))
 
     def test_01_check_socket(self):
-        logging.debug('TEST 01 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 01 %s mode', self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
         ctrlr._get_libvirt_socket()
@@ -125,7 +125,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             self.assertEqual(ctrlr._libvirt_socket, '/run/user/1000/libvirt/libvirt-sock')
 
     def test_02_check_video_driver_virtio(self):
-        logging.debug('TEST 02 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 02 %s mode', self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
         ctrlr._get_libvirt_video_driver()
@@ -157,7 +157,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertEqual(ctrlr._libvirt_video_driver, 'virtio')
 
     def test_03_check_video_driver_qxl(self):
-        logging.debug('TEST 03 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 03 %s mode', self.LIBVIRT_MODE)
 
         # Set environment variable to force QXL test
         os.environ['FC_TEST_USE_QXL'] = "1"
@@ -190,7 +190,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         self.assertEqual(ctrlr._libvirt_video_driver, 'qxl')
 
     def test_04_list_domains(self):
-        logging.debug('TEST 04 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 04 %s mode', self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
 
@@ -226,7 +226,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
             self.assertEqual(ctrlr._libvirt_video_driver, 'virtio')
 
     def test_05_start(self):
-        logging.debug('TEST 05 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 05 %s mode', self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
         _uuid, port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
@@ -248,7 +248,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         })
 
     def test_06_start_stop(self):
-        logging.debug('TEST 06 %s mode' % self.LIBVIRT_MODE)
+        logging.debug('TEST 06 %s mode', self.LIBVIRT_MODE)
 
         ctrlr = self.get_controller(self.config)
         uuid, _port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)

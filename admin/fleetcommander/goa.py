@@ -40,15 +40,15 @@ class GOAProvidersLoader(object):
             self._configparser.read(providers_file)
         except IOError as e:
             logging.error(
-                'Could not find GOA providers file %s' % providers_file)
+                'Could not find GOA providers file %s', providers_file)
             raise e
         except ParsingError as e:
             logging.error(
-                'There was an error parsing %s' % providers_file)
+                'There was an error parsing %s', providers_file)
             raise e
         except Exception as e:
             logging.error(
-                'There was an unknown error parsing %s' % providers_file)
+                'There was an unknown error parsing %s', providers_file)
             raise e
         self.read_data()
 

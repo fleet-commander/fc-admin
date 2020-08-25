@@ -65,7 +65,7 @@ class FreeIPAConnector(object):
                 self._do_sanity_check()
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error connecting to FreeIPA: %s' % e)
+                'FreeIPAConnector: Error connecting to FreeIPA: %s', e)
             raise
 
     def _prepare_profile_base_args(self, profile):
@@ -80,8 +80,9 @@ class FreeIPAConnector(object):
     def _create_profile(self, profile):
         name = six.text_type(profile['name'])
         logging.debug(
-            'FreeIPAConnector: Creating profile %s with data: %s' % (
-                name, profile))
+            'FreeIPAConnector: Creating profile %s with data: %s',
+            name, profile
+        )
 
         base_args = self._prepare_profile_base_args(profile)
 
@@ -90,7 +91,7 @@ class FreeIPAConnector(object):
             self._create_profile_rules(profile)
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error creating profile: %s' % e)
+                'FreeIPAConnector: Error creating profile: %s', e)
             self.del_profile(name)
             raise e
 
@@ -98,7 +99,7 @@ class FreeIPAConnector(object):
         name = six.text_type(profile['name'])
         # Save rule for profile
         logging.debug(
-            'FreeIPAConnector: Creating profile rule for %s' % name)
+            'FreeIPAConnector: Creating profile rule for %s', name)
 
         parms = {
             'ipadeskprofiletarget': name,
@@ -115,8 +116,9 @@ class FreeIPAConnector(object):
         users = list(map(six.text_type, profile['users']))
         groups = list(map(six.text_type, profile['groups']))
         logging.debug(
-            'FreeIPAConnector: Setting users/groups for profile %s: %s, %s' % (
-                name, users, groups))
+            'FreeIPAConnector: Setting users/groups for profile %s: %s, %s',
+            name, users, groups
+        )
         api.Command.deskprofilerule_add_user(name, user=users, group=groups)
 
         # Save rules for hosts if needed
@@ -124,13 +126,14 @@ class FreeIPAConnector(object):
             hosts = list(map(six.text_type, profile['hosts']))
             hostgroups = list(map(six.text_type, profile['hostgroups']))
             logging.debug(
-                'FreeIPAConnector: Setting hosts for profile %s: %s, %s' % (
-                    name, hosts, hostgroups))
+                'FreeIPAConnector: Setting hosts for profile %s: %s, %s',
+                name, hosts, hostgroups
+            )
             api.Command.deskprofilerule_add_host(
                 name, host=hosts, hostgroup=hostgroups)
         else:
             logging.debug(
-                'FreeIPAConnector: Skipping hosts for profile %s' % name)
+                'FreeIPAConnector: Skipping hosts for profile %s', name)
 
     def _update_profile(self, profile, oldname=None):
         name = six.text_type(profile['name'])
@@ -142,18 +145,22 @@ class FreeIPAConnector(object):
             base_args['rename'] = name
             # Update profile renaming it
             logging.debug(
-                'FreeIPAConnector: Updating profile %s and renaming to %s' % (
-                    oldname, name))
+                'FreeIPAConnector: Updating profile %s and renaming to %s',
+                oldname, name
+            )
         logging.debug(
-            'FreeIPAConnector: Updating profile %s with data: %s' % (
-                name, profile))
+            'FreeIPAConnector: Updating profile %s with data: %s',
+            name, profile
+        )
         try:
             api.Command.deskprofile_mod(**base_args)
         except errors.EmptyModlist:
             pass
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error updating profile %s: %s' % (name, e))
+                'FreeIPAConnector: Error updating profile %s: %s',
+                name, e
+            )
             raise e
         # Update rules for profile
         self._update_profile_rules(profile, oldname=oldname)
@@ -170,13 +177,14 @@ class FreeIPAConnector(object):
         if oldname is not None:
             # Update profile renaming it
             logging.debug(
-                'FreeIPAConnector: Updating rule %s and renaming to %s' % (
-                    oldname, name))
+                'FreeIPAConnector: Updating rule %s and renaming to %s',
+                oldname, name
+            )
             parms['cn'] = oldname
             parms['rename'] = name
         else:
             logging.debug(
-                'FreeIPAConnector: Updating rule for %s' % name)
+                'FreeIPAConnector: Updating rule for %s', name)
 
         # If not hosts, set hostcategory to all
         if profile['hosts'] == [] and profile['hostgroups'] == []:
@@ -190,8 +198,9 @@ class FreeIPAConnector(object):
             pass
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error updating rule %s: %s - %s' % (
-                    name, e, e.__class__))
+                'FreeIPAConnector: Error updating rule %s: %s - %s',
+                name, e, e.__class__
+            )
             raise e
 
         # Get current users, groups, hosts and hostgroups for this rule
@@ -246,7 +255,7 @@ class FreeIPAConnector(object):
             rule = self.get_profile_rule(name)
             applies = self._get_profile_applies_from_rule(rule)
             logging.debug(
-                'FreeIPAConnector: Applies after update: %s' % applies)
+                'FreeIPAConnector: Applies after update: %s', applies)
             if applies['hosts'] == [] and applies['hostgroups'] == []:
                 logging.debug(
                     'FreeIPAConnector: Setting hostcategory to all')
@@ -257,8 +266,9 @@ class FreeIPAConnector(object):
                     pass
                 except Exception as e:
                     logging.error(
-                        'FreeIPAConnector: Error updating rule %s: %s - %s' % (
-                            name, e, e.__class__))
+                        'FreeIPAConnector: Error updating rule %s: %s - %s',
+                        name, e, e.__class__,
+                    )
                     raise e
 
     def _get_all_hosts(self):
@@ -269,7 +279,7 @@ class FreeIPAConnector(object):
             return hosts
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error getting hosts list', e)
+                'FreeIPAConnector: Error getting hosts list: %s', e)
             raise
 
     def _do_sanity_check(self):
@@ -358,8 +368,9 @@ class FreeIPAConnector(object):
             pass
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error setting global policy to %s: %s' % (
-                    policy, e))
+                'FreeIPAConnector: Error setting global policy to %s: %s',
+                policy, e
+            )
             raise e
 
     @connection_required
@@ -370,14 +381,17 @@ class FreeIPAConnector(object):
             oldname = profile['oldname']
             # Modify it
             logging.debug(
-                'FreeIPAConnector: Profile needs renaming from %s to %s' % (
-                    profile['oldname'], name))
+                'FreeIPAConnector: Profile needs renaming from %s to %s',
+                profile['oldname'], name
+            )
             # Check new name exists
             if self.check_profile_exists(name):
                 # Profile can not be renamed to an existing name
                 logging.error(
-                    'FreeIPAConnector: Profile %s can not be renamed to existing name %s' % (
-                        oldname, name))
+                    'FreeIPAConnector: Profile %s can not be renamed to '
+                    'existing name %s',
+                    oldname, name
+                )
                 raise RenameToExistingException(
                     'Profile %s can not be renamed to existing name %s' % (
                         oldname, name))
@@ -389,11 +403,14 @@ class FreeIPAConnector(object):
             if self.check_profile_exists(name):
                 # Modify it
                 logging.debug(
-                    'FreeIPAConnector: Profile %s already exists. Updating' % name)
+                    'FreeIPAConnector: Profile %s already exists. Updating',
+                    name
+                )
                 return self._update_profile(profile)
             # Save new
             logging.debug(
-                'FreeIPAConnector: Profile %s does not exist. Creating' % name
+                'FreeIPAConnector: Profile %s does not exist. Creating',
+                name
             )
             return self._create_profile(profile)
 
@@ -401,22 +418,25 @@ class FreeIPAConnector(object):
     def del_profile(self, name):
         name = six.text_type(name)
         logging.debug(
-            'FreeIPAConnector: Deleting profile %s' % name)
+            'FreeIPAConnector: Deleting profile %s', name)
         try:
             api.Command.deskprofile_del(name)
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error removing profile %s. %s - %s' % (
-                    name, e, e.__class__))
+                'FreeIPAConnector: Error removing profile %s. %s - %s',
+                name, e, e.__class__
+            )
 
         logging.debug(
-            'FreeIPAConnector: Deleting profile rule for %s' % name)
+            'FreeIPAConnector: Deleting profile rule for %s', name)
         try:
             api.Command.deskprofilerule_del(name)
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error removing rule for profile %s. %s - %s' % (
-                    name, e, e.__class__))
+                'FreeIPAConnector: Error removing rule for profile %s. '
+                '%s - %s',
+                name, e, e.__class__
+            )
 
     @connection_required
     def get_profiles(self):
@@ -424,8 +444,9 @@ class FreeIPAConnector(object):
             results = api.Command.deskprofile_find('', sizelimit=0, all=True)
         except Exception as e:
             logging.error(
-                'FreeIPAConnector: Error getting profiles: %s - %s' % (
-                    e, e.__class__))
+                'FreeIPAConnector: Error getting profiles: %s - %s',
+                e, e.__class__
+            )
         else:
             resultlist = []
             for res in results['result']:
@@ -444,7 +465,8 @@ class FreeIPAConnector(object):
             result = api.Command.deskprofile_show(name, all=True)
         except Exception as e:
             logging.error(
-                'Error getting profile %s: %s. %s' % (name, e, e.__class__))
+                'Error getting profile %s: %s. %s', name, e, e.__class__
+            )
             raise e
         rule = self.get_profile_rule(name)
         data = result['result']
@@ -464,15 +486,16 @@ class FreeIPAConnector(object):
     @connection_required
     def get_profile_rule(self, name):
         logging.debug(
-            'FreeIPAConnector: Getting profile rule for %s"' % name)
+            'FreeIPAConnector: Getting profile rule for %s"', name)
         name = six.text_type(name)
         try:
             result = api.Command.deskprofilerule_show(name, all=True)
         except Exception as e:
             logging.error(
-                'Error getting rule for profile %s: %s. %s' % (
-                    name, e, e.__class__))
+                'Error getting rule for profile %s: %s. %s',
+                name, e, e.__class__
+            )
             raise e
         rule = result['result']
-        logging.debug('FreeIPAConnector: Obtained rule data: %s' % rule)
+        logging.debug('FreeIPAConnector: Obtained rule data: %s', rule)
         return rule
