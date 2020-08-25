@@ -124,7 +124,7 @@ class SQLiteDict:
         """
         try:
             return self[key]
-        except:
+        except KeyError:
             return default
 
     def setdefault(self, key, value):
