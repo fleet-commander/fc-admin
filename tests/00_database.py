@@ -101,7 +101,7 @@ class TestDBManager(unittest.TestCase):
 
     def test_06_config_dictionary_iteration(self):
         items = list(self.db.config.items())
-        self.assertEqual(len([x for x in items]), 7)
+        self.assertEqual(len(items), 7)
         for item in items:
             self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])
 
