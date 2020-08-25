@@ -217,7 +217,7 @@ class LibVirtController:
                         port = elem.attrib['port']
                         listen = elem.attrib['listen']
                         return (listen, port)
-                except:
+                except KeyError:
                     pass
 
             if tries < self.MAX_SESSION_START_TRIES:
@@ -267,7 +267,7 @@ class LibVirtController:
             root.find(
                 'title').text = '%s - Fleet Commander temporary session' % (
                     title)
-        except:
+        except AttributeError:
             pass
         # Remove domain MAC addresses
         devs = root.find('devices')
@@ -327,7 +327,7 @@ class LibVirtController:
         """
         try:
             persistent = domain.isPersistent()
-        except:
+        except AttributeError:
             return
 
         if persistent:
@@ -336,7 +336,7 @@ class LibVirtController:
                 try:
                     domain.undefine()
                     break
-                except:
+                except Exception:
                     pass
                 if tries < self.MAX_DOMAIN_UNDEFINE_TRIES:
                     time.sleep(self.DOMAIN_UNDEFINE_TRIES_DELAY)
@@ -406,7 +406,7 @@ class LibVirtController:
             # FIXME: Test pid belonging to ssh
             try:
                 os.kill(tunnel_pid, signal.SIGKILL)
-            except:
+            except Exception:
                 pass
         self._connect()
         # Get machine by its uuid

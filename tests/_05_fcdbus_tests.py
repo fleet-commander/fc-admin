@@ -124,7 +124,7 @@ class TestDbusService(unittest.TestCase):
                 self.c = FleetCommanderDbusClient()
                 self.c.get_public_key()
                 break
-            except:
+            except Exception:
                 checks += 1
                 if checks < self.MAX_DBUS_CHECKS:
                     time.sleep(0.1)
