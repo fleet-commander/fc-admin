@@ -76,8 +76,8 @@ class MockConnectionManager(object):
 
 
 class NMConnectionMock(object):
-    def __init__(self, type, settings, secrets):
-        self.type = type
+    def __init__(self, conn_type, settings, secrets):
+        self.type = conn_type
         self.settings = settings
         self.secrets = secrets
 

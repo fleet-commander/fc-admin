@@ -28,6 +28,7 @@ disable=
     no-self-use,
     protected-access,
     raise-missing-from,
+    redefined-builtin,
     redefined-outer-name,
     super-init-not-called,
     superfluous-parens,
