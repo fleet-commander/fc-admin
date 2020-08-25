@@ -103,7 +103,6 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
             'log_level': 'debug',
             'log_format': '\n[%(levelname)s] %(asctime)-15s %(message)s',
             'data_dir': test_directory,
-            'client_data_url': '/',
             'tmp_session_destroy_timeout': 60,
             'auto_quit_timeout': 60,
             'default_profile_priority': 50,
