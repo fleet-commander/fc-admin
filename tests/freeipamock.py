@@ -134,16 +134,16 @@ class FreeIPACommand(object):
         if type(ipadeskprofilepriority) is not int:
             raise FreeIPAErrors.ConversionError(
                 "invalid 'priority': must be an integer")
-        else:
-            if ipadeskprofilepriority == self.data.global_policy:
-                raise FreeIPAErrors.EmptyModlist(
-                    "no modifications to be performed")
-            if ipadeskprofilepriority < 1:
-                raise FreeIPAErrors.ValidationError(
-                    "invalid 'priority': must be at least 1")
-            if ipadeskprofilepriority > 24:
-                raise FreeIPAErrors.ValidationError(
-                    "invalid 'priority': can be at most 24")
+
+        if ipadeskprofilepriority == self.data.global_policy:
+            raise FreeIPAErrors.EmptyModlist(
+                "no modifications to be performed")
+        if ipadeskprofilepriority < 1:
+            raise FreeIPAErrors.ValidationError(
+                "invalid 'priority': must be at least 1")
+        if ipadeskprofilepriority > 24:
+            raise FreeIPAErrors.ValidationError(
+                "invalid 'priority': can be at most 24")
         self.data.global_policy = ipadeskprofilepriority
 
     def user_show(self, user):
@@ -192,8 +192,7 @@ class FreeIPACommand(object):
         if hostgroup in self.data.hostgroups:
             raise FreeIPAErrors.DuplicateEntry(
                 'Hostgroup "%s" already exists' % hostgroup)
-        else:
-            self.data.hostgroups.append(hostgroup)
+        self.data.hostgroups.append(hostgroup)
 
     def hostgroup_show(self, hostgroup):
         if hostgroup in self.data.hostgroups:
@@ -228,12 +227,12 @@ class FreeIPACommand(object):
         )
         if cn in self.data.profiles:
             raise FreeIPAErrors.DuplicateEntry()
-        else:
-            self.data.profiles[cn] = {
-                'cn': (cn,),
-                'description': (description,),
-                'ipadeskdata': (ipadeskdata.decode(),),
-            }
+
+        self.data.profiles[cn] = {
+            'cn': (cn,),
+            'description': (description,),
+            'ipadeskdata': (ipadeskdata.decode(),),
+        }
         logging.debug("IPAMock: Stored data: %s", self.data.profiles[cn])
 
     @FreeIPAData.export_data
@@ -250,16 +249,16 @@ class FreeIPACommand(object):
                             hostcategory=None):
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
-        else:
-            logging.debug('IPAMock: profile rule for %s', name)
-            self.data.profilerules[name] = {
-                'priority': ipadeskprofilepriority,
-                'hostcategory': hostcategory,
-                'users': [],
-                'groups': [],
-                'hosts': [],
-                'hostgroups': [],
-            }
+
+        logging.debug('IPAMock: profile rule for %s', name)
+        self.data.profilerules[name] = {
+            'priority': ipadeskprofilepriority,
+            'hostcategory': hostcategory,
+            'users': [],
+            'groups': [],
+            'hosts': [],
+            'hostgroups': [],
+        }
 
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
