@@ -1312,7 +1312,7 @@ class FirefoxBookmarkLogger(object):
         self.bookmarks = {}
         self.connmgr = connmgr
 
-    def submit_config_change(self, id, data):
+    def submit_config_change(self, bookmark_id, data):
         if data is None:
             return
         # Prepare data:
@@ -1324,16 +1324,16 @@ class FirefoxBookmarkLogger(object):
             'Folder': deserialized_data['folder'],
         }
         payload = json.dumps({
-            'key': id,
+            'key': bookmark_id,
             'value': payload_data,
         }, sort_keys=True)
         self.connmgr.submit_change(self.namespace, payload)
 
-    def update(self, id, data):
-        self.submit_config_change(id, data)
+    def update(self, bookmark_id, data):
+        self.submit_config_change(bookmark_id, data)
 
-    def remove(self, id):
-        self.submit_config_change(id, None)
+    def remove(self, bookmark_id):
+        self.submit_config_change(bookmark_id, None)
 
 
 class FleetCommanderLogger(dbus.service.Object):

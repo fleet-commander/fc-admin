@@ -274,12 +274,12 @@ class ADConnector(object):
         duri = duri = '%s\\Policies\\%s' % (self.domain, gpo_uuid)
         conn.deltree(duri)
 
-    def _get_ldap_profile_data(self, filter, controls=None):
-        logging.debug('Getting data from AD LDAP. filter: %s', filter)
+    def _get_ldap_profile_data(self, s_filter, controls=None):
+        logging.debug('Getting data from AD LDAP. filter: %s', s_filter)
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
         attrs = ['cn', 'displayName', 'description', 'nTSecurityDescriptor']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         if len(resultlist) > 0:
             return resultlist[0][1]
         return None
@@ -458,10 +458,10 @@ class ADConnector(object):
     def get_profiles(self):
         profiles = []
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
-        filter = '(objectclass=groupPolicyContainer)'
+        s_filter = '(objectclass=groupPolicyContainer)'
         attrs = ['cn', 'displayName', 'description', ]
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         for res in resultlist:
             resdata = res[1]
             if resdata:
@@ -491,10 +491,10 @@ class ADConnector(object):
     @connection_required
     def get_user(self, username):
         base_dn = "CN=Users,%s" % self._get_domain_dn()
-        filter = '(&(objectclass=user)(CN=%s))' % username
+        s_filter = '(&(objectclass=user)(CN=%s))' % username
         attrs = ['cn', 'objectSid']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         if len(resultlist) > 0:
             data = resultlist[0]
             return {
@@ -507,10 +507,10 @@ class ADConnector(object):
     @connection_required
     def get_group(self, groupname):
         base_dn = "%s" % self._get_domain_dn()
-        filter = '(&(objectclass=group)(CN=%s))' % groupname
+        s_filter = '(&(objectclass=group)(CN=%s))' % groupname
         attrs = ['cn', 'objectSid']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         resultlist = [x for x in resultlist if x[0] is not None]
         if len(resultlist) > 0:
             data = resultlist[0]
@@ -524,10 +524,10 @@ class ADConnector(object):
     @connection_required
     def get_host(self, hostname):
         base_dn = "CN=Computers,%s" % self._get_domain_dn()
-        filter = '(&(objectclass=computer)(CN=%s))' % hostname
+        s_filter = '(&(objectclass=computer)(CN=%s))' % hostname
         attrs = ['cn', 'objectSid']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         if len(resultlist) > 0:
             data = resultlist[0]
             return {
@@ -540,10 +540,10 @@ class ADConnector(object):
     def get_object_by_sid(self, sid, classes=['computer', 'user', 'group']):
         base_dn = "%s" % self._get_domain_dn()
         object_classes = ''.join(['(objectclass=%s)' % x for x in classes])
-        filter = '(&(|%s)(objectSid=%s))' % (object_classes, sid)
+        s_filter = '(&(|%s)(objectSid=%s))' % (object_classes, sid)
         attrs = ['cn', 'objectClass']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_SUBTREE, filter, attrs)
+            base_dn, ldap.SCOPE_SUBTREE, s_filter, attrs)
         resultlist = [x for x in resultlist if x[0] is not None]
         if len(resultlist) > 0:
             data = resultlist[0][1]
@@ -558,10 +558,10 @@ class ADConnector(object):
 
     def get_domain_sid(self):
         base_dn = "%s" % self._get_domain_dn()
-        filter = '(objectClass=*)'
+        s_filter = '(objectClass=*)'
         attrs = ['objectSid']
         resultlist = self.connection.search_s(
-            base_dn, ldap.SCOPE_BASE, filter, attrs)
+            base_dn, ldap.SCOPE_BASE, s_filter, attrs)
         return self.get_sid(resultlist[0][1]["objectSid"][0])
 
 
