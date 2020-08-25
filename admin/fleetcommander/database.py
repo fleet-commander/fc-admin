@@ -22,7 +22,6 @@
 from __future__ import absolute_import
 import sqlite3
 import json
-import six
 
 SCHEMA_VERSION = 1.0
 
@@ -34,10 +33,8 @@ class SQLiteDict:
 
     _SUPPORTED_TYPES = {
         'int':     int,
-        'long':    int if six.PY3 else long,
         'float':   float,
         'str':     str,
-        'unicode': six.text_type,
         'tuple':   tuple,
         'list':    list,
         'dict':    dict,
@@ -56,9 +53,9 @@ class SQLiteDict:
         self.cursor = db.cursor
         # Generate table if not exists
         self.db.create_table(self.TABLE_NAME, **{
-            'key':    six.text_type,
-            'value':  six.text_type,
-            'type':   six.text_type,
+            'key': str,
+            'value': str,
+            'type': str,
         })
 
         if 'SCHEMA_VERSION' not in self:
@@ -174,18 +171,13 @@ class BaseDBManager:
     """
 
     SQLITE_TYPE_MATCHES = {
-        None:    'NULL',
-        int:     'INTEGER',
-        float:   'REAL',
-        str:     'TEXT',
-        six.text_type: 'TEXT',
-        memoryview:  'BLOB'
+        None: 'NULL',
+        int: 'INTEGER',
+        float: 'REAL',
+        str: 'TEXT',
+        memoryview: 'BLOB',
+        bytes: 'BLOB',
     }
-    if six.PY3:
-        SQLITE_TYPE_MATCHES[bytes] = 'BLOB'
-    else:
-        SQLITE_TYPE_MATCHES[buffer] = 'BLOB'
-        SQLITE_TYPE_MATCHES[long] = 'INTEGER'
 
     def __init__(self, database):
         """
