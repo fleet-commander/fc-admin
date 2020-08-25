@@ -133,7 +133,7 @@ UPDATED_PREFERENCES_DATA = {
     "browser.uiCustomization.state": "{\"placements\":{\"widget-overflow-fixed-list\":[],\"PersonalToolbar\":[\"bookmarks-menu-button\",\"personal-bookmarks\"],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"home-button\",\"urlbar-container\",\"search-container\",\"downloads-button\",\"library-button\",\"abp-toolbarbutton\",\"qrcodeaddon-16\",\"action-button--jid0-9xfbwuwnvyx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"screenshots_mozilla_org-browser-action\",\"sidebar-button\",\"chrome-gnome-shell_gnome_org-browser-action\",\"preferences-button\",\"_4b6e6674-681a-45a4-98db-7c7d03df3560_-browser-action\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"addon-bar\":[\"addonbar-closebutton\",\"status-bar\"]},\"seen\":[\"abp-toolbarbutton\",\"loop-button\",\"pocket-button\",\"developer-button\",\"action-button--jid0-9xfbwuwnvpx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"webide-button\",\"screenshots_mozilla_org-browser-action\",\"chrome-gnome-shell_gnome_org-browser-action\",\"_4b6e6274-681a-45a4-98db-7c7d03df73560_-browser-action\"],\"dirtyAreaCache\":[\"PersonalToolbar\",\"nav-bar\",\"TabsToolbar\",\"toolbar-menubar\",\"PanelUI-contents\",\"addon-bar\"],\"currentVersion\":13,\"newElementCount\":3}",
     "non\"standard,pref#name": 1,
     "browser.newtabpage.testValue": 1
-};
+}
 
 
 class TestFirefoxLogger(unittest.TestCase):

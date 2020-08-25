@@ -436,7 +436,7 @@ class TestChromiumLogger(unittest.TestCase):
         result = chromium_logger.parse_bookmarks(DEFAULT_BOOKMARKS_DATA)
         self.assertEqual(
             json.dumps(PARSED_BOOKMARKS_DATA, sort_keys=True),
-            json.dumps(result, sort_keys=True));
+            json.dumps(result, sort_keys=True))
 
 
     def test_05_get_modified_bookmarks(self):
