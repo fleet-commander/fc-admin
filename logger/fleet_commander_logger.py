@@ -701,53 +701,6 @@ class NMLogger:
         self.connmgr.submit_change(
             "org.freedesktop.NetworkManager", json.dumps(payload))
 
-    def deep_unpack(self, variant):
-        """
-        This is a workaround for the broken deep_unpack behaviour
-        TODO: Chck if this is necessary
-        """
-        def unpack_internal(unpack):
-            if instanceof(unpack, GLib.Variant):
-                return unpack_internal(unpack.deep_unpack())
-            if instanceof(unpack, list) or instanceof(unpack, dict):
-                for e in unpack:
-                    unpack[e] = unpack_internal(unpack[e])
-            return unpack
-
-        return unpack_internal(variant)
-
-    def merge_confs(self, conf, secrets):
-        if not instanceof(conf, dict) or not instanceof(secrets, dict):
-            logging.error(
-                "ERROR: Cannot merge two items that aren't objects: %s %s",
-                conf, secrets
-            )
-            return {}
-
-        logging.debug(
-            "Merging %s and %s", json.dumps(conf), json.dumps(secrets)
-        )
-
-        for group in secrets:
-            if not group in conf:
-                conf[group] = secrets[group]
-                continue
-
-            for key in secrets[group]:
-                if instanceof(conf[group][key], dict):
-                    conf[group][key] = self.merge_confs(conf[group][key],
-                        secrets[group][key])
-                    continue
-                conf[group][key] = secrets[group][key]
-        return conf
-
-    # def connection_added_cb(self, client, connection):
-    #     """
-    #     Connection added
-    #     """
-    #     logging.debug("Network Manager connection added")
-    #     self.submit_connection(connection)
-
     def new_connection_cb(
             self, connection, sender_name, object_path,
             interface_name, signal_name, parameters, what):
