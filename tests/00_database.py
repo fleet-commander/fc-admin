@@ -26,7 +26,6 @@ import sys
 import os
 import json
 import unittest
-import six
 
 PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 sys.path.append(PYTHONPATH)
@@ -53,16 +52,12 @@ class TestDBManager(unittest.TestCase):
     INITIAL_VALUES = {
         'testkeystr': 'strvalue',
         'testkeybytes': b'bytesvalue',
-        'testkeyunicode': six.text_type('unicodevalue'),
         'testkeyint': 42,
-        'testkeylong': 42,
         'testkeyfloat': 42.0,
         'testkeytuple': ('foo', 42, 'bar'),
         'testkeylist': ['foo', 42, 'bar'],
-        'testkeydict': test_setting
+        'testkeydict': test_setting,
     }
-    if six.PY2:
-        INITIAL_VALUES['testkeylong'] = long(42)
 
     def setUp(self):
         # Initialize memory database
@@ -106,7 +101,7 @@ class TestDBManager(unittest.TestCase):
 
     def test_06_config_dictionary_iteration(self):
         items = list(self.db.config.items())
-        self.assertEqual(len([x for x in items]), 9)
+        self.assertEqual(len([x for x in items]), 7)
         for item in items:
             self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])
 
