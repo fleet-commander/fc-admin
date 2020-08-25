@@ -25,8 +25,6 @@ from __future__ import absolute_import
 import os
 import sys
 import logging
-import socket
-import six
 
 # Compat between Pyhon 2 and 3
 try:
@@ -100,14 +98,8 @@ def parse_config(config_file=None):
             'log_level', constants.DEFAULT_LOG_LEVEL),
         'log_format': section.get(
             'log_format', constants.DEFAULT_LOG_FORMAT),
-        'webservice_host': section.get(
-            'webservice_host', constants.DEFAULT_WEBSERVICE_HOST),
-        'webservice_port': section.get(
-            'webservice_port', constants.DEFAULT_WEBSERVICE_PORT),
         'data_dir': section.get(
             'data_dir', constants.DEFAULT_DATA_DIR),
-        'client_data_url': section.get(
-            'client_data_url', constants.DEFAULT_CLIENT_DATA_URL),
         'tmp_session_destroy_timeout': section.get(
             'tmp_session_destroy_timeout',
             constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT),
@@ -116,16 +108,4 @@ def parse_config(config_file=None):
             constants.DEFAULT_AUTO_QUIT_TIMEOUT),
     }
 
-    if not args['client_data_url'][-1] == args['client_data_url'][0] == '/':
-        logging.error('Client data URL must start and end with /')
-        sys.exit(1)
-
     return args
-
-
-def get_ip_address(hostname):
-    """
-    Returns first IP address for given hostname
-    """
-    data = socket.gethostbyname(hostname)
-    return six.text_type(data)

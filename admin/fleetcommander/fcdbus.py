@@ -793,12 +793,6 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='', out_signature='i')
-    def GetChangeListenerPort(self):
-        return self.webservice_port
-
-    @set_last_call_time
-    @dbus.service.method(DBUS_INTERFACE_NAME,
                          in_signature='', out_signature='s')
     def GetGOAProviders(self):
         try:
