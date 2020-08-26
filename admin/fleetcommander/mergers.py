@@ -36,6 +36,8 @@ class BaseChangeMerger:
         if self.KEY_NAME in change:
             return change[self.KEY_NAME]
 
+        return None
+
     def merge(self, *args):
         """
         Merge changesets in the given order
