@@ -220,8 +220,8 @@ class SSHController:
 
     def install_pubkey(self, pub_key, username, password,
                        hostname, port=DEFAULT_SSH_PORT,
-                       password_prompt='.*(P|p)assword:',
-                       command_prompt='.+[#\$] ',
+                       password_prompt=r'.*(P|p)assword:',
+                       command_prompt=r'.+[#\$] ',
                        **kwargs):
         """
         Install a public key in a remote host
