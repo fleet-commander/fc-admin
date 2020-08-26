@@ -863,7 +863,7 @@ class ChromiumLogger:
             path, monitor, fileobj, otherfile, eventType
         )
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT or eventType is None:
-            if eventType == None:
+            if eventType is None:
                 logging.debug("Reading local state file %s", path)
             if fileobj.query_exists(None):
                 # Read local state file data
@@ -902,7 +902,7 @@ class ChromiumLogger:
                 logging.debug("NEW: %s", prefs)
                 for preference in self.policy_map:
                     value = self.get_preference_value(prefs, preference)
-                    if value != None:
+                    if value is not None:
                         logging.debug(
                             "Checking preference %s with value %s",
                             preference, value
