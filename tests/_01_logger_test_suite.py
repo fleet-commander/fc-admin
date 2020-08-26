@@ -57,6 +57,7 @@ class MockConnectionManager:
     """
     Connection Manager mock class
     """
+
     def __init__(self):
         self.log = []
 
@@ -71,46 +72,41 @@ class MockConnectionManager:
 
 
 class TestScreenSaverInhibitor(unittest.TestCase):
-
     def test_01_inhibitor_init(self):
         inhibitor = FleetCommander.ScreenSaverInhibitor()
+        self.assertTrue("org.freedesktop.ScreenSaver" in inhibitor.screensavers)
         self.assertTrue(
-            'org.freedesktop.ScreenSaver' in inhibitor.screensavers)
-        self.assertTrue(
-            inhibitor.screensavers['org.freedesktop.ScreenSaver']['cookie'] == 9191)
+            inhibitor.screensavers["org.freedesktop.ScreenSaver"]["cookie"] == 9191
+        )
 
     def test_02_inhibitor_unknown_screensaver(self):
         inhibitor = FleetCommander.ScreenSaverInhibitor()
-        inhibitor.inhibit('org.unknown.FakeScreenSaver')
-        self.assertFalse(
-            'org.unknown.FakeScreenSaver' in inhibitor.screensavers)
+        inhibitor.inhibit("org.unknown.FakeScreenSaver")
+        self.assertFalse("org.unknown.FakeScreenSaver" in inhibitor.screensavers)
 
     def test_03_inhibitor_uninhibit(self):
         inhibitor = FleetCommander.ScreenSaverInhibitor()
+        self.assertTrue("org.freedesktop.ScreenSaver" in inhibitor.screensavers)
         self.assertTrue(
-            'org.freedesktop.ScreenSaver' in inhibitor.screensavers)
-        self.assertTrue(
-            inhibitor.screensavers['org.freedesktop.ScreenSaver']['cookie'] == 9191)
+            inhibitor.screensavers["org.freedesktop.ScreenSaver"]["cookie"] == 9191
+        )
         inhibitor.uninhibit()
         self.assertTrue(inhibitor.screensavers == {})
 
 
 class TestDconfLogger(unittest.TestCase):
-
     def setup_dbus_call(self, method, args, glog):
-        proxy = dbus.SessionBus().get_object(
-            glog.BUS_NAME,
-            glog.OBJECT_PATH)
+        proxy = dbus.SessionBus().get_object(glog.BUS_NAME, glog.OBJECT_PATH)
 
-        iface = dbus.Interface(
-            proxy, dbus_interface=glog.INTERFACE_NAME)
+        iface = dbus.Interface(proxy, dbus_interface=glog.INTERFACE_NAME)
 
         # We wait for the logger to catch the bus name
         def check_dbus_name():
             if glog.dconf_subscription_id != 0:
                 logging.debug(
                     "Signal registered. Calling '%s' dbus method. Args: %s",
-                    method, args
+                    method,
+                    args,
                 )
                 getattr(iface, method)(*args)
                 return False
@@ -122,20 +118,18 @@ class TestDconfLogger(unittest.TestCase):
 
         ml.run()
 
-
     def unsubscribe_signal(self, glog):
-        Gio.bus_get_sync(
-            Gio.BusType.SESSION, None).signal_unsubscribe(
-                glog.dconf_subscription_id)
-
+        Gio.bus_get_sync(Gio.BusType.SESSION, None).signal_unsubscribe(
+            glog.dconf_subscription_id
+        )
 
     def test_01_write_key_for_known_schema(self):
         mgr = MockConnectionManager()
         glog = FleetCommander.GSettingsLogger(mgr)
         glog._testing_loop = ml
 
-        args = [[]] # GLib.Variant.new("(ay)", [[]])
-        self.setup_dbus_call('Change', args, glog)
+        args = [[]]  # GLib.Variant.new("(ay)", [[]])
+        self.setup_dbus_call("Change", args, glog)
 
         change = mgr.pop()
         self.assertTrue(change is not None)
@@ -147,37 +141,37 @@ class TestDconfLogger(unittest.TestCase):
         self.assertEqual(
             json.dumps(
                 {
-                    'key':'/test/test',
-                    'schema':'fleet-commander-test',
-                    'value': 'true',
-                    'signature':'b'
+                    "key": "/test/test",
+                    "schema": "fleet-commander-test",
+                    "value": "true",
+                    "signature": "b",
                 },
-                sort_keys=True),
-            json.dumps(json.loads(change[1]), sort_keys=True))
+                sort_keys=True,
+            ),
+            json.dumps(json.loads(change[1]), sort_keys=True),
+        )
 
         # Unsubscribe logger dbus signal
         self.unsubscribe_signal(glog)
-
 
     def test_02_write_key_for_unknown_schema(self):
         mgr = MockConnectionManager()
         glog = FleetCommander.GSettingsLogger(mgr)
         glog._testing_loop = ml
 
-        self.setup_dbus_call('ChangeCommon', [], glog)
+        self.setup_dbus_call("ChangeCommon", [], glog)
 
         self.assertEqual(len(mgr.log), 0)
 
         # Unsubscribe logger dbus signal
         self.unsubscribe_signal(glog)
 
-
     def test_03_write_key_for_guessable_schema(self):
         mgr = MockConnectionManager()
         glog = FleetCommander.GSettingsLogger(mgr)
         glog._testing_loop = ml
 
-        self.setup_dbus_call('ChangeUnique', [], glog)
+        self.setup_dbus_call("ChangeUnique", [], glog)
 
         change = mgr.pop()
 
@@ -185,55 +179,53 @@ class TestDconfLogger(unittest.TestCase):
         self.assertEqual(
             json.dumps(
                 {
-                    'key':'/reloc/foo/fc-unique',
-                    'schema':'fleet-commander-reloc1',
-                    'value': 'true',
-                    'signature':'b'
+                    "key": "/reloc/foo/fc-unique",
+                    "schema": "fleet-commander-reloc1",
+                    "value": "true",
+                    "signature": "b",
                 },
-                sort_keys=True),
-            json.dumps(
-                json.loads(change[1]),
-                sort_keys=True))
+                sort_keys=True,
+            ),
+            json.dumps(json.loads(change[1]), sort_keys=True),
+        )
 
         # Unsubscribe logger dbus signal
         self.unsubscribe_signal(glog)
-
 
     def test_04_guess_schema_cached_path(self):
         mgr = MockConnectionManager()
         glog = FleetCommander.GSettingsLogger(mgr)
         glog._testing_loop = ml
 
-        self.setup_dbus_call('ChangeCommon', [], glog)
-        self.setup_dbus_call('ChangeUnique', [], glog)
+        self.setup_dbus_call("ChangeCommon", [], glog)
+        self.setup_dbus_call("ChangeUnique", [], glog)
         mgr.pop()
-        self.setup_dbus_call('ChangeCommon', [], glog)
+        self.setup_dbus_call("ChangeCommon", [], glog)
 
         change = mgr.pop()
         self.assertEqual(change[0], "org.gnome.gsettings")
         self.assertEqual(
             json.dumps(
                 {
-                    'key':'/reloc/foo/fc-common',
-                    'schema':'fleet-commander-reloc1',
-                    'value': 'true',
-                    'signature':'b'
+                    "key": "/reloc/foo/fc-common",
+                    "schema": "fleet-commander-reloc1",
+                    "value": "true",
+                    "signature": "b",
                 },
-                sort_keys=True),
-            json.dumps(
-                json.loads(change[1]),
-                sort_keys=True))
+                sort_keys=True,
+            ),
+            json.dumps(json.loads(change[1]), sort_keys=True),
+        )
 
         # Unsubscribe logger dbus signal
         self.unsubscribe_signal(glog)
-
 
     def test_05_libreoffice_write_key(self):
         mgr = MockConnectionManager()
         glog = FleetCommander.GSettingsLogger(mgr)
         glog._testing_loop = ml
 
-        self.setup_dbus_call('ChangeLibreOffice', [], glog)
+        self.setup_dbus_call("ChangeLibreOffice", [], glog)
 
         change = mgr.pop()
 
@@ -246,19 +238,17 @@ class TestDconfLogger(unittest.TestCase):
         self.assertEqual(
             json.dumps(
                 {
-                    'key':'/org/libreoffice/registry/somepath/somekey',
-                    'value': '123',
-                    'signature':'i'
+                    "key": "/org/libreoffice/registry/somepath/somekey",
+                    "value": "123",
+                    "signature": "i",
                 },
-                sort_keys=True),
-            json.dumps(
-                json.loads(
-                    change[1]),
-                    sort_keys=True))
+                sort_keys=True,
+            ),
+            json.dumps(json.loads(change[1]), sort_keys=True),
+        )
 
         # Unsubscribe logger dbus signal
         self.unsubscribe_signal(glog)
-
 
     def test_06_libreoffice_create_dconfwrite(self):
         home = GLib.dir_make_tmp("fcmdr-XXXXXX")
@@ -267,9 +257,8 @@ class TestDconfLogger(unittest.TestCase):
         FleetCommander.GSettingsLogger(mgr, home)
 
         self.assertTrue(
-            os.path.exists(
-                os.path.join(home, ".config/libreoffice/dconfwrite")))
-
+            os.path.exists(os.path.join(home, ".config/libreoffice/dconfwrite"))
+        )
 
 
 if __name__ == "__main__":

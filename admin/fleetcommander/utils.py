@@ -36,7 +36,7 @@ from . import constants
 
 
 def get_data_from_file(path):
-    with open(path, 'r') as fd:
+    with open(path, "r") as fd:
         data = fd.read()
         fd.close()
         return data
@@ -45,12 +45,12 @@ def get_data_from_file(path):
 def test_and_create_file(path, content):
     if os.path.isfile(path):
         return
-    with open(path, 'w+') as fd:
+    with open(path, "w+") as fd:
         fd.write(content)
 
 
 def write_and_close(path, data):
-    f = open(path, 'w+')
+    f = open(path, "w+")
     f.write(data)
     f.close()
 
@@ -75,37 +75,33 @@ def parse_config(config_file=None):
     try:
         config.read(config_file)
     except IOError:
-        logging.warning('Could not find configuration file %s', config_file)
+        logging.warning("Could not find configuration file %s", config_file)
     except ParsingError:
-        logging.error('There was an error parsing %s', config_file)
+        logging.error("There was an error parsing %s", config_file)
         sys.exit(1)
     except Exception as e:
-        logging.error(
-            'There was an unknown error parsing %s: %s', config_file, e
-        )
+        logging.error("There was an unknown error parsing %s: %s", config_file, e)
         sys.exit(1)
 
-    if config.has_section('admin'):
+    if config.has_section("admin"):
         config = config_to_dict(config)
-        section = config['admin']
+        section = config["admin"]
     else:
         section = {}
 
     args = {
-        'default_profile_priority': section.get(
-            'default_profile_priority', constants.DEFAULT_PROFILE_PRIORITY),
-        'log_level': section.get(
-            'log_level', constants.DEFAULT_LOG_LEVEL),
-        'log_format': section.get(
-            'log_format', constants.DEFAULT_LOG_FORMAT),
-        'data_dir': section.get(
-            'data_dir', constants.DEFAULT_DATA_DIR),
-        'tmp_session_destroy_timeout': section.get(
-            'tmp_session_destroy_timeout',
-            constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT),
-        'auto_quit_timeout': section.get(
-            'auto_quit_timeout',
-            constants.DEFAULT_AUTO_QUIT_TIMEOUT),
+        "default_profile_priority": section.get(
+            "default_profile_priority", constants.DEFAULT_PROFILE_PRIORITY
+        ),
+        "log_level": section.get("log_level", constants.DEFAULT_LOG_LEVEL),
+        "log_format": section.get("log_format", constants.DEFAULT_LOG_FORMAT),
+        "data_dir": section.get("data_dir", constants.DEFAULT_DATA_DIR),
+        "tmp_session_destroy_timeout": section.get(
+            "tmp_session_destroy_timeout", constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT
+        ),
+        "auto_quit_timeout": section.get(
+            "auto_quit_timeout", constants.DEFAULT_AUTO_QUIT_TIMEOUT
+        ),
     }
 
     return args

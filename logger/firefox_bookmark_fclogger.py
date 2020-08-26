@@ -27,9 +27,9 @@ import dbus
 from functools import wraps
 
 
-DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderLogger'
-DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderLogger'
-DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommanderLogger'
+DBUS_BUS_NAME = "org.freedesktop.FleetCommanderLogger"
+DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderLogger"
+DBUS_INTERFACE_NAME = "org.freedesktop.FleetCommanderLogger"
 
 
 def connected_to_dbus_service(f):
@@ -38,7 +38,7 @@ def connected_to_dbus_service(f):
         if obj.iface is None:
             obj.connect()
         if obj.iface is None:
-            logging.error('Not connected to FC Logger dbus service')
+            logging.error("Not connected to FC Logger dbus service")
             return None
         r = f(obj, *args, **kwargs)
         return r
@@ -69,16 +69,17 @@ class FleetCommanderLoggerDbusClient:
         """
         Connect to dbus service
         """
-        logging.debug('Connecting to FC Logger dbus service')
+        logging.debug("Connecting to FC Logger dbus service")
         t = time.time()
         while time.time() - t < self.CONNECTION_TIMEOUT:
             try:
                 self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
                 self.iface = dbus.Interface(
-                    self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+                    self.obj, dbus_interface=DBUS_INTERFACE_NAME
+                )
                 return
             except Exception:
-                logging.debug('Can\'t connect to FC Logger dbus service')
+                logging.debug("Can't connect to FC Logger dbus service")
 
     @connected_to_dbus_service
     def firefox_bookmark_update(self, bookmark_id, data):
@@ -112,25 +113,25 @@ class FirefoxExtensionMessagingHelper:
         raw_length = self.stdin_buffer.read(4)
         if len(raw_length) == 0:
             sys.exit(0)
-        message_length = struct.unpack('@I', raw_length)[0]
-        message = self.stdin_buffer.read(message_length).decode('utf-8')
+        message_length = struct.unpack("@I", raw_length)[0]
+        message = self.stdin_buffer.read(message_length).decode("utf-8")
         return json.loads(message)
 
     def encode_message(self, content):
         """
         Encode a message for transmission
         """
-        encoded_content = json.dumps(content).encode('utf-8')
-        encoded_length = struct.pack('@I', len(encoded_content))
-        return {'length': encoded_length, 'content': encoded_content}
+        encoded_content = json.dumps(content).encode("utf-8")
+        encoded_length = struct.pack("@I", len(encoded_content))
+        return {"length": encoded_length, "content": encoded_content}
 
     def send_message(self, message):
         """
         Send an encoded message to stdout
         """
         encoded_message = self.encode_message(message)
-        self.stdout_buffer.write(encoded_message['length'])
-        self.stdout_buffer.write(encoded_message['content'])
+        self.stdout_buffer.write(encoded_message["length"])
+        self.stdout_buffer.write(encoded_message["content"])
         self.stdout_buffer.flush()
 
 
@@ -140,17 +141,21 @@ fclogger = FleetCommanderLoggerDbusClient()
 
 while True:
     message = extension.get_message()
-    bookmark_id = message['id']
-    if message['action'] in ['add', 'change', 'move']:
+    bookmark_id = message["id"]
+    if message["action"] in ["add", "change", "move"]:
         extension.send_message(
-            'Received bookmark {} for bookmark id {}'.format(message['action'], bookmark_id))
+            "Received bookmark {} for bookmark id {}".format(
+                message["action"], bookmark_id
+            )
+        )
         logging.debug(
-            'Sending bookmark %s command to FC Logger dbus service',
-            message['action']
+            "Sending bookmark %s command to FC Logger dbus service", message["action"]
         )
         fclogger.firefox_bookmark_update(bookmark_id, json.dumps(message))
-    elif message['action'] == 'remove':
-        extension.send_message('Received bookmark remove command for bookmark id {}'.format(bookmark_id))
+    elif message["action"] == "remove":
+        extension.send_message(
+            "Received bookmark remove command for bookmark id {}".format(bookmark_id)
+        )
         fclogger.firefox_bookmark_remove(bookmark_id)
     else:
-        logging.debug('Unknown action received from extension')
+        logging.debug("Unknown action received from extension")

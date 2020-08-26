@@ -27,15 +27,15 @@ from __future__ import absolute_import
 import sys
 import json
 
-inputfile = open(sys.argv[1], 'r')
-outputfile = open(sys.argv[2], 'wb')
+inputfile = open(sys.argv[1], "r")
+outputfile = open(sys.argv[2], "wb")
 
 data = json.loads(inputfile.read())
 
 outdata = {}
 for key, value in data.items():
-    if 'pref_mappings' in value:
-        if value['pref_mappings'] and 'pref' in value['pref_mappings'][0]:
-            outdata[value['pref_mappings'][0]['pref']] = key
+    if "pref_mappings" in value:
+        if value["pref_mappings"] and "pref" in value["pref_mappings"][0]:
+            outdata[value["pref_mappings"][0]["pref"]] = key
 
 outputfile.write(json.dumps(outdata))

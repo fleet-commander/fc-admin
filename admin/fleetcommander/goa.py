@@ -28,6 +28,7 @@ class GOAProvidersLoader:
     """
     GOA providers reader
     """
+
     def __init__(self, providers_file):
         """
         Class initialization
@@ -38,41 +39,36 @@ class GOAProvidersLoader:
         try:
             self._configparser.read(providers_file)
         except IOError as e:
-            logging.error(
-                'Could not find GOA providers file %s', providers_file)
+            logging.error("Could not find GOA providers file %s", providers_file)
             raise e
         except ParsingError as e:
-            logging.error(
-                'There was an error parsing %s', providers_file)
+            logging.error("There was an error parsing %s", providers_file)
             raise e
         except Exception as e:
-            logging.error(
-                'There was an unknown error parsing %s', providers_file)
+            logging.error("There was an unknown error parsing %s", providers_file)
             raise e
         self.read_data()
 
     def read_data(self):
         for section in self._configparser.sections():
-            if section.startswith('Provider '):
+            if section.startswith("Provider "):
                 provider = section.split()[1]
                 self._providers[provider] = {
-                    'name': self.generate_readable_name(provider),
-                    'services': {}
+                    "name": self.generate_readable_name(provider),
+                    "services": {},
                 }
                 for option in self._configparser.options(section):
-                    if option == 'providername':
-                        name = self._configparser.get(
-                            section, option)
-                        self._providers[provider]['name'] = name
-                    elif option.endswith('enabled'):
-                        service = option[:-7].title() + 'Enabled'
+                    if option == "providername":
+                        name = self._configparser.get(section, option)
+                        self._providers[provider]["name"] = name
+                    elif option.endswith("enabled"):
+                        service = option[:-7].title() + "Enabled"
                         name = self.generate_readable_name(service[:-7])
-                        enabled = self._configparser.getboolean(
-                            section, option)
+                        enabled = self._configparser.getboolean(section, option)
                         # Generate readable name
-                        self._providers[provider]['services'][service] = {
-                            'name': name,
-                            'enabled': enabled
+                        self._providers[provider]["services"][service] = {
+                            "name": name,
+                            "enabled": enabled,
                         }
 
     def generate_readable_name(self, identifier):
@@ -81,8 +77,8 @@ class GOAProvidersLoader:
         """
         stripped = identifier.strip()
         if stripped:
-            return stripped.title().replace('_', ' ')
-        return 'Enabled'
+            return stripped.title().replace("_", " ")
+        return "Enabled"
 
     def get_providers(self):
         return self._providers

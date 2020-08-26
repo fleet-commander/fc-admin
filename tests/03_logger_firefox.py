@@ -47,9 +47,11 @@ ml = GLib.MainLoop()
 
 # Test helpers
 
+
 def mainloop_quit_callback(*args, **kwargs):
     logging.error(
-        "Timed out waiting for file update notification. Test probably failed")
+        "Timed out waiting for file update notification. Test probably failed"
+    )
     ml.quit()
 
 
@@ -57,6 +59,7 @@ class MockConnectionManager:
     """
     Connection Manager mock class
     """
+
     def __init__(self):
         self.log = []
 
@@ -70,7 +73,7 @@ class MockConnectionManager:
 
 # Test data
 
-INSTALLS_FILE_CONTENT="""[0123456789ABCDEF]
+INSTALLS_FILE_CONTENT = """[0123456789ABCDEF]
 Default=robuvvg2.default
 Locked=1"""
 
@@ -101,8 +104,8 @@ DEFAULT_PREFERENCES_DATA = {
     "browser.newtabpage.enhanced": False,
     "browser.newtabpage.introShown": True,
     "browser.newtabpage.storageVersion": 1,
-    "browser.uiCustomization.state": "{\"placements\":{\"widget-overflow-fixed-list\":[],\"PersonalToolbar\":[\"bookmarks-menu-button\",\"personal-bookmarks\"],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"home-button\",\"urlbar-container\",\"search-container\",\"downloads-button\",\"library-button\",\"abp-toolbarbutton\",\"qrcodeaddon-16\",\"action-button--jid0-9xfbwuwnvyx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"screenshots_mozilla_org-browser-action\",\"sidebar-button\",\"chrome-gnome-shell_gnome_org-browser-action\",\"preferences-button\",\"_4b6e6674-681a-45a4-98db-7c7d03df3560_-browser-action\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"addon-bar\":[\"addonbar-closebutton\",\"status-bar\"]},\"seen\":[\"abp-toolbarbutton\",\"loop-button\",\"pocket-button\",\"developer-button\",\"action-button--jid0-9xfbwuwnvpx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"webide-button\",\"screenshots_mozilla_org-browser-action\",\"chrome-gnome-shell_gnome_org-browser-action\",\"_4b6e6274-681a-45a4-98db-7c7d03df73560_-browser-action\"],\"dirtyAreaCache\":[\"PersonalToolbar\",\"nav-bar\",\"TabsToolbar\",\"toolbar-menubar\",\"PanelUI-contents\",\"addon-bar\"],\"currentVersion\":13,\"newElementCount\":3}",
-    "non\"standard,pref#name": 1
+    "browser.uiCustomization.state": '{"placements":{"widget-overflow-fixed-list":[],"PersonalToolbar":["bookmarks-menu-button","personal-bookmarks"],"nav-bar":["back-button","forward-button","stop-reload-button","home-button","urlbar-container","search-container","downloads-button","library-button","abp-toolbarbutton","qrcodeaddon-16","action-button--jid0-9xfbwuwnvyx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies","ublock0-button","VimFxButton","ublock0_raymondhill_net-browser-action","screenshots_mozilla_org-browser-action","sidebar-button","chrome-gnome-shell_gnome_org-browser-action","preferences-button","_4b6e6674-681a-45a4-98db-7c7d03df3560_-browser-action"],"TabsToolbar":["tabbrowser-tabs","new-tab-button","alltabs-button"],"toolbar-menubar":["menubar-items"],"addon-bar":["addonbar-closebutton","status-bar"]},"seen":["abp-toolbarbutton","loop-button","pocket-button","developer-button","action-button--jid0-9xfbwuwnvpx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies","ublock0-button","VimFxButton","ublock0_raymondhill_net-browser-action","webide-button","screenshots_mozilla_org-browser-action","chrome-gnome-shell_gnome_org-browser-action","_4b6e6274-681a-45a4-98db-7c7d03df73560_-browser-action"],"dirtyAreaCache":["PersonalToolbar","nav-bar","TabsToolbar","toolbar-menubar","PanelUI-contents","addon-bar"],"currentVersion":13,"newElementCount":3}',
+    'non"standard,pref#name': 1,
 }
 
 RAW_PREFS_DATA_MODIFIED = r"""# Mozilla User Preferences
@@ -130,9 +133,9 @@ UPDATED_PREFERENCES_DATA = {
     "browser.newtabpage.enhanced": True,
     "browser.newtabpage.introShown": True,
     "browser.newtabpage.storageVersion": 1,
-    "browser.uiCustomization.state": "{\"placements\":{\"widget-overflow-fixed-list\":[],\"PersonalToolbar\":[\"bookmarks-menu-button\",\"personal-bookmarks\"],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"home-button\",\"urlbar-container\",\"search-container\",\"downloads-button\",\"library-button\",\"abp-toolbarbutton\",\"qrcodeaddon-16\",\"action-button--jid0-9xfbwuwnvyx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"screenshots_mozilla_org-browser-action\",\"sidebar-button\",\"chrome-gnome-shell_gnome_org-browser-action\",\"preferences-button\",\"_4b6e6674-681a-45a4-98db-7c7d03df3560_-browser-action\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"addon-bar\":[\"addonbar-closebutton\",\"status-bar\"]},\"seen\":[\"abp-toolbarbutton\",\"loop-button\",\"pocket-button\",\"developer-button\",\"action-button--jid0-9xfbwuwnvpx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies\",\"ublock0-button\",\"VimFxButton\",\"ublock0_raymondhill_net-browser-action\",\"webide-button\",\"screenshots_mozilla_org-browser-action\",\"chrome-gnome-shell_gnome_org-browser-action\",\"_4b6e6274-681a-45a4-98db-7c7d03df73560_-browser-action\"],\"dirtyAreaCache\":[\"PersonalToolbar\",\"nav-bar\",\"TabsToolbar\",\"toolbar-menubar\",\"PanelUI-contents\",\"addon-bar\"],\"currentVersion\":13,\"newElementCount\":3}",
-    "non\"standard,pref#name": 1,
-    "browser.newtabpage.testValue": 1
+    "browser.uiCustomization.state": '{"placements":{"widget-overflow-fixed-list":[],"PersonalToolbar":["bookmarks-menu-button","personal-bookmarks"],"nav-bar":["back-button","forward-button","stop-reload-button","home-button","urlbar-container","search-container","downloads-button","library-button","abp-toolbarbutton","qrcodeaddon-16","action-button--jid0-9xfbwuwnvyx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies","ublock0-button","VimFxButton","ublock0_raymondhill_net-browser-action","screenshots_mozilla_org-browser-action","sidebar-button","chrome-gnome-shell_gnome_org-browser-action","preferences-button","_4b6e6674-681a-45a4-98db-7c7d03df3560_-browser-action"],"TabsToolbar":["tabbrowser-tabs","new-tab-button","alltabs-button"],"toolbar-menubar":["menubar-items"],"addon-bar":["addonbar-closebutton","status-bar"]},"seen":["abp-toolbarbutton","loop-button","pocket-button","developer-button","action-button--jid0-9xfbwuwnvpx4wwsfbwmcm4jj69ejetpack-self-destructing-cookies","ublock0-button","VimFxButton","ublock0_raymondhill_net-browser-action","webide-button","screenshots_mozilla_org-browser-action","chrome-gnome-shell_gnome_org-browser-action","_4b6e6274-681a-45a4-98db-7c7d03df73560_-browser-action"],"dirtyAreaCache":["PersonalToolbar","nav-bar","TabsToolbar","toolbar-menubar","PanelUI-contents","addon-bar"],"currentVersion":13,"newElementCount":3}',
+    'non"standard,pref#name': 1,
+    "browser.newtabpage.testValue": 1,
 }
 
 
@@ -144,7 +147,7 @@ class TestFirefoxLogger(unittest.TestCase):
         pass
 
     def file_set_contents(self, filename, contents):
-        with open(filename, 'w') as fd:
+        with open(filename, "w") as fd:
             fd.write(contents)
             fd.close()
 
@@ -155,20 +158,18 @@ class TestFirefoxLogger(unittest.TestCase):
         # Create profiles file
         if profinit:
             self.file_set_contents(
-                os.path.join(TMPDIR, 'installs.ini'),
-                INSTALLS_FILE_CONTENT)
+                os.path.join(TMPDIR, "installs.ini"), INSTALLS_FILE_CONTENT
+            )
         # Create profile directory
         self.assertEqual(
-            0,
-            GLib.mkdir_with_parents(
-                os.path.join(TMPDIR, "robuvvg2.default"),
-                0o755))
+            0, GLib.mkdir_with_parents(os.path.join(TMPDIR, "robuvvg2.default"), 0o755)
+        )
 
         # Initialize preferences file
         if prefsinit:
             self.file_set_contents(
-                os.path.join(TMPDIR, "robuvvg2.default", "prefs.js"),
-                RAW_PREFS_DATA)
+                os.path.join(TMPDIR, "robuvvg2.default", "prefs.js"), RAW_PREFS_DATA
+            )
 
         return TMPDIR
 
@@ -184,18 +185,16 @@ class TestFirefoxLogger(unittest.TestCase):
         # Get default profile
         self.assertEqual(
             os.path.join(TMPDIR, "robuvvg2.default"),
-            firefox_logger.get_default_profile_path())
+            firefox_logger.get_default_profile_path(),
+        )
 
         # Try to read a wrong profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, 'installs.ini'),
-            "RESISTANCE IS FUTILE")
-        self.assertEqual(
-            None,
-            firefox_logger.get_default_profile_path())
+            os.path.join(TMPDIR, "installs.ini"), "RESISTANCE IS FUTILE"
+        )
+        self.assertEqual(None, firefox_logger.get_default_profile_path())
 
         logging.info("End test_01_default_profile_path")
-
 
     def test_02_read_preferences(self):
         logging.info("Start test_02_read_preferences")
@@ -210,10 +209,10 @@ class TestFirefoxLogger(unittest.TestCase):
 
         self.assertEqual(
             json.dumps(DEFAULT_PREFERENCES_DATA, sort_keys=True),
-            json.dumps(returned, sort_keys=True))
+            json.dumps(returned, sort_keys=True),
+        )
 
         logging.info("End test_02_read_preferences")
-
 
     def test_03_profiles_file_load(self):
         logging.info("Start test_03_profiles_file_load")
@@ -226,11 +225,10 @@ class TestFirefoxLogger(unittest.TestCase):
         self.assertTrue(firefox_logger.default_profile_initialized)
         # Also there souldn't be any file monitor for it
         self.assertFalse(
-            os.path.join(
-                TMPDIR, "/profiles.ini") in firefox_logger.file_monitors)
+            os.path.join(TMPDIR, "/profiles.ini") in firefox_logger.file_monitors
+        )
 
         logging.info("End test_03_profiles_file_load")
-
 
     def test_04_profiles_file_monitoring(self):
         logging.info("Start test_06_profiles_file_monitoring")
@@ -246,8 +244,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # File monitor should be set and waiting for changes
         self.assertTrue(
-            os.path.join(
-                TMPDIR, 'installs.ini') in firefox_logger.file_monitors)
+            os.path.join(TMPDIR, "installs.ini") in firefox_logger.file_monitors
+        )
 
         # Setup callback for profiles file update
         firefox_logger.test_profiles_file_updated_cb = ml.quit
@@ -257,8 +255,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Add profiles file
         self.file_set_contents(
-            os.path.join(TMPDIR, 'installs.ini'),
-            INSTALLS_FILE_CONTENT)
+            os.path.join(TMPDIR, "installs.ini"), INSTALLS_FILE_CONTENT
+        )
 
         # Execute main loop
         ml.run()
@@ -266,7 +264,6 @@ class TestFirefoxLogger(unittest.TestCase):
         self.assertTrue(firefox_logger.default_profile_initialized)
 
         logging.info("End test_06_profiles_file_monitoring")
-
 
     def test_05_preferences_file_monitoring_wrong(self):
         logging.info("Start test_07_preferences_file_monitoring_wrong")
@@ -285,8 +282,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Current preferences should be empty
         self.assertEqual(
-            json.dumps({}),
-            json.dumps(firefox_logger.monitored_preferences))
+            json.dumps({}), json.dumps(firefox_logger.monitored_preferences)
+        )
 
         # Setup callback on preferences file update
         firefox_logger.test_prefs_file_updated_cb = ml.quit
@@ -295,9 +292,7 @@ class TestFirefoxLogger(unittest.TestCase):
         GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Add profiles file
-        self.file_set_contents(
-            prefs_path,
-            "WRONG CONTENT")
+        self.file_set_contents(prefs_path, "WRONG CONTENT")
 
         # Execute main loop
         ml.run()
@@ -309,10 +304,10 @@ class TestFirefoxLogger(unittest.TestCase):
         # Wrong content only leads to empty preferences
         self.assertEqual(
             json.dumps({prefs_path: {}}),
-            json.dumps(firefox_logger.monitored_preferences))
+            json.dumps(firefox_logger.monitored_preferences),
+        )
 
         logging.info("End test_07_preferences_file_monitoring_wrong")
-
 
     def test_06_preferences_file_monitoring(self):
         logging.info("Start test_08_preferences_file_monitoring")
@@ -332,8 +327,8 @@ class TestFirefoxLogger(unittest.TestCase):
 
         # Preferences data should be empty
         self.assertEqual(
-            json.dumps({}),
-            json.dumps(firefox_logger.monitored_preferences))
+            json.dumps({}), json.dumps(firefox_logger.monitored_preferences)
+        )
 
         # Setup callback on preferences file update
         firefox_logger.test_prefs_file_updated_cb = ml.quit
@@ -342,9 +337,7 @@ class TestFirefoxLogger(unittest.TestCase):
         GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Add profiles file
-        self.file_set_contents(
-            prefs_path,
-            RAW_PREFS_DATA)
+        self.file_set_contents(prefs_path, RAW_PREFS_DATA)
 
         # Execute main loop
         ml.run()
@@ -355,10 +348,10 @@ class TestFirefoxLogger(unittest.TestCase):
         # Default preference data should be loaded
         self.assertEqual(
             json.dumps({prefs_path: DEFAULT_PREFERENCES_DATA}, sort_keys=True),
-            json.dumps(firefox_logger.monitored_preferences, sort_keys=True))
+            json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
+        )
 
         logging.info("End test_08_preferences_file_monitoring")
-
 
     def test_07_preferences_file_loading(self):
         logging.info("Start test_09_preferences_file_loading")
@@ -379,10 +372,10 @@ class TestFirefoxLogger(unittest.TestCase):
         # Default preference data should be loaded
         self.assertEqual(
             json.dumps({prefs_path: DEFAULT_PREFERENCES_DATA}, sort_keys=True),
-            json.dumps(firefox_logger.monitored_preferences, sort_keys=True))
+            json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
+        )
 
         logging.info("End test_09_preferences_file_loading")
-
 
     def test_08_preferences_update(self):
         logging.info("Start test_10_preferences_update")
@@ -403,7 +396,8 @@ class TestFirefoxLogger(unittest.TestCase):
         # Default preference data should be loaded
         self.assertEqual(
             json.dumps({prefs_path: DEFAULT_PREFERENCES_DATA}, sort_keys=True),
-            json.dumps(firefox_logger.monitored_preferences, sort_keys=True))
+            json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
+        )
 
         # Setup callback on preferences file update
         firefox_logger.test_prefs_file_updated_cb = ml.quit
@@ -412,9 +406,7 @@ class TestFirefoxLogger(unittest.TestCase):
         GLib.timeout_add(1000, mainloop_quit_callback)
 
         # Overwrite profiles file with modified data
-        self.file_set_contents(
-            prefs_path,
-            RAW_PREFS_DATA_MODIFIED)
+        self.file_set_contents(prefs_path, RAW_PREFS_DATA_MODIFIED)
 
         # Execute main loop
         ml.run()
@@ -422,7 +414,8 @@ class TestFirefoxLogger(unittest.TestCase):
         # Check preference data has been updated
         self.assertEqual(
             json.dumps({prefs_path: UPDATED_PREFERENCES_DATA}, sort_keys=True),
-            json.dumps(firefox_logger.monitored_preferences, sort_keys=True))
+            json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
+        )
 
         # Changes queue length should be 3
         self.assertEqual(3, len(mgr.log))
@@ -433,29 +426,29 @@ class TestFirefoxLogger(unittest.TestCase):
                 [
                     "org.mozilla.firefox",
                     json.dumps(
-                        {
-                            "key": "accessibility.typeaheadfind.flashBar",
-                            "value": 1
-                        }, sort_keys=True)
-                ]),
+                        {"key": "accessibility.typeaheadfind.flashBar", "value": 1},
+                        sort_keys=True,
+                    ),
+                ]
+            ),
             json.dumps(
                 [
                     "org.mozilla.firefox",
                     json.dumps(
-                        {
-                            "key": "browser.newtabpage.enhanced",
-                            "value": True
-                        }, sort_keys=True)
-                ]),
+                        {"key": "browser.newtabpage.enhanced", "value": True},
+                        sort_keys=True,
+                    ),
+                ]
+            ),
             json.dumps(
                 [
                     "org.mozilla.firefox",
                     json.dumps(
-                        {
-                            "key": "browser.newtabpage.testValue",
-                            "value": 1
-                        }, sort_keys=True)
-                ]),
+                        {"key": "browser.newtabpage.testValue", "value": 1},
+                        sort_keys=True,
+                    ),
+                ]
+            ),
         ]
 
         while len(mgr.log) > 0:

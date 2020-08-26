@@ -4,7 +4,7 @@ import time
 import sys
 from six.moves import range
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     session = dbus.Bus()
     for i in range(20):
         for name in session.list_names():

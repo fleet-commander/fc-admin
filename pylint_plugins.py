@@ -11,12 +11,14 @@ def register(linter):
     pass
 
 
-AstroidBuilder(MANAGER).string_build(textwrap.dedent(
-    """
+AstroidBuilder(MANAGER).string_build(
+    textwrap.dedent(
+        """
     from ipalib import api
     from ipalib import plugable
 
     api.Backend = plugable.APINameSpace(api, None)
     api.Command = plugable.APINameSpace(api, None)
     """
-))
+    )
+)

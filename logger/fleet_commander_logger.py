@@ -34,12 +34,13 @@ import dbus.service
 
 from dbus.mainloop.glib import DBusGMainLoop
 from six.moves import range
+
 DBusGMainLoop(set_as_default=True)
 
 # GObject Introspection imports
 import gi
 
-gi.require_version('NM', '1.0')
+gi.require_version("NM", "1.0")
 
 from gi.repository import GLib
 from gi.repository import Gio
@@ -53,9 +54,9 @@ except NameError:
     FileNotFoundError = IOError
 
 
-DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderLogger'
-DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderLogger'
-DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommanderLogger'
+DBUS_BUS_NAME = "org.freedesktop.FleetCommanderLogger"
+DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderLogger"
+DBUS_INTERFACE_NAME = "org.freedesktop.FleetCommanderLogger"
 
 
 class RemoteConnectionWorkaround:
@@ -64,24 +65,21 @@ class RemoteConnectionWorkaround:
 
     def to_dbus(self, flag):
         return self.proxy.call_sync(
-            'GetSettings',
-            None,
-            Gio.DBusCallFlags.NONE,
-            3000,
-            None).get_child_value(0)
+            "GetSettings", None, Gio.DBusCallFlags.NONE, 3000, None
+        ).get_child_value(0)
 
     def get_connection_type(self):
-        return self.to_dbus(None).lookup_value(
-            'connection', None).lookup_value(
-                'type', None).get_string()
+        return (
+            self.to_dbus(None)
+            .lookup_value("connection", None)
+            .lookup_value("type", None)
+            .get_string()
+        )
 
     def get_secrets(self, setting, cancellable):
         return self.proxy.call_sync(
-            'GetSecrets',
-            setting,
-            Gio.DBusCallFlags.NONE,
-            3000,
-            None)
+            "GetSecrets", setting, Gio.DBusCallFlags.NONE, 3000, None
+        )
 
 
 class SpicePortManager:
@@ -103,11 +101,13 @@ class SpicePortManager:
         self.timeout = 0
 
         try:
-            self.fd = open(self.path, 'wb', 0)
+            self.fd = open(self.path, "wb", 0)
         except FileNotFoundError as e:
             logging.error(
-                'Can\'t open device file %s. Use -n or --no-dev for non '
-                'Fleet Commander VM session: %s', self.path, e
+                "Can't open device file %s. Use -n or --no-dev for non "
+                "Fleet Commander VM session: %s",
+                self.path,
+                e,
             )
             sys.exit(1)
 
@@ -128,16 +128,12 @@ class SpicePortManager:
         return True
 
     def submit_change(self, namespace, data):
-        logging.debug(
-            "Submitting changeset as namespace %s: %s", namespace, data
-        )
+        logging.debug("Submitting changeset as namespace %s: %s", namespace, data)
 
         self.queue.append({"ns": namespace, "data": data})
 
         if len(self.queue) > 0 and self.timeout < 1:
-            self.timeout = GLib.timeout_add(
-                self.retry_interval,
-                self._perform_submits)
+            self.timeout = GLib.timeout_add(self.retry_interval, self._perform_submits)
 
     def give_up(self):
         self._perform_submits()
@@ -149,16 +145,16 @@ class ScreenSaverInhibitor:
     """
 
     known_screensavers = [
-        'org.freedesktop.ScreenSaver',
-        'org.xfce.ScreenSaver',
-        'org.cinnamon.ScreenSaver',
-        'org.mate.ScreenSaver',
+        "org.freedesktop.ScreenSaver",
+        "org.xfce.ScreenSaver",
+        "org.cinnamon.ScreenSaver",
+        "org.mate.ScreenSaver",
     ]
 
     screensavers = {}
 
     def __init__(self):
-        logging.debug('ScreenSaverInhibitor: Initializing screensaver inhibitor')
+        logging.debug("ScreenSaverInhibitor: Initializing screensaver inhibitor")
         session = dbus.SessionBus()
         session.add_match_string("type=signal,member=NameOwnerChanged")
         session.add_message_filter(self.screensaver_match_cb)
@@ -166,9 +162,7 @@ class ScreenSaverInhibitor:
         try:
             names = session.list_names()
         except Exception as e:
-            logging.error(
-                "ScreenSaverInhibitor: Error searching screensaver: %s", e
-            )
+            logging.error("ScreenSaverInhibitor: Error searching screensaver: %s", e)
             return
 
         print(names)
@@ -184,33 +178,32 @@ class ScreenSaverInhibitor:
         args = message.get_args_list()
 
         ss_bus_name = str(args[0])
-        if member == 'NameOwnerChanged' and len(args) >= 3 and ss_bus_name in self.known_screensavers:
+        if (
+            member == "NameOwnerChanged"
+            and len(args) >= 3
+            and ss_bus_name in self.known_screensavers
+        ):
             owner_name = args[2]
-            if (owner_name):
+            if owner_name:
                 self.inhibit(ss_bus_name)
             else:
                 self.remove(ss_bus_name)
         return True
 
     def remove(self, bus_name):
-        logging.debug(
-            "ScreenSaverInhibitor: Removing screensaver %s", bus_name
-        )
+        logging.debug("ScreenSaverInhibitor: Removing screensaver %s", bus_name)
         if bus_name in self.screensavers:
             self.screensavers.pop(bus_name)
 
     def inhibit(self, bus_name):
         if bus_name not in self.known_screensavers:
             logging.debug(
-                'ScreenSaverInhibitor: Ignoring %s as it is not a '
-                'known screensaver',
-                bus_name
+                "ScreenSaverInhibitor: Ignoring %s as it is not a " "known screensaver",
+                bus_name,
             )
             return
-        
-        logging.debug(
-            'ScreenSaverInhibitor: Inhibiting screensaver %s', bus_name
-        )
+
+        logging.debug("ScreenSaverInhibitor: Inhibiting screensaver %s", bus_name)
 
         self.screensavers[bus_name] = {}
         object_path = "/" + bus_name.replace(".", "/")
@@ -218,28 +211,25 @@ class ScreenSaverInhibitor:
             proxy = dbus.SessionBus().get_object(bus_name, object_path)
 
             ss = self.screensavers[bus_name]
-            ss['iface'] = dbus.Interface(proxy, dbus_interface=bus_name)
+            ss["iface"] = dbus.Interface(proxy, dbus_interface=bus_name)
 
-            ss['cookie'] = ss['iface'].Inhibit(
-                'org.freedesktop.FleetCommander.Logger',
-                'Preventing Screen locking while Fleet Commander Logger runs')
-        except Exception as e:
-            logging.error(
-                "ScreenSaverInhibitor: Error inhibiting %s: %s",
-                bus_name, e
+            ss["cookie"] = ss["iface"].Inhibit(
+                "org.freedesktop.FleetCommander.Logger",
+                "Preventing Screen locking while Fleet Commander Logger runs",
             )
+        except Exception as e:
+            logging.error("ScreenSaverInhibitor: Error inhibiting %s: %s", bus_name, e)
 
     def uninhibit(self):
         for name, data in self.screensavers.items():
             logging.debug("ScreenSaverInhibitor: Unihibiting %s", name)
 
             try:
-                data['iface'].UnInhibit(data['cookie'])
+                data["iface"].UnInhibit(data["cookie"])
 
             except Exception as e:
                 logging.error(
-                    "ScreenSaverInhibitor: Error uninhibiting %s: %s",
-                    name, e
+                    "ScreenSaverInhibitor: Error uninhibiting %s: %s", name, e
                 )
 
         self.screensavers.clear()
@@ -247,9 +237,9 @@ class ScreenSaverInhibitor:
 
 class GSettingsLogger:
 
-    BUS_NAME = 'ca.desrt.dconf'
-    OBJECT_PATH = '/ca/desrt/dconf/Writer/user'
-    INTERFACE_NAME = 'ca.desrt.dconf.Writer'
+    BUS_NAME = "ca.desrt.dconf"
+    OBJECT_PATH = "/ca/desrt/dconf/Writer/user"
+    INTERFACE_NAME = "ca.desrt.dconf.Writer"
     LIBREOFFICE_DCONF_PATH = ".config/libreoffice/dconfwrite"
 
     def __init__(self, connmgr, homedir=GLib.get_home_dir()):
@@ -269,16 +259,15 @@ class GSettingsLogger:
 
         # Create file for LibreOffice dconf writes
         dconfwrite = Gio.File.new_for_path(
-            os.path.join(self.homedir, self.LIBREOFFICE_DCONF_PATH))
+            os.path.join(self.homedir, self.LIBREOFFICE_DCONF_PATH)
+        )
 
         if not dconfwrite.query_exists(None):
             GLib.mkdir_with_parents(dconfwrite.get_parent().get_path(), 483)
             try:
                 dconfwrite.create(Gio.FileCreateFlags.NONE, None)
             except Exception as e:
-                logging.error(
-                    "Could not create file %s: %s", dconfwrite.get_path(), e
-                )
+                logging.error("Could not create file %s: %s", dconfwrite.get_path(), e)
 
         # Populate a table of paths to schema ids.  We can do this up
         # front for fixed-path schemas.  For relocatable schemas we have to
@@ -286,7 +275,7 @@ class GSettingsLogger:
         # the path and key(s) in the change notification.
         logging.debug("Caching known schemas")
         for schema_name in Gio.Settings.list_schemas():
-        #for schema_name in self.schema_source.list_schemas(True):
+            # for schema_name in self.schema_source.list_schemas(True):
             schema = self.schema_source.lookup(schema_name, True)
             path = schema.get_path()
             logging.debug("Adding schema %s: %s", path, schema_name)
@@ -299,12 +288,19 @@ class GSettingsLogger:
             self.BUS_NAME,
             Gio.BusNameWatcherFlags.NONE,
             self._bus_name_appeared_cb,
-            self._bus_name_disappeared_cb)
-
+            self._bus_name_disappeared_cb,
+        )
 
     def _writer_notify_cb(
-            self, connection, sender_name, object_path,
-            interface_name, signal_name, parameters, what):
+        self,
+        connection,
+        sender_name,
+        object_path,
+        interface_name,
+        signal_name,
+        parameters,
+        what,
+    ):
         # Added what parametwe because it gets 8 nor 7 parms
         path = parameters.get_child_value(0).get_string()
         keys = []
@@ -316,7 +312,7 @@ class GSettingsLogger:
             keys_variant = parameters.get_child_value(1)
             for i in range(keys_variant.n_children()):
                 keys.append(keys_variant.get_child_value(i).get_string())
-                #keys.append(keys_variant.get_child_value(i).get_string())
+                # keys.append(keys_variant.get_child_value(i).get_string())
 
         logging.debug("dconf Notify: %s", path)
         logging.debug(">>> Keys: %s", keys)
@@ -330,8 +326,7 @@ class GSettingsLogger:
             return
 
         if path in self.path_to_known_schema:
-            schema = self.schema_source.lookup(
-                self.path_to_known_schema[path], True)
+            schema = self.schema_source.lookup(self.path_to_known_schema[path], True)
             settings = Gio.Settings.new_full(schema, None, None)
             self._settings_changed(schema, settings, keys)
             return
@@ -344,36 +339,34 @@ class GSettingsLogger:
             return
 
         schema = self.schema_source.lookup(schema_name, True)
-        settings = Gio.Settings.new_full (schema, None, path)
+        settings = Gio.Settings.new_full(schema, None, path)
         self._settings_changed(schema, settings, keys)
 
     def _libreoffice_change(self, path, keys):
         logging.debug(
-            "Submitting LibreOffice change for keys [%s] for path %s",
-            keys, path
+            "Submitting LibreOffice change for keys [%s] for path %s", keys, path
         )
 
         for key in keys:
             command = ["dconf", "read", path + key]
             dconf = Gio.Subprocess.new(
-                command, Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE)
+                command,
+                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE,
+            )
             stdout_pipe = dconf.get_stdout_pipe()
             dconf.wait(None)
             if dconf.get_exit_status() != 0:
                 logging.error(
-                    "Error calling dconf subprocess with arguments: %s",
-                    command
+                    "Error calling dconf subprocess with arguments: %s", command
                 )
                 return
 
             # FIXME: libdconf doesn't have introspection support, we call dconf manually
-            data = Gio.DataInputStream.new (stdout_pipe)
-            variant_string = data.read_until ("\0", None)[0]
+            data = Gio.DataInputStream.new(stdout_pipe)
+            variant_string = data.read_until("\0", None)[0]
 
             if variant_string is None:
-                logging.error(
-                    "There was an error reading dconf key %s%s", path, key
-                )
+                logging.error("There was an error reading dconf key %s%s", path, key)
                 return
 
             variant = None
@@ -382,43 +375,50 @@ class GSettingsLogger:
             except Exception as e:
                 logging.error(
                     "There was an error parsing the variant string from the \
-                        dconf read output for '%s%s': %s", path, key, e
+                        dconf read output for '%s%s': %s",
+                    path,
+                    key,
+                    e,
                 )
                 logging.error(variant_string)
                 return
 
-            finaldata = json.dumps({
-                "key": path + key,
-                "value": variant.print_(True),
-                "signature": variant.get_type_string(),
-            }, sort_keys=True)
+            finaldata = json.dumps(
+                {
+                    "key": path + key,
+                    "value": variant.print_(True),
+                    "signature": variant.get_type_string(),
+                },
+                sort_keys=True,
+            )
 
-            self.connmgr.submit_change ("org.libreoffice.registry", finaldata)
+            self.connmgr.submit_change("org.libreoffice.registry", finaldata)
 
         if self._testing_loop is not None:
             self._testing_loop.quit()
 
     def _settings_changed(self, schema, settings, keys):
         logging.debug(
-            "Submitting change for keys ['%s'] on schema %s",
-            keys, schema.get_id()
+            "Submitting change for keys ['%s'] on schema %s", keys, schema.get_id()
         )
 
         for key in keys:
             variant = settings.get_value(key)
 
-            data = json.dumps({
-                "key": settings.get_property("path") + key,
-                "schema": schema.get_id(),
-                "value": variant.print_(True),
-                "signature": variant.get_type().dup_string(),
-            }, sort_keys=True)
+            data = json.dumps(
+                {
+                    "key": settings.get_property("path") + key,
+                    "schema": schema.get_id(),
+                    "value": variant.print_(True),
+                    "signature": variant.get_type().dup_string(),
+                },
+                sort_keys=True,
+            )
 
             self.connmgr.submit_change("org.gnome.gsettings", data)
 
         if self._testing_loop is not None:
             self._testing_loop.quit()
-
 
     def _guess_schema(self, path, keys):
         """
@@ -431,9 +431,7 @@ class GSettingsLogger:
 
         if path in self.found_schemas_for_path:
             schema = self.found_schemas_for_path[path]
-            logging.debug(
-                "Schema for path %s was already found: %s", path, schema
-            )
+            logging.debug("Schema for path %s was already found: %s", path, schema)
             return schema
 
         # We store (path,keys) we didn't find a schema for in case
@@ -451,9 +449,7 @@ class GSettingsLogger:
                 schema_keys = schema.list_keys()
                 key_eval = [key in schema_keys for key in keys]
                 if False not in key_eval:
-                    logging.debug(
-                        "Schema %s is a valid candidate", schema_name
-                    )
+                    logging.debug("Schema %s is a valid candidate", schema_name)
                     candidates.append(schema_name)
 
         if len(candidates) == 1:
@@ -461,7 +457,7 @@ class GSettingsLogger:
             # from the past_keys_for_path object as we don't need it anymore
             self.found_schemas_for_path[path] = candidates[0]
             if path in self.past_keys_for_path:
-                del(self.past_keys_for_path[path])
+                del self.past_keys_for_path[path]
             logging.debug("Schema found: %s", candidates[0])
             return candidates[0]
 
@@ -480,15 +476,16 @@ class GSettingsLogger:
         self.dconf_subscription_id = connection.signal_subscribe(
             owner,
             self.INTERFACE_NAME,
-            'Notify',
+            "Notify",
             self.OBJECT_PATH,
             None,
             Gio.DBusSignalFlags.NONE,
             self._writer_notify_cb,
-            None)
+            None,
+        )
         logging.debug(
             "Subscribed to signal 'Notify'. Subscription ID: %s",
-            self.dconf_subscription_id
+            self.dconf_subscription_id,
         )
 
     def _bus_name_disappeared_cb(self, connection, bus_name):
@@ -498,7 +495,7 @@ class GSettingsLogger:
         connection.signal_unsubscribe(self.dconf_subscription_id)
         logging.debug(
             "Unsubscribed from signal 'Notify'. Subscription ID: %s",
-            self.dconf_subscription_id
+            self.dconf_subscription_id,
         )
         self.dconf_subscription_id = 0
 
@@ -516,7 +513,7 @@ class NMLogger:
         self.connmgr = connmgr
         logging.debug("Connecting client signal for connection added callback")
         self.nmclient = NM.Client()
-        #self.nmclient.connect('connection-added', self.connection_added_cb)
+        # self.nmclient.connect('connection-added', self.connection_added_cb)
 
         # self.proxy = dbus.SystemBus().get_object(
         #     self.BUS_NAME, self.OBJECT_PATH)
@@ -529,34 +526,37 @@ class NMLogger:
         self.dbus_conn.signal_subscribe(
             self.BUS_NAME,
             self.INTERFACE_NAME,
-            'NewConnection',
+            "NewConnection",
             self.OBJECT_PATH,
             None,
             Gio.DBusSignalFlags.NONE,
             self.new_connection_cb,
-            None)
+            None,
+        )
 
     def security_filter(self, conn):
-        conn = self.filter_variant(conn, ['connection', 'permissions'])
-        conn = self.filter_variant(conn, ['vpn','data','secrets','Xauth password'])
-        conn = self.filter_variant(conn, ['vpn','data','secrets','password'])
-        conn = self.filter_variant(conn, ['802-1x','password'])
-        conn = self.filter_variant(conn, ['802-11-wireless-security','leap-password'])
+        conn = self.filter_variant(conn, ["connection", "permissions"])
+        conn = self.filter_variant(conn, ["vpn", "data", "secrets", "Xauth password"])
+        conn = self.filter_variant(conn, ["vpn", "data", "secrets", "password"])
+        conn = self.filter_variant(conn, ["802-1x", "password"])
+        conn = self.filter_variant(conn, ["802-11-wireless-security", "leap-password"])
         return conn
 
     def filter_variant(self, variant, filters):
         logging.debug("Filtering: %s", filters)
-        is_variant = variant.get_type_string () == "v"
+        is_variant = variant.get_type_string() == "v"
 
         if is_variant:
             variant = variant.get_child_value(0)
 
         dict_type = GLib.VariantType("a{s*}")
 
-        if len(filters) < 1 or \
-                not variant.is_of_type(dict_type) or \
-                variant.n_children() < 1 or \
-                variant.lookup_value(filters[0], None) is None:
+        if (
+            len(filters) < 1
+            or not variant.is_of_type(dict_type)
+            or variant.n_children() < 1
+            or variant.lookup_value(filters[0], None) is None
+        ):
             if is_variant:
                 return GLib.Variant("v", variant)
             return variant
@@ -575,8 +575,9 @@ class NMLogger:
             child_builder = GLib.VariantBuilder.new(child.get_type())
             child_builder.add_value(child.get_child_value(0))
             child_builder.add_value(
-                self.filter_variant(child.get_child_value(1), filters[1:]))
-                #self.filter_variant(child.get_child_value(1), filters.slice(1)))
+                self.filter_variant(child.get_child_value(1), filters[1:])
+            )
+            # self.filter_variant(child.get_child_value(1), filters.slice(1)))
             dic.add_value(child_builder.end())
 
         if is_variant:
@@ -588,8 +589,7 @@ class NMLogger:
     def merge_variants(self, va, vb):
         logging.debug("Merging variants")
 
-        are_variants = va.get_type_string() == "v" and \
-            vb.get_type_string() == "v"
+        are_variants = va.get_type_string() == "v" and vb.get_type_string() == "v"
 
         if are_variants:
             va = va.get_child_value(0)
@@ -623,11 +623,13 @@ class NMLogger:
 
             child_builder = GLib.VariantBuilder.new(child_a.get_type())
             child_builder.add_value(child_a.get_child_value(0))
-            if child_a.get_child_value(1).get_type_string() == "v" and \
-                    merge.get_type_string() != "v":
+            if (
+                child_a.get_child_value(1).get_type_string() == "v"
+                and merge.get_type_string() != "v"
+            ):
                 merge = GLib.Variant("v", merge)
             child_builder.add_value(merge)
-            builder.add_value (child_builder.end())
+            builder.add_value(child_builder.end())
 
         for i in range(vb.n_children()):
             child = vb.get_child_value(i)
@@ -636,7 +638,7 @@ class NMLogger:
             if va.lookup_value(key, None) is not None:
                 continue
 
-            builder.add_value (child)
+            builder.add_value(child)
 
         if are_variants:
             return GLib.Variant("v", builder.end())
@@ -676,8 +678,7 @@ class NMLogger:
                 pass
         else:
             logging.debug(
-                "Network Connection discarded. Type %s is not supported",
-                conntype
+                "Network Connection discarded. Type %s is not supported", conntype
             )
             return
 
@@ -686,24 +687,32 @@ class NMLogger:
 
         conf = self.security_filter(conf)
         payload = {
-          "data": conf.print_(True),
-          "uuid": None,
-          "type": None,
-          "id": None,
+            "data": conf.print_(True),
+            "uuid": None,
+            "type": None,
+            "id": None,
         }
 
         connection = conf.lookup_value("connection", None)
         if connection is not None:
-            payload['uuid'] = connection.lookup_value("uuid", None).get_string()
-            payload['type'] = connection.lookup_value("type", None).get_string()
-            payload['id'] = connection.lookup_value("id", None).get_string()
+            payload["uuid"] = connection.lookup_value("uuid", None).get_string()
+            payload["type"] = connection.lookup_value("type", None).get_string()
+            payload["id"] = connection.lookup_value("id", None).get_string()
 
         self.connmgr.submit_change(
-            "org.freedesktop.NetworkManager", json.dumps(payload))
+            "org.freedesktop.NetworkManager", json.dumps(payload)
+        )
 
     def new_connection_cb(
-            self, connection, sender_name, object_path,
-            interface_name, signal_name, parameters, what):
+        self,
+        connection,
+        sender_name,
+        object_path,
+        interface_name,
+        signal_name,
+        parameters,
+        what,
+    ):
         """
         Connection added
         """
@@ -717,12 +726,14 @@ class NMLogger:
             None,
             self.BUS_NAME,
             conn_path,
-            self.INTERFACE_NAME + '.Connection',
-            None)
+            self.INTERFACE_NAME + ".Connection",
+            None,
+        )
 
         # FIXME: BUG connection = self.nmclient.get_connection_by_path(conn_path)
         connection = RemoteConnectionWorkaround(proxy)
         self.submit_connection(connection)
+
 
 class ChromiumLogger:
     """
@@ -730,14 +741,14 @@ class ChromiumLogger:
     """
 
     def __init__(
-            self,
-            connmgr,
-            datadir=GLib.getenv("HOME") + "/.config/chromium",
-            namespace="org.chromium.Policies"):
+        self,
+        connmgr,
+        datadir=GLib.getenv("HOME") + "/.config/chromium",
+        namespace="org.chromium.Policies",
+    ):
 
         logging.debug(
-            "Initializing chromium logger with namespace %s at %s",
-            namespace, datadir
+            "Initializing chromium logger with namespace %s at %s", namespace, datadir
         )
 
         self.connmgr = connmgr
@@ -763,10 +774,7 @@ class ChromiumLogger:
         self._setup_local_state_file_monitor()
 
     def submit_config_change(self, k, v):
-        payload = {
-            "key": k,
-            "value": v
-        }
+        payload = {"key": k, "value": v}
         self.connmgr.submit_change(self.namespace, json.dumps(payload))
 
     def load_policy_map(self):
@@ -776,18 +784,19 @@ class ChromiumLogger:
         policy_map = None
         for dirpath in GLib.get_system_data_dirs():
             logging.debug("Looking for chromium policies file at %s", dirpath)
-            filepath = os.path.join(dirpath, 'fleet-commander-logger/fc-chromium-policies.json')
+            filepath = os.path.join(
+                dirpath, "fleet-commander-logger/fc-chromium-policies.json"
+            )
             try:
-                with open(filepath, 'r') as fd:
+                with open(filepath, "r") as fd:
                     contents = fd.read()
                     policy_map = json.loads(contents)
                     fd.close()
-                logging.debug('Loaded chromium policies file at %s', filepath)
+                logging.debug("Loaded chromium policies file at %s", filepath)
                 break
             except Exception as e:
                 logging.debug(
-                    'Can not open chromium policies file at %s: %s',
-                    filepath, e
+                    "Can not open chromium policies file at %s: %s", filepath, e
                 )
         return policy_map
 
@@ -805,17 +814,12 @@ class ChromiumLogger:
         prefs_file = Gio.File.new_for_path(prefs_path)
         if prefs_file.query_exists(None):
             logging.debug(
-                "Reading initial information from preferences file %s",
-                prefs_path
+                "Reading initial information from preferences file %s", prefs_path
             )
-            prefs = json.loads(
-                Gio.File.new_for_path(prefs_path).load_contents(None)[1])
+            prefs = json.loads(Gio.File.new_for_path(prefs_path).load_contents(None)[1])
             self.monitored_preferences[prefs_path] = prefs
         else:
-            logging.debug(
-                "Preferences file at %s does not exist (yet)",
-                prefs_path
-            )
+            logging.debug("Preferences file at %s does not exist (yet)", prefs_path)
             self.monitored_preferences[prefs_path] = {}
         logging.debug("Setting up file monitor at %s", prefs_path)
         monitor = prefs_file.monitor_file(Gio.FileMonitorFlags.NONE, None)
@@ -826,17 +830,14 @@ class ChromiumLogger:
         bmarks_file = Gio.File.new_for_path(bmarks_path)
         if bmarks_file.query_exists(None):
             logging.debug(
-                "Reading initial information from bookmarks file %s",
-                bmarks_path
+                "Reading initial information from bookmarks file %s", bmarks_path
             )
             bmarks = json.loads(
-                Gio.File.new_for_path(bmarks_path).load_contents(None)[1])
+                Gio.File.new_for_path(bmarks_path).load_contents(None)[1]
+            )
             self.initial_bookmarks[bmarks_path] = self.parse_bookmarks(bmarks)
         else:
-            logging.debug(
-                "Bookmarks file at %s does not exist (yet)",
-                bmarks_path
-            )
+            logging.debug("Bookmarks file at %s does not exist (yet)", bmarks_path)
             self.initial_bookmarks[bmarks_path] = []
         logging.debug("Setting up file monitor at %s", bmarks_path)
         monitor = bmarks_file.monitor_file(Gio.FileMonitorFlags.NONE, None)
@@ -845,7 +846,7 @@ class ChromiumLogger:
 
     def get_preference_value(self, prefs, preference):
         # Split preference by dot separator
-        prefpath = preference.split('.')
+        prefpath = preference.split(".")
         current = prefs
         for item in prefpath:
             try:
@@ -860,7 +861,11 @@ class ChromiumLogger:
         path = fileobj.get_path()
         logging.debug(
             "Local state file %s changed. %s %s %s %s",
-            path, monitor, fileobj, otherfile, eventType
+            path,
+            monitor,
+            fileobj,
+            otherfile,
+            eventType,
         )
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT or eventType is None:
             if eventType is None:
@@ -869,18 +874,15 @@ class ChromiumLogger:
                 # Read local state file data
                 data = json.loads(fileobj.load_contents(None)[1])
                 # Get currently running sessions
-                sessions = data['profile']['last_active_profiles']
+                sessions = data["profile"]["last_active_profiles"]
                 for session in sessions:
-                    prefs_path = os.path.join(
-                        self.datadir, session, "Preferences")
-                    bmarks_path = os.path.join(
-                        self.datadir, session, "Bookmarks")
+                    prefs_path = os.path.join(self.datadir, session, "Preferences")
+                    bmarks_path = os.path.join(self.datadir, session, "Bookmarks")
                     if not prefs_path in self.monitored_preferences:
                         logging.debug("New session %s started", session)
                         # Preferences monitoring
                         logging.debug(
-                            "Monitoring session preferences file at %s",
-                            prefs_path
+                            "Monitoring session preferences file at %s", prefs_path
                         )
                         # Add file monitoring to preferences file
                         self._setup_preferences_file_monitor(prefs_path)
@@ -893,7 +895,11 @@ class ChromiumLogger:
         path = fileobj.get_path()
         logging.debug(
             "Preference file %s notifies changes done hint. %s %s %s %s",
-            path, monitor, fileobj, otherfile, eventType
+            path,
+            monitor,
+            fileobj,
+            otherfile,
+            eventType,
         )
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT:
             if fileobj.query_exists(None):
@@ -904,60 +910,54 @@ class ChromiumLogger:
                     value = self.get_preference_value(prefs, preference)
                     if value is not None:
                         logging.debug(
-                            "Checking preference %s with value %s",
-                            preference, value
+                            "Checking preference %s with value %s", preference, value
                         )
-                        prev = self.get_preference_value(self.monitored_preferences[path], preference)
+                        prev = self.get_preference_value(
+                            self.monitored_preferences[path], preference
+                        )
                         if preference in self.monitored_preferences[path]:
                             prev = self.monitored_preferences[path][preference]
-                        logging.debug(
-                            "%s = %s (previous: %s)", preference, value, prev
-                        )
+                        logging.debug("%s = %s (previous: %s)", preference, value, prev)
                         if value != prev:
                             # Submit this config change
                             policy = self.policy_map[preference]
-                            logging.debug(
-                                "Submitting %s = %s", preference, value
-                            )
+                            logging.debug("Submitting %s = %s", preference, value)
                             self.submit_config_change(policy, value)
                         self.monitored_preferences[path][preference] = value
             else:
-                logging.debug(
-                    "Preferences file %s is not present (yet)", path
-                )
-
+                logging.debug("Preferences file %s is not present (yet)", path)
 
     def _bookmarks_file_updated(self, monitor, file, otherfile, eventType):
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT:
             if file.query_exists(None):
                 path = file.get_path()
                 logging.debug(
-                    "Bookmarks file %s notifies changes done hint. "
-                    "%s %s %s %s",
-                    path, monitor, file, otherfile, eventType
+                    "Bookmarks file %s notifies changes done hint. " "%s %s %s %s",
+                    path,
+                    monitor,
+                    file,
+                    otherfile,
+                    eventType,
                 )
                 bookmarks = self.parse_bookmarks(
-                    json.loads(file.load_contents(None)[1]))
+                    json.loads(file.load_contents(None)[1])
+                )
                 diff = self.get_modified_bookmarks(
-                    self.initial_bookmarks[path], bookmarks)
+                    self.initial_bookmarks[path], bookmarks
+                )
                 deploy = self.deploy_bookmarks(diff)
                 self.monitored_bookmarks[path] = deploy
                 # Append all sessions
                 bookmarks_data = []
                 print("MONITORED:", self.monitored_bookmarks)
                 for session, bmarks in sorted(self.monitored_bookmarks.items()):
-                    logging.debug(
-                        "Appending bookmarks from session %s",
-                        session
-                    )
+                    logging.debug("Appending bookmarks from session %s", session)
                     bookmarks_data.extend(bmarks)
                 self.submit_config_change("ManagedBookmarks", bookmarks_data)
             else:
                 logging.debug(
-                    "Bookmarks file %s updated but does not exist. Skipping.",
-                    path
+                    "Bookmarks file %s updated but does not exist. Skipping.", path
                 )
-
 
     def parse_bookmarks(self, bookmarks):
         flattened_bookmarks = []
@@ -965,7 +965,6 @@ class ChromiumLogger:
             parsed = self.parse_bookmarks_tree([], bookmarks["roots"][root])
             flattened_bookmarks.extend(parsed)
         return flattened_bookmarks
-
 
     def parse_bookmarks_tree(self, path, leaf):
         if leaf["type"] == "folder":
@@ -978,8 +977,7 @@ class ChromiumLogger:
             return children
         if leaf["type"] == "url":
             logging.debug("Parsing bookmarks leaf %s", leaf["name"])
-            return [
-                json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]
+            return [json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]
         return list()
 
     def get_modified_bookmarks(self, bmarks1, bmarks2):
@@ -994,26 +992,24 @@ class ChromiumLogger:
 
     def deploy_bookmarks(self, bookmarks):
         def insert_object(data, path, url, name):
-            logging.debug(
-                'Inserting bookmark %s (%s) at %s', name, url, path
-            )
+            logging.debug("Inserting bookmark %s (%s) at %s", name, url, path)
             if path != []:
                 children = data
                 for elem in path:
                     logging.debug("Checking path %s", elem)
                     found = False
                     for child in children:
-                        if child['name'] == elem:
-                            children = child['children']
+                        if child["name"] == elem:
+                            children = child["children"]
                             found = True
                             break
                     if not found:
-                        folder = {'name': elem, 'children': []}
+                        folder = {"name": elem, "children": []}
                         children.append(folder)
                         children = folder["children"]
-                children.append({'name': name, 'url': url})
+                children.append({"name": name, "url": url})
             else:
-                data.append({'name': name, 'url': url})
+                data.append({"name": name, "url": url})
 
         deploy = []
         for bookmark in bookmarks:
@@ -1026,11 +1022,13 @@ class ChromeLogger(ChromiumLogger):
     """
     Chrome log target class
     """
+
     def __init__(
-            self,
-            connmgr,
-            datadir=GLib.getenv("HOME") + "/.config/google-chrome",
-            namespace="com.google.chrome.Policies"):
+        self,
+        connmgr,
+        datadir=GLib.getenv("HOME") + "/.config/google-chrome",
+        namespace="com.google.chrome.Policies",
+    ):
         super().__init__(connmgr, datadir, namespace)
 
 
@@ -1039,17 +1037,17 @@ class FirefoxLogger:
         self,
         connmgr,
         datadir=GLib.get_home_dir() + "/.mozilla/firefox",
-        namespace="org.mozilla.firefox"):
+        namespace="org.mozilla.firefox",
+    ):
 
         logging.debug(
-            "Initializing firefox logger with namespace %s at %s",
-            namespace, datadir
+            "Initializing firefox logger with namespace %s at %s", namespace, datadir
         )
 
         self.connmgr = connmgr
         self.datadir = datadir
         self.namespace = namespace
-        self.profiles_path = os.path.join(self.datadir, 'installs.ini')
+        self.profiles_path = os.path.join(self.datadir, "installs.ini")
 
         self.monitored_preferences = {}
         self.file_monitors = {}
@@ -1062,9 +1060,7 @@ class FirefoxLogger:
         # callback on preferences file update
         self.test_prefs_file_updated_cb = None
 
-        logging.debug(
-            "Constructing FirefoxLogger with data directory %s", self.datadir
-        )
+        logging.debug("Constructing FirefoxLogger with data directory %s", self.datadir)
 
         self.connmgr = connmgr
 
@@ -1072,12 +1068,8 @@ class FirefoxLogger:
         self._setup_profiles_file_monitor()
 
     def submit_config_change(self, k, v):
-        payload = {
-            "key": k,
-            "value": v
-        }
-        self.connmgr.submit_change(
-            self.namespace, json.dumps(payload, sort_keys=True))
+        payload = {"key": k, "value": v}
+        self.connmgr.submit_change(self.namespace, json.dumps(payload, sort_keys=True))
 
     def _setup_profiles_file_monitor(self):
         # Set a file monitor on profiles file
@@ -1090,9 +1082,7 @@ class FirefoxLogger:
 
     def _setup_preferences_file_monitor(self, prefs_path):
         if prefs_path not in self.monitored_preferences:
-            logging.debug(
-                "Setting up file monitoring on %s", prefs_path
-            )
+            logging.debug("Setting up file monitoring on %s", prefs_path)
             prefs_file = Gio.File.new_for_path(prefs_path)
             self._preferences_file_updated(None, prefs_file, None, None)
             logging.debug("Creating file monitor for %s", prefs_path)
@@ -1100,10 +1090,7 @@ class FirefoxLogger:
             self.file_monitors[prefs_path] = monitor
             monitor.connect("changed", self._preferences_file_updated)
         else:
-            logging.debug(
-                "File monitoring on %s already set up. Ignoring.", prefs_path
-            )
-
+            logging.debug("File monitoring on %s already set up. Ignoring.", prefs_path)
 
     def _profiles_file_updated(self, monitor, fileobj, otherfile, eventType):
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT or eventType is None:
@@ -1113,7 +1100,11 @@ class FirefoxLogger:
             else:
                 logging.debug(
                     "Firefox profile file %s changed. %s %s %s %s",
-                    path, monitor, fileobj, otherfile, eventType
+                    path,
+                    monitor,
+                    fileobj,
+                    otherfile,
+                    eventType,
                 )
             if fileobj.query_exists(None):
                 if not self.default_profile_initialized:
@@ -1123,18 +1114,15 @@ class FirefoxLogger:
                         # Preferences monitoring
                         prefs_path = os.path.join(defaultprofile, "prefs.js")
                         logging.debug(
-                            "Monitoring Firefox preferences file at %s",
-                            prefs_path
+                            "Monitoring Firefox preferences file at %s", prefs_path
                         )
                         self._setup_preferences_file_monitor(prefs_path)
                         self.default_profile_initialized = True
                     else:
-                        logging.debug(
-                            "No default profile found at profiles file")
+                        logging.debug("No default profile found at profiles file")
             else:
                 logging.debug(
-                    "Firefox profiles file %s is not present (yet)",
-                    fileobj.get_path()
+                    "Firefox profiles file %s is not present (yet)", fileobj.get_path()
                 )
 
             # Exit mainloop if we are testing
@@ -1148,56 +1136,56 @@ class FirefoxLogger:
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT or eventType is None:
             path = fileobj.get_path()
             logging.debug(
-                "Firefox Preference file %s notifies changes done hint. "
-                "%s %s %s %s",
-                path, monitor, fileobj, otherfile, eventType
+                "Firefox Preference file %s notifies changes done hint. " "%s %s %s %s",
+                path,
+                monitor,
+                fileobj,
+                otherfile,
+                eventType,
             )
             if fileobj.query_exists(None):
                 logging.debug("Preference file %s exists. Loading it", path)
                 # data = fileobj.load_contents(None)[1]
-                with open(path, 'r') as fd:
+                with open(path, "r") as fd:
                     data = fd.read()
                     fd.close()
-                logging.debug(
-                    "Preference file %s Loaded. Loading preferences.", path
-                )
+                logging.debug("Preference file %s Loaded. Loading preferences.", path)
                 prefs = self.load_firefox_preferences(data)
                 if not path in self.monitored_preferences:
                     logging.debug("Initial preferences loaded")
                     self.monitored_preferences[path] = prefs
                 else:
-                    logging.debug(
-                        "New preferences loaded. Checking for changes")
+                    logging.debug("New preferences loaded. Checking for changes")
                     for preference in prefs:
                         value = prefs[preference]
                         if preference in self.monitored_preferences[path]:
                             prev = self.monitored_preferences[path][preference]
                             logging.debug(
-                                "%s - Previously: %s, now: %s",
-                                preference, prev, value
+                                "%s - Previously: %s, now: %s", preference, prev, value
                             )
                             if value != prev:
                                 # Submit this config change
                                 logging.debug(
                                     "Previous preference value is different. "
                                     "%s != %s.  Submitting change.",
-                                    value, prev
+                                    value,
+                                    prev,
                                 )
                                 self.submit_config_change(preference, value)
                         else:
                             # Submit this setting
                             logging.debug(
                                 "Preference %s = %s is not present. "
-                                "Submitting change.", preference, value
+                                "Submitting change.",
+                                preference,
+                                value,
                             )
                             self.submit_config_change(preference, value)
 
                         self.monitored_preferences[path][preference] = value
                 self.default_profile_prefs_initialized = True
             else:
-                logging.debug(
-                    "Firefox Preferences file %s is not present (yet)", path
-                )
+                logging.debug("Firefox Preferences file %s is not present (yet)", path)
             if callable(self.test_prefs_file_updated_cb):
                 logging.debug("Exiting mainloop after testing")
                 # pylint: disable=not-callable
@@ -1207,13 +1195,10 @@ class FirefoxLogger:
     def get_default_profile_path(self):
         keyfile = GLib.KeyFile()
         try:
-            if not keyfile.load_from_file(
-                    self.profiles_path, GLib.KeyFileFlags.NONE):
-                raise Exception('Error loading data from file')
+            if not keyfile.load_from_file(self.profiles_path, GLib.KeyFileFlags.NONE):
+                raise Exception("Error loading data from file")
         except Exception as e:
-            logging.debug(
-                "Could not open/parse %s: %s", self.profiles_path, e
-            )
+            logging.debug("Could not open/parse %s: %s", self.profiles_path, e)
             return None
 
         groups = keyfile.get_groups()[0]
@@ -1225,34 +1210,30 @@ class FirefoxLogger:
             except Exception:
                 pass
         # This should never happen
-        logging.debug(
-            "There was no profile in %s with Default=1", self.profiles_path
-        )
+        logging.debug("There was no profile in %s with Default=1", self.profiles_path)
         return None
 
     def load_firefox_preferences(self, data):
         pref_start = 'user_pref("'
-        pref_end = ');'
+        pref_end = ");"
         prefs = {}
         lines = data.splitlines()
         for line in lines:
             if line.startswith(pref_start) and line.endswith(pref_end):
                 # Remove start and end
-                linedata = line[len(pref_start) - 1:]
-                linedata = linedata[:-len(pref_end)]
+                linedata = line[len(pref_start) - 1 :]
+                linedata = linedata[: -len(pref_end)]
                 # Prepare JSON data
                 linedata = r'{"data": [%s]}' % linedata
                 # Get key and value
                 try:
-                    logging.debug('Parsing preference data: %s', linedata)
+                    logging.debug("Parsing preference data: %s", linedata)
                     pref = json.loads(linedata)
                     key = pref["data"][0]
                     value = pref["data"][1]
                     prefs[key] = value
                 except Exception as e:
-                    logging.debug(
-                        "Preference parse error. Ignoring %s (%s)", line, e
-                    )
+                    logging.debug("Preference parse error. Ignoring %s (%s)", line, e)
 
         return prefs
 
@@ -1262,7 +1243,7 @@ class FirefoxBookmarkLogger:
     Firefox bookmark logger class
     """
 
-    namespace = 'org.mozilla.firefox.Bookmarks'
+    namespace = "org.mozilla.firefox.Bookmarks"
 
     def __init__(self, connmgr):
         self.bookmarks = {}
@@ -1274,15 +1255,18 @@ class FirefoxBookmarkLogger:
         # Prepare data:
         deserialized_data = json.loads(data)
         payload_data = {
-            'Title': deserialized_data['title'],
-            'URL': deserialized_data['url'],
-            'Placement': deserialized_data['placement'],
-            'Folder': deserialized_data['folder'],
+            "Title": deserialized_data["title"],
+            "URL": deserialized_data["url"],
+            "Placement": deserialized_data["placement"],
+            "Folder": deserialized_data["folder"],
         }
-        payload = json.dumps({
-            'key': bookmark_id,
-            'value': payload_data,
-        }, sort_keys=True)
+        payload = json.dumps(
+            {
+                "key": bookmark_id,
+                "value": payload_data,
+            },
+            sort_keys=True,
+        )
         self.connmgr.submit_change(self.namespace, payload)
 
     def update(self, bookmark_id, data):
@@ -1308,7 +1292,7 @@ class FleetCommanderLogger(dbus.service.Object):
         if use_device_file:
             self.connmgr = SpicePortManager()
         else:
-            self.connmgr = SpicePortManager('/tmp/fleet-commander-logger_spiceport')
+            self.connmgr = SpicePortManager("/tmp/fleet-commander-logger_spiceport")
 
         # Initialize screensaver inhibition
         self.scinhibitor = ScreenSaverInhibitor()
@@ -1333,35 +1317,34 @@ class FleetCommanderLogger(dbus.service.Object):
         self.scinhibitor.uninhibit()
         self.ml.quit()
 
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='ss', out_signature='')
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="ss", out_signature="")
     def FirefoxBookmarkUpdate(self, bookmark_id, data):
-        logging.debug('Firefox bookmark id %s updated. %s', bookmark_id, data)
+        logging.debug("Firefox bookmark id %s updated. %s", bookmark_id, data)
         self.firefox_bookmark_logger.update(bookmark_id, data)
 
-    @dbus.service.method(DBUS_INTERFACE_NAME,
-                         in_signature='s', out_signature='')
+    @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="")
     def FirefoxBookmarkRemove(self, bookmark_id):
-        logging.debug('Firefox bookmark id %s removed.', bookmark_id)
+        logging.debug("Firefox bookmark id %s removed.", bookmark_id)
         self.firefox_bookmark_logger.remove(bookmark_id)
 
 
 if __name__ == "__main__":
     # Argument parsing
     parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", action="store_true", help="Verbose output")
     parser.add_argument(
-        "-d", "--debug", action='store_true', help="Verbose output")
-    parser.add_argument(
-        "-n", "--no-devfile", action='store_false', help="Don't use a device file for SPICE channel")
-    parser.add_argument(
-        "-v", "--verbose", action='store_true', help="Verbose output")
+        "-n",
+        "--no-devfile",
+        action="store_false",
+        help="Don't use a device file for SPICE channel",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
 
     if args.debug or args.verbose:
         log = logging.getLogger()
-        level = logging.getLevelName('DEBUG')
+        level = logging.getLevelName("DEBUG")
         log.setLevel(level)
 
     fcl = FleetCommanderLogger(use_device_file=args.no_devfile)
     fcl.run()
-

@@ -39,9 +39,9 @@ class SSHController:
 
     RSA_KEY_SIZE = 2048
     DEFAULT_SSH_PORT = 22
-    SSH_COMMAND = 'ssh'
-    SSH_KEYGEN_COMMAND = 'ssh-keygen'
-    SSH_KEYSCAN_COMMAND = 'ssh-keyscan'
+    SSH_COMMAND = "ssh"
+    SSH_KEYGEN_COMMAND = "ssh-keygen"
+    SSH_KEYSCAN_COMMAND = "ssh-keyscan"
 
     def __init__(self):
         """
@@ -56,40 +56,46 @@ class SSHController:
         prog = subprocess.Popen(
             [
                 self.SSH_KEYGEN_COMMAND,
-                '-b', six.text_type(key_size),
-                '-t', 'rsa',
-                '-f', private_key_file,
-                '-q',
-                '-N', ''
+                "-b",
+                six.text_type(key_size),
+                "-t",
+                "rsa",
+                "-f",
+                private_key_file,
+                "-q",
+                "-N",
+                "",
             ],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         _out, error = prog.communicate()
         if prog.returncode != 0:
-            raise SSHControllerException(
-                'Error generating keypair: %s' % error)
+            raise SSHControllerException("Error generating keypair: %s" % error)
 
     def scan_host_keys(self, hostname, port=DEFAULT_SSH_PORT):
         prog = subprocess.Popen(
             [
                 self.SSH_KEYSCAN_COMMAND,
-                '-p', six.text_type(port),
+                "-p",
+                six.text_type(port),
                 hostname,
             ],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         out, error = prog.communicate()
         prog.wait()
         if prog.returncode == 0:
             return out.decode()
-        raise SSHControllerException(
-            'Error getting host keys: %s' % error
-        )
+        raise SSHControllerException("Error getting host keys: %s" % error)
 
     def add_keys_to_known_hosts(self, known_hosts_file, key_data):
         # First create path if does not exists
         directory = os.path.dirname(known_hosts_file)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        with open(known_hosts_file, 'a') as fd:
+        with open(known_hosts_file, "a") as fd:
             fd.write(key_data)
             fd.close()
 
@@ -108,7 +114,7 @@ class SSHController:
                 fd.close()
             for line in lines:
                 hosts, _keytype, _key = line.split()
-                if hostname in hosts.split(','):
+                if hostname in hosts.split(","):
                     return True
         return False
 
@@ -116,24 +122,27 @@ class SSHController:
         """
         Get host SSH fingerprint
         """
-        tmpfile = tempfile.mktemp(prefix='fc-ssh-keydata')
-        with open(tmpfile, 'w') as fd:
+        tmpfile = tempfile.mktemp(prefix="fc-ssh-keydata")
+        with open(tmpfile, "w") as fd:
             fd.write(key_data)
             fd.close()
         prog = subprocess.Popen(
             [
                 self.SSH_KEYGEN_COMMAND,
-                '-l',
-                '-f', tmpfile,
+                "-l",
+                "-f",
+                tmpfile,
             ],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         out, error = prog.communicate()
         prog.wait()
         os.remove(tmpfile)
         if prog.returncode == 0:
             return out.decode()
         raise SSHControllerException(
-            'Error generating fingerprint from key data: %s' % error
+            "Error generating fingerprint from key data: %s" % error
         )
 
     def get_host_fingerprint(self, hostname, port=DEFAULT_SSH_PORT):
@@ -143,12 +152,18 @@ class SSHController:
         try:
             key_data = self.scan_host_keys(hostname, port)
         except Exception as e:
-            raise SSHControllerException(
-                'Error getting host key data: %s' % e)
+            raise SSHControllerException("Error getting host key data: %s" % e)
         return self.get_fingerprint_from_key_data(key_data)
 
-    def execute_remote_command(self, command, private_key_file, username, hostname, port=DEFAULT_SSH_PORT,
-                               **kwargs):
+    def execute_remote_command(
+        self,
+        command,
+        private_key_file,
+        username,
+        hostname,
+        port=DEFAULT_SSH_PORT,
+        **kwargs
+    ):
         """
         Executes a program remotely
         """
@@ -156,34 +171,41 @@ class SSHController:
             self.SSH_COMMAND,
         ]
         ssh_command_end = [
-            '%s@%s' % (username, hostname),
-            '-p', six.text_type(port),
+            "%s@%s" % (username, hostname),
+            "-p",
+            six.text_type(port),
             command,
         ]
 
-        ssh_command_start.extend(['-i', private_key_file])
-        ssh_command_start.extend(
-            ['-o', 'PreferredAuthentications=publickey'])
-        ssh_command_start.extend(
-            ['-o', 'PasswordAuthentication=no'])
+        ssh_command_start.extend(["-i", private_key_file])
+        ssh_command_start.extend(["-o", "PreferredAuthentications=publickey"])
+        ssh_command_start.extend(["-o", "PasswordAuthentication=no"])
 
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(['-o', '%s=%s' % (k, six.text_type(v))])
+            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
         ssh_command_start.extend(ssh_command_end)
         # Execute command
         prog = subprocess.Popen(
-            ssh_command_start, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ssh_command_start, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         out, error = prog.communicate()
         if prog.returncode == 0:
             return out
-        raise SSHControllerException(
-            'Error executing remote command: %s' % error
-        )
+        raise SSHControllerException("Error executing remote command: %s" % error)
 
-    def open_tunnel(self, local_port, tunnel_host, tunnel_port,
-                    private_key_file, username, hostname, port=DEFAULT_SSH_PORT,
-                    local_host='127.0.0.1', **kwargs):
+    def open_tunnel(
+        self,
+        local_port,
+        tunnel_host,
+        tunnel_port,
+        private_key_file,
+        username,
+        hostname,
+        port=DEFAULT_SSH_PORT,
+        local_host="127.0.0.1",
+        **kwargs
+    ):
         """
         Open a tunnel with given ports and return SSH PID
         """
@@ -191,57 +213,59 @@ class SSHController:
             self.SSH_COMMAND,
         ]
         ssh_command_end = [
-            '%s@%s' % (username, hostname),
-            '-p', six.text_type(port),
-            '-L', '%s:%s:%s:%s' % (local_host, local_port,
-                                   tunnel_host, tunnel_port),
-            '-N'
+            "%s@%s" % (username, hostname),
+            "-p",
+            six.text_type(port),
+            "-L",
+            "%s:%s:%s:%s" % (local_host, local_port, tunnel_host, tunnel_port),
+            "-N",
         ]
 
-        ssh_command_start.extend(['-i', private_key_file])
-        ssh_command_start.extend(
-            ['-o', 'PreferredAuthentications=publickey'])
-        ssh_command_start.extend(
-            ['-o', 'PasswordAuthentication=no'])
+        ssh_command_start.extend(["-i", private_key_file])
+        ssh_command_start.extend(["-o", "PreferredAuthentications=publickey"])
+        ssh_command_start.extend(["-o", "PasswordAuthentication=no"])
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(['-o', '%s=%s' % (k, six.text_type(v))])
+            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
         ssh_command_start.extend(ssh_command_end)
 
         # Execute SSH and bring up tunnel
         try:
             self._tunnel_prog = subprocess.Popen(
-                ' '.join(ssh_command_start),
-                shell=True)
+                " ".join(ssh_command_start), shell=True
+            )
             return self._tunnel_prog.pid
         except Exception as e:
-            raise SSHControllerException(
-                'Error opening tunnel: %s' % e)
+            raise SSHControllerException("Error opening tunnel: %s" % e)
 
-    def install_pubkey(self, pub_key, username, password,
-                       hostname, port=DEFAULT_SSH_PORT,
-                       password_prompt=r'.*(P|p)assword:',
-                       command_prompt=r'.+[#\$] ',
-                       **kwargs):
+    def install_pubkey(
+        self,
+        pub_key,
+        username,
+        password,
+        hostname,
+        port=DEFAULT_SSH_PORT,
+        password_prompt=r".*(P|p)assword:",
+        command_prompt=r".+[#\$] ",
+        **kwargs
+    ):
         """
         Install a public key in a remote host
         """
         # Check that pub_key is a real public key by calculating fingerprint
-        logging.debug('Verifying public key')
+        logging.debug("Verifying public key")
         fp = self.get_fingerprint_from_key_data(pub_key)
-        logging.debug('Public key fingerprint: %s', fp)
+        logging.debug("Public key fingerprint: %s", fp)
         try:
             # Open connection to given host and simulate a session
-            ssh = pexpect.spawn('%s %s@%s -p %s' % (
-                self.SSH_COMMAND,
-                username,
-                hostname,
-                port
-            ), env={
-                'PATH': os.environ['PATH'],
-                'LANG': 'C',
-                'TERM': 'dumb',
-            })
+            ssh = pexpect.spawn(
+                "%s %s@%s -p %s" % (self.SSH_COMMAND, username, hostname, port),
+                env={
+                    "PATH": os.environ["PATH"],
+                    "LANG": "C",
+                    "TERM": "dumb",
+                },
+            )
 
             def execute_command(command, final=False):
                 logging.debug('Executing command: "%s"', command)
@@ -249,29 +273,27 @@ class SSHController:
                 if not final:
                     ssh.expect(command_prompt)
 
-            logging.debug('Waiting password prompt')
+            logging.debug("Waiting password prompt")
             prompts = [password_prompt, command_prompt]
             result = ssh.expect(prompts)
             if result == 0:
-                logging.debug('Sending password')
+                logging.debug("Sending password")
                 ssh.sendline(password)
                 result = ssh.expect(prompts)
                 if result == 0:
                     # Bad credentials
-                    logging.debug(
-                        'Password prompted again. Invalid credentials.')
-                    raise SSHControllerException(
-                        'Invalid credentials')
+                    logging.debug("Password prompted again. Invalid credentials.")
+                    raise SSHControllerException("Invalid credentials")
 
-            execute_command('mkdir -p ~/.ssh/')
-            execute_command('chmod 700 ~/.ssh/')
+            execute_command("mkdir -p ~/.ssh/")
+            execute_command("chmod 700 ~/.ssh/")
             execute_command(
-                'grep -qF "{key}" {akeys} || echo "{key}" >> {akeys}'.
-                format(key=pub_key, akeys='~/.ssh/authorized_keys')
+                'grep -qF "{key}" {akeys} || echo "{key}" >> {akeys}'.format(
+                    key=pub_key, akeys="~/.ssh/authorized_keys"
+                )
             )
-            execute_command('chmod 600 ~/.ssh/authorized_keys')
-            execute_command('exit', final=True)
+            execute_command("chmod 600 ~/.ssh/authorized_keys")
+            execute_command("exit", final=True)
         except Exception as e:
-            logging.error('Error installing SSH public key: %s', e)
-            raise SSHControllerException(
-                'Error installing SSH public key: %s' % e)
+            logging.error("Error installing SSH public key: %s", e)
+            raise SSHControllerException("Error installing SSH public key: %s" % e)
