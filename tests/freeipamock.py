@@ -130,7 +130,7 @@ class FreeIPACommand:
 
     @FreeIPAData.export_data
     def deskprofileconfig_mod(self, ipadeskprofilepriority):
-        if type(ipadeskprofilepriority) is not int:
+        if not isinstance(ipadeskprofilepriority, int):
             raise FreeIPAErrors.ConversionError(
                 "invalid 'priority': must be an integer")
 
