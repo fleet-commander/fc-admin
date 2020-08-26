@@ -132,6 +132,7 @@ class ADConnector:
             'objectCategory':
                 b'CN=Group-Policy-Container,CN=Schema,CN=Configuration,%s' % dn,
         }
+        self.connection = None
 
     def _get_domain_dn(self):
         if self.CACHED_DOMAIN_DN is None:
