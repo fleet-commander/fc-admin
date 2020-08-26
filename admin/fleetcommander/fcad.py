@@ -680,6 +680,7 @@ class SecurityDescriptorHelper:
 
 
 class ACEHelper:
+    __hash__ = None
 
     def __init__(self, ace_string):
         # Remove parenthesis from ACE string
