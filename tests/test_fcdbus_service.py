@@ -115,7 +115,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
         self.REALMD_BUS = Gio.BusType.SESSION
 
-        super(TestFleetCommanderDbusService, self).__init__(args)
+        super().__init__(args)
 
         self.known_hosts_file = os.path.join(test_directory, 'known_hosts')
 

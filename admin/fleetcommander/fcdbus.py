@@ -74,7 +74,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         """
         Class initialization
         """
-        super(FleetCommanderDbusService, self).__init__()
+        super().__init__()
 
         # Set log level at initialization
         self.log_level = args['log_level'].lower()

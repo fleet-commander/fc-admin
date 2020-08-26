@@ -55,7 +55,7 @@ class TestSSHController(unittest.TestCase):
     ])
 
     def __init__(self, *args, **kwargs):
-        super(TestSSHController, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Python 3 compatibility
         if not hasattr(self, 'assertRaisesRegex'):
             self.assertRaisesRegex = self.assertRaisesRegexp
