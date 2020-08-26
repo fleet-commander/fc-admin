@@ -50,3 +50,13 @@ pylint:
 		--rcfile=$(top_srcdir)/pylintrc \
 		--load-plugins pylint_plugins \
 		$${FILES}
+
+.PHONY: black
+black:
+	$(PYTHON) -m black -v \
+	    $(top_srcdir)
+
+.PHONY: blackcheck
+blackcheck:
+	$(PYTHON) -m black -v --check --diff \
+	    $(top_srcdir)

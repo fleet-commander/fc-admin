@@ -14,12 +14,16 @@ jobs:
     image: $(DOCKER_BUILD_IMAGE)
   steps:
     - template: templates/${{ variables.PREPARE_BUILD_TEMPLATE }}
-    - template: templates/${{ variables.PREPARE_PYLINT_TEMPLATE }}
+    - template: templates/${{ variables.PREPARE_LINT_TEMPLATE }}
     - template: templates/${{ variables.CONFIGURE_TEMPLATE }}
     - script: |
         set -e
         make pylint
       displayName: Pylint sources
+    - script: |
+        set -e
+        make blackcheck
+      displayName: Black sources
     - script: |
         set -e
         make VERBOSE=1 check
