@@ -5,9 +5,10 @@ steps:
     sudo dnf install -y \
         python3-pip \
 
-    printf "Installing latest Pylint\n"
+    printf "Installing latest Python lint dependencies\n"
     pip install \
         --user --force \
         pylint \
+        black \
 
-  displayName: Install latest Pylint
+  displayName: Install latest Python lint dependencies

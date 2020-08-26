@@ -13,4 +13,4 @@ variables:
   BUILD_TEMPLATE: ${{ format('build-{0}.yml', variables.FC_PLATFORM) }}
 
   # the template to install latest Pylint
-  PREPARE_PYLINT_TEMPLATE: ${{ format('prepare-pylint-{0}.yml', variables.FC_PLATFORM) }}
+  PREPARE_LINT_TEMPLATE: ${{ format('prepare-lint-{0}.yml', variables.FC_PLATFORM) }}
