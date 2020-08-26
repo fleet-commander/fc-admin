@@ -91,6 +91,8 @@ class NMConnectionMock:
         return self.secrets
 
 class NMClientMock:
+    def __init__(self):
+        self.handler = None
 
     def connect(self, s, f):
         self.handler = f

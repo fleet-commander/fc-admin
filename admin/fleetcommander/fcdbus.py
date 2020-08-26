@@ -161,6 +161,11 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.auto_quit_timeout = float(
             args['auto_quit_timeout'])
 
+        # operational attributes
+        self._loop = None
+        self._last_call_time = None
+        self._last_heartbeat = None
+
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus_name = dbus.service.BusName(DBUS_BUS_NAME, dbus.SessionBus())
@@ -297,8 +302,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def start_session_checking(self):
         self._last_heartbeat = time.time()
         # Add callback for temporary sessions check
-        self.current_session_checking = GLib.timeout_add(
-            1000, self.check_running_sessions)
+        GLib.timeout_add(1000, self.check_running_sessions)
         logging.debug(
             'Started session checking')
 

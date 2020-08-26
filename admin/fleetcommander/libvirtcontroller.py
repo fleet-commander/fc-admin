@@ -92,6 +92,9 @@ class LibVirtController:
         if not os.path.exists(self.private_key_file):
             self.ssh.generate_ssh_keypair(self.private_key_file)
 
+        self._last_started_domain = None
+        self._last_stopped_domain = None
+
     def _get_libvirt_socket(self):
         # Get Libvirt socket for session mode
         if self.mode == 'session':

@@ -47,6 +47,7 @@ class SSHController:
         """
         Class initialization
         """
+        self._tunnel_prog = None
 
     def generate_ssh_keypair(self, private_key_file, key_size=RSA_KEY_SIZE):
         """
