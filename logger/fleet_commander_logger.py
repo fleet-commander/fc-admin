@@ -1031,7 +1031,7 @@ class ChromeLogger(ChromiumLogger):
             connmgr,
             datadir=GLib.getenv("HOME") + "/.config/google-chrome",
             namespace="com.google.chrome.Policies"):
-        super(ChromeLogger, self).__init__(connmgr, datadir, namespace)
+        super().__init__(connmgr, datadir, namespace)
 
 
 class FirefoxLogger:

@@ -205,7 +205,7 @@ class DBManager(BaseDBManager):
         """
         Class initialization
         """
-        super(DBManager, self).__init__(database)
+        super().__init__(database)
         # Initialize configuration data
         self.config = ConfigValues(self)
         # Profiles
