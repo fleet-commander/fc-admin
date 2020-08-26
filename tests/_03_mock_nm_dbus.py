@@ -9,7 +9,7 @@ from gi.repository import GLib
 
 # Set logging level to debug
 log = logging.getLogger()
-level = logging.getLevelName('DEBUG')
+level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
 ml = GLib.MainLoop()
@@ -20,19 +20,21 @@ bus = dbusmock.testcase.DBusTestCase.get_dbus()
 
 bus.add_signal_receiver(
     ml.quit,
-    signal_name='Disconnected',
-    path='/org/freedesktop/DBus/Local',
-    dbus_interface='org.freedesktop.DBus.Local')
+    signal_name="Disconnected",
+    path="/org/freedesktop/DBus/Local",
+    dbus_interface="org.freedesktop.DBus.Local",
+)
 
 nm_bus = dbus.service.BusName(
-    'org.freedesktop.NetworkManager',
+    "org.freedesktop.NetworkManager",
     bus,
     allow_replacement=True,
     replace_existing=True,
-    do_not_queue=True)
+    do_not_queue=True,
+)
 
-logging.debug('Configured and running NetworkManager dbus mock')
+logging.debug("Configured and running NetworkManager dbus mock")
 
 ml.run()
 
-logging.debug('Quitting NetworkManager dbus mock')
+logging.debug("Quitting NetworkManager dbus mock")

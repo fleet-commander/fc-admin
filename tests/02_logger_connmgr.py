@@ -32,14 +32,14 @@ import unittest
 # GObject Introspection imports
 from gi.repository import Gio
 
-PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'logger')
+PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "logger")
 sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 
 # Set logging level to debug
 log = logging.getLogger()
-level = logging.getLevelName('DEBUG')
+level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
 
@@ -51,13 +51,12 @@ def read_file(filename):
 
 
 class TestConnMgr(unittest.TestCase):
-
     def setUp(self):
         pass
 
     def test_01_submit_change(self):
         # Get temporary file
-        TMPFILE = Gio.file_new_tmp('fc_logger_spiceport_XXXXXX')
+        TMPFILE = Gio.file_new_tmp("fc_logger_spiceport_XXXXXX")
         path = TMPFILE[0].get_path()
         mgr = FleetCommander.SpicePortManager(path)
         PAYLOAD = '["PAYLOAD"]'
@@ -77,25 +76,21 @@ class TestConnMgr(unittest.TestCase):
         # Check data has been written to spiceport file
         data = read_file(path)
         self.assertEqual(
-            json.dumps(json.loads(expected_data)),
-            json.dumps(json.loads(data)))
+            json.dumps(json.loads(expected_data)), json.dumps(json.loads(data))
+        )
 
     def test_02_manager_queue(self):
         # Get temporary file
-        TMPFILE = Gio.file_new_tmp('fc_logger_spiceport_XXXXXX')
+        TMPFILE = Gio.file_new_tmp("fc_logger_spiceport_XXXXXX")
         path = TMPFILE[0].get_path()
 
         mgr = FleetCommander.SpicePortManager(path)
-        PAYLOADS = ['1', '2', '3', '4', '5']
-        expected_data = ''
+        PAYLOADS = ["1", "2", "3", "4", "5"]
+        expected_data = ""
 
         for pl in PAYLOADS:
             mgr.submit_change("org.gnome.gsettings", pl)
-            expected_data += json.dumps(
-                {
-                    "ns": "org.gnome.gsettings",
-                    "data": pl
-                })
+            expected_data += json.dumps({"ns": "org.gnome.gsettings", "data": pl})
 
         self.assertEqual(len(PAYLOADS), len(mgr.queue))
 

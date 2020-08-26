@@ -26,9 +26,8 @@ import json
 
 
 class DirectoryData:
-
     def __init__(self, datadir=None):
-        logging.debug('Directory mock data initialized. Path: %s', datadir)
+        logging.debug("Directory mock data initialized. Path: %s", datadir)
         self.datadir = datadir
         # Data storage
         self.global_policy = 1
@@ -36,24 +35,24 @@ class DirectoryData:
 
     def get_json(self):
         data = {
-            'policy': self.global_policy,
-            'profiles': self.profiles,
+            "policy": self.global_policy,
+            "profiles": self.profiles,
         }
-        logging.debug('Directory mock data to export: %s', data)
+        logging.debug("Directory mock data to export: %s", data)
         jsondata = json.dumps(data)
-        logging.debug('Directory mock JSON data to export: %s', jsondata)
+        logging.debug("Directory mock JSON data to export: %s", jsondata)
         return jsondata
 
-    def save_to_datadir(self, filename='directorymock-data.json'):
+    def save_to_datadir(self, filename="directorymock-data.json"):
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
-            logging.debug('Directory mock exporting data to %s', path)
-            with open(path, 'w') as fd:
+            logging.debug("Directory mock exporting data to %s", path)
+            with open(path, "w") as fd:
                 fd.write(self.get_json())
                 fd.close()
-                logging.debug('Directory mock data saved to %s', path)
+                logging.debug("Directory mock data saved to %s", path)
         else:
-            logging.debug('Directory mock not exporting data (No datadir)')
+            logging.debug("Directory mock not exporting data (No datadir)")
 
     # Decorator for exporting data to file
     @classmethod
@@ -63,6 +62,7 @@ class DirectoryData:
             # Save data storaged in data member
             self.data.save_to_datadir()
             return result
+
         return wrapper
 
 
@@ -80,7 +80,7 @@ class DirectoryConnector:
         """
         Connect to AD server
         """
-        logging.debug('Directory Mock: Connection')
+        logging.debug("Directory Mock: Connection")
 
     def get_global_policy(self):
         return self.data.global_policy
@@ -92,45 +92,37 @@ class DirectoryConnector:
     @DirectoryData.export_data
     def save_profile(self, profile):
         # Check if profile already exists
-        cn = profile.get('cn', None)
+        cn = profile.get("cn", None)
         if cn is not None:
             # Modifying existing profile
-            logging.debug(
-                'Directory Mock: Trying to modify profile with cn %s', cn
-            )
+            logging.debug("Directory Mock: Trying to modify profile with cn %s", cn)
             if cn in self.data.profiles:
-                logging.debug(
-                    'Directory Mock: Modifying existing profile %s', cn
-                )
+                logging.debug("Directory Mock: Modifying existing profile %s", cn)
             else:
-                logging.debug(
-                    'Directory Mock: Profile %s does not exist. Saving.', cn
-                )
+                logging.debug("Directory Mock: Profile %s does not exist. Saving.", cn)
             self.data.profiles[cn] = profile
         else:
             # Saving new profile
-            cn = profile['name']
+            cn = profile["name"]
             logging.debug(
-                'Directory Mock: Saving new profile. Using name as new id: %s', 
-                cn
+                "Directory Mock: Saving new profile. Using name as new id: %s", cn
             )
             self.data.profiles[cn] = profile
         return cn
 
     @DirectoryData.export_data
     def del_profile(self, cn):
-        logging.debug('Directory Mock: Deleting profile %s', cn)
+        logging.debug("Directory Mock: Deleting profile %s", cn)
         if cn in self.data.profiles:
-            del(self.data.profiles[cn])
+            del self.data.profiles[cn]
 
     def get_profiles(self):
-        logging.debug('Directory Mock: Getting profile list')
+        logging.debug("Directory Mock: Getting profile list")
         profiles = []
         for cn, profile in self.data.profiles.items():
-            profiles.append((
-                cn, profile['name'], profile['description']))
+            profiles.append((cn, profile["name"], profile["description"]))
         return profiles
 
     def get_profile(self, cn):
-        logging.debug('Directory Mock: Getting profile %s', cn)
+        logging.debug("Directory Mock: Getting profile %s", cn)
         return self.data.profiles.get(cn, dict())

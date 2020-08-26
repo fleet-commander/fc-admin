@@ -32,18 +32,18 @@ class SQLiteDict:
     """
 
     _SUPPORTED_TYPES = {
-        'int':     int,
-        'float':   float,
-        'str':     str,
-        'tuple':   tuple,
-        'list':    list,
-        'dict':    dict,
-        'bytes':   bytes,
+        "int": int,
+        "float": float,
+        "str": str,
+        "tuple": tuple,
+        "list": list,
+        "dict": dict,
+        "bytes": bytes,
     }
 
-    _SERIALIZED_TYPES = ['tuple', 'list', 'dict']
+    _SERIALIZED_TYPES = ["tuple", "list", "dict"]
 
-    TABLE_NAME = 'sqlitedict_table'
+    TABLE_NAME = "sqlitedict_table"
 
     def __init__(self, db):
         """
@@ -52,17 +52,20 @@ class SQLiteDict:
         self.db = db
         self.cursor = db.cursor
         # Generate table if not exists
-        self.db.create_table(self.TABLE_NAME, **{
-            'key': str,
-            'value': str,
-            'type': str,
-        })
+        self.db.create_table(
+            self.TABLE_NAME,
+            **{
+                "key": str,
+                "value": str,
+                "type": str,
+            }
+        )
 
-        if 'SCHEMA_VERSION' not in self:
-            self['SCHEMA_VERSION'] = SCHEMA_VERSION
+        if "SCHEMA_VERSION" not in self:
+            self["SCHEMA_VERSION"] = SCHEMA_VERSION
         else:
             # Check schema version
-            schema_version = self['SCHEMA_VERSION']
+            schema_version = self["SCHEMA_VERSION"]
             if schema_version != SCHEMA_VERSION:
                 if schema_version < SCHEMA_VERSION:
                     # TODO: Update schema
@@ -75,7 +78,9 @@ class SQLiteDict:
         """
         Evaluation of config[key]
         """
-        self.cursor.execute('SELECT value, type FROM %s WHERE key = ?' % self.TABLE_NAME, (key,))
+        self.cursor.execute(
+            "SELECT value, type FROM %s WHERE key = ?" % self.TABLE_NAME, (key,)
+        )
         data = self.cursor.fetchone()
         if data is not None:
             valuetype = self._SUPPORTED_TYPES[data[1]]
@@ -95,26 +100,31 @@ class SQLiteDict:
 
         valuetype = type(value).__name__
         if valuetype not in list(self._SUPPORTED_TYPES.keys()):
-            raise ValueError('Type %s is not supported by SQLiteDict' % valuetype)
+            raise ValueError("Type %s is not supported by SQLiteDict" % valuetype)
 
         if valuetype in self._SERIALIZED_TYPES:
             value = json.dumps(value)
 
-        self.cursor.execute('INSERT INTO %s (key, value, type) values (?, ?, ?)' % self.TABLE_NAME, (key, value, valuetype))
+        self.cursor.execute(
+            "INSERT INTO %s (key, value, type) values (?, ?, ?)" % self.TABLE_NAME,
+            (key, value, valuetype),
+        )
         self.db.conn.commit()
 
     def __delitem__(self, key):
         """
         Item deletion
         """
-        self.cursor.execute('DELETE FROM %s WHERE key=?' % self.TABLE_NAME, (key,))
+        self.cursor.execute("DELETE FROM %s WHERE key=?" % self.TABLE_NAME, (key,))
         self.db.conn.commit()
 
     def __contains__(self, key):
         """
         Item membership by key
         """
-        self.cursor.execute('SELECT value FROM %s WHERE key=?' % self.TABLE_NAME, (key,))
+        self.cursor.execute(
+            "SELECT value FROM %s WHERE key=?" % self.TABLE_NAME, (key,)
+        )
         data = self.cursor.fetchone()
         return data is not None
 
@@ -139,10 +149,9 @@ class SQLiteDict:
         """
         Return list of tuples with current items
         """
-        self.cursor.execute(
-            'SELECT key, value, type FROM %s' % self.TABLE_NAME)
+        self.cursor.execute("SELECT key, value, type FROM %s" % self.TABLE_NAME)
         for row in self.cursor.fetchall():
-            if row[0] != 'SCHEMA_VERSION':
+            if row[0] != "SCHEMA_VERSION":
                 valuetype = self._SUPPORTED_TYPES[row[2]]
                 if row[2] in self._SERIALIZED_TYPES:
                     value = json.loads(row[1])
@@ -155,14 +164,16 @@ class ConfigValues(SQLiteDict):
     """
     Configuration values database handler
     """
-    TABLE_NAME = 'config'
+
+    TABLE_NAME = "config"
 
 
 class ProfilesData(SQLiteDict):
     """
     Configuration values database handler
     """
-    TABLE_NAME = 'profiles'
+
+    TABLE_NAME = "profiles"
 
 
 class BaseDBManager:
@@ -171,12 +182,12 @@ class BaseDBManager:
     """
 
     SQLITE_TYPE_MATCHES = {
-        None: 'NULL',
-        int: 'INTEGER',
-        float: 'REAL',
-        str: 'TEXT',
-        memoryview: 'BLOB',
-        bytes: 'BLOB',
+        None: "NULL",
+        int: "INTEGER",
+        float: "REAL",
+        str: "TEXT",
+        memoryview: "BLOB",
+        bytes: "BLOB",
     }
 
     def __init__(self, database):
@@ -190,8 +201,11 @@ class BaseDBManager:
         """
         Creates a table
         """
-        col_types = ['%s %s' % (colname, self.SQLITE_TYPE_MATCHES[coltype]) for colname, coltype in structure.items()]
-        query = "CREATE TABLE IF NOT EXISTS %s (%s)" % (name, ','.join(col_types))
+        col_types = [
+            "%s %s" % (colname, self.SQLITE_TYPE_MATCHES[coltype])
+            for colname, coltype in structure.items()
+        ]
+        query = "CREATE TABLE IF NOT EXISTS %s (%s)" % (name, ",".join(col_types))
         self.cursor.execute(query)
         self.conn.commit()
 

@@ -26,7 +26,7 @@ import sys
 import os
 import unittest
 
-PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
+PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
 sys.path.append(PYTHONPATH)
 
 from fleetcommander import mergers
@@ -37,13 +37,9 @@ class BaseMergerTest(unittest.TestCase):
     maxDiff = None
 
     MERGER_CLASS = mergers.BaseChangeMerger
-    BASIC_CHANGE = {
-        'key': '/foo/bar',
-        'value': False,
-        'signature': 'b'
-    }
-    KEY_NAME = 'key'
-    KEY_LIST = ['/foo/bar', '/bar/baz', '/baz/foo']
+    BASIC_CHANGE = {"key": "/foo/bar", "value": False, "signature": "b"}
+    KEY_NAME = "key"
+    KEY_LIST = ["/foo/bar", "/bar/baz", "/baz/foo"]
 
     def setUp(self):
         self.merger = self.MERGER_CLASS()
@@ -71,9 +67,10 @@ class BaseMergerTest(unittest.TestCase):
 
         # Generate some changes for merging
         change1b, change3b, change4 = self.generate_changes(
-            ['/foo/bar', '/baz/foo', '/bar/foo'])
-        change1b['value'] = True
-        change3b['value'] = True
+            ["/foo/bar", "/baz/foo", "/bar/foo"]
+        )
+        change1b["value"] = True
+        change3b["value"] = True
 
         changeset1 = [change1, change2, change3]
         changeset2 = [change1b, change3b, change4]
@@ -88,20 +85,21 @@ class BaseMergerTest(unittest.TestCase):
         self.assertEqual(len(merged), 4)
         self.assertEqual(
             sorted(merged, key=lambda k: k[self.KEY_NAME]),
-            sorted(expected, key=lambda k: k[self.KEY_NAME]))
+            sorted(expected, key=lambda k: k[self.KEY_NAME]),
+        )
 
 
 class NetworkManagerChangeMergerTest(BaseMergerTest):
 
     MERGER_CLASS = mergers.NetworkManagerChangeMerger
     BASIC_CHANGE = {
-        'uuid': 'foo-uuid',
-        'type': 'vpn',
-        'id': 'Connection ID',
-        'data': 'ENCODED CONNECTION DATA',
+        "uuid": "foo-uuid",
+        "type": "vpn",
+        "id": "Connection ID",
+        "data": "ENCODED CONNECTION DATA",
     }
-    KEY_NAME = 'uuid'
-    KEY_LIST = ['foo-uuid', 'bar-uuid', 'baz-uuid']
+    KEY_NAME = "uuid"
+    KEY_LIST = ["foo-uuid", "bar-uuid", "baz-uuid"]
 
     def generate_changesets(self):
         # Add some changes and select them
@@ -109,9 +107,10 @@ class NetworkManagerChangeMergerTest(BaseMergerTest):
 
         # Generate some changes for merging
         change1b, change3b, change4 = self.generate_changes(
-            ['foo-uuid', 'baz-uuid', 'waz-uuid'])
-        change1b['type'] = 'wifi'
-        change3b['type'] = 'eth'
+            ["foo-uuid", "baz-uuid", "waz-uuid"]
+        )
+        change1b["type"] = "wifi"
+        change3b["type"] = "eth"
 
         changeset1 = [change1, change2, change3]
         changeset2 = [change1b, change3b, change4]
@@ -121,66 +120,97 @@ class NetworkManagerChangeMergerTest(BaseMergerTest):
 class ChromiumMergerTest(BaseMergerTest):
 
     MERGER_CLASS = mergers.ChromiumChangeMerger
-    BASIC_CHANGE = {
-        'key': '/foo/bar',
-        'value': False,
-        'signature': 'b'
-    }
+    BASIC_CHANGE = {"key": "/foo/bar", "value": False, "signature": "b"}
 
-    KEY_NAME = 'key'
+    KEY_NAME = "key"
     KEY_LIST = [
-        'NeverGonnaGiveYouUp',
-        'NeverGonnaLetYouDown',
-        'NeverGonnaRunAroundAndDesertYou']
+        "NeverGonnaGiveYouUp",
+        "NeverGonnaLetYouDown",
+        "NeverGonnaRunAroundAndDesertYou",
+    ]
 
     KEY_LIST_2 = [
-        'NeverGonnaGiveYouUp',
-        'NeverGonnaRunAroundAndDesertYou',
-        'NeverGonnaTellALieAndHurtYou']
+        "NeverGonnaGiveYouUp",
+        "NeverGonnaRunAroundAndDesertYou",
+        "NeverGonnaTellALieAndHurtYou",
+    ]
 
     BOOKMARKS_CHANGE1 = {
-        'key': 'ManagedBookmarks',
-        'value': [
-            {'name': 'Fedora', 'children': [
-                {'name': 'Get Fedora', 'url': 'https://getfedora.org/'},
-                {'name': 'Fedora Project', 'url': 'https://start.fedoraproject.org/'}
-                ]
+        "key": "ManagedBookmarks",
+        "value": [
+            {
+                "name": "Fedora",
+                "children": [
+                    {"name": "Get Fedora", "url": "https://getfedora.org/"},
+                    {
+                        "name": "Fedora Project",
+                        "url": "https://start.fedoraproject.org/",
+                    },
+                ],
             },
-            {'name':'FreeIPA','url':'http://freeipa.org'},
-            {'name':'Fleet Commander Github','url':'https://github.com/fleet-commander/'}
-        ]
+            {"name": "FreeIPA", "url": "http://freeipa.org"},
+            {
+                "name": "Fleet Commander Github",
+                "url": "https://github.com/fleet-commander/",
+            },
+        ],
     }
 
     BOOKMARKS_CHANGE2 = {
-        'key': 'ManagedBookmarks',
-        'value': [
-            {'name':'Fedora','children': [
-                {'name':'Get Fedora NOW!!!','url':'https://getfedora.org/'},
-                {'name':'Fedora Project','url':'https://start.fedoraproject.org/'},
-                {'name':'The Chromium Projects','url':'https://www.chromium.org/'},
-                {'name':'SSSD','url':'pagure.org/SSSD'}
-                ]
+        "key": "ManagedBookmarks",
+        "value": [
+            {
+                "name": "Fedora",
+                "children": [
+                    {"name": "Get Fedora NOW!!!", "url": "https://getfedora.org/"},
+                    {
+                        "name": "Fedora Project",
+                        "url": "https://start.fedoraproject.org/",
+                    },
+                    {
+                        "name": "The Chromium Projects",
+                        "url": "https://www.chromium.org/",
+                    },
+                    {"name": "SSSD", "url": "pagure.org/SSSD"},
+                ],
             },
-            {'name':'FreeIPA','url':'http://freeipa.org'},
-            {'name':'Fleet Commander Docs','url':'http://fleet-commander.org/documentation.html'}
-        ]
+            {"name": "FreeIPA", "url": "http://freeipa.org"},
+            {
+                "name": "Fleet Commander Docs",
+                "url": "http://fleet-commander.org/documentation.html",
+            },
+        ],
     }
 
     BOOKMARKS_CHANGE_MERGED = {
-        'key': 'ManagedBookmarks',
-        'value': [
-            {'name':'Fedora','children': [
-                {'name': 'Get Fedora', 'url': 'https://getfedora.org/'},
-                {'name':'Fedora Project','url':'https://start.fedoraproject.org/'},
-                {'name':'Get Fedora NOW!!!','url':'https://getfedora.org/'},
-                {'name':'The Chromium Projects','url':'https://www.chromium.org/'},
-                {'name':'SSSD','url':'pagure.org/SSSD'}
-                ]
+        "key": "ManagedBookmarks",
+        "value": [
+            {
+                "name": "Fedora",
+                "children": [
+                    {"name": "Get Fedora", "url": "https://getfedora.org/"},
+                    {
+                        "name": "Fedora Project",
+                        "url": "https://start.fedoraproject.org/",
+                    },
+                    {"name": "Get Fedora NOW!!!", "url": "https://getfedora.org/"},
+                    {
+                        "name": "The Chromium Projects",
+                        "url": "https://www.chromium.org/",
+                    },
+                    {"name": "SSSD", "url": "pagure.org/SSSD"},
+                ],
             },
-            {'name':'FreeIPA','url':'http://freeipa.org'},
-            {'name':'Fleet Commander Github','url':'https://github.com/fleet-commander/'},
-            {'name':'Fleet Commander Docs','url':'http://fleet-commander.org/documentation.html'}
-        ]
+            {"name": "FreeIPA", "url": "http://freeipa.org"},
+            {
+                "name": "Fleet Commander Github",
+                "url": "https://github.com/fleet-commander/",
+            },
+            {
+                "name": "Fleet Commander Docs",
+                "url": "http://fleet-commander.org/documentation.html",
+            },
+        ],
     }
 
     def setUp(self):
@@ -191,10 +221,9 @@ class ChromiumMergerTest(BaseMergerTest):
         change1, change2, change3 = self.generate_changes()
 
         # Generate some changes for merging
-        change1b, change3b, change4 = self.generate_changes(
-            self.KEY_LIST_2)
-        change1b['value'] = True
-        change3b['value'] = True
+        change1b, change3b, change4 = self.generate_changes(self.KEY_LIST_2)
+        change1b["value"] = True
+        change3b["value"] = True
 
         changeset1 = [change1, change2, change3, self.BOOKMARKS_CHANGE1]
         changeset2 = [change1b, change3b, change4, self.BOOKMARKS_CHANGE2]
@@ -202,23 +231,29 @@ class ChromiumMergerTest(BaseMergerTest):
 
     def test_00_merge_bookmarks(self):
         result = self.merger.merge_bookmarks(
-            self.BOOKMARKS_CHANGE1['value'],
-            self.BOOKMARKS_CHANGE2['value'])
+            self.BOOKMARKS_CHANGE1["value"], self.BOOKMARKS_CHANGE2["value"]
+        )
 
-        self.assertEqual(result, self.BOOKMARKS_CHANGE_MERGED['value'])
-
+        self.assertEqual(result, self.BOOKMARKS_CHANGE_MERGED["value"])
 
     def test_01_merge(self):
         changeset1, changeset2 = self.generate_changesets()
 
         merged = self.merger.merge(changeset1, changeset2)
-        expected = [changeset2[0], changeset1[1],
-            changeset2[1], changeset2[2], self.BOOKMARKS_CHANGE_MERGED]
+        expected = [
+            changeset2[0],
+            changeset1[1],
+            changeset2[1],
+            changeset2[2],
+            self.BOOKMARKS_CHANGE_MERGED,
+        ]
 
         self.assertEqual(len(merged), 5)
         self.assertEqual(
             sorted(merged, key=lambda k: k[self.KEY_NAME]),
-            sorted(expected, key=lambda k: k[self.KEY_NAME]))
+            sorted(expected, key=lambda k: k[self.KEY_NAME]),
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

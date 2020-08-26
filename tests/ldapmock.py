@@ -27,14 +27,13 @@ DOMAIN_DATA = {}
 
 
 class SASLMock:
-
     @staticmethod
     def sasl(cb_value_dict, mech):
         # We asume auth is OK as long as mechanism is GSSAPI
         # We ignore callbacks
-        if mech == 'GSSAPI':
-            return 'AUTH OK'
-        raise Exception('SASLMock: Auth mechanism is not GSSAPI (Kerberos)')
+        if mech == "GSSAPI":
+            return "AUTH OK"
+        raise Exception("SASLMock: Auth mechanism is not GSSAPI (Kerberos)")
 
 
 class LDAPConnectionMock:
@@ -42,7 +41,7 @@ class LDAPConnectionMock:
     protocol_version = 3
 
     def __init__(self, server_address):
-        logging.debug('LDAPMock initializing connection: %s', server_address)
+        logging.debug("LDAPMock initializing connection: %s", server_address)
         self.server_address = server_address
         self.options = {}
         self._domain_data = DOMAIN_DATA
@@ -50,7 +49,7 @@ class LDAPConnectionMock:
     def _ldif_to_ldap_data(self, ldif):
         data = {}
         for elem in ldif:
-            data[elem[0]] = (elem[1], )
+            data[elem[0]] = (elem[1],)
         return data
 
     def set_option(self, key, value):
@@ -58,85 +57,85 @@ class LDAPConnectionMock:
 
     def sasl_interactive_bind_s(self, who, sasl_auth):
         # We assume auth is ok if who is '' and sasl_auth was created using sasl
-        if who == '' and sasl_auth == 'AUTH OK':
+        if who == "" and sasl_auth == "AUTH OK":
             return
         raise Exception(
-            'SASLMock: Incorrect parameters for SASL binding: %s, %s' % (
-                who, sasl_auth))
+            "SASLMock: Incorrect parameters for SASL binding: %s, %s" % (who, sasl_auth)
+        )
 
     def search_s(
-            self, base, scope, filterstr='(objectClass=*)', attrlist=None,
-            attrsonly=0, timeout=-1):
-        logging.debug('LDAPMock search_s: %s - %s', base, filterstr)
-        if base == 'DC=FC,DC=AD':
-            groupfilter = '(&(objectclass=group)(CN='
-            sidfilter = '(&(|(objectclass=computer)(objectclass=user)(objectclass=group))(objectSid='
-            if filterstr == '(objectClass=*)' and attrlist == ['objectSid']:
-                    return (
-                        ('cn', self._domain_data['domain']),
-                    )
+        self,
+        base,
+        scope,
+        filterstr="(objectClass=*)",
+        attrlist=None,
+        attrsonly=0,
+        timeout=-1,
+    ):
+        logging.debug("LDAPMock search_s: %s - %s", base, filterstr)
+        if base == "DC=FC,DC=AD":
+            groupfilter = "(&(objectclass=group)(CN="
+            sidfilter = "(&(|(objectclass=computer)(objectclass=user)(objectclass=group))(objectSid="
+            if filterstr == "(objectClass=*)" and attrlist == ["objectSid"]:
+                return (("cn", self._domain_data["domain"]),)
             if sidfilter in filterstr:
-                filtersid = filterstr[len(sidfilter):-2]
-                for objclass in ['users', 'groups', 'hosts']:
+                filtersid = filterstr[len(sidfilter) : -2]
+                for objclass in ["users", "groups", "hosts"]:
                     for _key, elem in self._domain_data[objclass].items():
                         # Use unpacked object sid to avoid use of ndr_unpack
-                        if filtersid == elem['unpackedObjectSid']:
-                            return [(elem['cn'], elem), ]
+                        if filtersid == elem["unpackedObjectSid"]:
+                            return [
+                                (elem["cn"], elem),
+                            ]
             elif groupfilter in filterstr:
-                groupname = filterstr[len(groupfilter):-2]
-                if groupname in self._domain_data['groups'].keys():
-                    return (
-                        ('cn', self._domain_data['groups'][groupname]),
-                    )
-        elif base == 'CN=Users,DC=FC,DC=AD':
-            userfilter = '(&(objectclass=user)(CN='
+                groupname = filterstr[len(groupfilter) : -2]
+                if groupname in self._domain_data["groups"].keys():
+                    return (("cn", self._domain_data["groups"][groupname]),)
+        elif base == "CN=Users,DC=FC,DC=AD":
+            userfilter = "(&(objectclass=user)(CN="
             if userfilter in filterstr:
-                username = filterstr[len(userfilter):-2]
-                if username in self._domain_data['users'].keys():
-                    return (
-                        ('cn', self._domain_data['users'][username]),
-                    )
-        elif base == 'CN=Computers,DC=FC,DC=AD':
-            hostfilter = '(&(objectclass=computer)(CN='
+                username = filterstr[len(userfilter) : -2]
+                if username in self._domain_data["users"].keys():
+                    return (("cn", self._domain_data["users"][username]),)
+        elif base == "CN=Computers,DC=FC,DC=AD":
+            hostfilter = "(&(objectclass=computer)(CN="
             if hostfilter in filterstr:
-                hostname = filterstr[len(hostfilter):-2]
-                if hostname in self._domain_data['hosts'].keys():
-                    return (
-                        ('cn', self._domain_data['hosts'][hostname]),
-                    )
-        elif base == 'CN=Policies,CN=System,DC=FC,DC=AD':
-            if filterstr == '(objectclass=groupPolicyContainer)':
+                hostname = filterstr[len(hostfilter) : -2]
+                if hostname in self._domain_data["hosts"].keys():
+                    return (("cn", self._domain_data["hosts"][hostname]),)
+        elif base == "CN=Policies,CN=System,DC=FC,DC=AD":
+            if filterstr == "(objectclass=groupPolicyContainer)":
                 profile_list = []
-                for cn, _profile in self._domain_data['profiles'].items():
-                    profile_list.append((cn, self._domain_data['profiles'][cn]))
+                for cn, _profile in self._domain_data["profiles"].items():
+                    profile_list.append((cn, self._domain_data["profiles"][cn]))
                 return profile_list
-            if '(displayName=' in filterstr:
-                displayname = filterstr[len('(displayName='):-1]
+            if "(displayName=" in filterstr:
+                displayname = filterstr[len("(displayName=") : -1]
                 # Trying to get a profile by its display name
-                for _key, elem in self._domain_data['profiles'].items():
-                    if elem['displayName'][0].decode() == displayname:
-                        return [(elem['cn'], elem)]
+                for _key, elem in self._domain_data["profiles"].items():
+                    if elem["displayName"][0].decode() == displayname:
+                        return [(elem["cn"], elem)]
             else:
-                cn = 'CN=%s,CN=Policies,CN=System,DC=FC,DC=AD' % filterstr[4:-1]
-                if cn in self._domain_data['profiles'].keys():
-                    return [(cn, self._domain_data['profiles'][cn])]
+                cn = "CN=%s,CN=Policies,CN=System,DC=FC,DC=AD" % filterstr[4:-1]
+                if cn in self._domain_data["profiles"].keys():
+                    return [(cn, self._domain_data["profiles"][cn])]
         return []
 
     def add_s(self, dn, ldif):
-        self._domain_data['profiles'][dn] = self._ldif_to_ldap_data(ldif)
+        self._domain_data["profiles"][dn] = self._ldif_to_ldap_data(ldif)
 
     def modify_s(self, dn, ldif):
-        profile = self._domain_data['profiles'][dn]
+        profile = self._domain_data["profiles"][dn]
         for dif in ldif:
-            value = (dif[2], )
-            if dif[1] in ['displayName', 'description']:
-                value = (dif[2], )
+            value = (dif[2],)
+            if dif[1] in ["displayName", "description"]:
+                value = (dif[2],)
             profile[dif[1]] = value
 
     def delete_s(self, dn):
-        logging.debug('LDAPMock: delete_s %s', dn)
-        if dn in self._domain_data['profiles'].keys():
-            del(self._domain_data['profiles'][dn])
+        logging.debug("LDAPMock: delete_s %s", dn)
+        if dn in self._domain_data["profiles"].keys():
+            del self._domain_data["profiles"][dn]
 
 
 # Mock sasl module

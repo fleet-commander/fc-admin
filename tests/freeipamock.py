@@ -27,48 +27,57 @@ import six
 
 # Set logging level to debug
 log = logging.getLogger()
-level = logging.getLevelName('DEBUG')
+level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
 
 class FreeIPAData:
-
     def __init__(self, datadir=None):
         self.datadir = datadir
         # Data storage
-        self.users = ['admin', 'guest', ]
-        self.groups = ['admins', 'editors', ]
-        self.hosts = ['client1', ]
-        self.hostgroups = ['ipaservers', ]
+        self.users = [
+            "admin",
+            "guest",
+        ]
+        self.groups = [
+            "admins",
+            "editors",
+        ]
+        self.hosts = [
+            "client1",
+        ]
+        self.hostgroups = [
+            "ipaservers",
+        ]
         self.profiles = {}
         self.profilerules = {}
         self.global_policy = 1
 
     def get_json(self):
         data = {
-            'users': self.users,
-            'groups': self.groups,
-            'hosts': self.hosts,
-            'hostgroups': self.hostgroups,
-            'profiles': self.profiles,
-            'profilerules': self.profilerules,
-            'global_policy': self.global_policy,
+            "users": self.users,
+            "groups": self.groups,
+            "hosts": self.hosts,
+            "hostgroups": self.hostgroups,
+            "profiles": self.profiles,
+            "profilerules": self.profilerules,
+            "global_policy": self.global_policy,
         }
-        logging.debug('IPAMock data to export: %s', data)
+        logging.debug("IPAMock data to export: %s", data)
         jsondata = json.dumps(data)
-        logging.debug('IPAMock json data to export: %s', jsondata)
+        logging.debug("IPAMock json data to export: %s", jsondata)
         return jsondata
 
-    def save_to_datadir(self, filename='freeipamock-data.json'):
+    def save_to_datadir(self, filename="freeipamock-data.json"):
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
-            logging.debug('IPAMock exporting data to %s', path)
-            with open(path, 'w') as fd:
+            logging.debug("IPAMock exporting data to %s", path)
+            with open(path, "w") as fd:
                 fd.write(self.get_json())
                 fd.close()
-                logging.debug('FreeIPA mock data saved to %s', path)
+                logging.debug("FreeIPA mock data saved to %s", path)
         else:
-            logging.debug('IPAMock not exporting data (No datadir)')
+            logging.debug("IPAMock not exporting data (No datadir)")
 
     # Decorator for exporting data to file
     @classmethod
@@ -78,11 +87,11 @@ class FreeIPAData:
             # Save data storaged in data member
             self.data.save_to_datadir()
             return result
+
         return wrapper
 
 
 class FreeIPAErrors:
-
     class NotFound(Exception):
         pass
 
@@ -100,14 +109,13 @@ class FreeIPAErrors:
 
 
 class FreeIPARPCClient:
-
     @staticmethod
     def isconnected():
         return True
 
     @staticmethod
     def connect():
-        logging.debug('Mocking IPA connection')
+        logging.debug("Mocking IPA connection")
 
 
 class FreeIPABackend:
@@ -122,84 +130,63 @@ class FreeIPACommand:
         return
 
     def deskprofileconfig_show(self):
-        return {
-            'result': {
-                'ipadeskprofilepriority': (self.data.global_policy,)
-            }
-        }
+        return {"result": {"ipadeskprofilepriority": (self.data.global_policy,)}}
 
     @FreeIPAData.export_data
     def deskprofileconfig_mod(self, ipadeskprofilepriority):
         if not isinstance(ipadeskprofilepriority, int):
             raise FreeIPAErrors.ConversionError(
-                "invalid 'priority': must be an integer")
+                "invalid 'priority': must be an integer"
+            )
 
         if ipadeskprofilepriority == self.data.global_policy:
-            raise FreeIPAErrors.EmptyModlist(
-                "no modifications to be performed")
+            raise FreeIPAErrors.EmptyModlist("no modifications to be performed")
         if ipadeskprofilepriority < 1:
             raise FreeIPAErrors.ValidationError(
-                "invalid 'priority': must be at least 1")
+                "invalid 'priority': must be at least 1"
+            )
         if ipadeskprofilepriority > 24:
-            raise FreeIPAErrors.ValidationError(
-                "invalid 'priority': can be at most 24")
+            raise FreeIPAErrors.ValidationError("invalid 'priority': can be at most 24")
         self.data.global_policy = ipadeskprofilepriority
 
     def user_show(self, user):
         if user in self.data.users:
-            return {
-                u'result': {},
-                u'value': six.text_type(user),
-                u'summary': None
-            }
+            return {u"result": {}, u"value": six.text_type(user), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def group_show(self, group):
         if group in self.data.groups:
-            return {
-                u'result': {},
-                u'value': six.text_type(group),
-                u'summary': None
-            }
+            return {u"result": {}, u"value": six.text_type(group), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def host_find(self, sizelimit):
         count = len(self.data.hosts)
         result = []
         for host in self.data.hosts:
-            result.append({
-                'fqdn': (host,)
-            })
+            result.append({"fqdn": (host,)})
         res = {
-            u'count': count,
-            u'summary': u'%s Hosts matched' % count,
-            u'result': tuple(result),
-            u'truncated': False
+            u"count": count,
+            u"summary": u"%s Hosts matched" % count,
+            u"result": tuple(result),
+            u"truncated": False,
         }
         return res
 
     def host_show(self, host):
         if host in self.data.hosts:
-            return {
-                u'result': {},
-                u'value': six.text_type(host),
-                u'summary': None
-            }
+            return {u"result": {}, u"value": six.text_type(host), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add(self, hostgroup):
         if hostgroup in self.data.hostgroups:
             raise FreeIPAErrors.DuplicateEntry(
-                'Hostgroup "%s" already exists' % hostgroup)
+                'Hostgroup "%s" already exists' % hostgroup
+            )
         self.data.hostgroups.append(hostgroup)
 
     def hostgroup_show(self, hostgroup):
         if hostgroup in self.data.hostgroups:
-            return {
-                u'result': {},
-                u'value': six.text_type(hostgroup),
-                u'summary': None
-            }
+            return {u"result": {}, u"value": six.text_type(hostgroup), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add_member(self, hostgroup, host):
@@ -211,8 +198,7 @@ class FreeIPACommand:
     def automember_del(self, name, type):
         pass
 
-    def automember_add_condition(
-            self, name, type, key, automemberinclusiveregex):
+    def automember_add_condition(self, name, type, key, automemberinclusiveregex):
         pass
 
     def automember_remove_condition(self, name, type, key):
@@ -221,66 +207,68 @@ class FreeIPACommand:
     @FreeIPAData.export_data
     def deskprofile_add(self, cn, description, ipadeskdata):
         logging.debug(
-            "IPAMock: deskprofile_add(%s, %s, %s)",
-            cn, description, ipadeskdata
+            "IPAMock: deskprofile_add(%s, %s, %s)", cn, description, ipadeskdata
         )
         if cn in self.data.profiles:
             raise FreeIPAErrors.DuplicateEntry()
 
         self.data.profiles[cn] = {
-            'cn': (cn,),
-            'description': (description,),
-            'ipadeskdata': (ipadeskdata.decode(),),
+            "cn": (cn,),
+            "description": (description,),
+            "ipadeskdata": (ipadeskdata.decode(),),
         }
         logging.debug("IPAMock: Stored data: %s", self.data.profiles[cn])
 
     @FreeIPAData.export_data
     def deskprofile_mod(self, cn, description, ipadeskdata):
         if cn in self.data.profiles:
-            self.data.profiles[cn]['description'] = (description,)
-            self.data.profiles[cn]['ipadeskdata'] = (ipadeskdata.decode(),)
+            self.data.profiles[cn]["description"] = (description,)
+            self.data.profiles[cn]["ipadeskdata"] = (ipadeskdata.decode(),)
         else:
             raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
-    def deskprofilerule_add(self, name,
-                            ipadeskprofiletarget, ipadeskprofilepriority,
-                            hostcategory=None):
+    def deskprofilerule_add(
+        self, name, ipadeskprofiletarget, ipadeskprofilepriority, hostcategory=None
+    ):
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
 
-        logging.debug('IPAMock: profile rule for %s', name)
+        logging.debug("IPAMock: profile rule for %s", name)
         self.data.profilerules[name] = {
-            'priority': ipadeskprofilepriority,
-            'hostcategory': hostcategory,
-            'users': [],
-            'groups': [],
-            'hosts': [],
-            'hostgroups': [],
+            "priority": ipadeskprofilepriority,
+            "hostcategory": hostcategory,
+            "users": [],
+            "groups": [],
+            "hosts": [],
+            "hostgroups": [],
         }
 
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
         logging.debug(
-            'IPAMock: Adding users and groups to rule %s, %s, %s',
-            name, user, group
+            "IPAMock: Adding users and groups to rule %s, %s, %s", name, user, group
         )
         if name in self.data.profilerules:
             logging.debug(
-                'IPAMock: profile rule before user/group data for %s: %s',
-                name, self.data.profilerules[name]
+                "IPAMock: profile rule before user/group data for %s: %s",
+                name,
+                self.data.profilerules[name],
             )
             user = list(set(user).intersection(set(self.data.users)))
-            self.data.profilerules[name]['users'].extend(user)
-            self.data.profilerules[name]['users'] = sorted(list(
-                set(self.data.profilerules[name]['users'])))
+            self.data.profilerules[name]["users"].extend(user)
+            self.data.profilerules[name]["users"] = sorted(
+                list(set(self.data.profilerules[name]["users"]))
+            )
             group = list(set(group).intersection(set(self.data.groups)))
-            self.data.profilerules[name]['groups'].extend(group)
-            self.data.profilerules[name]['groups'] = sorted(list(
-                set(self.data.profilerules[name]['groups'])))
+            self.data.profilerules[name]["groups"].extend(group)
+            self.data.profilerules[name]["groups"] = sorted(
+                list(set(self.data.profilerules[name]["groups"]))
+            )
             logging.debug(
-                'IPAMock: profile rule after user/group data for %s: %s',
-                name, self.data.profilerules[name]
+                "IPAMock: profile rule after user/group data for %s: %s",
+                name,
+                self.data.profilerules[name],
             )
         else:
             raise FreeIPAErrors.NotFound()
@@ -289,97 +277,99 @@ class FreeIPACommand:
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
             logging.debug(
-                'IPAMock: Adding hosts and hostgroups to rule %s, %s, %s',
-                name, host, hostgroup
+                "IPAMock: Adding hosts and hostgroups to rule %s, %s, %s",
+                name,
+                host,
+                hostgroup,
             )
             host = list(set(host).intersection(set(self.data.hosts)))
-            self.data.profilerules[name]['hosts'].extend(host)
-            self.data.profilerules[name]['hosts'] = sorted(list(
-                set(self.data.profilerules[name]['hosts'])))
-            hostgroup = list(
-                set(hostgroup).intersection(set(self.data.hostgroups)))
-            self.data.profilerules[name]['hostgroups'].extend(hostgroup)
-            self.data.profilerules[name]['hostgroups'] = sorted(list(
-                set(self.data.profilerules[name]['hostgroups'])))
+            self.data.profilerules[name]["hosts"].extend(host)
+            self.data.profilerules[name]["hosts"] = sorted(
+                list(set(self.data.profilerules[name]["hosts"]))
+            )
+            hostgroup = list(set(hostgroup).intersection(set(self.data.hostgroups)))
+            self.data.profilerules[name]["hostgroups"].extend(hostgroup)
+            self.data.profilerules[name]["hostgroups"] = sorted(
+                list(set(self.data.profilerules[name]["hostgroups"]))
+            )
         else:
             raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
     def deskprofilerule_remove_user(self, name, user, group):
         if name in self.data.profilerules:
-            users = set(self.data.profilerules[name]['users']) - set(user)
-            self.data.profilerules[name]['users'] = sorted(list(users))
-            groups = set(self.data.profilerules[name]['groups']) - set(group)
-            self.data.profilerules[name]['groups'] = sorted(list(groups))
+            users = set(self.data.profilerules[name]["users"]) - set(user)
+            self.data.profilerules[name]["users"] = sorted(list(users))
+            groups = set(self.data.profilerules[name]["groups"]) - set(group)
+            self.data.profilerules[name]["groups"] = sorted(list(groups))
         else:
             raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
     def deskprofilerule_remove_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
-            hosts = set(self.data.profilerules[name]['hosts']) - set(host)
-            self.data.profilerules[name]['hosts'] = sorted(list(hosts))
-            hostgroups = set(
-                self.data.profilerules[name]['hostgroups']) - set(hostgroup)
-            self.data.profilerules[name]['hostgroups'] = sorted(
-                list(hostgroups))
+            hosts = set(self.data.profilerules[name]["hosts"]) - set(host)
+            self.data.profilerules[name]["hosts"] = sorted(list(hosts))
+            hostgroups = set(self.data.profilerules[name]["hostgroups"]) - set(
+                hostgroup
+            )
+            self.data.profilerules[name]["hostgroups"] = sorted(list(hostgroups))
         else:
             raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
     def deskprofile_del(self, name):
         if name in self.data.profiles:
-            del(self.data.profiles[name])
+            del self.data.profiles[name]
 
     @FreeIPAData.export_data
     def deskprofilerule_del(self, name):
         if name in self.data.profilerules:
-            del(self.data.profilerules[name])
+            del self.data.profilerules[name]
         else:
             raise FreeIPAErrors.NotFound()
 
     def deskprofile_find(self, criteria, sizelimit, all):
         count = len(list(self.data.profiles.keys()))
         res = {
-            u'count': count,
-            u'summary': u'%s Desktop Profiles matched' % count,
-            u'result': tuple(self.data.profiles.values()),
-            u'truncated': False
+            u"count": count,
+            u"summary": u"%s Desktop Profiles matched" % count,
+            u"result": tuple(self.data.profiles.values()),
+            u"truncated": False,
         }
         return res
 
     def deskprofile_show(self, name, all):
         if name in self.data.profiles:
             profile = self.data.profiles[name].copy()
-            profile['ipadeskdata'] = (profile['ipadeskdata'][0],)
-            return {'result': profile}
+            profile["ipadeskdata"] = (profile["ipadeskdata"][0],)
+            return {"result": profile}
         raise FreeIPAErrors.NotFound()
 
     def deskprofilerule_show(self, name, all):
         if name in self.data.profilerules:
             return {
-                'result': {
-                    'memberuser_user': sorted(
-                        self.data.profilerules[name]['users']),
-                    'memberuser_group': sorted(
-                        self.data.profilerules[name]['groups']),
-                    'memberhost_host': sorted(
-                        self.data.profilerules[name]['hosts']),
-                    'memberhost_hostgroup': sorted(
-                        self.data.profilerules[name]['hostgroups']),
-                    'ipadeskprofilepriority': (
-                        self.data.profilerules[name]['priority'],),
+                "result": {
+                    "memberuser_user": sorted(self.data.profilerules[name]["users"]),
+                    "memberuser_group": sorted(self.data.profilerules[name]["groups"]),
+                    "memberhost_host": sorted(self.data.profilerules[name]["hosts"]),
+                    "memberhost_hostgroup": sorted(
+                        self.data.profilerules[name]["hostgroups"]
+                    ),
+                    "ipadeskprofilepriority": (
+                        self.data.profilerules[name]["priority"],
+                    ),
                 }
             }
         raise FreeIPAErrors.NotFound()
 
     @FreeIPAData.export_data
-    def deskprofilerule_mod(self, cn,
-                            ipadeskprofiletarget, ipadeskprofilepriority,
-                            hostcategory=None):
+    def deskprofilerule_mod(
+        self, cn, ipadeskprofiletarget, ipadeskprofilepriority, hostcategory=None
+    ):
         if cn in self.data.profilerules:
-            self.data.profilerules[cn]['priority'] = ipadeskprofilepriority
-            self.data.profilerules[cn]['hostcategory'] = hostcategory
+            self.data.profilerules[cn]["priority"] = ipadeskprofilepriority
+            self.data.profilerules[cn]["hostcategory"] = hostcategory
         else:
             raise FreeIPAErrors.NotFound()
 

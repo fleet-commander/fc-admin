@@ -35,13 +35,13 @@ import dbus
 
 # Set logging level to debug
 log = logging.getLogger()
-level = logging.getLevelName('DEBUG')
+level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
-DBUS_BUS_NAME = 'org.freedesktop.FleetCommanderTest'
-DBUS_OBJECT_PATH = '/org/freedesktop/FleetCommanderTest'
-DBUS_INTERFACE_NAME = 'org.freedesktop.FleetCommander'
-DBUS_TESTING_INTERFACE_NAME = 'org.freedesktop.FleetCommanderTest'
+DBUS_BUS_NAME = "org.freedesktop.FleetCommanderTest"
+DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderTest"
+DBUS_INTERFACE_NAME = "org.freedesktop.FleetCommander"
+DBUS_TESTING_INTERFACE_NAME = "org.freedesktop.FleetCommanderTest"
 
 
 class FleetCommanderDbusClient:
@@ -66,12 +66,12 @@ class FleetCommanderDbusClient:
             try:
                 self.obj = self.bus.get_object(DBUS_BUS_NAME, DBUS_OBJECT_PATH)
                 self.iface = dbus.Interface(
-                    self.obj, dbus_interface=DBUS_INTERFACE_NAME)
+                    self.obj, dbus_interface=DBUS_INTERFACE_NAME
+                )
                 return
             except Exception:
                 pass
-        raise Exception(
-            'Timed out trying to connect to fleet commander dbus service')
+        raise Exception("Timed out trying to connect to fleet commander dbus service")
 
     def get_initial_values(self):
         return self.iface.GetInitialValues()
@@ -104,9 +104,7 @@ class FleetCommanderDbusClient:
         return json.loads(self.iface.AddKnownHost(host))
 
     def install_pubkey(self, host, user, passwd):
-        return json.loads(self.iface.InstallPubkey(
-            host, user, passwd
-        ))
+        return json.loads(self.iface.InstallPubkey(host, user, passwd))
 
     def get_global_policy(self):
         return json.loads(self.iface.GetGlobalPolicy())
@@ -138,7 +136,7 @@ class FleetCommanderDbusClient:
     def session_save(self, uid, data):
         return json.loads(self.iface.SessionSave(uid, json.dumps(data)))
 
-    def is_session_active(self, uuid=''):
+    def is_session_active(self, uuid=""):
         return self.iface.IsSessionActive(uuid)
 
     def get_change_listener_port(self):
@@ -149,4 +147,3 @@ class FleetCommanderDbusClient:
 
     def quit(self):
         return self.iface.Quit()
-
