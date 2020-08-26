@@ -25,7 +25,7 @@ import logging
 import uuid
 import getpass
 import tempfile
-import optparse
+import optparse  # pylint: disable=deprecated-module
 
 from functools import wraps
 
