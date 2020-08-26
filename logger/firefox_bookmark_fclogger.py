@@ -22,7 +22,6 @@ import sys
 import json
 import struct
 import time
-import json
 import logging
 import dbus
 from functools import wraps
