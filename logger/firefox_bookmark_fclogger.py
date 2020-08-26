@@ -40,9 +40,10 @@ def connected_to_dbus_service(f):
             obj.connect()
         if obj.iface is None:
             logging.error('Not connected to FC Logger dbus service')
-            return
+            return None
         r = f(obj, *args, **kwargs)
         return r
+
     return wrapped
 
 

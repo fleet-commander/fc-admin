@@ -483,6 +483,7 @@ class ADConnector:
         data = self._get_ldap_profile_data(ldap_filter)
         if data:
             return self._data_to_profile(data)
+        return None
 
 
     @connection_required

@@ -133,5 +133,4 @@ class DirectoryConnector:
 
     def get_profile(self, cn):
         logging.debug('Directory Mock: Getting profile %s', cn)
-        if cn in self.data.profiles:
-            return self.data.profiles[cn]
+        return self.data.profiles.get(cn, dict())
