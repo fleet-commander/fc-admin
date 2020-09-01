@@ -13,6 +13,8 @@ EXTRA_DIST =                         \
 	_01_mock_dbus.py                 \
 	_01_logger_test_suite.py         \
 	_wait_for_name.py                \
+	_03_logger_nm.py                 \
+	_03_mock_nm_dbus.py              \
 	_05_fcdbus_tests.py              \
 	_05_mock_realmd_dbus.py          \
 	test_fcdbus_service.py           \
