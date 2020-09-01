@@ -2,7 +2,7 @@ AC_INIT(fleet-commander-admin, 0.15.1, aruiz@redhat.com)
 AC_COPYRIGHT([Copyright 2014,2015,2016,2017,2018 Red Hat, Inc.])
 
 AC_PREREQ(2.64)
-AM_INIT_AUTOMAKE([no-dist-gzip dist-xz])
+AM_INIT_AUTOMAKE([no-dist-gzip dist-xz tar-pax])
 AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
