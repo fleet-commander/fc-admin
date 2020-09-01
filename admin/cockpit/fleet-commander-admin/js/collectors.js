@@ -91,7 +91,7 @@ BaseCollector.prototype = {
 
 // Network Manager specific collector
 function NMCollector(namespace) {
-    BaseCollector.apply(this, namespace);
+    BaseCollector.apply(this, [namespace]);
     this.key_name = 'uuid';
 }
 
@@ -106,7 +106,7 @@ NMCollector.prototype.get_value_from_change = function (change) {
 
 // Firefox bookmarks specific collector
 function FirefoxBookmarksCollector(namespace) {
-    BaseCollector.apply(this, namespace);
+    BaseCollector.apply(this, [namespace]);
 }
 
 FirefoxBookmarksCollector.prototype = Object.create(BaseCollector.prototype);

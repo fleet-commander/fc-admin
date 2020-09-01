@@ -17,7 +17,9 @@
     </script>
     <script>
         window.addEventListener("load", function() {
-            if (window._spice_has_module_support) return;
+            if (window._spice_has_module_support) {
+              return;
+            }
             var loader = document.createElement("script");
             loader.src = "js/spice-html5/src/thirdparty/browser-es-module-loader/dist/" +
                 "browser-es-module-loader.js";
@@ -31,8 +33,8 @@
     <script type="module" crossorigin="anonymous">
         import * as SpiceHtml5 from './js/spice-html5/src/main.js';
         import { arraybuffer_to_str } from './js/spice-html5/src/utils.js';
-        spicehtml5_module = SpiceHtml5
-        arraybuffer_to_str_func = arraybuffer_to_str
+        spicehtml5_module = SpiceHtml5;
+        arraybuffer_to_str_func = arraybuffer_to_str;
     </script>
 
     <script src="js/base.js"></script>

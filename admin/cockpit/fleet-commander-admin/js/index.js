@@ -41,6 +41,7 @@
 
 var DEBUG = 0,
     _ = cockpit.gettext,
+    GOA_PROVIDERS,
     fc = null,
     currentuid = null,
     currentprofile = null,
