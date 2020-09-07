@@ -32,6 +32,10 @@ jobs:
         set -e
         make jslint
       displayName: jslint sources
+    - script: |
+        set -e
+        make VERBOSE=1 distcheck
+      displayName: Run distribute unittests
     - template: templates/${{ variables.BUILD_TEMPLATE }}
     - template: templates/publish-build.yml
       parameters:
