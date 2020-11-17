@@ -47,14 +47,47 @@ class TestSSHController(unittest.TestCase):
             "%(username)s@%(hostname)s -p %(port)s %(command)s\n",
         ]
     )
-    SSH_TUNNEL_PARMS = " ".join(
+    SSH_TUNNEL_OPEN_PARMS = " ".join(
         [
-            "-i %(private_key_file)s",
-            "-o PreferredAuthentications=publickey",
-            "-o PasswordAuthentication=no",
-            "-o UserKnownHostsFile=%(known_hosts_file)s",
-            "%(username)s@%(hostname)s -p %(port)s",
-            "-L %(local_host)s:%(local_port)s:%(tunnel_host)s:%(tunnel_port)s -N\n",
+            "-i",
+            "%(private_key_file)s",
+            "-o",
+            "PreferredAuthentications=publickey",
+            "-o",
+            "PasswordAuthentication=no",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-o",
+            "ControlMaster=yes",
+            "-S",
+            "%(user_home)s/.ssh/fc-control-ssh-tunnel.socket",
+            "-o",
+            "UserKnownHostsFile=%(known_hosts_file)s",
+            "%(username)s@%(hostname)s",
+            "-p",
+            "%(port)s",
+            "-L %(local_port)s:%(tunnel_host)s:%(tunnel_port)s",
+            "-N",
+            "-f",
+        ]
+    )
+    SSH_TUNNEL_CLOSE_PARMS = " ".join(
+        [
+            "-i",
+            "%(private_key_file)s",
+            "-o",
+            "PreferredAuthentications=publickey",
+            "-o",
+            "PasswordAuthentication=no",
+            "-o",
+            "UserKnownHostsFile=%(known_hosts_file)s",
+            "%(username)s@%(hostname)s",
+            "-p",
+            "%(port)s",
+            "-S",
+            "%(user_home)s/.ssh/fc-control-ssh-tunnel.socket",
+            "-O",
+            "exit",
         ]
     )
 
@@ -63,6 +96,7 @@ class TestSSHController(unittest.TestCase):
         # Python 3 compatibility
         if not hasattr(self, "assertRaisesRegex"):
             self.assertRaisesRegex = self.assertRaisesRegexp
+        self.maxDiff = None
 
     def setUp(self):
         self.test_directory = tempfile.mkdtemp(prefix="fc-ssh-test")
@@ -214,39 +248,39 @@ class TestSSHController(unittest.TestCase):
         local_port = "2000"
         tunnel_host = "192.168.0.2"
         tunnel_port = "2020"
+        local_forward = "{local_port}:{host}:{tunnel_port}".format(
+            local_port=local_port,
+            host=tunnel_host,
+            tunnel_port=tunnel_port,
+        )
         username = "testuser"
         hostname = "localhost"
         port = "2022"
-        optional_local_host = "myhost"
 
         # Open tunnel without specifying a local host
         ssh.open_tunnel(
-            local_port,
-            tunnel_host,
-            tunnel_port,
-            self.private_key_file,
-            username,
-            hostname,
-            port,
+            local_forward=local_forward,
+            private_key_file=self.private_key_file,
+            username=username,
+            hostname=hostname,
+            port=port,
             # Extra options
             UserKnownHostsFile=self.known_hosts_file,
         )
 
-        ssh._tunnel_prog.wait()
         self.assertTrue(os.path.exists(self.ssh_parms_file))
         with open(self.ssh_parms_file, "r") as fd:
-            parms = fd.read()
-            fd.close()
+            parms = fd.read().strip()
 
         self.assertEqual(
             parms,
-            self.SSH_TUNNEL_PARMS
+            self.SSH_TUNNEL_OPEN_PARMS
             % {
-                "local_host": "127.0.0.1",
                 "local_port": local_port,
                 "tunnel_host": tunnel_host,
                 "tunnel_port": tunnel_port,
                 "username": username,
+                "user_home": os.path.expanduser("~"),
                 "hostname": hostname,
                 "port": port,
                 "private_key_file": self.private_key_file,
@@ -254,34 +288,32 @@ class TestSSHController(unittest.TestCase):
             },
         )
 
-        ssh.open_tunnel(
-            local_port,
-            tunnel_host,
-            tunnel_port,
-            self.private_key_file,
-            username,
-            hostname,
-            port,
-            local_host=optional_local_host,
+    def test_08_close_tunnel(self):
+        ssh = sshcontroller.SSHController()
+        username = "testuser"
+        hostname = "localhost"
+        port = "2022"
+
+        # Open tunnel without specifying a local host
+        ssh.close_tunnel(
+            private_key_file=self.private_key_file,
+            username=username,
+            hostname=hostname,
+            port=port,
             # Extra options
             UserKnownHostsFile=self.known_hosts_file,
         )
 
-        ssh._tunnel_prog.wait()
         self.assertTrue(os.path.exists(self.ssh_parms_file))
         with open(self.ssh_parms_file, "r") as fd:
-            parms = fd.read()
-            fd.close()
+            parms = fd.read().strip()
 
         self.assertEqual(
             parms,
-            self.SSH_TUNNEL_PARMS
+            self.SSH_TUNNEL_CLOSE_PARMS
             % {
-                "local_host": optional_local_host,
-                "local_port": local_port,
-                "tunnel_host": tunnel_host,
-                "tunnel_port": tunnel_port,
                 "username": username,
+                "user_home": os.path.expanduser("~"),
                 "hostname": hostname,
                 "port": port,
                 "private_key_file": self.private_key_file,
@@ -289,7 +321,7 @@ class TestSSHController(unittest.TestCase):
             },
         )
 
-    def test_08_install_pubkey(self):
+    def test_09_install_pubkey(self):
         ssh = sshcontroller.SSHController()
         # Change ssh command for session mocking
         ssh.SSH_COMMAND = "ssh-session-mock"
