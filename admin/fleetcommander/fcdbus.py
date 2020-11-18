@@ -282,14 +282,12 @@ class FleetCommanderDbusService(dbus.service.Object):
             return False, "There was no session started"
 
         domain_uuid = self.db.config["uuid"]
-        tunnel_cookie = self.db.config.get("tunnel_cookie", None)
 
         del self.db.config["uuid"]
-        del self.db.config["tunnel_cookie"]
         del self.db.config["connection_details"]
 
         try:
-            self.get_libvirt_controller().session_stop(domain_uuid, tunnel_cookie)
+            self.get_libvirt_controller().session_stop(domain_uuid)
         except Exception as e:
             logging.error("Error stopping session: %s", e)
             return False, "Error stopping session: %s" % e
@@ -634,7 +632,6 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         self.db.config["uuid"] = session_params.domain
         self.db.config["connection_details"] = session_params.details
-        self.db.config["tunnel_cookie"] = session_params.tunnel_cookie
 
         return json.dumps(
             {"status": True, "connection_details": session_params.details}
