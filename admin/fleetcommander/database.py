@@ -210,7 +210,7 @@ class BaseDBManager:
         """
         Class initialization
         """
-        self.conn = sqlite3.connect(database)
+        self.conn = sqlite3.connect(database, uri=True)
         self.cursor = self.conn.cursor()
 
     def create_table(self, name, **structure):
