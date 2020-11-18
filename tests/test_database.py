@@ -31,6 +31,7 @@ PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
 sys.path.append(PYTHONPATH)
 
 from fleetcommander.database import DBManager
+from fleetcommander.database import SCHEMA_VERSION
 
 
 class UnsupportedType:
@@ -57,18 +58,25 @@ class TestDBManager(unittest.TestCase):
 
     def setUp(self):
         # Initialize memory database
-        self.db = DBManager(":memory:")
+        self.db = DBManager("file:mem_initial?mode=memory&cache=shared")
         # Add values to config
         for k, v in self.INITIAL_VALUES.items():
             self.db.config[k] = v
 
-    def test_01_config_dictionary_setitem(self):
+    def test_01_config_dictionary_iteration(self):
+        """Assumes config contains only INITIAL_VALUES."""
+        items = list(self.db.config.items())
+        self.assertEqual(len(items), 7)
+        for item in items:
+            self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])
+
+    def test_02_config_dictionary_setitem(self):
         # Add unsupported type to config
         self.assertRaises(
             ValueError, self.db.config.__setitem__, "unsupported", UnsupportedType()
         )
 
-    def test_02_config_dictionary_getitem(self):
+    def test_03_config_dictionary_getitem(self):
         # Get inexistent value
         self.assertRaises(KeyError, self.db.config.__getitem__, "unknownkey")
         # Get existent values
@@ -80,18 +88,18 @@ class TestDBManager(unittest.TestCase):
             self.db.config.get("unknownkey", "defaultvalue"), "defaultvalue"
         )
 
-    def test_03_config_dictionary_itemmembership(self):
+    def test_04_config_dictionary_itemmembership(self):
         # Set data in config
         self.assertTrue("testkeystr" in self.db.config)
         self.assertFalse("unknownkey" in self.db.config)
 
-    def test_04_config_dictionary_deleteitem(self):
+    def test_05_config_dictionary_deleteitem(self):
         # Delete values from config
         self.assertTrue("testkeystr" in self.db.config)
         del self.db.config["testkeystr"]
         self.assertFalse("testkeystr" in self.db.config)
 
-    def test_05_config_dictionary_setdefault(self):
+    def test_06_config_dictionary_setdefault(self):
         value = self.db.config.setdefault("testkeystr", "anotherstrvalue")
         self.assertEqual(self.db.config["testkeystr"], "strvalue")
         self.assertEqual(value, "strvalue")
@@ -99,11 +107,22 @@ class TestDBManager(unittest.TestCase):
         self.assertEqual(self.db.config["anothertestkeystr"], "anotherstrvalue")
         self.assertEqual(value, "anotherstrvalue")
 
-    def test_06_config_dictionary_iteration(self):
-        items = list(self.db.config.items())
-        self.assertEqual(len(items), 7)
-        for item in items:
-            self.assertEqual(item[1], self.INITIAL_VALUES[item[0]])
+    def test_07_update_schema(self):
+        """Test an upgrade of sqlite db schema."""
+        tables = ["config", "profiles"]
+        upgrade_db = "file:mem_upgrade?mode=memory&cache=shared"
+        old_db = DBManager(upgrade_db)
+        old_schema_version = 1
+        self.assertLess(old_schema_version, SCHEMA_VERSION)
+
+        # downgrade SCHEMA_VERSION
+        for table in tables:
+            getattr(old_db, table)["SCHEMA_VERSION"] = old_schema_version
+
+        # reinitialize DBManager to trigger schema upgrade
+        new_db = DBManager(upgrade_db)
+        for table in tables:
+            self.assertEqual(getattr(new_db, table)["SCHEMA_VERSION"], SCHEMA_VERSION)
 
 
 if __name__ == "__main__":
