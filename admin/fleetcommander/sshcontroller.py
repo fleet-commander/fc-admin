@@ -247,18 +247,11 @@ class SSHController:
         # Execute SSH and bring up tunnel
         try:
             subprocess.run(ssh_command_start, check=True)
-            return self.CONTROL_SOCKET
         except Exception as e:
             raise SSHControllerException("Error opening tunnel: %s" % e)
 
     def close_tunnel(
-        self,
-        control_socket,
-        private_key_file,
-        username,
-        hostname,
-        port=DEFAULT_SSH_PORT,
-        **kwargs
+        self, private_key_file, username, hostname, port=DEFAULT_SSH_PORT, **kwargs
     ):
         """
         Close SSH tunnel via the given SSH control socket
@@ -281,7 +274,7 @@ class SSHController:
             "-p",
             six.text_type(port),
             "-S",
-            control_socket,
+            self.CONTROL_SOCKET,
             "-O",
             "exit",
         ]

@@ -107,7 +107,6 @@ class LibVirtController:
             [
                 "domain",
                 "details",
-                "tunnel_cookie",
             ],
         )
 
@@ -334,7 +333,7 @@ class LibVirtController:
         )
         return ET.tostring(root).decode()
 
-    def _close_ssh_tunnel(self, tunnel_cookie):
+    def _close_ssh_tunnel(self):
         """
         Close SSH tunnel
         """
@@ -343,7 +342,6 @@ class LibVirtController:
         # Execute SSH and close tunnel
         try:
             self.ssh.close_tunnel(
-                tunnel_cookie,
                 self.private_key_file,
                 self.username,
                 self.ssh_host,
@@ -363,7 +361,7 @@ class LibVirtController:
 
         # Execute SSH and bring up tunnel
         try:
-            tunnel_cookie = self.ssh.open_tunnel(
+            self.ssh.open_tunnel(
                 local_forward,
                 self.private_key_file,
                 self.username,
@@ -372,11 +370,9 @@ class LibVirtController:
                 **kwargs,
             )
             logging.debug(
-                "libvirtcontroller: Tunnel opened:%s. SSH control socket: %s",
+                "libvirtcontroller: Tunnel opened:%s",
                 local_forward,
-                tunnel_cookie,
             )
-            return tunnel_cookie
         except Exception as e:
             raise LibVirtControllerException("Error opening tunnel: %s" % e)
 
@@ -437,17 +433,16 @@ class LibVirtController:
         """
         raise NotImplementedError
 
-    def session_stop(self, identifier, tunnel_cookie=None):
+    def session_stop(self, identifier):
         """
         Stops session in virtual machine
         """
         logging.debug("libvirtcontroller: Stopping session")
-        if tunnel_cookie is not None:
-            # Kill ssh tunnel
-            try:
-                self._close_ssh_tunnel(tunnel_cookie)
-            except Exception:
-                pass
+        # Kill ssh tunnel
+        try:
+            self._close_ssh_tunnel()
+        except Exception:
+            pass
         self._connect()
         # Get machine by its uuid
         self._last_stopped_domain = self.conn.lookupByUUIDString(identifier)
@@ -568,9 +563,7 @@ class LibVirtTlsSpice(LibVirtController):
             remote_socket=remote_socket,
         )
 
-        tunnel_cookie = self._open_ssh_tunnel(
-            local_forward, StreamLocalBindUnlink="yes"
-        )
+        self._open_ssh_tunnel(local_forward, StreamLocalBindUnlink="yes")
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
@@ -587,7 +580,6 @@ class LibVirtTlsSpice(LibVirtController):
         return self.session_params(
             domain=self._last_started_domain.UUIDString(),
             details=details,
-            tunnel_cookie=tunnel_cookie,
         )
 
     def _get_spice_ca_cert(self):
@@ -698,9 +690,7 @@ class LibVirtTunnelSpice(LibVirtController):
             host=spice_params.listen,
             hostport=spice_params.port,
         )
-        tunnel_cookie = self._open_ssh_tunnel(
-            local_forward, StreamLocalBindUnlink="yes"
-        )
+        self._open_ssh_tunnel(local_forward, StreamLocalBindUnlink="yes")
 
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
@@ -714,7 +704,6 @@ class LibVirtTunnelSpice(LibVirtController):
         return self.session_params(
             domain=self._last_started_domain.UUIDString(),
             details=details,
-            tunnel_cookie=tunnel_cookie,
         )
 
 
