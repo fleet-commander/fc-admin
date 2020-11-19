@@ -58,6 +58,11 @@ DBUS_BUS_NAME = "org.freedesktop.FleetCommanderLogger"
 DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderLogger"
 DBUS_INTERFACE_NAME = "org.freedesktop.FleetCommanderLogger"
 
+FC_LOGGER_PROTO_VERSION = 2
+FC_LOGGER_PROTO_HEADER = f":FC_PR:{FC_LOGGER_PROTO_VERSION}:"
+FC_LOGGER_PROTO_SUFFIX = ":FC_MSG_END_DATA:"
+FC_LOGGER_PROTO_CHUNK_SIZE = 2048
+
 
 class RemoteConnectionWorkaround:
     def __init__(self, proxy):
@@ -99,10 +104,9 @@ class SpicePortManager:
 
         self.queue = []
         self.timeout = 0
-        self.proto_version = 2
-        self.header = ":FC_PR:{version}:".format(version=self.proto_version)
-        self.suffix = ":FC_MSG_END_DATA:"
-        self.chunk = 2048
+        self.header = FC_LOGGER_PROTO_HEADER
+        self.suffix = FC_LOGGER_PROTO_SUFFIX
+        self.chunk = FC_LOGGER_PROTO_CHUNK_SIZE
 
         try:
             self.fd = open(self.path, "wb", 0)
