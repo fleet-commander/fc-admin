@@ -25,6 +25,8 @@ import sys
 import pickle
 import xml.etree.ElementTree as ET
 
+import libvirt
+
 PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
 sys.path.append(PYTHONPATH)
 
@@ -52,17 +54,28 @@ XML_ORIG = _xmltree_to_string(
     os.path.join(os.environ["TOPSRCDIR"], "tests/data/libvirt_domain-orig.xml")
 )
 
-XML_MODIF = _xmltree_to_string(
-    os.path.join(os.environ["TOPSRCDIR"], "tests/data/libvirt_domain-modified.xml")
+XML_MODIF_HTML5 = _xmltree_to_string(
+    os.path.join(
+        os.environ["TOPSRCDIR"],
+        "tests/data/libvirt_domain-modified-html5.xml",
+    )
+)
+
+XML_MODIF_DIRECT = _xmltree_to_string(
+    os.path.join(
+        os.environ["TOPSRCDIR"],
+        "tests/data/libvirt_domain-modified-direct.xml",
+    )
 )
 
 XML_NO_SPICE = _xmltree_to_string(
     os.path.join(os.environ["TOPSRCDIR"], "tests/data/libvirt_domain-nospice.xml")
 )
 
-TEST_UUID_SPICE = "e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81"
+TEST_UUID_ORIGIN = "e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81"
 TEST_UUID_NO_SPICE = "0999a0ee-a4c4-11e5-b3a5-68f728db19d3"
-TEST_UUID_TEMPORARY = "52e32d2a-722d-45d9-b66c-fefb33235a98"
+TEST_UUID_TEMPORARY_SPICE_HTML5 = "11111111-722d-45d9-b66c-fefb33235a98"
+TEST_UUID_TEMPORARY_SPICE_DIRECT = "22222222-722d-45d9-b66c-fefb33235a98"
 
 
 class State(SQLiteDict):
@@ -78,6 +91,7 @@ class LibvirtModuleMocker:
     db_path = ":memory:"
 
     VIR_DOMAIN_METADATA_TITLE = 1
+    VIR_DOMAIN_XML_SECURE = 1
 
     @classmethod
     def open(cls, connection_uri):
@@ -87,7 +101,7 @@ class LibvirtModuleMocker:
         return conn
 
 
-class LibvirtConnectionMocker:
+class LibvirtConnectionMocker(libvirt.virConnect):
     """
     Class for mocking libvirt connection
     """
@@ -101,10 +115,18 @@ class LibvirtConnectionMocker:
                     LibvirtDomainMocker(XML_ORIG),
                     LibvirtDomainMocker(XML_NO_SPICE),
                     LibvirtDomainMocker(
-                        XML_MODIF
+                        XML_MODIF_HTML5
                         % {
-                            "name-uuid": TEST_UUID_TEMPORARY[:8],
-                            "uuid": TEST_UUID_TEMPORARY,
+                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_HTML5[:8],
+                            "uuid": TEST_UUID_TEMPORARY_SPICE_HTML5,
+                        }
+                    ),
+                    LibvirtDomainMocker(
+                        XML_MODIF_DIRECT
+                        % {
+                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT[:8],
+                            "uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT,
+                            "runtimedir": "/run/user/1001",
                         }
                     ),
                 ]
@@ -114,21 +136,27 @@ class LibvirtConnectionMocker:
     def domains(self):
         return pickle.loads(self.state["domains"])
 
-    def listAllDomains(self):
+    def listAllDomains(self, flags=0):
         return self.domains
 
-    def createXML(self, xmldata):
-        newdomain = LibvirtDomainMocker(xmldata)
+    def createXML(self, xmlDesc, flags=0):
+        newdomain = LibvirtDomainMocker(xmlDesc)
         domains = self.domains
         domains.append(newdomain)
         self.state["domains"] = pickle.dumps(domains)
         return newdomain
 
-    def lookupByUUIDString(self, identifier):
+    def lookupByUUIDString(self, uuidstr):
         for domain in self.domains:
-            if domain.UUIDString() == identifier:
+            if domain.UUIDString() == uuidstr:
                 return domain
         return None
+
+    def getHostname(self):
+        return "localhost"
+
+    def __del__(self):
+        pass
 
 
 class LibvirtDomainMocker:
@@ -137,23 +165,44 @@ class LibvirtDomainMocker:
     """
 
     def __init__(self, xmldata):
+        """Autopatching xml, as like it does libvirt."""
         root = ET.fromstring(xmldata)
+        # from docs:
+        # the address attribute is duplicated as listen attribute in graphics
+        # element for backward compatibility. If both are provided they must be
+        # equal.
         devs = root.find("devices")
-        for elem in devs.findall("graphics"):
-            devs.remove(elem)
-        graphics = ET.SubElement(devs, "graphics")
-        graphics.set("type", "spice")
-        graphics.set("port", "5900")
-        graphics.set("autoport", "yes")
-        graphics.set("listen", "127.0.0.1")
-        listen = ET.SubElement(graphics, "listen")
-        listen.set("type", "address")
-        listen.set("address", "127.0.0.1")
+        graphics = devs.find("graphics")
+        listen = graphics.find("listen")
+        address = listen.get("address")
+        graphics.set("listen", address)
+
+        if graphics.get("autoport") == "yes":
+            default_mode = graphics.get("defaultMode")
+            if default_mode == "insecure":
+                graphics.set("port", "5900")
+            elif default_mode == "secure":
+                graphics.set("tlsPort", "5900")
+            else:
+                graphics.set("port", "5900")
+                graphics.set("tlsPort", "5901")
+
+        # state attribute that reflects whether a process in the guest is active on the
+        # channel
+        channels = devs.findall("channel")
+        for channel in channels:
+            channel_type = channel.get("type")
+            if channel_type in ("spiceport", "unix"):
+                target = channel.find("target")
+                if target.get("name") == "org.freedesktop.FleetCommander.0":
+                    target.set("state", "disconnected")
+
         self.domain_name = root.find("name").text
         self.domain_title = root.find("title").text
         self.domain_uuid = root.find("uuid").text
         self.active = True
         self.transient = False
+
         _xmltree_sort(root)
         self.xmldata = ET.tostring(root).decode()
 
@@ -163,7 +212,7 @@ class LibvirtDomainMocker:
     def name(self):
         return self.domain_name
 
-    def XMLDesc(self):
+    def XMLDesc(self, flags=0):
         return self.xmldata
 
     def isActive(self):

@@ -150,5 +150,5 @@
       <alias name="balloon0" />
       <address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci" />
     </memballoon>
-  <channel type="spiceport"><source channel="org.freedesktop.FleetCommander.0" /><target name="org.freedesktop.FleetCommander.0" state="connected" type="virtio" /><alias name="fc0" /></channel><graphics autoport="yes" listen="127.0.0.1" port="5900" type="spice"><listen address="127.0.0.1" type="address" /></graphics></devices>
+  <graphics autoport="yes" defaultMode="insecure" listen="localhost" passwd="Secret123" port="5900" type="spice"><listen address="localhost" type="address" /></graphics><channel type="spiceport"><source channel="org.freedesktop.FleetCommander.0" /><target name="org.freedesktop.FleetCommander.0" state="disconnected" type="virtio" /><alias name="fc0" /></channel></devices>
 <ns1:commandline><ns1:arg value="-snapshot" /></ns1:commandline><ns1:capabilities><ns1:del capability="blockdev" /></ns1:capabilities></domain>

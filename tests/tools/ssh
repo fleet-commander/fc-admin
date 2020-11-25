@@ -1,15 +1,41 @@
 #!/bin/bash
-echo $@ > $FC_TEST_DIRECTORY/ssh-parms
+
+echo "$@" > $FC_TEST_DIRECTORY/ssh-parms
 sync
-echo $@ | grep "libvirtd" | grep "echo" > /dev/null
-if [ $? = 0 ]; then
-    echo "/run/user/1000/libvirt/libvirt-sock"
-fi
-echo $@ | grep "qemu-kvm" > /dev/null
-if [ $? = 0 ]; then
-    if [ $FC_TEST_USE_QXL = "1" ]; then
-        echo "qxl"
-    else
-        echo "virtio"
-    fi
-fi
+
+function out {
+    echo $1
+    exit 0
+}
+
+case "$@" in
+    *' -N -f' | *' -O exit' )
+	# open/close ssh tunnel
+	exit 0
+	;;
+    *'libvirtd '*'echo'* )
+        out "/run/user/1000/libvirt/libvirt-sock"
+	;;
+    *'qemu-kvm'* )
+        if [ $FC_TEST_USE_QXL = "1" ]; then
+            out "qxl"
+        else
+            out "virtio"
+        fi
+	;;
+    *'echo "$XDG_RUNTIME_DIR"' )
+	# _get_user_runtime_dir
+        out "/run/user/1001"
+	;;
+    *'openssl x509 -in '* )
+	# _get_spice_ca_cert
+        out "FAKE_CA_CERT"
+	;;
+    *'openssl x509 -noout -subject'* )
+	# _get_spice_cert_subject
+        out "CN=localhost"
+	;;
+    *) ;;
+esac
+
+exit 0
