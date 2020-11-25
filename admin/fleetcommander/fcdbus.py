@@ -75,6 +75,13 @@ class FleetCommanderDbusService(dbus.service.Object):
 
     REALMD_BUS = Gio.BusType.SYSTEM
 
+    DEFAULT_HYPERVISOR_CONF = {
+        "host": "",
+        "username": "",
+        "mode": "system",
+        "viewer": "spice_html5",
+    }
+
     def __init__(self, args):
         """
         Class initialization
@@ -246,12 +253,9 @@ class FleetCommanderDbusService(dbus.service.Object):
             "pubkey": public_key,
         }
         if "hypervisor" not in self.db.config:
+            data.update(self.DEFAULT_HYPERVISOR_CONF)
             data.update(
                 {
-                    "host": "",
-                    "username": "",
-                    "mode": "system",
-                    "viewer": "spice_html5",
                     "needcfg": True,
                 }
             )
@@ -392,8 +396,20 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="s")
     def CheckHypervisorConfig(self, jsondata):
         logging.debug("Checking hypervisor configuration")
-        data = json.loads(jsondata)
         errors = {}
+        try:
+            data = json.loads(jsondata)
+        except json.JSONDecodeError:
+            errors["json"] = "Invalid JSON data"
+            return json.dumps({"status": False, "errors": errors})
+
+        if not isinstance(data, dict):
+            errors["data"] = "Invalid configuration data"
+            return json.dumps({"status": False, "errors": errors})
+
+        if set(data) != set(self.DEFAULT_HYPERVISOR_CONF):
+            errors["schema"] = "Invalid configuration schema"
+            return json.dumps({"status": False, "errors": errors})
 
         # Check username
         if not re.match(SYSTEM_USER_REGEX, data["username"]):
