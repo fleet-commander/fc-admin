@@ -38,8 +38,8 @@ from samba.ndr import ndr_pack
 from samba.dcerpc import security
 
 # Mocking imports
-import ldapmock
-import smbmock
+from tests import ldapmock
+from tests import smbmock
 
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 

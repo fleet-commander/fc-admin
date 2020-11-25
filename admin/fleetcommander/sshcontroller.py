@@ -170,27 +170,29 @@ class SSHController:
         """
         Executes a program remotely
         """
-        ssh_command_start = [
-            self.SSH_COMMAND,
-        ]
-        ssh_command_end = [
-            "%s@%s" % (username, hostname),
-            "-p",
-            six.text_type(port),
-            command,
-        ]
-
-        ssh_command_start.extend(["-i", private_key_file])
-        ssh_command_start.extend(["-o", "PreferredAuthentications=publickey"])
-        ssh_command_start.extend(["-o", "PasswordAuthentication=no"])
-
+        ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
-        ssh_command_start.extend(ssh_command_end)
+            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+
+        ssh_command.extend(
+            [
+                "-i",
+                private_key_file,
+                "-o",
+                "PreferredAuthentications=publickey",
+                "-o",
+                "PasswordAuthentication=no",
+                "{user}@{host}".format(user=username, host=hostname),
+                "-p",
+                six.text_type(port),
+                command,
+            ]
+        )
+
         # Execute command
         prog = subprocess.Popen(
-            ssh_command_start, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         out, error = prog.communicate()
         if prog.returncode == 0:
@@ -213,40 +215,38 @@ class SSHController:
         if os.path.exists(self.CONTROL_SOCKET):
             os.remove(self.CONTROL_SOCKET)
 
-        ssh_command_start = [
-            self.SSH_COMMAND,
-            "-i",
-            private_key_file,
-            "-o",
-            "PreferredAuthentications=publickey",
-            "-o",
-            "PasswordAuthentication=no",
-            "-o",
-            "ExitOnForwardFailure=yes",
-            "-o",
-            "ControlMaster=yes",
-            "-S",
-            self.CONTROL_SOCKET,
-        ]
+        ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
 
-        ssh_command_end = [
-            "{user}@{host}".format(user=username, host=hostname),
-            "-p",
-            six.text_type(port),
-            "-L",
-            local_forward,
-            "-N",
-            "-f",
-        ]
-
-        ssh_command_start.extend(ssh_command_end)
+        ssh_command.extend(
+            [
+                "-i",
+                private_key_file,
+                "-o",
+                "PreferredAuthentications=publickey",
+                "-o",
+                "PasswordAuthentication=no",
+                "-o",
+                "ExitOnForwardFailure=yes",
+                "-o",
+                "ControlMaster=yes",
+                "-S",
+                self.CONTROL_SOCKET,
+                "{user}@{host}".format(user=username, host=hostname),
+                "-p",
+                six.text_type(port),
+                "-L",
+                local_forward,
+                "-N",
+                "-f",
+            ]
+        )
 
         # Execute SSH and bring up tunnel
         try:
-            subprocess.run(ssh_command_start, check=True)
+            subprocess.run(ssh_command, check=True)
         except Exception as e:
             raise SSHControllerException("Error opening tunnel: %s" % e)
 
@@ -256,32 +256,31 @@ class SSHController:
         """
         Close SSH tunnel via the given SSH control socket
         """
-        ssh_command_start = [
-            self.SSH_COMMAND,
-            "-i",
-            private_key_file,
-            "-o",
-            "PreferredAuthentications=publickey",
-            "-o",
-            "PasswordAuthentication=no",
-        ]
+        ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command_start.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
 
-        ssh_command_end = [
-            "{user}@{host}".format(user=username, host=hostname),
-            "-p",
-            six.text_type(port),
-            "-S",
-            self.CONTROL_SOCKET,
-            "-O",
-            "exit",
-        ]
+        ssh_command.extend(
+            [
+                "-i",
+                private_key_file,
+                "-o",
+                "PreferredAuthentications=publickey",
+                "-o",
+                "PasswordAuthentication=no",
+                "{user}@{host}".format(user=username, host=hostname),
+                "-p",
+                six.text_type(port),
+                "-S",
+                self.CONTROL_SOCKET,
+                "-O",
+                "exit",
+            ]
+        )
 
-        ssh_command_start.extend(ssh_command_end)
         try:
-            subprocess.run(ssh_command_start, check=True)
+            subprocess.run(ssh_command, check=True)
         except Exception as e:
             raise SSHControllerException("Error closing tunnel: %s" % e)
 

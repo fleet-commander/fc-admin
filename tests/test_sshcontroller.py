@@ -30,6 +30,11 @@ import unittest
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import sshcontroller
+from tests import (
+    SSH_TUNNEL_OPEN_PARMS,
+    SSH_TUNNEL_CLOSE_PARMS,
+    SSH_REMOTE_COMMAND_PARMS,
+)
 
 
 class TestSSHController(unittest.TestCase):
@@ -38,58 +43,6 @@ class TestSSHController(unittest.TestCase):
     SSH_KEYSCAN_PARMS = "-p %s %s\n"
     SSH_KEYSCAN_OUTPUT = "%s ssh-rsa KEY\n"
     SSH_KEYGEN_FINGERPRINT_OUTPUT = "2048 SHA256:HASH localhost (RSA)\n"
-    SSH_REMOTE_COMMAND_PARMS = " ".join(
-        [
-            "-i %(private_key_file)s",
-            "-o PreferredAuthentications=publickey",
-            "-o PasswordAuthentication=no",
-            "-o UserKnownHostsFile=%(known_hosts_file)s",
-            "%(username)s@%(hostname)s -p %(port)s %(command)s\n",
-        ]
-    )
-    SSH_TUNNEL_OPEN_PARMS = " ".join(
-        [
-            "-i",
-            "%(private_key_file)s",
-            "-o",
-            "PreferredAuthentications=publickey",
-            "-o",
-            "PasswordAuthentication=no",
-            "-o",
-            "ExitOnForwardFailure=yes",
-            "-o",
-            "ControlMaster=yes",
-            "-S",
-            "%(user_home)s/.ssh/fc-control-ssh-tunnel.socket",
-            "-o",
-            "UserKnownHostsFile=%(known_hosts_file)s",
-            "%(username)s@%(hostname)s",
-            "-p",
-            "%(port)s",
-            "-L %(local_port)s:%(tunnel_host)s:%(tunnel_port)s",
-            "-N",
-            "-f",
-        ]
-    )
-    SSH_TUNNEL_CLOSE_PARMS = " ".join(
-        [
-            "-i",
-            "%(private_key_file)s",
-            "-o",
-            "PreferredAuthentications=publickey",
-            "-o",
-            "PasswordAuthentication=no",
-            "-o",
-            "UserKnownHostsFile=%(known_hosts_file)s",
-            "%(username)s@%(hostname)s",
-            "-p",
-            "%(port)s",
-            "-S",
-            "%(user_home)s/.ssh/fc-control-ssh-tunnel.socket",
-            "-O",
-            "exit",
-        ]
-    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -226,21 +179,24 @@ class TestSSHController(unittest.TestCase):
         )
 
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file, "r") as fd:
-            parms = fd.read()
-            fd.close()
+        with open(self.ssh_parms_file) as fd:
+            parms = fd.read().strip()
 
         self.assertEqual(
             parms,
-            self.SSH_REMOTE_COMMAND_PARMS
-            % {
-                "command": command,
-                "username": username,
-                "hostname": hostname,
-                "port": port,
-                "private_key_file": self.private_key_file,
-                "known_hosts_file": self.known_hosts_file,
-            },
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=command,
+                username=username,
+                hostname=hostname,
+                port=port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
         )
 
     def test_07_open_tunnel(self):
@@ -274,18 +230,21 @@ class TestSSHController(unittest.TestCase):
 
         self.assertEqual(
             parms,
-            self.SSH_TUNNEL_OPEN_PARMS
-            % {
-                "local_port": local_port,
-                "tunnel_host": tunnel_host,
-                "tunnel_port": tunnel_port,
-                "username": username,
-                "user_home": os.path.expanduser("~"),
-                "hostname": hostname,
-                "port": port,
-                "private_key_file": self.private_key_file,
-                "known_hosts_file": self.known_hosts_file,
-            },
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=f"{local_port}:{tunnel_host}:{tunnel_port}",
+                username=username,
+                user_home=os.path.expanduser("~"),
+                hostname=hostname,
+                port=port,
+                private_key_file=self.private_key_file,
+                known_hosts_file=self.known_hosts_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
         )
 
     def test_08_close_tunnel(self):
@@ -294,7 +253,6 @@ class TestSSHController(unittest.TestCase):
         hostname = "localhost"
         port = "2022"
 
-        # Open tunnel without specifying a local host
         ssh.close_tunnel(
             private_key_file=self.private_key_file,
             username=username,
@@ -305,20 +263,24 @@ class TestSSHController(unittest.TestCase):
         )
 
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file, "r") as fd:
+        with open(self.ssh_parms_file) as fd:
             parms = fd.read().strip()
 
         self.assertEqual(
             parms,
-            self.SSH_TUNNEL_CLOSE_PARMS
-            % {
-                "username": username,
-                "user_home": os.path.expanduser("~"),
-                "hostname": hostname,
-                "port": port,
-                "private_key_file": self.private_key_file,
-                "known_hosts_file": self.known_hosts_file,
-            },
+            SSH_TUNNEL_CLOSE_PARMS.format(
+                username=username,
+                user_home=os.path.expanduser("~"),
+                hostname=hostname,
+                port=port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
         )
 
     def test_09_install_pubkey(self):

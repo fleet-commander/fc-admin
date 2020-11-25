@@ -28,7 +28,7 @@ import shutil
 import unittest
 import logging
 
-import libvirtmock
+from tests import libvirtmock
 
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
