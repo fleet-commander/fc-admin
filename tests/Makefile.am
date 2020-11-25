@@ -6,7 +6,7 @@ TESTS_ENVIRONMENT = \
 	export FC_TESTING=true; \
 	export XDG_DATA_DIRS=$(abs_top_srcdir)/tests/data/; \
 	export PYTHON=@PYTHON@; \
-	export PYTHONPATH=$(abs_top_srcdir)/admin; \
+	export PYTHONPATH=$(abs_top_srcdir):$(abs_top_srcdir)/admin; \
 	$(NULL)
 
 TESTS = \
@@ -26,6 +26,7 @@ TESTS = \
 
 EXTRA_DIST =                         \
 	$(TESTS)                         \
+	__init__.py                      \
 	python-wrapper.sh                \
 	freeipamock.py                   \
 	libvirtmock.py                   \

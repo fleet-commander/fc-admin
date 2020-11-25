@@ -25,7 +25,7 @@ import os
 import sys
 import unittest
 import json
-import freeipamock
+from tests import freeipamock
 
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 

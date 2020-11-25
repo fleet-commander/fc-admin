@@ -32,7 +32,7 @@ from fleetcommander import sshcontroller
 from fleetcommander import fcdbus
 
 # Mock directory system
-import directorymock
+from tests import directorymock
 
 fcdbus.fcfreeipa.FreeIPAConnector = directorymock.DirectoryConnector
 fcdbus.fcad.ADConnector = directorymock.DirectoryConnector
