@@ -171,7 +171,7 @@ class TestDbusService(unittest.TestCase):
                 "host": "myhost",
                 "username": "valid_user",
                 "mode": "session",
-                "keys": "myhost ssh-rsa KEY",
+                "viewer": "spice_html5",
             }
         )
 
@@ -204,6 +204,7 @@ class TestDbusService(unittest.TestCase):
                 "host": "",
                 "username": "",
                 "mode": "system",
+                "viewer": "spice_html5",
                 "needcfg": True,
             },
         )
@@ -214,7 +215,20 @@ class TestDbusService(unittest.TestCase):
             "host": "localhost",
             "username": "valid_user",
             "mode": "session",
+            "viewer": "spice_html5",
         }
+
+        # Set broken JSON data
+        resp = self.c.check_hypervisor_config("brokendata")
+        self.assertFalse(resp["status"])
+        self.assertEqual(resp["errors"], {"data": "Invalid configuration data"})
+
+        # Set invalid configuration schema
+        idata = data.copy()
+        del idata["host"]
+        resp = self.c.check_hypervisor_config(idata)
+        self.assertFalse(resp["status"])
+        self.assertEqual(resp["errors"], {"schema": "Invalid configuration schema"})
 
         # Set invalid host data
         idata = data.copy()
@@ -236,6 +250,13 @@ class TestDbusService(unittest.TestCase):
         resp = self.c.check_hypervisor_config(idata)
         self.assertFalse(resp["status"])
         self.assertEqual(resp["errors"], {"mode": "Invalid session type"})
+
+        # Set invalid viewer
+        idata = data.copy()
+        idata["viewer"] = "invalidviewer"
+        resp = self.c.check_hypervisor_config(idata)
+        self.assertFalse(resp["status"])
+        self.assertEqual(resp["errors"], {"viewer": "Unsupported libvirt viewer type"})
 
     def test_05_set_hypervisor_config(self):
         logging.debug("TEST 05")
@@ -349,7 +370,14 @@ class TestDbusService(unittest.TestCase):
         # Start session
         resp = self.c.session_start(self.TEMPLATE_UUID)
         self.assertTrue(resp["status"])
-        self.assertEqual(resp["port"], 0)
+        self.assertDictEqual(
+            resp["connection_details"],
+            {
+                "host": "localhost",
+                "viewer": "spice_html5",
+                "ticket": "spice_ticket",
+            },
+        )
         # Try to start another session
         resp = self.c.session_start(self.TEMPLATE_UUID)
         self.assertFalse(resp["status"])

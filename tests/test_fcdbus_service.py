@@ -21,6 +21,9 @@
 
 # Python imports
 from __future__ import absolute_import
+
+from collections import namedtuple
+
 import os
 import sys
 import logging
@@ -28,6 +31,7 @@ import logging
 from gi.repository import Gio
 
 # Fleet commander imports
+from fleetcommander import libvirtcontroller
 from fleetcommander import sshcontroller
 from fleetcommander import fcdbus
 
@@ -47,8 +51,15 @@ log = logging.getLogger()
 level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
+# Mock libvirt controller
+def controller(viewer_type, data_path, username, hostname, mode):
+    return MockLibVirtController(data_path, username, hostname, mode)
 
-class MockLibVirtController:
+
+fcdbus.libvirtcontroller.controller = controller
+
+
+class MockLibVirtController(libvirtcontroller.LibVirtTunnelSpice):
 
     TEMPLATE_UUID = "e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81"
     SESSION_UUID = "fefb45d9-5a81-3392-b7bc-e2e37c2d"
@@ -72,12 +83,20 @@ class MockLibVirtController:
 
         with open(self.public_key_file, "w") as fd:
             fd.write("PUBLIC_KEY")
-            fd.close()
+
+        self.session_params = namedtuple(
+            "session_params",
+            [
+                "domain",
+                "details",
+            ],
+        )
 
     def list_domains(self):
         return self.DOMAINS_LIST
 
-    def session_start(self, uuid):
+    def session_start(self, identifier):
+        """Return abstract session cookie."""
         self.DOMAINS_LIST.append(
             {
                 "uuid": self.SESSION_UUID,
@@ -86,16 +105,21 @@ class MockLibVirtController:
                 "temporary": True,
             }
         )
-        return (self.SESSION_UUID, 0, "tunnel_pid")
+        details = {
+            "host": "localhost",
+            "viewer": "spice_html5",
+            "ticket": "spice_ticket",
+        }
 
-    def session_stop(self, uuid, tunnel_pid):
+        return self.session_params(
+            domain=self.SESSION_UUID,
+            details=details,
+        )
+
+    def session_stop(self, identifier):
         for d in self.DOMAINS_LIST:
-            if d["uuid"] == uuid:
+            if d["uuid"] == identifier:
                 self.DOMAINS_LIST.remove(d)
-
-
-# Mock libvirt controller
-fcdbus.libvirtcontroller.LibVirtController = MockLibVirtController
 
 
 class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
