@@ -21,6 +21,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
+from unittest.mock import patch
 import os
 import sys
 import tempfile
@@ -33,6 +34,12 @@ from tests import libvirtmock
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import libvirtcontroller
+from fleetcommander.libvirtcontroller import LibVirtControllerException
+from tests import (
+    SSH_TUNNEL_OPEN_PARMS,
+    SSH_TUNNEL_CLOSE_PARMS,
+    SSH_REMOTE_COMMAND_PARMS,
+)
 
 # Mocking assignments
 libvirtcontroller.libvirt = libvirtmock.LibvirtModuleMocker
@@ -43,17 +50,51 @@ level = logging.getLevelName("DEBUG")
 log.setLevel(level)
 
 
-class TestLibVirtControllerSystemMode(unittest.TestCase):
-
-    LIBVIRT_MODE = "system"
+class TestLibVirtControllerCommon(unittest.TestCase):
+    """Negative scenarios for common LibVirtController."""
 
     def setUp(self):
+        self.config = {
+            "viewer_type": "spice_html5",
+            "data_path": "/somepath",
+            "username": "testuser",
+            "hostname": "localhost",
+            "mode": "system",
+        }
+
+    def test_invalid_viewer(self):
+        badconfig = self.config.copy()
+        badconfig["viewer_type"] = "unknown_type"
+        with self.assertRaisesRegex(
+            LibVirtControllerException, r"^Unsupported libvirt viewer type\."
+        ):
+            libvirtcontroller.controller(**badconfig)
+
+    def test_invalid_mode(self):
+        badconfig = self.config.copy()
+        badconfig["mode"] = "unknown_mode"
+        with self.assertRaisesRegex(
+            LibVirtControllerException, r"^Invalid libvirt mode selected\."
+        ):
+            libvirtcontroller.controller(**badconfig)
+
+
+class TestLibVirtController:
+    """Base class for LibVirtController."""
+
+    maxDiff = None
+
+    LIBVIRT_MODE = None
+    VIEWER = None
+
+    def setUp(self):
+
         self.test_directory = tempfile.mkdtemp(
             prefix="fc-libvirt-test-%s-" % self.LIBVIRT_MODE
         )
-        self.maxDiff = None
 
         self.config = {
+            "viewer_type": self.VIEWER,
             "data_path": self.test_directory,
             "username": "testuser",
             "hostname": "localhost",
@@ -61,6 +102,7 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         }
 
         self.known_hosts_file = os.path.join(self.test_directory, "known_hosts")
+        self.private_key_file = os.path.join(self.test_directory, "id_rsa")
 
         # Prepare paths for command output files
         self.ssh_parms_file = os.path.join(self.test_directory, "ssh-parms")
@@ -76,67 +118,14 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         shutil.rmtree(self.test_directory)
 
     def get_controller(self, config):
-        ctrlr = libvirtcontroller.LibVirtController(**config)
+        ctrlr = libvirtcontroller.controller(**config)
         # Set controller delays to 0  for faster testing
         ctrlr.SESSION_START_TRIES_DELAY = 0
         ctrlr.DOMAIN_UNDEFINE_TRIES_DELAY = 0
         ctrlr.known_hosts_file = self.known_hosts_file
         return ctrlr
 
-    def test_00_initialization(self):
-        logging.debug("TEST 00 %s mode", self.LIBVIRT_MODE)
-
-        # Check data path creation
-        self.assertTrue(os.path.isdir(self.test_directory))
-
-        # Invalid mode selected
-        badconfig = self.config.copy()
-        badconfig["data_path"] = os.path.join(
-            self.test_directory, "invalidmode_data_path"
-        )
-        badconfig["mode"] = "invalidmode"
-        self.assertRaises(
-            libvirtcontroller.LibVirtControllerException,
-            libvirtcontroller.LibVirtController,
-            **badconfig
-        )
-        self.assertFalse(os.path.isdir(badconfig["data_path"]))
-
-    def test_01_check_socket(self):
-        logging.debug("TEST 01 %s mode", self.LIBVIRT_MODE)
-
-        ctrlr = self.get_controller(self.config)
-        ctrlr._get_libvirt_socket()
-
-        if ctrlr.mode == "system":
-            # No command is executed
-            self.assertFalse(os.path.exists(self.ssh_parms_file))
-            self.assertEqual(ctrlr._libvirt_socket, "")
-        else:
-            # Check SSH command
-            self.assertTrue(os.path.exists(self.ssh_parms_file))
-            with open(self.ssh_parms_file, "r") as fd:
-                command = fd.read()
-                fd.close()
-            self.assertEqual(
-                command,
-                "-i %(tmpdir)s/id_rsa "
-                "-o PreferredAuthentications=publickey "
-                "-o PasswordAuthentication=no "
-                "-o UserKnownHostsFile=%(tmpdir)s/known_hosts "
-                "testuser@localhost -p %(sshport)s "
-                "/usr/sbin/libvirtd -d > /dev/null 2>&1; "
-                "echo $XDG_RUNTIME_DIR/libvirt/libvirt-sock "
-                "&& [ -S $XDG_RUNTIME_DIR/libvirt/libvirt-sock ]"
-                "\n" % {"tmpdir": self.test_directory, "sshport": ctrlr.ssh_port},
-            )
-            self.assertEqual(
-                ctrlr._libvirt_socket, "/run/user/1000/libvirt/libvirt-sock"
-            )
-
-    def test_02_check_video_driver_virtio(self):
-        logging.debug("TEST 02 %s mode", self.LIBVIRT_MODE)
-
+    def test_video_driver_virtio(self):
         ctrlr = self.get_controller(self.config)
         ctrlr._get_libvirt_video_driver()
 
@@ -144,31 +133,28 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         # Check SSH command
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file, "r") as fd:
-            command = fd.read()
-            fd.close()
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
         self.assertEqual(
             command,
-            "-i %(tmpdir)s/id_rsa "
-            "-o PreferredAuthentications=publickey "
-            "-o PasswordAuthentication=no "
-            "-o UserKnownHostsFile=%(tmpdir)s/known_hosts "
-            "testuser@localhost -p %(sshport)s "
-            "if [ -x /usr/libexec/qemu-kvm ]; "
-            'then cmd="/usr/libexec/qemu-kvm"; '
-            'else cmd="/usr/bin/qemu-kvm"; fi ; '
-            "$cmd -device help 2>&1 "
-            '| grep "virtio-vga" > /dev/null; '
-            'if [ $? == 0 ]; then echo "virtio"; '
-            'else echo "qxl"; fi'
-            "\n" % {"tmpdir": self.test_directory, "sshport": ctrlr.ssh_port},
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._VIDEO_DRIVER_CMD,
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
         )
-
         self.assertEqual(ctrlr._libvirt_video_driver, "virtio")
 
-    def test_03_check_video_driver_qxl(self):
-        logging.debug("TEST 03 %s mode", self.LIBVIRT_MODE)
-
+    def test_video_driver_qxl(self):
         # Set environment variable to force QXL test
         os.environ["FC_TEST_USE_QXL"] = "1"
 
@@ -177,39 +163,82 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
 
         # Check SSH command
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file, "r") as fd:
-            command = fd.read()
-            fd.close()
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
         self.assertEqual(
             command,
-            "-i %(tmpdir)s/id_rsa "
-            "-o PreferredAuthentications=publickey "
-            "-o PasswordAuthentication=no "
-            "-o UserKnownHostsFile=%(tmpdir)s/known_hosts "
-            "testuser@localhost -p %(sshport)s "
-            "if [ -x /usr/libexec/qemu-kvm ]; "
-            'then cmd="/usr/libexec/qemu-kvm"; '
-            'else cmd="/usr/bin/qemu-kvm"; fi ; '
-            "$cmd -device help 2>&1 "
-            '| grep "virtio-vga" > /dev/null; '
-            'if [ $? == 0 ]; then echo "virtio"; '
-            'else echo "qxl"; fi'
-            "\n" % {"tmpdir": self.test_directory, "sshport": ctrlr.ssh_port},
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._VIDEO_DRIVER_CMD,
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
         )
-
         self.assertEqual(ctrlr._libvirt_video_driver, "qxl")
 
-    def test_04_list_domains(self):
-        logging.debug("TEST 04 %s mode", self.LIBVIRT_MODE)
+    def test_session_stop(self):
+        ctrlr = self.get_controller(self.config)
+        session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
 
+        ctrlr.session_stop(session_params.domain)
+
+        # Check domain has been stopped and has been set as transient
+        # pylint: disable=no-member
+        self.assertFalse(ctrlr._last_stopped_domain.active)
+        self.assertTrue(ctrlr._last_stopped_domain.transient)
+        # pylint: enable=no-member
+
+        # Test SSH tunnel close
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_CLOSE_PARMS.format(
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+
+class TestLibVirtControllerSystem(TestLibVirtController):
+    LIBVIRT_MODE = "system"
+
+    def test_libvirtd_socket(self):
+        ctrlr = self.get_controller(self.config)
+        ctrlr._get_libvirt_socket()
+
+        # No command is executed
+        self.assertFalse(os.path.exists(self.ssh_parms_file))
+        self.assertEqual(ctrlr._libvirt_socket, "")
+
+    def test_list_domains(self):
         ctrlr = self.get_controller(self.config)
 
         domains = ctrlr.list_domains()
-        self.assertEqual(
+        self.assertListEqual(
             domains,
             [
                 {
-                    "uuid": libvirtmock.TEST_UUID_SPICE,
+                    "uuid": libvirtmock.TEST_UUID_ORIGIN,
                     "name": "Fedora",
                     "active": True,
                     "temporary": False,
@@ -221,7 +250,13 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
                     "temporary": False,
                 },
                 {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY,
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
                     "name": "Fedora - Fleet Commander temporary session",
                     "active": True,
                     "temporary": True,
@@ -230,28 +265,117 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         )
 
         # Check remote machine environment preparation
-        if ctrlr.mode == "system":
-            # No command is executed
-            self.assertEqual(ctrlr._libvirt_socket, "")
-            self.assertEqual(ctrlr._libvirt_video_driver, "virtio")
-        else:
-            self.assertEqual(
-                ctrlr._libvirt_socket, "/run/user/1000/libvirt/libvirt-sock"
-            )
-            self.assertEqual(ctrlr._libvirt_video_driver, "virtio")
+        # No command is executed
+        self.assertEqual(ctrlr._libvirt_socket, "")
+        self.assertEqual(ctrlr._libvirt_video_driver, "virtio")
 
-    def test_05_start(self):
-        logging.debug("TEST 05 %s mode", self.LIBVIRT_MODE)
 
+class TestLibVirtControllerSession(TestLibVirtController):
+    LIBVIRT_MODE = "session"
+
+    def test_libvirtd_socket(self):
         ctrlr = self.get_controller(self.config)
-        _uuid, port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
+        ctrlr._get_libvirt_socket()
+
+        # Check SSH command
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._SESSION_SOCKET_CMD.format(
+                    socket=ctrlr.DEFAULT_LIBVIRTD_SOCKET,
+                ),
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+        self.assertEqual(ctrlr._libvirt_socket, "/run/user/1000/libvirt/libvirt-sock")
+
+    def test_list_domains(self):
+        ctrlr = self.get_controller(self.config)
+
+        domains = ctrlr.list_domains()
+        self.assertListEqual(
+            domains,
+            [
+                {
+                    "uuid": libvirtmock.TEST_UUID_ORIGIN,
+                    "name": "Fedora",
+                    "active": True,
+                    "temporary": False,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_NO_SPICE,
+                    "name": "Fedora unspiced",
+                    "active": True,
+                    "temporary": False,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+            ],
+        )
+
+        # Check remote machine environment preparation
+        self.assertEqual(ctrlr._libvirt_socket, "/run/user/1000/libvirt/libvirt-sock")
+        self.assertEqual(ctrlr._libvirt_video_driver, "virtio")
+
+
+class TestLibVirtControllerHTML5(TestLibVirtController):
+    VIEWER = "spice_html5"
+
+    def test_session_start(self):
+        ctrlr = self.get_controller(self.config)
+
+        runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(runtimedir, "fc-logger.socket")
+        ticket = "Secret123"
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "path": local_socket,
+                "viewer": self.VIEWER,
+                "ticket": ticket,
+            },
+        )
 
         # Test new domain XML generation
         new_domain = ctrlr._last_started_domain
 
         self.assertEqual(
             new_domain.XMLDesc(),
-            libvirtmock.XML_MODIF.strip()
+            libvirtmock.XML_MODIF_HTML5.strip()
             % {
                 "name-uuid": new_domain.UUIDString()[:8],
                 "uuid": new_domain.UUIDString(),
@@ -259,38 +383,213 @@ class TestLibVirtControllerSystemMode(unittest.TestCase):
         )
 
         # Test SSH tunnel opening
-        ctrlr.ssh._tunnel_prog.wait()
-        with open(self.ssh_parms_file, "r") as fd:
-            command = fd.read()
-            fd.close()
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
         self.assertEqual(
             command,
-            "-i %(tmpdir)s/id_rsa -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o UserKnownHostsFile=%(tmpdir)s/known_hosts testuser@localhost -p %(sshport)s -L 127.0.0.1:%(port)s:127.0.0.1:5900 -N\n"
-            % {
-                "tmpdir": self.test_directory,
-                "sshport": ctrlr.ssh_port,
-                "port": port,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=f"{local_socket}:localhost:5900",
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+
+class TestLibVirtControllerDirect(TestLibVirtController):
+    VIEWER = "spice_remote_viewer"
+
+    def test_session_start(self):
+        ctrlr = self.get_controller(self.config)
+
+        ticket = "Secret123"
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-logger.socket")
+        remote_runtimedir = "/run/user/1001"
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "viewer": self.VIEWER,
+                "notify_socket": local_socket,
+                "ca_cert": "FAKE_CA_CERT",
+                "cert_subject": "CN=localhost",
+                "tls_port": "5900",
+                "ticket": ticket,
             },
         )
 
-    def test_06_start_stop(self):
-        logging.debug("TEST 06 %s mode", self.LIBVIRT_MODE)
+        new_domain = ctrlr._last_started_domain
+        remote_socket = os.path.join(
+            remote_runtimedir,
+            "fc-{}.socket".format(new_domain.UUIDString()[:8]),
+        )
 
+        # Test new domain XML generation
+        self.assertEqual(
+            new_domain.XMLDesc(),
+            libvirtmock.XML_MODIF_DIRECT.strip()
+            % {
+                "name-uuid": new_domain.UUIDString()[:8],
+                "uuid": new_domain.UUIDString(),
+                "runtimedir": remote_runtimedir,
+            },
+        )
+
+        # Test SSH tunnel opening
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=(f"{local_socket}:{remote_socket}"),
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+    def test_ca_cert(self):
         ctrlr = self.get_controller(self.config)
-        uuid, _port, _pid = ctrlr.session_start(libvirtmock.TEST_UUID_SPICE)
 
-        # We pass None as PID to avoid killing any process
-        ctrlr.session_stop(uuid, None)
+        ca_cert = ctrlr._get_spice_ca_cert()
+        self.assertEqual(ca_cert, "FAKE_CA_CERT")
 
-        # Check domain has been stopped and has been set as transient
-        # pylint: disable=no-member
-        self.assertFalse(ctrlr._last_stopped_domain.active)
-        self.assertTrue(ctrlr._last_stopped_domain.transient)
-        # pylint: enable=no-member
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._SPICE_CA_CERT_CMD.format(
+                    ca=ctrlr.SPICE_CA_CERT,
+                ),
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+    def test_remote_user_runtimedir(self):
+        ctrlr = self.get_controller(self.config)
+
+        remote_runtimedir = ctrlr._get_user_runtime_dir()
+        self.assertEqual(remote_runtimedir, "/run/user/1001")
+
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._XDG_RUNTIMEDIR_CMD,
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+    def test_spice_cert_subject(self):
+        ctrlr = self.get_controller(self.config)
+
+        spice_cert_subject = ctrlr._get_spice_cert_subject()
+        self.assertEqual(spice_cert_subject, "CN=localhost")
+
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._SPICE_CERT_SUBJ_CMD.format(cert=ctrlr.SPICE_CERT),
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
 
 
-class TestLibVirtControllerSessionMode(TestLibVirtControllerSystemMode):
-    LIBVIRT_MODE = "session"
+class TestLibVirtControllerSystemHTML5(
+    TestLibVirtControllerSystem, TestLibVirtControllerHTML5, unittest.TestCase
+):
+    """Test LibVirtController with spice_html5 viewer at system mode."""
+
+
+class TestLibVirtControllerSystemDirect(
+    TestLibVirtControllerSystem, TestLibVirtControllerDirect, unittest.TestCase
+):
+    """Test LibVirtController with spice_remote_viewer viewer at system mode."""
+
+
+class TestLibVirtControllerSessionHTML5(
+    TestLibVirtControllerSession, TestLibVirtControllerHTML5, unittest.TestCase
+):
+    """Test LibVirtController with spice_html5 viewer at session mode."""
+
+
+class TestLibVirtControllerSessionDirect(
+    TestLibVirtControllerSession, TestLibVirtControllerDirect, unittest.TestCase
+):
+    """Test LibVirtController with spice_remote_viewer viewer at session mode."""
 
 
 if __name__ == "__main__":

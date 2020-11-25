@@ -44,7 +44,8 @@ EXTRA_DIST =                         \
 	test_fcdbus_service.py           \
 	data/test.gschema.xml            \
 	data/libvirt_domain-orig.xml     \
-	data/libvirt_domain-modified.xml \
+	data/libvirt_domain-modified-html5.xml \
+	data/libvirt_domain-modified-direct.xml \
 	data/libvirt_domain-nospice.xml  \
 	data/fc_goa_providers_test.ini   \
 	data/fleet-commander-logger/fc-chromium-policies.json   \

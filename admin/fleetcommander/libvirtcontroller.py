@@ -55,6 +55,16 @@ class LibVirtController:
     DOMAIN_UNDEFINE_TRIES_DELAY = 0.1
     channel = None
     viewer = None
+    _VIDEO_DRIVER_CMD = (
+        "if [ -x /usr/libexec/qemu-kvm ]; "
+        "then cmd='/usr/libexec/qemu-kvm'; "
+        "else cmd='/usr/bin/qemu-kvm'; fi ; "
+        "$cmd -device help 2>&1 | grep 'virtio-vga' > /dev/null; "
+        "if [ $? == 0 ]; then echo 'virtio'; else echo 'qxl'; fi"
+    )
+    _SESSION_SOCKET_CMD = (
+        "/usr/sbin/libvirtd -d > /dev/null 2>&1; echo {socket} && [ -S {socket} ]"
+    )
 
     def __init__(self, data_path, username, hostname, mode):
         """
@@ -127,18 +137,16 @@ class LibVirtController:
         # Get Libvirt socket for session mode
         if self.mode == "session":
             logging.debug("libvirtcontroller: " "Getting session mode libvirt socket.")
-            command = "/usr/sbin/libvirtd -d > /dev/null 2>&1; echo %s && [ -S %s ]" % (
-                self.DEFAULT_LIBVIRTD_SOCKET,
-                self.DEFAULT_LIBVIRTD_SOCKET,
-            )
 
             try:
                 out = self.ssh.execute_remote_command(
-                    command,
-                    self.private_key_file,
-                    self.username,
-                    self.ssh_host,
-                    self.ssh_port,
+                    command=self._SESSION_SOCKET_CMD.format(
+                        socket=self.DEFAULT_LIBVIRTD_SOCKET,
+                    ),
+                    private_key_file=self.private_key_file,
+                    username=self.username,
+                    hostname=self.ssh_host,
+                    port=self.ssh_port,
                     UserKnownHostsFile=self.known_hosts_file,
                 )
                 self._libvirt_socket = out.decode().strip()
@@ -160,20 +168,13 @@ class LibVirtController:
     def _get_libvirt_video_driver(self):
         logging.debug("libvirtcontroller: " "Getting libvirt video driver.")
 
-        command = (
-            "if [ -x /usr/libexec/qemu-kvm ]; "
-            + 'then cmd="/usr/libexec/qemu-kvm"; '
-            + 'else cmd="/usr/bin/qemu-kvm"; fi ; '
-            + '$cmd -device help 2>&1 | grep "virtio-vga" > /dev/null; '
-            + 'if [ $? == 0 ]; then echo "virtio"; else echo "qxl"; fi'
-        )
         try:
             out = self.ssh.execute_remote_command(
-                command,
-                self.private_key_file,
-                self.username,
-                self.ssh_host,
-                self.ssh_port,
+                command=self._VIDEO_DRIVER_CMD,
+                private_key_file=self.private_key_file,
+                username=self.username,
+                hostname=self.ssh_host,
+                port=self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
             self._libvirt_video_driver = out.decode().strip()
@@ -456,6 +457,13 @@ class LibVirtTlsSpice(LibVirtController):
     SPICE_CA_CERT = "/etc/pki/libvirt-spice/ca-cert.pem"
     SPICE_CERT = "/etc/pki/libvirt-spice/server-cert.pem"
 
+    _XDG_RUNTIMEDIR_CMD = 'echo "$XDG_RUNTIME_DIR"'
+    _SPICE_CA_CERT_CMD = "openssl x509 -in {ca}"
+    _SPICE_CERT_SUBJ_CMD = (
+        "openssl x509 -noout -subject -nameopt oneline -nameopt "
+        "-space_eq -in {cert} | sed 's/^subject=//'"
+    )
+
     def __init__(self, data_path, username, hostname, mode):
         super().__init__(data_path, username, hostname, mode)
         self.channel = "unix"
@@ -463,15 +471,14 @@ class LibVirtTlsSpice(LibVirtController):
 
     def _get_user_runtime_dir(self):
         logging.debug("libvirtcontroller: " "Getting user runtime directory.")
-        command = 'echo "$XDG_RUNTIME_DIR"'
 
         try:
             out = self.ssh.execute_remote_command(
-                command,
-                self.private_key_file,
-                self.username,
-                self.ssh_host,
-                self.ssh_port,
+                command=self._XDG_RUNTIMEDIR_CMD,
+                private_key_file=self.private_key_file,
+                username=self.username,
+                hostname=self.ssh_host,
+                port=self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
             runtimedir = out.decode().strip()
@@ -586,15 +593,13 @@ class LibVirtTlsSpice(LibVirtController):
         logging.debug(
             "libvirtcontroller: " "Getting SPICE CA certificate for FC TLS session."
         )
-        command = "openssl x509 -in {ca}".format(ca=self.SPICE_CA_CERT)
-
         try:
             out = self.ssh.execute_remote_command(
-                command,
-                self.private_key_file,
-                self.username,
-                self.ssh_host,
-                self.ssh_port,
+                command=self._SPICE_CA_CERT_CMD.format(ca=self.SPICE_CA_CERT),
+                private_key_file=self.private_key_file,
+                username=self.username,
+                hostname=self.ssh_host,
+                port=self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
             spice_ca = out.decode().strip()
@@ -610,18 +615,14 @@ class LibVirtTlsSpice(LibVirtController):
             "libvirtcontroller: "
             "Getting SPICE certificate subject for FC TLS session."
         )
-        command = (
-            "openssl x509 -noout -subject -nameopt oneline -nameopt "
-            "-space_eq -in {cert} | sed 's/^subject=//'"
-        ).format(cert=self.SPICE_CERT)
 
         try:
             out = self.ssh.execute_remote_command(
-                command,
-                self.private_key_file,
-                self.username,
-                self.ssh_host,
-                self.ssh_port,
+                command=self._SPICE_CERT_SUBJ_CMD.format(cert=self.SPICE_CERT),
+                private_key_file=self.private_key_file,
+                username=self.username,
+                hostname=self.ssh_host,
+                port=self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
             cert_subject = out.decode().strip()
