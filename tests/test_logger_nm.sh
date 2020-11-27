@@ -8,7 +8,7 @@ eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
 
-$PYTHON $TOPSRCDIR/tests/_03_mock_nm_dbus.py &
+$PYTHON $TOPSRCDIR/tests/_mock_nm_dbus.py &
 DBUS_MOCK_PID=$!
 
 $PYTHON $TOPSRCDIR/tests/_wait_for_name.py org.freedesktop.NetworkManager
@@ -19,12 +19,12 @@ fi
 
 ps -p $DBUS_MOCK_PID > /dev/null 2>&1
 if [ $? -ne 0 ] ; then
-  echo "Failed to launch _03_mock_nm_dbus.py"
+  echo "Failed to launch _mock_nm_dbus.py"
   exit 1
 fi
 
 # Execute fleet commander NM logger tests
-$PYTHON $TOPSRCDIR/tests/_03_logger_nm.py
+$PYTHON $TOPSRCDIR/tests/_logger_nm.py
 RET=$?
 
 kill $DBUS_SESSION_BUS_PID
