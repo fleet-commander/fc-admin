@@ -17,37 +17,58 @@
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # Authors: Alberto Ruiz <aruiz@redhat.com>
-#          Oliver Gutierrez <ogutierrez@redhat.com>
+
+if [ "x$TOPSRCDIR" = "x" ] ; then
+  TOPSRCDIR=`pwd`/../
+fi
 
 # We assume dbus-launch never fails
-
-kill $DBUS_SESSION_BUS_PID > /dev/null 2> /dev/null
-
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 
+dconf write /org/libreoffice/registry/somepath/somekey 123
 
-$PYTHON $TOPSRCDIR/tests/_05_mock_realmd_dbus.py &
+export FC_TESTING=true
+export GSETTINGS_SCHEMA_DIR=`mktemp -d`
+
+cp $TOPSRCDIR/tests/data/test.gschema.xml $GSETTINGS_SCHEMA_DIR
+if [ $? -ne 0 ] ; then
+  echo "Failed to copy schema file to tempdir" >&2
+  exit 1
+fi
+
+glib-compile-schemas $GSETTINGS_SCHEMA_DIR
+if [ $? -ne 0 ] ; then
+  echo "Failed to copy schema file to tempdir" >&2
+  exit 1
+fi
+
+RET=1
+
+# We assume dbus-launch never fails
+kill $DBUS_SESSION_BUS_PID
+eval `dbus-launch`
+export DBUS_SESSION_BUS_ADDRESS
+
+$PYTHON $TOPSRCDIR/tests/_mock_dbus.py > /dev/null 2> /dev/null &
 DBUS_MOCK_PID=$!
 
-$PYTHON $TOPSRCDIR/tests/_wait_for_name.py org.freedesktop.realmd
+$PYTHON $TOPSRCDIR/tests/_wait_for_name.py org.freedesktop.ScreenSaver
 if [ $? -ne 0 ] ; then
-  echo "Failed to acquire bus name org.freedesktop.realmd"
+  echo "Failed to acquire bus name org.freedesktop.ScreenSaver"
   exit 1
 fi
 
 ps -p $DBUS_MOCK_PID > /dev/null 2> /dev/null
 if [ $? -ne 0 ] ; then
-  echo "Failed to launch _05_mock_realmd_dbus.py"
+  echo "Failed to launch _mock_dbus.py" >&2
   exit 1
 fi
 
-# Execute fleet commander dbus service tests
-$PYTHON $TOPSRCDIR/tests/_05_fcdbus_tests.py
+$PYTHON $TOPSRCDIR/tests/_logger_test_suite.py
 RET=$?
 
+rm -rf $GSETTINGS_SCHEMA_DIR
+kill $DBUS_MOCK_PID
 kill $DBUS_SESSION_BUS_PID
-
-rm $TOPSRCDIR/_build/sub/admin/fleetcommander/constants.pyc > /dev/null 2>&1
-
 exit $RET
