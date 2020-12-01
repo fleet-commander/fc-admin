@@ -100,7 +100,7 @@ function ParseChange(data) {
             messageDialog.show(
                 _('Error parsing change'),
                 _('Error'),
-                () => { location.href = 'index.html'; },
+                () => { location.href = 'index.html' }
             );
         });
     }
@@ -155,8 +155,8 @@ function startSpiceHtml5(conn_details) {
 
     fcsc = new FleetCommanderSpiceClient(
         details, function () {
-            stopLiveSession()
-        },
+            stopLiveSession();
+        }
     );
     startHeartBeat();
 }
@@ -203,7 +203,7 @@ function startRemoteViewer(conn_details) {
         if (DEBUG > 0) {
             console.log('FC: Cockpit changes channel is closed', options);
         }
-        stopLiveSession()
+        stopLiveSession();
     });
 
     startHeartBeat();
@@ -567,7 +567,7 @@ $(document).ready(function () {
                             'dbus-retry': {
                                 text: 'Retry connection',
                                 class: 'btn-primary',
-                                callback: function () { location.reload(); }
+                                callback: function () { location.reload() }
                             }
                         }
                     );
@@ -585,7 +585,7 @@ $(document).ready(function () {
                 'dbus-retry': {
                     text: 'Retry connection',
                     class: 'btn-primary',
-                    callback: function () { location.reload(); }
+                    callback: function () { location.reload() }
                 },
             }
         );
