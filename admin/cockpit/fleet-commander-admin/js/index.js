@@ -118,9 +118,9 @@ function checkKnownHost(hostname, cb, data) {
                 _('Hypervisor host verification'),
                 function () {
                     // Add host to known hosts
-                        questionDialog.close();
-                        addToKnownHosts(hostname, cb, data);
-                    }
+                    questionDialog.close();
+                    addToKnownHosts(hostname, cb, data);
+                }
             );
         }
     });
@@ -134,11 +134,11 @@ function saveFCSettings(cb) {
     clearModalFormErrors('fc-settings-modal');
 
     var data = {
-            host: $('#host').val(),
-            username: $('#username').val(),
-            mode: $('#mode').val(),
-            viewer: $('#viewer').val(),
-            domains: {}
+        host: $('#host').val(),
+        username: $('#username').val(),
+        mode: $('#mode').val(),
+        viewer: $('#viewer').val(),
+        domains: {}
     };
     var policy = parseInt($('#policy').val(), 10);
 
@@ -291,12 +291,12 @@ function refreshProfileList(cb) {
                 actions_container.appendTo(actions_col);
 
                 $('<button></button>', {"class": "btn btn-default", text: _('Edit')})
-                    .click(function () { editProfile(uid) })
-                    .appendTo(actions_container);
+                        .click(function () { editProfile(uid) })
+                        .appendTo(actions_container);
 
                 $('<button></button>', {"class": "btn btn-danger", text: _('Delete')})
-                    .click(function () { removeProfile(uid, val[1]) })
-                    .appendTo(actions_container);
+                        .click(function () { removeProfile(uid, val[1]) })
+                        .appendTo(actions_container);
 
                 tr.appendTo('#profile-list');
             });
@@ -559,7 +559,7 @@ $(document).ready(function () {
         'spinner'
     );
 
-  // Create a Fleet Commander dbus client instance
+    // Create a Fleet Commander dbus client instance
     fc = new FleetCommanderDbusClient(function () {
         fc.GetInitialValues(function (resp) {
             state.debuglevel = resp.debuglevel;

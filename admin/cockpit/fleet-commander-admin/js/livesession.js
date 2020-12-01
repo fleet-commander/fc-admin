@@ -254,21 +254,21 @@ function parseFCMsg(str, msg) {
     }
 
     if (msg.fc_proto_version > FC_PROTO_DEFAULT) {
-      last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
-      if (last_delimiter === -1) {
-          msg.buffer = str;
-          logDebug('FC: Waiting for FC_MSG_DELIM');
-          return;
-      }
-      msg.buffer = str.substring(last_delimiter + FC_MSG_DELIM.length);
+        last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
+        if (last_delimiter === -1) {
+            msg.buffer = str;
+            logDebug('FC: Waiting for FC_MSG_DELIM');
+            return;
+        }
+        msg.buffer = str.substring(last_delimiter + FC_MSG_DELIM.length);
 
-      str = str.substring(0, last_delimiter);
-      let lines = str.split(FC_MSG_DELIM);
-      lines.forEach((line) => {
-          if (line) {
-              ParseChange(line);
-          }
-      });
+        str = str.substring(0, last_delimiter);
+        let lines = str.split(FC_MSG_DELIM);
+        lines.forEach((line) => {
+            if (line) {
+                ParseChange(line);
+            }
+        });
     } else if (msg.fc_proto_version === FC_PROTO_DEFAULT) {
         ParseChange(str);
     }
@@ -394,44 +394,58 @@ function populateChanges() {
     if (DEBUG > 0) {
         console.log('FC: Populating LibreOffice change list');
     }
-    populateSectionChanges('#libreoffice-event-list',
-        collectors['org.libreoffice.registry'].dump_changes());
+    populateSectionChanges(
+        '#libreoffice-event-list',
+        collectors['org.libreoffice.registry'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating GSettings change list');
     }
-    populateSectionChanges('#gsettings-event-list',
-        collectors['org.gnome.gsettings'].dump_changes());
+    populateSectionChanges(
+        '#gsettings-event-list',
+        collectors['org.gnome.gsettings'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating Chromium change list');
     }
-    populateSectionChanges('#chromium-event-list',
-        collectors['org.chromium.Policies'].dump_changes());
+    populateSectionChanges(
+        '#chromium-event-list',
+        collectors['org.chromium.Policies'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating Chrome change list');
     }
-    populateSectionChanges('#chrome-event-list',
-        collectors['com.google.chrome.Policies'].dump_changes());
+    populateSectionChanges(
+        '#chrome-event-list',
+        collectors['com.google.chrome.Policies'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating Firefox change list');
     }
-    populateSectionChanges('#firefox-event-list',
-        collectors['org.mozilla.firefox'].dump_changes());
+    populateSectionChanges(
+        '#firefox-event-list',
+        collectors['org.mozilla.firefox'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating Firefox bookmarks change list');
     }
-    populateSectionChanges('#firefoxbookmarks-event-list',
-        collectors['org.mozilla.firefox.Bookmarks'].dump_changes());
+    populateSectionChanges(
+        '#firefoxbookmarks-event-list',
+        collectors['org.mozilla.firefox.Bookmarks'].dump_changes()
+    );
 
     if (DEBUG > 0) {
         console.log('FC: Populating NetworkManager change list');
     }
-    populateSectionChanges('#networkmanager-event-list',
-        collectors['org.freedesktop.NetworkManager'].dump_changes());
+    populateSectionChanges(
+        '#networkmanager-event-list',
+        collectors['org.freedesktop.NetworkManager'].dump_changes()
+    );
 }
 
 function reviewAndSubmit() {
