@@ -24,7 +24,7 @@ function FleetCommanderDbusClient(readycb, errorcb) {
         console.log('FC: Error - ' + err);
     };
 
-    this._service = cockpit.dbus('org.freedesktop.FleetCommander', {'bus': 'session'});
+    this._service = cockpit.dbus('org.freedesktop.FleetCommander', { 'bus': 'session' });
     this._proxy = this._service.proxy();
 
     this._proxy.wait().done(function (resp) {

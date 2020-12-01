@@ -341,7 +341,7 @@ function addSectionCheckbox(section) {
             id: section.replace("#", "") + '-chkbox-container'
         }
     );
-    var checkbox = $('<input/>', {type: 'checkbox'});
+    var checkbox = $('<input/>', { type: 'checkbox' });
 
     checkbox.click(function () {
         var sectionChecked = this.checked;
