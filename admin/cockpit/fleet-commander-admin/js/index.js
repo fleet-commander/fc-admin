@@ -71,8 +71,6 @@ var fc = null,
     questionDialog = null,
     messageDialog = null;
 
-
-
 /*******************************************************************************
  * Application configuration
  ******************************************************************************/
@@ -99,7 +97,6 @@ function showFCSettings() {
     });
 }
 
-
 function checkHypervisorConfig(cb) {
     // Show hypervisor dialog if not configured
     fc.GetHypervisorConfig(function (data) {
@@ -113,7 +110,6 @@ function checkHypervisorConfig(cb) {
     });
 }
 
-
 function addToKnownHosts(hostname, cb, data) {
     fc.AddKnownHost(hostname, function (resp) {
         if (resp.status) {
@@ -123,7 +119,6 @@ function addToKnownHosts(hostname, cb, data) {
         }
     });
 }
-
 
 function checkKnownHost(hostname, cb, data) {
     data = data || {};
@@ -148,7 +143,6 @@ function checkKnownHost(hostname, cb, data) {
         }
     });
 }
-
 
 function saveFCSettings(cb) {
     if (DEBUG > 0) {
@@ -346,7 +340,6 @@ removeProfile = function (uid, displayName) {
     );
 };
 
-
 function showAddProfile() {
     // Clear current profile
     currentprofile = null;
@@ -422,8 +415,6 @@ function saveProfile() {
         }
     });
 }
-
-
 
 /*******************************************************************************
  * Live session management
