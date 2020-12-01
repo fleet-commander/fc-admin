@@ -290,11 +290,11 @@ function refreshProfileList(cb) {
                 actions_col.appendTo(tr);
                 actions_container.appendTo(actions_col);
 
-                $('<button></button>', {"class": "btn btn-default", text: _('Edit')})
+                $('<button></button>', { "class": "btn btn-default", text: _('Edit') })
                         .click(function () { editProfile(uid) })
                         .appendTo(actions_container);
 
-                $('<button></button>', {"class": "btn btn-danger", text: _('Delete')})
+                $('<button></button>', { "class": "btn btn-danger", text: _('Delete') })
                         .click(function () { removeProfile(uid, val[1]) })
                         .appendTo(actions_container);
 
@@ -439,17 +439,23 @@ function showDomainSelection() {
                         if (!this.temporary) {
                             var wrapper = $(
                                 '<div></div>',
-                                {'class': 'list-group-item'}
+                                { 'class': 'list-group-item' }
                             );
                             var text = this.name;
                             var domain = "";
                             if (!this.active) {
-                                domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
+                                domain = $(
+                                    '<a></a>',
+                                    { text: text, href: '#', 'data-uuid': this.uuid }
+                                );
                                 domain.click(selectDomain);
                             } else {
                                 wrapper.addClass('grayed');
                                 text = this.name + ' (' + _('running') + ')';
-                                domain = $('<span></span>', { text: text, 'data-uuid': this.uuid});
+                                domain = $(
+                                    '<span></span>',
+                                    { text: text, 'data-uuid': this.uuid }
+                                );
                             }
                             domain.appendTo(wrapper);
                             wrapper.appendTo(list);
@@ -460,7 +466,7 @@ function showDomainSelection() {
                     if (list.html() === '') {
                         var wrapper = $(
                             '<div></div>',
-                            {'class': 'list-group-item'}
+                            { 'class': 'list-group-item' }
                         );
                         var text = $(
                             '<span>No template virtual machines found</span>'
