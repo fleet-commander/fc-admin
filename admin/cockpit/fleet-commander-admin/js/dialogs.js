@@ -67,7 +67,7 @@ function QuestionDialog() {
 
     this.show = function (message, title, acceptcb, cancelcb) {
         title = title || default_title;
-        cancelcb = cancelcb || function () { self.close(); };
+        cancelcb = cancelcb || function () { self.close() };
         $(id + ' h4').html(title);
         $(id + ' .modal-body').html(message);
         $(id + ' .modal-footer').html('');
@@ -101,7 +101,7 @@ function MessageDialog() {
 
     this.show = function (message, title, closecb) {
         title = title || default_title;
-        closecb = closecb || function () { self.close(); };
+        closecb = closecb || function () { self.close() };
         $(id + ' h4').html(title);
         $(id + ' .modal-body').html(message);
         $(id + ' .modal-footer').html('');

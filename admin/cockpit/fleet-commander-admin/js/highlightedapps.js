@@ -35,7 +35,7 @@ function addHighlightedApp(app) {
 
     var li = $('<li></li>', { 'class': 'list-group-item', 'data-id': app, 'text': app }),
         del = $('<button></button>', { 'class': 'pull-right btn btn-danger', text: 'Delete' });
-    del.click(app, function () { deleteHighlightedApp(app); });
+    del.click(app, function () { deleteHighlightedApp(app) });
     del.appendTo(li);
     li.appendTo($('#highlighted-apps-list'));
 }
