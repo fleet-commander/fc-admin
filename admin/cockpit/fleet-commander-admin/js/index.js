@@ -457,7 +457,6 @@ function showDomainSelection() {
                         text.appendTo(wrapper);
                         wrapper.appendTo(list);
                     }
-
                 } else {
                     $('#domain-selection-modal').modal('hide');
                     messageDialog.show(

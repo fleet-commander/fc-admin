@@ -539,7 +539,6 @@ $(document).ready(function () {
 
     // Create a Fleet Commander dbus client instance
     fc = new FleetCommanderDbusClient(function () {
-
         fc.GetInitialValues(function (resp) {
             setDebugLevel(resp.debuglevel);
 
@@ -573,7 +572,6 @@ $(document).ready(function () {
                     );
                 }
             });
-
         });
     }, function () {
         $('#main-container').hide();
