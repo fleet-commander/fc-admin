@@ -27,11 +27,12 @@
 /*global GOA_PROVIDERS:true */
 /*global currentprofile */
 
-
-"use strict";
+const _ = cockpit.gettext;
 
 var current_goa_accounts = null;
 var current_goa_account_id = null;
+var GOA_PROVIDERS = null;
+
 
 
 function sortGoaNamedEntries(data) {
@@ -228,7 +229,7 @@ function saveGOAAccounts() {
 /*******************************************************************************
  * Initialization
  ******************************************************************************/
-function initialize_goa() {
+function initialize_goa(fc) {
     fc.GetGOAProviders(function (resp) {
         if (resp.status) {
             GOA_PROVIDERS = resp.providers;
@@ -272,3 +273,5 @@ function initialize_goa() {
         }
     });
 }
+
+export { initialize_goa };

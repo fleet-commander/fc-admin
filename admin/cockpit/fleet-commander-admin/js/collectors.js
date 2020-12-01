@@ -19,8 +19,7 @@
 
 /*global $ */
 /*global DEBUG */
-
-"use strict";
+import { DEBUG } from './base.js';
 
 function BaseCollector(namespace) {
     this.namespace = namespace;
@@ -114,3 +113,5 @@ FirefoxBookmarksCollector.prototype = Object.create(BaseCollector.prototype);
 FirefoxBookmarksCollector.prototype.get_value_from_change = function (change) {
     return change.value.URL + ' - ' + change.value.Title;
 };
+
+export { BaseCollector, NMCollector, FirefoxBookmarksCollector };

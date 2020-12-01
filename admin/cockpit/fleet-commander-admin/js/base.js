@@ -24,8 +24,7 @@
 /*global $ */
 /*global DEBUG:true */
 
-
-"use strict";
+var DEBUG = 0;
 
 function clearModalFormErrors(modalId) {
     $('#' + modalId + ' div.form-group').removeClass('has-error');
@@ -61,3 +60,5 @@ function setDebugLevel(level) {
         console.log('Debug level set to ' + DEBUG);
     }
 }
+
+export { DEBUG, addFormError, clearModalFormErrors, hasSuffix, setDebugLevel };

@@ -36,13 +36,29 @@
 /*global saveHighlightedApps */
 /*global initialize_goa */
 
-"use strict";
+import {
+    DEBUG,
+    addFormError,
+    clearModalFormErrors,
+    setDebugLevel
+} from './base.js';
+import {
+    SpinnerDialog,
+    QuestionDialog,
+    MessageDialog,
+    showCurtain
+} from './dialogs.js';
+import { FleetCommanderDbusClient } from './fcdbusclient.js';
+import { initialize_goa } from './goa.js';
+import {
+    addHighlightedAppFromEntry,
+    saveHighlightedApps,
+    showHighlightedApps
+} from './highlightedapps.js';
 
+const _ = cockpit.gettext;
 
-var DEBUG = 0,
-    _ = cockpit.gettext,
-    GOA_PROVIDERS,
-    fc = null,
+var fc = null,
     currentuid = null,
     currentprofile = null,
     state = {
@@ -51,9 +67,9 @@ var DEBUG = 0,
             profilepriority : 50
         }
     },
-    spinnerDialog,
-    questionDialog,
-    messageDialog;
+    spinnerDialog = null,
+    questionDialog = null,
+    messageDialog = null;
 
 
 
@@ -579,7 +595,7 @@ $(document).ready(function () {
             fc.DoDomainConnection(function (resp) {
                 if (resp.status) {
                     checkHypervisorConfig();
-                    initialize_goa();
+                    initialize_goa(fc);
                     refreshProfileList(function () {
                         $('#main-container').show();
                         $('#curtain').hide();
