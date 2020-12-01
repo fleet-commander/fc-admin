@@ -29,10 +29,11 @@
 /*global fc */
 /*global spicehtml5_module */
 
+import { DEBUG } from './base.js';
+import { SpinnerDialog, MessageDialog } from './dialogs.js';
+import * as SpiceHtml5 from './spice-html5/src/main.js';
 
-
-"use strict";
-
+const _ = cockpit.gettext;
 
 function FleetCommanderSpiceClient(details, error_cb, timeout) {
     var self = this;
@@ -41,6 +42,8 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
     // this.sc;
     this.connecting = null;
     this.noretry = false;
+    this.messageDialog = new MessageDialog();
+    this.spinnerDialog = new SpinnerDialog();
 
     this.stop = function () {
         if (self.sc) {
@@ -60,8 +63,8 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
                 if (DEBUG > 0) {
                     console.log('FC: Connection tries timed out');
                 }
-                spinnerDialog.close();
-                messageDialog.show(
+                self.spinnerDialog.close();
+                self.messageDialog.show(
                     _('Connection error to virtual machine.'),
                     _('Connection error')
                 );
@@ -73,7 +76,7 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
         if (DEBUG > 0) {
             console.log('FC: Connected to virtual machine using SPICE');
         }
-        spinnerDialog.close();
+        self.spinnerDialog.close();
         if (self.connecting) {
             clearTimeout(self.connecting);
             self.connecting = null;
@@ -95,7 +98,7 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
                         err.message === 'Connection timed out.' ||
                         self.sc.state !== 'ready') {
                     if (!self.noretry) {
-                        spinnerDialog.show(
+                        self.spinnerDialog.show(
                             _('Connecting to virtual machine. Please wait...'),
                             _('Reconnecting')
                         );
@@ -103,18 +106,18 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
                     }
                     return;
                 }
-                messageDialog.show(
+                self.messageDialog.show(
                     _('Connection error to virtual machine'),
                     _('Connection error')
                 );
             } else {
-                messageDialog.show(
+                self.messageDialog.show(
                     _('Virtual machine has been stopped'),
                     _('Connection error')
                 );
             }
 
-            spinnerDialog.close();
+            self.spinnerDialog.close();
             if (self.connecting) {
                 clearTimeout(self.connecting);
                 self.connecting = null;
@@ -154,7 +157,7 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
         }
         $('#spice-screen').html('');
 
-        self.sc = new spicehtml5_module.SpiceMainConn({
+        self.sc = new SpiceHtml5.SpiceMainConn({
             uri: cockpit_uri, // 'ws://' + location.hostname + ':' + port,
             password: details.ticket,
             screen_id: 'spice-screen',
@@ -173,10 +176,12 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
     }
 
     this.reconnect = function () {
-        spinnerDialog.show(
+        self.spinnerDialog.show(
             _('Connecting to virtual machine. Please wait...'),
             _('Reconnecting')
         );
         self.do_connection();
     };
 }
+
+export { FleetCommanderSpiceClient };

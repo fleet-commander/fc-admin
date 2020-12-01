@@ -10,12 +10,7 @@
 /*global $ */
 /*global _ */
 
-"use strict";
-
-// actual creation happens on doc ready
-var spinnerDialog = null;
-var questionDialog = null;
-var messageDialog = null;
+const _ = cockpit.gettext;
 
 function BaseDialog(id) {
     var self = this,
@@ -162,3 +157,5 @@ function showCurtain(message, title, icon, buttons) {
     });
     $('#curtain').show();
 }
+
+export { MessageDialog, QuestionDialog, SpinnerDialog, showCurtain };

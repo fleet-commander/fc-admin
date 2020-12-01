@@ -26,8 +26,9 @@
 /*global messageDialog */
 /*global _ */
 
-"use strict";
+import { DEBUG } from './base.js';
 
+const _ = cockpit.gettext;
 
 function deleteHighlightedApp(app) {
     $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
@@ -171,3 +172,5 @@ function saveHighlightedApps() {
     $('#highlighted-apps-modal').modal('hide');
     $('#profile-modal').modal('show');
 }
+
+export { addHighlightedAppFromEntry, saveHighlightedApps, showHighlightedApps };

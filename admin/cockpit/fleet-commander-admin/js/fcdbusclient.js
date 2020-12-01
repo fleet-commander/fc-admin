@@ -21,10 +21,6 @@
 /*jslint nomen:true */
 /*global cockpit */
 
-
-"use strict";
-
-
 function FleetCommanderDbusClient(readycb, errorcb) {
     var self = this,
         errorhandler = errorcb || function (err) {
@@ -231,3 +227,5 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     };
 
 }
+
+export { FleetCommanderDbusClient };

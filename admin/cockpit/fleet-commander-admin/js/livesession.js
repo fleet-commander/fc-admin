@@ -34,12 +34,19 @@
 /*global FirefoxBookmarksCollector */
 /*global NMCollector */
 
-"use strict";
+import { DEBUG, setDebugLevel } from './base.js';
+import { BaseCollector, NMCollector, FirefoxBookmarksCollector } from './collectors.js';
+import { SpinnerDialog, MessageDialog, showCurtain } from './dialogs.js';
+import { FleetCommanderDbusClient } from './fcdbusclient.js';
+import { FleetCommanderSpiceClient } from './fcspiceclient.js';
+import { arraybuffer_to_str } from './spice-html5/src/utils.js';
 
+const FC_MSG_DELIM = ':FC_MSG_END_DATA:';
+const FC_PROTO_HEADER = ':FC_PR:';
+const FC_PROTO_DEFAULT = 1;
+const _ = cockpit.gettext;
 
-var DEBUG = 0,
-    _ = cockpit.gettext,
-    fc = null,
+var fc = null,
     fcsc = null,
     spinnerDialog,
     messageDialog,
@@ -61,10 +68,6 @@ var DEBUG = 0,
         'org.freedesktop.NetworkManager':
             new NMCollector('org.freedesktop.NetworkManager')
     };
-
-const FC_MSG_DELIM = ':FC_MSG_END_DATA:';
-const FC_PROTO_HEADER = ':FC_PR:';
-const FC_PROTO_DEFAULT = 1;
 
 window.alert = function (message) {
     if (DEBUG > 0) {
@@ -130,7 +133,7 @@ function startSpiceHtml5(conn_details) {
     };
     window.addEventListener('spice-port-data', function (event) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
-            let msg_text = arraybuffer_to_str_func(new Uint8Array(event.detail.data));
+            let msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
             if (DEBUG > 0) {
                 console.log(
                     'FC: Logger data received in spice port',
@@ -209,7 +212,7 @@ function startRemoteViewer(conn_details) {
         }
     });
     channel.addEventListener("message", function(event, data) {
-        let msg_text = arraybuffer_to_str_func(new Uint8Array(data));
+        let msg_text = arraybuffer_to_str(new Uint8Array(data));
         if (DEBUG > 0) {
             console.log('FC: Logger data received in unix channel', data);
         }
