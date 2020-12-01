@@ -222,7 +222,6 @@ function FleetCommanderDbusClient(readycb, errorcb) {
     this.Quit = function (cb) {
         self._proxy.Quit().done(cb).fail(errorhandler);
     };
-
 }
 
 export { FleetCommanderDbusClient };

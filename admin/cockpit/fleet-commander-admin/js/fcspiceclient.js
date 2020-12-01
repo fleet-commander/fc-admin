@@ -111,7 +111,6 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
                 clearTimeout(self.connecting);
                 self.connecting = null;
             }
-
         });
     };
 
