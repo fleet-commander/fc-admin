@@ -17,8 +17,6 @@
 * Author: Oliver Gutiérrez <ogutierrez@redhat.com>
 */
 
-/*global $ */
-/*global DEBUG */
 import { DEBUG } from './base.js';
 
 function BaseCollector(namespace) {

@@ -6,10 +6,6 @@
  * Dialogs
  ******************************************************************************/
 
-/*jslint nomen:true */
-/*global $ */
-/*global _ */
-
 const _ = cockpit.gettext;
 
 function BaseDialog(id) {

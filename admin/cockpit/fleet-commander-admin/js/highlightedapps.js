@@ -16,16 +16,6 @@
 *
 * Author: Oliver Gutiérrez <ogutierrez@redhat.com>
 */
-
-/*jslint nomen: true */
-/*global $ */
-/*global DEBUG */
-/*global currentprofile */
-/*global hasSuffix */
-/*global clearModalFormErrors */
-/*global messageDialog */
-/*global _ */
-
 import { DEBUG } from './base.js';
 
 const _ = cockpit.gettext;

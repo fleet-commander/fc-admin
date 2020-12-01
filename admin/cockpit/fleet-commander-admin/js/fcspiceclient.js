@@ -18,17 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-/*jslint nomen:true */
-/*jslint browser:true */
-/*global $ */
-/*global _ */
-/*global cockpit */
-/*global DEBUG */
-/*global spinnerDialog */
-/*global messageDialog */
-/*global fc */
-/*global spicehtml5_module */
-
 import { DEBUG } from './base.js';
 import { SpinnerDialog, MessageDialog } from './dialogs.js';
 import * as SpiceHtml5 from './spice-html5/src/main.js';

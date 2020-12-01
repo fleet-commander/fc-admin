@@ -18,24 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-/*jslint browser: true */
-/*jslint nomen: true */
-/*global $ */
-/*global cockpit */
-/*global addFormError */
-/*global hasSuffix */
-/*global setDebugLevel */
-/*global SpinnerDialog */
-/*global MessageDialog */
-/*global QuestionDialog */
-/*global clearModalFormErrors */
-/*global showCurtain */
-/*global FleetCommanderDbusClient */
-/*global showHighlightedApps */
-/*global addHighlightedAppFromEntry */
-/*global saveHighlightedApps */
-/*global initialize_goa */
-
 import {
     DEBUG,
     addFormError,

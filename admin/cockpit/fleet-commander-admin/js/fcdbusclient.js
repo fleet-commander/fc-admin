@@ -18,9 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-/*jslint nomen:true */
-/*global cockpit */
-
 function FleetCommanderDbusClient(readycb, errorcb) {
     var self = this,
         errorhandler = errorcb || function (err) {
