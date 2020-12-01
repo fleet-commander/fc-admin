@@ -35,11 +35,11 @@ function addHighlightedApp(app) {
 
     var li = $(
         '<li></li>',
-        { 'class': 'list-group-item', 'data-id': app, 'text': app }
+        { class: 'list-group-item', 'data-id': app, text: app }
     );
     var del = $(
         '<button></button>',
-        { 'class': 'pull-right btn btn-danger', text: 'Delete' }
+        { class: 'pull-right btn btn-danger', text: 'Delete' }
     );
     del.click(app, function () { deleteHighlightedApp(app) });
     del.appendTo(li);

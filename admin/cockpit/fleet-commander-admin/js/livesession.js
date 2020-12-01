@@ -304,8 +304,8 @@ function startLiveSession() {
             if (resp.status) {
                 var conn_details = resp.connection_details;
                 var viewers = {
-                    'spice_html5': startSpiceHtml5,
-                    'spice_remote_viewer': startRemoteViewer,
+                    spice_html5: startSpiceHtml5,
+                    spice_remote_viewer: startRemoteViewer,
                 };
                 if (conn_details.viewer in viewers === false) {
                     messageDialog.show(

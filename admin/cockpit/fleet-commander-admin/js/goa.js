@@ -124,11 +124,11 @@ function addGOAAccountItem(account_id, account_data) {
     actions_col.appendTo(tr);
     actions_container.appendTo(actions_col);
 
-    $('<button></button>', { "class": "btn btn-default", text: _('Edit') })
+    $('<button></button>', { class: "btn btn-default", text: _('Edit') })
             .click(function () { showGOAAccountEdit(account_id) })
             .appendTo(actions_container);
 
-    $('<button></button>', { "class": "btn btn-danger", text: _('Delete') })
+    $('<button></button>', { class: "btn btn-danger", text: _('Delete') })
             .click(function () { removeGOAAccount(account_id) })
             .appendTo(actions_container);
 

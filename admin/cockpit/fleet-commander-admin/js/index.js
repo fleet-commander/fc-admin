@@ -290,11 +290,11 @@ function refreshProfileList(cb) {
                 actions_col.appendTo(tr);
                 actions_container.appendTo(actions_col);
 
-                $('<button></button>', { "class": "btn btn-default", text: _('Edit') })
+                $('<button></button>', { class: "btn btn-default", text: _('Edit') })
                         .click(function () { editProfile(uid) })
                         .appendTo(actions_container);
 
-                $('<button></button>', { "class": "btn btn-danger", text: _('Delete') })
+                $('<button></button>', { class: "btn btn-danger", text: _('Delete') })
                         .click(function () { removeProfile(uid, val[1]) })
                         .appendTo(actions_container);
 
@@ -361,14 +361,14 @@ function saveProfile() {
     }
 
     var data = {
-        'cn': currentuid,
-        'name': $('#profile-name').val(),
-        'description': $('#profile-desc').val(),
-        'priority': $('#profile-priority').val(),
-        'users': $('#profile-users').val(),
-        'groups': $('#profile-groups').val(),
-        'hosts': $('#profile-hosts').val(),
-        'hostgroups': $('#profile-hostgroups').val(),
+        cn: currentuid,
+        name: $('#profile-name').val(),
+        description: $('#profile-desc').val(),
+        priority: $('#profile-priority').val(),
+        users: $('#profile-users').val(),
+        groups: $('#profile-groups').val(),
+        hosts: $('#profile-hosts').val(),
+        hostgroups: $('#profile-hostgroups').val(),
     };
 
     if (currentprofile) {
@@ -439,7 +439,7 @@ function showDomainSelection() {
                         if (!this.temporary) {
                             var wrapper = $(
                                 '<div></div>',
-                                { 'class': 'list-group-item' }
+                                { class: 'list-group-item' }
                             );
                             var text = this.name;
                             var domain = "";
@@ -466,7 +466,7 @@ function showDomainSelection() {
                     if (list.html() === '') {
                         var wrapper = $(
                             '<div></div>',
-                            { 'class': 'list-group-item' }
+                            { class: 'list-group-item' }
                         );
                         var text = $(
                             '<span>No template virtual machines found</span>'
