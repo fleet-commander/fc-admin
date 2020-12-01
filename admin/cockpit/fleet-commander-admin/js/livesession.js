@@ -81,7 +81,7 @@ function downloadConnectionFile(console_details) {
 function ParseChange(data) {
     console.log('FC: Parsing data', data);
     try {
-        let change = JSON.parse(data);
+        const change = JSON.parse(data);
         if (DEBUG > 0) {
             console.log('FC: Change parsed', change);
         }
@@ -108,14 +108,14 @@ function ParseChange(data) {
 
 function startSpiceHtml5(conn_details) {
     // SPICE port changes listeners
-    let msg = {
+    const msg = {
         buffer: '',
         initial_msg: true,
         fc_proto_version: FC_PROTO_DEFAULT,
     };
     window.addEventListener('spice-port-data', function (event) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
-            let msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
+            const msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
             if (DEBUG > 0) {
                 console.log(
                     'FC: Logger data received in spice port',
@@ -181,7 +181,7 @@ function startRemoteViewer(conn_details) {
     };
     var channel = cockpit.channel(options);
 
-    let msg = {
+    const msg = {
         buffer: '',
         initial_msg: true,
         fc_proto_version: FC_PROTO_DEFAULT,
@@ -193,7 +193,7 @@ function startRemoteViewer(conn_details) {
         }
     });
     channel.addEventListener("message", function(event, data) {
-        let msg_text = arraybuffer_to_str(new Uint8Array(data));
+        const msg_text = arraybuffer_to_str(new Uint8Array(data));
         if (DEBUG > 0) {
             console.log('FC: Logger data received in unix channel', data);
         }
@@ -233,7 +233,7 @@ function parseFCMsg(str, msg) {
             return;
         }
 
-        let fc_proto_header = str.match(/^:FC_PR:/);
+        const fc_proto_header = str.match(/^:FC_PR:/);
         if (fc_proto_header === null) {
             msg.fc_proto_version = FC_PROTO_DEFAULT;
             logDebug('FC: old fc_proto detected', msg.fc_proto_version);
@@ -263,7 +263,7 @@ function parseFCMsg(str, msg) {
         msg.buffer = str.substring(last_delimiter + FC_MSG_DELIM.length);
 
         str = str.substring(0, last_delimiter);
-        let lines = str.split(FC_MSG_DELIM);
+        const lines = str.split(FC_MSG_DELIM);
         lines.forEach((line) => {
             if (line) {
                 ParseChange(line);
