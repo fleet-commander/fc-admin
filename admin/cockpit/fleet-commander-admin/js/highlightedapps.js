@@ -34,7 +34,6 @@ function deleteHighlightedApp(app) {
     $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
 }
 
-
 function addHighlightedApp(app) {
     if (typeof app !== "string") {
         return;
@@ -50,7 +49,6 @@ function addHighlightedApp(app) {
     del.appendTo(li);
     li.appendTo($('#highlighted-apps-list'));
 }
-
 
 function refreshHighlightedAppsList() {
     if (DEBUG > 0) {
@@ -94,14 +92,12 @@ function refreshHighlightedAppsList() {
     } catch (ignore) {}
 }
 
-
 function showHighlightedApps() {
     $('#highlighted-apps-list').html('');
     $('#profile-modal').modal('hide');
     $('#highlighted-apps-modal').modal('show');
     refreshHighlightedAppsList();
 }
-
 
 function addHighlightedAppFromEntry() {
     clearModalFormErrors('highlighted-apps-modal');
@@ -132,7 +128,6 @@ function addHighlightedAppFromEntry() {
     addHighlightedApp(app);
     $('#app-name').val('');
 }
-
 
 function saveHighlightedApps() {
     var overrides = [], changed = false;

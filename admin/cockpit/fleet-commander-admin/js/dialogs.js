@@ -36,7 +36,6 @@ function BaseDialog(id) {
     });
 }
 
-
 BaseDialog.prototype = {
     show: function () {
         this.state = 'show';
@@ -47,7 +46,6 @@ BaseDialog.prototype = {
         $(this.id).modal('hide');
     }
 };
-
 
 function SpinnerDialog() {
     var id = '#spinner-dialog-modal',
@@ -62,10 +60,8 @@ function SpinnerDialog() {
     };
 }
 
-
 SpinnerDialog.prototype = Object.create(BaseDialog.prototype);
 SpinnerDialog.prototype.constructor = SpinnerDialog;
-
 
 function QuestionDialog() {
     var self = this,
@@ -98,7 +94,6 @@ function QuestionDialog() {
     };
 }
 
-
 QuestionDialog.prototype = Object.create(BaseDialog.prototype);
 QuestionDialog.prototype.constructor = QuestionDialog;
 
@@ -129,10 +124,8 @@ function MessageDialog() {
     };
 }
 
-
 MessageDialog.prototype = Object.create(BaseDialog.prototype);
 MessageDialog.prototype.constructor = MessageDialog;
-
 
 function showCurtain(message, title, icon, buttons) {
     var iconarea = $('#curtain .blank-slate-pf-icon'),

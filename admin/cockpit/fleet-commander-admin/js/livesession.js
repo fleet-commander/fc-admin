@@ -75,7 +75,6 @@ window.alert = function (message) {
     }
 };
 
-
 function downloadConnectionFile(console_details) {
     console.log("Generate remote-viewer connection file: ", console_details);
     var data = '[virt-viewer]\n' +
@@ -178,7 +177,6 @@ function startSpiceHtml5(conn_details) {
     );
     startHeartBeat();
 }
-
 
 function startRemoteViewer(conn_details) {
     console_details = {
@@ -299,7 +297,6 @@ function startHeartBeat() {
     }, 1000);
 }
 
-
 function stopLiveSession(cb) {
     if (fcsc) {
         fcsc.stop();
@@ -312,7 +309,6 @@ function stopLiveSession(cb) {
         }
     });
 }
-
 
 function startLiveSession() {
     spinnerDialog.show(
@@ -345,7 +341,6 @@ function startLiveSession() {
     });
 }
 
-
 function reconnectToVM() {
     if (fcsc) {
         fcsc.reconnect();
@@ -353,7 +348,6 @@ function reconnectToVM() {
         downloadConnectionFile(console_details);
     }
 }
-
 
 function addSectionCheckbox(section) {
     var section_header = $(section).prev("h4"),
@@ -376,11 +370,9 @@ function addSectionCheckbox(section) {
     chkbox_container.insertBefore(section_header);
 }
 
-
 function removeSectionCheckbox(section) {
     $(section + '-chkbox-container').remove();
 }
-
 
 function populateSectionChanges(section, data, only_value) {
     /*jslint unparam: true */
@@ -406,7 +398,6 @@ function populateSectionChanges(section, data, only_value) {
         addSectionCheckbox(section);
     }
 }
-
 
 function populateChanges() {
     $('#gsettings-event-list').html('');
@@ -460,13 +451,11 @@ function populateChanges() {
         collectors['org.freedesktop.NetworkManager'].dump_changes());
 }
 
-
 function reviewAndSubmit() {
     $('.change-checkbox').show();
     populateChanges();
     $('#event-logs').modal('show');
 }
-
 
 function deployProfile() {
     var gsettings = [],

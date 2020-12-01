@@ -33,8 +33,6 @@ var current_goa_accounts = null;
 var current_goa_account_id = null;
 var GOA_PROVIDERS = null;
 
-
-
 function sortGoaNamedEntries(data) {
     var entries = [];
     $.each(data, function (key, elem) {
@@ -45,7 +43,6 @@ function sortGoaNamedEntries(data) {
     });
     return entries;
 }
-
 
 function updateProviderServices() {
     var provider = $('#goa-provider').val(),
@@ -69,7 +66,6 @@ function updateProviderServices() {
         }
     });
 }
-
 
 function showGOAAccountEdit(account_id) {
     var combo = $('#goa-provider'),
@@ -156,7 +152,6 @@ populateGOAAccounts = function () {
     });
 };
 
-
 function showGOAAccounts() {
     // Populate GOA accounts list
     populateGOAAccounts();
@@ -174,7 +169,6 @@ function getAccountProviderServicesData() {
     });
     return data;
 }
-
 
 function updateOrAddGOAAccount() {
     var data = getAccountProviderServicesData(),
@@ -218,13 +212,11 @@ function updateOrAddGOAAccount() {
     $('#goa-account-edit-modal').modal('hide');
 }
 
-
 function saveGOAAccounts() {
     currentprofile.settings['org.gnome.online-accounts'] = current_goa_accounts;
     $('#goa-accounts-modal').modal('hide');
     $('#profile-modal').modal('show');
 }
-
 
 /*******************************************************************************
  * Initialization
