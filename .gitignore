@@ -55,3 +55,6 @@ install-ipamaster.sh
 build-copr.sh
 check.sh
 check-full.sh
+
+# web plugin
+admin/cockpit/fleet-commander-admin/node_modules/

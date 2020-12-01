@@ -1,0 +1,4 @@
+node_modules/*
+js/spice-html5/*
+js/jquery-3.3.1.min.js
+js/bootstrap-4.0.0.min.js

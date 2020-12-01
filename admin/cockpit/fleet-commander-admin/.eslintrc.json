@@ -1,0 +1,31 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "es6": true,
+        "jquery": true
+    },
+    "extends": [
+	"eslint:recommended",
+        "standard"
+    ],
+    "parserOptions": {
+	"sourceType": "module"
+    },
+    "rules": {
+	"indent": ["error", 4,
+	    {
+		"ObjectExpression": "first",
+		"CallExpression": {"arguments": "first"},
+		"MemberExpression": 2
+	    }],
+	"quotes": "off",
+	"camelcase": "off",
+	"comma-dangle": "off",
+	"semi": ["error", "always", { "omitLastInOneLineBlock": true }],
+	"space-before-function-paren": "off"
+    },
+    "globals": {
+	"cockpit": "readonly"
+    }
+}
