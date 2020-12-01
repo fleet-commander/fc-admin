@@ -36,17 +36,17 @@ function sortGoaNamedEntries(data) {
 }
 
 function updateProviderServices() {
-    var provider = $('#goa-provider').val(),
-        services = GOA_PROVIDERS[provider].services,
-        serviceblock = $('#goa-services'),
-        entries = sortGoaNamedEntries(services);
+    var provider = $('#goa-provider').val();
+    var services = GOA_PROVIDERS[provider].services;
+    var serviceblock = $('#goa-services');
+    var entries = sortGoaNamedEntries(services);
 
     $('#goa-current-provider-icon').attr('src', 'img/goa/' + provider + '.png');
     serviceblock.html('');
 
     $.each(entries, function (index) {
-        var key = entries[index][0],
-            elem = entries[index][1];
+        var key = entries[index][0];
+        var elem = entries[index][1];
         if (elem.enabled) {
             serviceblock.append('<div class="checkbox"><label>' +
                 '<input type="checkbox" ' +
@@ -59,14 +59,14 @@ function updateProviderServices() {
 }
 
 function showGOAAccountEdit(account_id) {
-    var combo = $('#goa-provider'),
-        entries = sortGoaNamedEntries(GOA_PROVIDERS),
-        account;
+    var combo = $('#goa-provider');
+    var entries = sortGoaNamedEntries(GOA_PROVIDERS);
+    var account;
 
     combo.html('');
     $.each(entries, function (index) {
-        var key = entries[index][0],
-            elem = entries[index][1];
+        var key = entries[index][0];
+        var elem = entries[index][1];
 
         if (key === 'google') {
             combo.append('<option value="' + key + '" selected>' + elem.name + '</option>');
@@ -109,14 +109,14 @@ function removeGOAAccount(account_id) {
 }
 
 function addGOAAccountItem(account_id, account_data) {
-    var tr = $('<tr></tr>'),
-        provider = $('<td></td>', {
-            text: GOA_PROVIDERS[account_data.Provider].name
-        }),
-        p_icon = $('<img class="goa-provider-icon" src="img/goa/' +
-            account_data.Provider + '.png">'),
-        actions_col = $('<td></td>'),
-        actions_container = $('<span></span>', { class: 'pull-right' });
+    var tr = $('<tr></tr>');
+    var provider = $('<td></td>', {
+        text: GOA_PROVIDERS[account_data.Provider].name
+    });
+    var p_icon = $('<img class="goa-provider-icon" src="img/goa/' +
+        account_data.Provider + '.png">');
+    var actions_col = $('<td></td>');
+    var actions_container = $('<span></span>', { class: 'pull-right' });
 
     $('<td></td>', { text: account_id }).appendTo(tr);
     p_icon.prependTo(provider);
@@ -151,20 +151,20 @@ function showGOAAccounts() {
 }
 
 function getAccountProviderServicesData() {
-    var provider = $('#goa-provider').val(),
-        data = { Provider: provider };
+    var provider = $('#goa-provider').val();
+    var data = { Provider: provider };
     $('#goa-services input[type=checkbox]').each(function () {
-        var service = $(this).attr('data-service'),
-            enabled = $(this).is(':checked');
+        var service = $(this).attr('data-service');
+        var enabled = $(this).is(':checked');
         data[service] = enabled;
     });
     return data;
 }
 
 function updateOrAddGOAAccount() {
-    var data = getAccountProviderServicesData(),
-        repeated = false,
-        provider,
+    var data = getAccountProviderServicesData();
+    var repeated = false;
+    var provider,
         account_id;
     $.each(current_goa_accounts, function (account_id, account) {
         if (account.Provider === data.Provider) {

@@ -33,8 +33,14 @@ function addHighlightedApp(app) {
         return;
     }
 
-    var li = $('<li></li>', { 'class': 'list-group-item', 'data-id': app, 'text': app }),
-        del = $('<button></button>', { 'class': 'pull-right btn btn-danger', text: 'Delete' });
+    var li = $(
+        '<li></li>',
+        { 'class': 'list-group-item', 'data-id': app, 'text': app }
+    );
+    var del = $(
+        '<button></button>',
+        { 'class': 'pull-right btn btn-danger', text: 'Delete' }
+    );
     del.click(app, function () { deleteHighlightedApp(app) });
     del.appendTo(li);
     li.appendTo($('#highlighted-apps-list'));
@@ -120,7 +126,8 @@ function addHighlightedAppFromEntry() {
 }
 
 function saveHighlightedApps() {
-    var overrides = [], changed = false;
+    var overrides = [];
+    var changed = false;
     $('#highlighted-apps-list li').each(function () {
         overrides.push($(this).attr('data-id'));
     });

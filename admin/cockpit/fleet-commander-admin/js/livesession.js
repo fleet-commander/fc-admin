@@ -30,27 +30,27 @@ const FC_PROTO_HEADER = ':FC_PR:';
 const FC_PROTO_DEFAULT = 1;
 const _ = cockpit.gettext;
 
-var fc = null,
-    fcsc = null,
-    spinnerDialog,
-    messageDialog,
-    console_details = null,
-    collectors = {
-        'org.gnome.gsettings':
-            new BaseCollector('org.gnome.gsettings'),
-        'org.libreoffice.registry':
-            new BaseCollector('org.libreoffice.registry'),
-        'org.chromium.Policies':
-            new BaseCollector('org.chromium.Policies'),
-        'com.google.chrome.Policies':
-            new BaseCollector('com.google.chrome.Policies'),
-        'org.mozilla.firefox':
-            new BaseCollector('org.mozilla.firefox'),
-        'org.mozilla.firefox.Bookmarks':
-            new FirefoxBookmarksCollector('org.mozilla.firefox.Bookmarks'),
-        'org.freedesktop.NetworkManager':
-            new NMCollector('org.freedesktop.NetworkManager')
-    };
+var fc = null;
+var fcsc = null;
+var spinnerDialog = null;
+var messageDialog = null;
+var console_details = null;
+var collectors = {
+    'org.gnome.gsettings':
+        new BaseCollector('org.gnome.gsettings'),
+    'org.libreoffice.registry':
+        new BaseCollector('org.libreoffice.registry'),
+    'org.chromium.Policies':
+        new BaseCollector('org.chromium.Policies'),
+    'com.google.chrome.Policies':
+        new BaseCollector('com.google.chrome.Policies'),
+    'org.mozilla.firefox':
+        new BaseCollector('org.mozilla.firefox'),
+    'org.mozilla.firefox.Bookmarks':
+        new FirefoxBookmarksCollector('org.mozilla.firefox.Bookmarks'),
+    'org.freedesktop.NetworkManager':
+        new NMCollector('org.freedesktop.NetworkManager')
+};
 
 window.alert = function (message) {
     if (DEBUG > 0) {
@@ -333,15 +333,15 @@ function reconnectToVM() {
 }
 
 function addSectionCheckbox(section) {
-    var section_header = $(section).prev("h4"),
-        chkbox_container = $(
-            '<div/>',
-            {
-                class: 'list-view-pf-checkbox',
-                id: section.replace("#", "") + '-chkbox-container'
-            }
-        ),
-        checkbox = $('<input/>', {type: 'checkbox'});
+    var section_header = $(section).prev("h4");
+    var chkbox_container = $(
+        '<div/>',
+        {
+            class: 'list-view-pf-checkbox',
+            id: section.replace("#", "") + '-chkbox-container'
+        }
+    );
+    var checkbox = $('<input/>', {type: 'checkbox'});
 
     checkbox.click(function () {
         var sectionChecked = this.checked;
@@ -360,8 +360,8 @@ function removeSectionCheckbox(section) {
 function populateSectionChanges(section, data, only_value) {
     /* jslint unparam: true */
     $.each(data, function (unusedIndex, item) {
-        var citem = $($('#change-item-template').html()),
-            checkbox,
+        var citem = $($('#change-item-template').html());
+        var checkbox,
             row;
 
         if (only_value) {
@@ -441,14 +441,14 @@ function reviewAndSubmit() {
 }
 
 function deployProfile() {
-    var gsettings = [],
-        libreoffice = [],
-        chromium = [],
-        chrome = [],
-        firefox = [],
-        firefoxbookmarks = [],
-        networkmanager = [],
-        changesets;
+    var gsettings = [];
+    var libreoffice = [];
+    var chromium = [];
+    var chrome = [];
+    var firefox = [];
+    var firefoxbookmarks = [];
+    var networkmanager = [];
+    var changesets;
 
     /* jslint unparam: true */
     $.each($('#gsettings-event-list input[data-id]:checked'), function (i, e) {
