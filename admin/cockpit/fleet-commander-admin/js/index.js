@@ -40,18 +40,18 @@ import {
 
 const _ = cockpit.gettext;
 
-var fc = null,
-    currentuid = null,
-    currentprofile = null,
-    state = {
-        debuglevel: 'info',
-        defaults: {
-            profilepriority : 50
-        }
-    },
-    spinnerDialog = null,
-    questionDialog = null,
-    messageDialog = null;
+var fc = null;
+var currentuid = null;
+var currentprofile = null;
+var state = {
+    debuglevel: 'info',
+    defaults: {
+        profilepriority : 50
+    }
+};
+var spinnerDialog = null;
+var questionDialog = null;
+var messageDialog = null;
 
 /*******************************************************************************
  * Application configuration
@@ -139,8 +139,8 @@ function saveFCSettings(cb) {
             mode: $('#mode').val(),
             viewer: $('#viewer').val(),
             domains: {}
-        },
-        policy = parseInt($('#policy').val(), 10);
+    };
+    var policy = parseInt($('#policy').val(), 10);
 
     function saveSettingsFinal(data) {
         fc.SetHypervisorConfig(data, function (resp) {
@@ -194,9 +194,9 @@ function installPubkey() {
     }
 
     $('#pubkey-install-modal').modal('hide');
-    var host = $('#host').val(),
-        user = $('#username').val(),
-        pass = $('#pubkey-install-password').val();
+    var host = $('#host').val();
+    var user = $('#username').val();
+    var pass = $('#pubkey-install-password').val();
 
     $('#pubkey-install-password').val('');
 
@@ -277,10 +277,13 @@ function refreshProfileList(cb) {
             // Populate profile list
             /* jslint unparam: true */
             $.each(data, function (ignoreIndex, val) {
-                var tr = $('<tr ></tr>'),
-                    actions_col = $('<td></td>'),
-                    actions_container = $('<span></span>', { class: 'pull-right' }),
-                    uid = val[0];
+                var tr = $('<tr ></tr>');
+                var actions_col = $('<td></td>');
+                var actions_container = $(
+                    '<span></span>',
+                    { class: 'pull-right' }
+                );
+                var uid = val[0];
 
                 $('<td></td>', { text: val[1] }).appendTo(tr);
                 $('<td></td>', { text: val[2] }).appendTo(tr);
@@ -422,8 +425,8 @@ function showDomainSelection() {
             $('#domain-selection-modal').modal('show');
 
             // Show loading clock
-            var spinner = $('#domain-selection-modal .spinner'),
-                list = $('#domain-selection-list');
+            var spinner = $('#domain-selection-modal .spinner');
+            var list = $('#domain-selection-list');
             spinner.show();
 
             // Generate domain list
@@ -434,9 +437,12 @@ function showDomainSelection() {
                     $('#domain-selection-modal .spinner').hide();
                     $.each(resp.domains, function () {
                         if (!this.temporary) {
-                            var wrapper = $('<div></div>', {'class': 'list-group-item'}),
-                                text = this.name,
-                                domain = "";
+                            var wrapper = $(
+                                '<div></div>',
+                                {'class': 'list-group-item'}
+                            );
+                            var text = this.name;
+                            var domain = "";
                             if (!this.active) {
                                 domain = $('<a></a>', { text: text, href: '#', 'data-uuid': this.uuid});
                                 domain.click(selectDomain);
@@ -452,8 +458,13 @@ function showDomainSelection() {
 
                     // If list is empty, show a message to inform user
                     if (list.html() === '') {
-                        var wrapper = $('<div></div>', {'class': 'list-group-item'}),
-                            text = $('<span>No template virtual machines found</span>');
+                        var wrapper = $(
+                            '<div></div>',
+                            {'class': 'list-group-item'}
+                        );
+                        var text = $(
+                            '<span>No template virtual machines found</span>'
+                        );
                         text.appendTo(wrapper);
                         wrapper.appendTo(list);
                     }

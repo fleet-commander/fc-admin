@@ -126,9 +126,9 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
                     unix: details.path,
                     binary: 'raw',
                 })
-            ),
-            websocket_proto = 'ws:',
-            cockpit_uri;
+            );
+        var websocket_proto = 'ws:';
+        var cockpit_uri;
 
         if (location.protocol === 'https:') {
             websocket_proto = 'wss:';
