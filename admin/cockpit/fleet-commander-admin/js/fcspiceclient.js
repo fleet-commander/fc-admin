@@ -120,13 +120,13 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
         }
 
         var query = window.btoa(
-                JSON.stringify({
-                    payload: 'stream',
-                    protocol: 'binary',
-                    unix: details.path,
-                    binary: 'raw',
-                })
-            );
+            JSON.stringify({
+                payload: 'stream',
+                protocol: 'binary',
+                unix: details.path,
+                binary: 'raw',
+            })
+        );
         var websocket_proto = 'ws:';
         var cockpit_uri;
 
