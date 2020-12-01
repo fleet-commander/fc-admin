@@ -1,0 +1,29 @@
+{
+  "name": "fleet-commander-admin",
+  "version": "1.0.0",
+  "description": "Fleet Commander",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^7.14.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1"
+  },
+  "scripts": {
+    "eslint": "eslint js/",
+    "eslint:fix": "eslint --fix js/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fleet-commander/fc-admin.git"
+  },
+  "author": "",
+  "license": "LGPL2.1",
+  "bugs": {
+    "url": "https://github.com/fleet-commander/fc-admin/issues"
+  },
+  "homepage": "https://fleet-commander.org/"
+}

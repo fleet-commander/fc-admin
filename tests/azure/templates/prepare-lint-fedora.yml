@@ -16,7 +16,4 @@ steps:
     set -e
     printf "Installing npm\n"
     sudo dnf install -y npm
-    
-    printf "Installing jslint\n"
-    sudo npm install -g jslint
-  displayName: Install latest jslint
+  displayName: Install JavaScript lint dependencies

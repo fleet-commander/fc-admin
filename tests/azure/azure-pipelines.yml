@@ -30,8 +30,8 @@ jobs:
       displayName: Run unittests
     - script: |
         set -e
-        make jslint
-      displayName: jslint sources
+        make eslint
+      displayName: Lint JavaScript sources
     - script: |
         set -e
         make VERBOSE=1 distcheck
