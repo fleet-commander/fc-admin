@@ -18,15 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-/*jslint nomen: true */
-/*global $ */
-/*global _ */
-/*global questionDialog */
-/*global messageDialog */
-/*global fc */
-/*global GOA_PROVIDERS:true */
-/*global currentprofile */
-
 const _ = cockpit.gettext;
 
 var current_goa_accounts = null;

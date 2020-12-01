@@ -18,22 +18,6 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-/*jslint browser: true */
-/*jslint nomen: true */
-/*global $ */
-/*global cockpit */
-/*global Uint8Array */
-/*global arraybuffer_to_str_func */
-/*global setDebugLevel */
-/*global SpinnerDialog */
-/*global MessageDialog */
-/*global showCurtain */
-/*global FleetCommanderDbusClient */
-/*global FleetCommanderSpiceClient */
-/*global BaseCollector */
-/*global FirefoxBookmarksCollector */
-/*global NMCollector */
-
 import { DEBUG, setDebugLevel } from './base.js';
 import { BaseCollector, NMCollector, FirefoxBookmarksCollector } from './collectors.js';
 import { SpinnerDialog, MessageDialog, showCurtain } from './dialogs.js';
@@ -50,7 +34,6 @@ var fc = null,
     fcsc = null,
     spinnerDialog,
     messageDialog,
-    heartbeat = null,
     console_details = null,
     collectors = {
         'org.gnome.gsettings':
@@ -292,7 +275,7 @@ function parseFCMsg(str, msg) {
 }
 
 function startHeartBeat() {
-    heartbeat = window.setInterval(function () {
+    window.setInterval(function () {
         fc.HeartBeat(resp => {});
     }, 1000);
 }
