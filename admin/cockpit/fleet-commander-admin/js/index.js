@@ -275,7 +275,7 @@ function refreshProfileList(cb) {
             // Clear profile list HTML
             $('#profile-list').html('');
             // Populate profile list
-            /*jslint unparam: true */
+            /* jslint unparam: true */
             $.each(data, function (ignoreIndex, val) {
                 var tr = $('<tr ></tr>'),
                     actions_col = $('<td></td>'),
@@ -297,7 +297,7 @@ function refreshProfileList(cb) {
 
                 tr.appendTo('#profile-list');
             });
-            /*jslint unparam: false */
+            /* jslint unparam: false */
         } else {
             messageDialog.show(resp.error, 'Error');
         }
