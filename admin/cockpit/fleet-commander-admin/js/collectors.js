@@ -75,13 +75,13 @@ BaseCollector.prototype = {
 
     get_changeset: function (selected_keys) {
         var self = this, changeset = [];
-        /*jslint unparam: true */
+        /* jslint unparam: true */
         $.each(selected_keys, function (ignore, key) {
             if (self.changes[key] !== undefined) {
                 changeset.push(self.changes[key]);
             }
         });
-        /*jslint unparam: false */
+        /* jslint unparam: false */
         return changeset;
     }
 };

@@ -27,7 +27,7 @@ const _ = cockpit.gettext;
 function FleetCommanderSpiceClient(details, error_cb, timeout) {
     var self = this;
 
-    this.conn_timeout = timeout || 15000; //ms
+    this.conn_timeout = timeout || 15000; // ms
     // this.sc;
     this.connecting = null;
     this.noretry = false;
