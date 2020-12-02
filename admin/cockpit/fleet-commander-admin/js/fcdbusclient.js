@@ -19,8 +19,8 @@
  */
 
 function FleetCommanderDbusClient(readycb, errorcb) {
-    var self = this;
-    var errorhandler = errorcb || function (err) {
+    const self = this;
+    const errorhandler = errorcb || function (err) {
         console.log('FC: Error - ' + err);
     };
 

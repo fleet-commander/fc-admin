@@ -22,7 +22,7 @@
 * Utility functions
 ******************************************************************************/
 
-var DEBUG = 0;
+let DEBUG = 0;
 
 function clearModalFormErrors(modalId) {
     $('#' + modalId + ' div.form-group').removeClass('has-error');

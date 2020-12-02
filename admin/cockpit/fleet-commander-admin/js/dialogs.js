@@ -9,9 +9,9 @@
 const _ = cockpit.gettext;
 
 function BaseDialog(id) {
-    var self = this;
-    var hidn_ev = 'hidden.bs.modal';
-    var shn_ev = 'shown.bs.modal';
+    const self = this;
+    const hidn_ev = 'hidden.bs.modal';
+    const shn_ev = 'shown.bs.modal';
     this.id = id;
 
     /* state can be 'hide', 'show' or 'notset' */
@@ -44,8 +44,8 @@ BaseDialog.prototype = {
 };
 
 function SpinnerDialog() {
-    var id = '#spinner-dialog-modal';
-    var default_title = _('Loading');
+    const id = '#spinner-dialog-modal';
+    const default_title = _('Loading');
     BaseDialog.apply(this, [id]);
 
     this.show = function (message, title) {
@@ -60,9 +60,9 @@ SpinnerDialog.prototype = Object.create(BaseDialog.prototype);
 SpinnerDialog.prototype.constructor = SpinnerDialog;
 
 function QuestionDialog() {
-    var self = this;
-    var id = '#question-dialog-modal';
-    var default_title = _('Question');
+    const self = this;
+    const id = '#question-dialog-modal';
+    const default_title = _('Question');
     BaseDialog.apply(this, [id]);
 
     this.show = function (message, title, acceptcb, cancelcb) {
@@ -81,7 +81,7 @@ function QuestionDialog() {
         }).click(acceptcb).appendTo(id + ' .modal-footer');
 
         $(id).off('keypress').keypress(function (e) {
-            var code = e.keyCode || e.which;
+            const code = e.keyCode || e.which;
             if (code === 13) {
                 acceptcb();
             }
@@ -94,9 +94,9 @@ QuestionDialog.prototype = Object.create(BaseDialog.prototype);
 QuestionDialog.prototype.constructor = QuestionDialog;
 
 function MessageDialog() {
-    var self = this;
-    var id = '#message-dialog-modal';
-    var default_title = _('Info');
+    const self = this;
+    const id = '#message-dialog-modal';
+    const default_title = _('Info');
     BaseDialog.apply(this, [id]);
 
     this.show = function (message, title, closecb) {
@@ -111,7 +111,7 @@ function MessageDialog() {
         }).click(closecb).appendTo(id + ' .modal-footer');
 
         $(id).off('keypress').keypress(function (e) {
-            var code = (e.keyCode || e.which);
+            const code = (e.keyCode || e.which);
             if (code === 13) {
                 closecb();
             }
@@ -124,8 +124,8 @@ MessageDialog.prototype = Object.create(BaseDialog.prototype);
 MessageDialog.prototype.constructor = MessageDialog;
 
 function showCurtain(message, title, icon, buttons) {
-    var iconarea = $('#curtain .blank-slate-pf-icon');
-    var buttonsarea = $('#curtain .blank-slate-pf-main-action');
+    const iconarea = $('#curtain .blank-slate-pf-icon');
+    const buttonsarea = $('#curtain .blank-slate-pf-main-action');
     icon = icon || 'exclamation-circle';
     buttons = buttons || {};
     $('#curtain h1').html(title);
@@ -138,8 +138,8 @@ function showCurtain(message, title, icon, buttons) {
 
     buttonsarea.html('');
     $.each(buttons, function (id, data) {
-        var btnclass = data.class || 'btn-default';
-        var button = $(
+        const btnclass = data.class || 'btn-default';
+        const button = $(
             '<button id="' + id + '" class="btn btn-lg ' + btnclass + '">' +
             data.text + '</button>'
         );

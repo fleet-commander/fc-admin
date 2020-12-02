@@ -39,20 +39,19 @@ import {
 } from './highlightedapps.js';
 
 const _ = cockpit.gettext;
-
-var fc = null;
-var currentuid = null;
-var currentprofile = null;
-var state = {
+const state = {
     debuglevel: 'info',
     defaults: {
         profilepriority: 50
     }
 };
+const spinnerDialog = new SpinnerDialog();
+const questionDialog = new QuestionDialog();
+const messageDialog = new MessageDialog();
 
-var spinnerDialog = new SpinnerDialog();
-var questionDialog = new QuestionDialog();
-var messageDialog = new MessageDialog();
+let fc = null;
+let currentuid = null;
+let currentprofile = null;
 
 /*******************************************************************************
  * Application configuration
@@ -134,14 +133,14 @@ function saveFCSettings(cb) {
 
     clearModalFormErrors('fc-settings-modal');
 
-    var data = {
+    const data = {
         host: $('#host').val(),
         username: $('#username').val(),
         mode: $('#mode').val(),
         viewer: $('#viewer').val(),
         domains: {}
     };
-    var policy = parseInt($('#policy').val(), 10);
+    const policy = parseInt($('#policy').val(), 10);
 
     function saveSettingsFinal(data) {
         fc.SetHypervisorConfig(data, function (resp) {
@@ -195,9 +194,9 @@ function installPubkey() {
     }
 
     $('#pubkey-install-modal').modal('hide');
-    var host = $('#host').val();
-    var user = $('#username').val();
-    var pass = $('#pubkey-install-password').val();
+    const host = $('#host').val();
+    const user = $('#username').val();
+    const pass = $('#pubkey-install-password').val();
 
     $('#pubkey-install-password').val('');
 
@@ -265,26 +264,23 @@ function editProfile(uid) {
     });
 }
 
-// Dirty workaround to avoid jslint error on cyclic calls
-var removeProfile;
-
 function refreshProfileList(cb) {
     // Populate profiles list
     fc.GetProfiles(function (resp) {
         if (resp.status) {
-            var data = resp.data;
+            const data = resp.data;
             // Clear profile list HTML
             $('#profile-list').html('');
             // Populate profile list
             /* jslint unparam: true */
             $.each(data, function (ignoreIndex, val) {
-                var tr = $('<tr ></tr>');
-                var actions_col = $('<td></td>');
-                var actions_container = $(
+                const tr = $('<tr ></tr>');
+                const actions_col = $('<td></td>');
+                const actions_container = $(
                     '<span></span>',
                     { class: 'pull-right' }
                 );
-                var uid = val[0];
+                const uid = val[0];
 
                 $('<td></td>', { text: val[1] }).appendTo(tr);
                 $('<td></td>', { text: val[2] }).appendTo(tr);
@@ -312,8 +308,7 @@ function refreshProfileList(cb) {
     });
 }
 
-// Part 2 of dirty workaround to avoid jslint error on cyclic calls
-removeProfile = function (uid, displayName) {
+function removeProfile(uid, displayName) {
     questionDialog.show(
         _('Are you sure you want to delete profile') + ' "' + displayName + '"?',
         _('Delete profile confirmation'),
@@ -324,7 +319,7 @@ removeProfile = function (uid, displayName) {
             });
         }
     );
-};
+}
 
 function showAddProfile() {
     // Clear current profile
@@ -361,7 +356,7 @@ function saveProfile() {
         currentuid = $('#profile-name').val();
     }
 
-    var data = {
+    const data = {
         cn: currentuid,
         name: $('#profile-name').val(),
         description: $('#profile-desc').val(),
@@ -426,8 +421,8 @@ function showDomainSelection() {
             $('#domain-selection-modal').modal('show');
 
             // Show loading clock
-            var spinner = $('#domain-selection-modal .spinner');
-            var list = $('#domain-selection-list');
+            const spinner = $('#domain-selection-modal .spinner');
+            const list = $('#domain-selection-list');
             spinner.show();
 
             // Generate domain list
@@ -438,12 +433,12 @@ function showDomainSelection() {
                     $('#domain-selection-modal .spinner').hide();
                     $.each(resp.domains, function () {
                         if (!this.temporary) {
-                            var wrapper = $(
+                            const wrapper = $(
                                 '<div></div>',
                                 { class: 'list-group-item' }
                             );
-                            var text = this.name;
-                            var domain = "";
+                            let text = this.name;
+                            let domain = "";
                             if (!this.active) {
                                 domain = $(
                                     '<a></a>',
@@ -465,11 +460,11 @@ function showDomainSelection() {
 
                     // If list is empty, show a message to inform user
                     if (list.html() === '') {
-                        var wrapper = $(
+                        const wrapper = $(
                             '<div></div>',
                             { class: 'list-group-item' }
                         );
-                        var text = $(
+                        const text = $(
                             '<span>No template virtual machines found</span>'
                         );
                         text.appendTo(wrapper);
@@ -510,35 +505,35 @@ $(document).ready(function () {
     $('#copy-pubkey-to-clipboard').click(copyPubkeyToClipboard);
 
     $('#pubkey-install-password').keypress(function (e) {
-        var code = e.keyCode || e.which;
+        const code = e.keyCode || e.which;
         if (code === 13) {
             installPubkey();
         }
     });
 
     $('#profile-modal').keypress(function (e) {
-        var code = e.keyCode || e.which;
+        const code = e.keyCode || e.which;
         if (code === 13) {
             saveProfile();
         }
     });
 
     $('#fc-settings-modal').keypress(function (e) {
-        var code = e.keyCode || e.which;
+        const code = e.keyCode || e.which;
         if (code === 13) {
             saveFCSettings();
         }
     });
 
     $('#add-highlighted-app').keypress(function (e) {
-        var code = e.keyCode || e.which;
+        const code = e.keyCode || e.which;
         if (code === 13) {
             e.preventDefault();
         }
     });
 
     $('#highlighted-apps-modal').keypress(function (e) {
-        var code = e.keyCode || e.which;
+        const code = e.keyCode || e.which;
         if (code === 13) {
             saveHighlightedApps(currentprofile);
         }

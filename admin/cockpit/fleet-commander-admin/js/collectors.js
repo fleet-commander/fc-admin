@@ -50,7 +50,7 @@ BaseCollector.prototype = {
                 change
             );
         }
-        var key = this.get_key_from_change(change);
+        const key = this.get_key_from_change(change);
         if (key !== undefined) {
             this.changes[key] = change;
         } else {
@@ -66,8 +66,8 @@ BaseCollector.prototype = {
     },
 
     dump_changes: function () {
-        var self = this;
-        var changelist = [];
+        const self = this;
+        const changelist = [];
         $.each(this.changes, function (k, v) {
             changelist.push([k, self.get_value_from_change(v)]);
         });
@@ -75,8 +75,8 @@ BaseCollector.prototype = {
     },
 
     get_changeset: function (selected_keys) {
-        var self = this;
-        var changeset = [];
+        const self = this;
+        const changeset = [];
         /* jslint unparam: true */
         $.each(selected_keys, function (ignore, key) {
             if (self.changes[key] !== undefined) {

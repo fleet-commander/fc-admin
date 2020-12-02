@@ -25,7 +25,7 @@ import * as SpiceHtml5 from './spice-html5/src/main.js';
 const _ = cockpit.gettext;
 
 function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
-    var self = this;
+    const self = this;
 
     this.conn_timeout = timeout || 15000; // ms
     // this.sc;
@@ -83,7 +83,7 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
             console.log('FC: Connecting to spice session');
         }
 
-        var query = window.btoa(
+        const query = window.btoa(
             JSON.stringify({
                 payload: 'stream',
                 protocol: 'binary',
@@ -91,14 +91,18 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
                 binary: 'raw',
             })
         );
-        var websocket_proto = 'ws:';
-        var cockpit_uri;
 
+        let websocket_proto = 'ws:';
         if (location.protocol === 'https:') {
             websocket_proto = 'wss:';
         }
 
-        cockpit_uri = websocket_proto + '//' + location.hostname + ':' + location.port + '/cockpit/channel/' + cockpit.transport.csrf_token + '?' + query;
+        const cockpit_uri = websocket_proto + '//' +
+                            location.hostname +
+                            ':' + location.port +
+                            '/cockpit/channel/' +
+                            cockpit.transport.csrf_token +
+                            '?' + query;
 
         if (DEBUG > 0) {
             console.log('FC: Cockpit channel websocket uri is:', cockpit_uri);
