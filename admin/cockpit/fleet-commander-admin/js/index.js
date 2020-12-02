@@ -49,9 +49,10 @@ var state = {
         profilepriority : 50
     }
 };
-var spinnerDialog = null;
-var questionDialog = null;
-var messageDialog = null;
+
+var spinnerDialog = new SpinnerDialog();
+var questionDialog = new QuestionDialog();
+var messageDialog = new MessageDialog();
 
 /*******************************************************************************
  * Application configuration
@@ -495,9 +496,13 @@ $(document).ready(function () {
     $('#save-fc-settings').click(saveFCSettings);
     $('#show-add-profile').click(showAddProfile);
     $('#save-new-profile').click(saveProfile);
-    $('#show-highlighted-apps').click(showHighlightedApps);
+    $('#show-highlighted-apps').click(() => {
+        showHighlightedApps(currentprofile);
+    });
     $('#add-highlighted-app').click(addHighlightedAppFromEntry);
-    $('#save-highlighted-apps').click(saveHighlightedApps);
+    $('#save-highlighted-apps').click(() => {
+        saveHighlightedApps(currentprofile);
+    });
     $('#show-domain-selection').click(showDomainSelection);
     $('#show-pubkey-install').click(showPubkeyInstall);
     $('#cancel-pubkey-install').click(cancelPubkeyInstall);
@@ -535,7 +540,7 @@ $(document).ready(function () {
     $('#highlighted-apps-modal').keypress(function (e) {
         var code = e.keyCode || e.which;
         if (code === 13) {
-            saveHighlightedApps();
+            saveHighlightedApps(currentprofile);
         }
     });
 
@@ -554,10 +559,6 @@ $(document).ready(function () {
     $("#highlighted-apps-modal").on('shown.bs.modal', function () {
         $('#app-name').focus();
     });
-
-    spinnerDialog = new SpinnerDialog();
-    questionDialog = new QuestionDialog();
-    messageDialog = new MessageDialog();
 
     showCurtain(
         _('Fleet commander is initializing needed data. This action can last for some time depending on your system configuration. Please, be patient.'),
@@ -584,7 +585,9 @@ $(document).ready(function () {
             fc.DoDomainConnection(function (resp) {
                 if (resp.status) {
                     checkHypervisorConfig();
-                    initialize_goa(fc);
+                    fc.GetGOAProviders(resp => {
+                        initialize_goa(currentprofile, resp);
+                    });
                     refreshProfileList(function () {
                         $('#main-container').show();
                         $('#curtain').hide();

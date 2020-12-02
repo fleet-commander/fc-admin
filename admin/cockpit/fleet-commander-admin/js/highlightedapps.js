@@ -16,9 +16,12 @@
 *
 * Author: Oliver Gutiérrez <ogutierrez@redhat.com>
 */
-import { DEBUG } from './base.js';
+import { DEBUG, hasSuffix, clearModalFormErrors } from './base.js';
+import { MessageDialog } from './dialogs.js';
 
 const _ = cockpit.gettext;
+
+var messageDialog = new MessageDialog();
 
 function deleteHighlightedApp(app) {
     $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
@@ -46,7 +49,7 @@ function addHighlightedApp(app) {
     li.appendTo($('#highlighted-apps-list'));
 }
 
-function refreshHighlightedAppsList() {
+function refreshHighlightedAppsList(currentprofile) {
     if (DEBUG > 0) {
         console.log('FC: Refreshing highlighted apps list');
     }
@@ -88,11 +91,11 @@ function refreshHighlightedAppsList() {
     } catch (ignore) {}
 }
 
-function showHighlightedApps() {
+function showHighlightedApps(currentprofile) {
     $('#highlighted-apps-list').html('');
     $('#profile-modal').modal('hide');
     $('#highlighted-apps-modal').modal('show');
-    refreshHighlightedAppsList();
+    refreshHighlightedAppsList(currentprofile);
 }
 
 function addHighlightedAppFromEntry() {
@@ -125,7 +128,7 @@ function addHighlightedAppFromEntry() {
     $('#app-name').val('');
 }
 
-function saveHighlightedApps() {
+function saveHighlightedApps(currentprofile) {
     var overrides = [];
     var changed = false;
     $('#highlighted-apps-list li').each(function () {
