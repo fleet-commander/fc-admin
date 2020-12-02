@@ -46,7 +46,7 @@ var currentprofile = null;
 var state = {
     debuglevel: 'info',
     defaults: {
-        profilepriority : 50
+        profilepriority: 50
     }
 };
 
