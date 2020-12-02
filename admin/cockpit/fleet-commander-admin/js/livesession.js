@@ -30,10 +30,10 @@ const FC_PROTO_HEADER = ':FC_PR:';
 const FC_PROTO_DEFAULT = 1;
 const _ = cockpit.gettext;
 
-var fc = null;
-var fcsc = null;
-var console_details = null;
-var collectors = {
+let fc = null;
+let fcsc = null;
+let console_details = null;
+const collectors = {
     'org.gnome.gsettings':
         new BaseCollector('org.gnome.gsettings'),
     'org.libreoffice.registry':
@@ -49,8 +49,8 @@ var collectors = {
     'org.freedesktop.NetworkManager':
         new NMCollector('org.freedesktop.NetworkManager')
 };
-var spinnerDialog = new SpinnerDialog();
-var messageDialog = new MessageDialog();
+const spinnerDialog = new SpinnerDialog();
+const messageDialog = new MessageDialog();
 
 window.alert = function (message) {
     if (DEBUG > 0) {
@@ -60,7 +60,7 @@ window.alert = function (message) {
 
 function downloadConnectionFile(console_details) {
     console.log("Generate remote-viewer connection file: ", console_details);
-    var data = '[virt-viewer]\n' +
+    const data = '[virt-viewer]\n' +
         `type=${console_details.type}\n` +
         `host=${console_details.address}\n` +
         `tls-port=${console_details.tls_port}\n` +
@@ -148,7 +148,7 @@ function startSpiceHtml5(conn_details) {
         }
     });
 
-    var details = {
+    const details = {
         path: conn_details.path,
         ticket: conn_details.ticket,
     };
@@ -170,14 +170,14 @@ function startRemoteViewer(conn_details) {
     };
     downloadConnectionFile(console_details);
 
-    var options = {
+    const options = {
         payload: 'stream',
         protocol: 'binary',
         batch: 2048,
         unix: conn_details.notify_socket,
         binary: true,
     };
-    var channel = cockpit.channel(options);
+    const channel = cockpit.channel(options);
 
     const msg = {
         buffer: '',
@@ -349,11 +349,11 @@ function startLiveSession() {
     );
     // Stop any previous session
     stopLiveSession(function () {
-        var domain = sessionStorage.getItem("fc.session.domain");
+        const domain = sessionStorage.getItem("fc.session.domain");
         fc.SessionStart(domain, function (resp) {
             if (resp.status) {
-                var conn_details = resp.connection_details;
-                var viewers = {
+                const conn_details = resp.connection_details;
+                const viewers = {
                     spice_html5: startSpiceHtml5,
                     spice_remote_viewer: startRemoteViewer,
                 };
@@ -383,18 +383,18 @@ function reconnectToVM() {
 }
 
 function addSectionCheckbox(section) {
-    var section_header = $(section).prev("h4");
-    var chkbox_container = $(
+    const section_header = $(section).prev("h4");
+    const chkbox_container = $(
         '<div/>',
         {
             class: 'list-view-pf-checkbox',
             id: section.replace("#", "") + '-chkbox-container'
         }
     );
-    var checkbox = $('<input/>', { type: 'checkbox' });
+    const checkbox = $('<input/>', { type: 'checkbox' });
 
     checkbox.click(function () {
-        var sectionChecked = this.checked;
+        const sectionChecked = this.checked;
         $(section).find('input[type=checkbox]').each(function () {
             this.checked = sectionChecked;
         });
@@ -410,9 +410,8 @@ function removeSectionCheckbox(section) {
 function populateSectionChanges(section, data, only_value) {
     /* jslint unparam: true */
     $.each(data, function (unusedIndex, item) {
-        var citem = $($('#change-item-template').html());
-        var checkbox,
-            row;
+        const citem = $($('#change-item-template').html());
+        let row;
 
         if (only_value) {
             row = item[1];
@@ -421,7 +420,7 @@ function populateSectionChanges(section, data, only_value) {
         }
 
         citem.appendTo($(section));
-        checkbox = citem.find('input[type=checkbox]');
+        const checkbox = citem.find('input[type=checkbox]');
         checkbox.attr('data-id', item[0]);
         citem.find('.changekey').html(row);
     });
@@ -505,14 +504,13 @@ function reviewAndSubmit() {
 }
 
 function deployProfile() {
-    var gsettings = [];
-    var libreoffice = [];
-    var chromium = [];
-    var chrome = [];
-    var firefox = [];
-    var firefoxbookmarks = [];
-    var networkmanager = [];
-    var changesets;
+    const gsettings = [];
+    const libreoffice = [];
+    const chromium = [];
+    const chrome = [];
+    const firefox = [];
+    const firefoxbookmarks = [];
+    const networkmanager = [];
 
     /* jslint unparam: true */
     $.each($('#gsettings-event-list input[data-id]:checked'), function (i, e) {
@@ -544,7 +542,7 @@ function deployProfile() {
     });
     /* jslint unparam: false */
 
-    changesets = {
+    const changesets = {
         'org.gnome.gsettings':
             collectors['org.gnome.gsettings'].get_changeset(gsettings),
         'org.libreoffice.registry':
@@ -569,7 +567,7 @@ function deployProfile() {
     $('#event-logs').modal('hide');
 
     stopLiveSession(function () {
-        var uid = sessionStorage.getItem("fc.session.profile_uid");
+        const uid = sessionStorage.getItem("fc.session.profile_uid");
         if (DEBUG > 0) {
             console.log('FC: Saving live session settings');
         }

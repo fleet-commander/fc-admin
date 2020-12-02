@@ -20,8 +20,7 @@ import { DEBUG, hasSuffix, clearModalFormErrors } from './base.js';
 import { MessageDialog } from './dialogs.js';
 
 const _ = cockpit.gettext;
-
-var messageDialog = new MessageDialog();
+const messageDialog = new MessageDialog();
 
 function deleteHighlightedApp(app) {
     $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
@@ -36,11 +35,11 @@ function addHighlightedApp(app) {
         return;
     }
 
-    var li = $(
+    const li = $(
         '<li></li>',
         { class: 'list-group-item', 'data-id': app, text: app }
     );
-    var del = $(
+    const del = $(
         '<button></button>',
         { class: 'pull-right btn btn-danger', text: 'Delete' }
     );
@@ -54,22 +53,20 @@ function refreshHighlightedAppsList(currentprofile) {
         console.log('FC: Refreshing highlighted apps list');
     }
     try {
-        var changes = currentprofile.settings["org.gnome.gsettings"];
+        const changes = currentprofile.settings["org.gnome.gsettings"];
         /* jslint unparam: true */
         $.each(changes, function (ignoreIndex, e) {
-            var key, overrides, a;
-
             function addHighlightedAppWrap(ignoreIndexParm, app) {
                 addHighlightedApp(app);
             }
 
-            for (key in e) {
+            for (const key in e) {
                 if (e[key] === "/org/gnome/software/popular-overrides") {
                     try {
-                        overrides = e.value;
+                        let overrides = e.value;
                         if (Array.isArray(overrides) === false) {
                             if (typeof overrides === 'string' && overrides.startsWith('[') && overrides.endsWith(']')) {
-                                a = overrides.substring(1, overrides.length - 1);
+                                const a = overrides.substring(1, overrides.length - 1);
                                 if (a.length > 0) {
                                     overrides = a.substring(1, a.length - 1).split("','");
                                 } else {
@@ -101,7 +98,7 @@ function showHighlightedApps(currentprofile) {
 function addHighlightedAppFromEntry() {
     clearModalFormErrors('highlighted-apps-modal');
 
-    var app = $('#app-name').val();
+    const app = $('#app-name').val();
 
     if (hasSuffix(app, ".desktop") === false) {
         messageDialog.show(
@@ -129,8 +126,8 @@ function addHighlightedAppFromEntry() {
 }
 
 function saveHighlightedApps(currentprofile) {
-    var overrides = [];
-    var changed = false;
+    const overrides = [];
+    let changed = false;
     $('#highlighted-apps-list li').each(function () {
         overrides.push($(this).attr('data-id'));
     });
@@ -138,8 +135,7 @@ function saveHighlightedApps(currentprofile) {
     if (currentprofile.settings["org.gnome.gsettings"] !== undefined) {
         /* jslint unparam: true */
         $.each(currentprofile.settings["org.gnome.gsettings"], function (ignore, e) {
-            var key;
-            for (key in e) {
+            for (const key in e) {
                 if (e[key] === "/org/gnome/software/popular-overrides") {
                     e.value = JSON.stringify(overrides).replace(/"/g, "'");
                     changed = true;

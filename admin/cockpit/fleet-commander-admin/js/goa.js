@@ -21,15 +21,15 @@
 import { MessageDialog, QuestionDialog } from './dialogs.js';
 
 const _ = cockpit.gettext;
+const messageDialog = new MessageDialog();
+const questionDialog = new QuestionDialog();
 
-var current_goa_accounts = null;
-var current_goa_account_id = null;
-var GOA_PROVIDERS = null;
-var messageDialog = new MessageDialog();
-var questionDialog = new QuestionDialog();
+let current_goa_accounts = null;
+let current_goa_account_id = null;
+let GOA_PROVIDERS = null;
 
 function sortGoaNamedEntries(data) {
-    var entries = [];
+    const entries = [];
     $.each(data, function (key, elem) {
         entries.push([key, elem]);
     });
@@ -40,17 +40,17 @@ function sortGoaNamedEntries(data) {
 }
 
 function updateProviderServices() {
-    var provider = $('#goa-provider').val();
-    var services = GOA_PROVIDERS[provider].services;
-    var serviceblock = $('#goa-services');
-    var entries = sortGoaNamedEntries(services);
+    const provider = $('#goa-provider').val();
+    const services = GOA_PROVIDERS[provider].services;
+    const serviceblock = $('#goa-services');
+    const entries = sortGoaNamedEntries(services);
 
     $('#goa-current-provider-icon').attr('src', 'img/goa/' + provider + '.png');
     serviceblock.html('');
 
     $.each(entries, function (index) {
-        var key = entries[index][0];
-        var elem = entries[index][1];
+        const key = entries[index][0];
+        const elem = entries[index][1];
         if (elem.enabled) {
             serviceblock.append('<div class="checkbox"><label>' +
                 '<input type="checkbox" ' +
@@ -63,14 +63,13 @@ function updateProviderServices() {
 }
 
 function showGOAAccountEdit(account_id) {
-    var combo = $('#goa-provider');
-    var entries = sortGoaNamedEntries(GOA_PROVIDERS);
-    var account;
+    const combo = $('#goa-provider');
+    const entries = sortGoaNamedEntries(GOA_PROVIDERS);
 
     combo.html('');
     $.each(entries, function (index) {
-        var key = entries[index][0];
-        var elem = entries[index][1];
+        const key = entries[index][0];
+        const elem = entries[index][1];
 
         if (key === 'google') {
             combo.append('<option value="' + key + '" selected>' + elem.name + '</option>');
@@ -80,12 +79,12 @@ function showGOAAccountEdit(account_id) {
     });
 
     if (typeof account_id === 'string') {
-        account = current_goa_accounts[account_id];
+        const account = current_goa_accounts[account_id];
         combo.val(account.Provider);
         updateProviderServices();
         // Set selected services
         $('#goa-services input[type=checkbox]').each(function () {
-            var service = $(this).attr('data-service');
+            const service = $(this).attr('data-service');
             $(this).prop('checked', account[service] === true);
         });
         current_goa_account_id = account_id;
@@ -96,9 +95,6 @@ function showGOAAccountEdit(account_id) {
     $('#goa-accounts-modal').modal('hide');
     $('#goa-account-edit-modal').modal('show');
 }
-
-// Dirty workaround to avoid jslint error on cyclic calls
-var populateGOAAccounts;
 
 function removeGOAAccount(account_id) {
     questionDialog.show(
@@ -113,14 +109,14 @@ function removeGOAAccount(account_id) {
 }
 
 function addGOAAccountItem(account_id, account_data) {
-    var tr = $('<tr></tr>');
-    var provider = $('<td></td>', {
+    const tr = $('<tr></tr>');
+    const provider = $('<td></td>', {
         text: GOA_PROVIDERS[account_data.Provider].name
     });
-    var p_icon = $('<img class="goa-provider-icon" src="img/goa/' +
+    const p_icon = $('<img class="goa-provider-icon" src="img/goa/' +
         account_data.Provider + '.png">');
-    var actions_col = $('<td></td>');
-    var actions_container = $('<span></span>', { class: 'pull-right' });
+    const actions_col = $('<td></td>');
+    const actions_container = $('<span></span>', { class: 'pull-right' });
 
     $('<td></td>', { text: account_id }).appendTo(tr);
     p_icon.prependTo(provider);
@@ -139,13 +135,12 @@ function addGOAAccountItem(account_id, account_data) {
     tr.appendTo('#goa-accounts-list');
 }
 
-// Part 2 of dirty workaround to avoid jslint error on cyclic calls
-populateGOAAccounts = function () {
+function populateGOAAccounts() {
     $('#goa-accounts-list').html('');
     $.each(current_goa_accounts, function (key, account) {
         addGOAAccountItem(key, account);
     });
-};
+}
 
 function showGOAAccounts() {
     // Populate GOA accounts list
@@ -155,20 +150,20 @@ function showGOAAccounts() {
 }
 
 function getAccountProviderServicesData() {
-    var provider = $('#goa-provider').val();
-    var data = { Provider: provider };
+    const provider = $('#goa-provider').val();
+    const data = { Provider: provider };
     $('#goa-services input[type=checkbox]').each(function () {
-        var service = $(this).attr('data-service');
-        var enabled = $(this).is(':checked');
+        const service = $(this).attr('data-service');
+        const enabled = $(this).is(':checked');
         data[service] = enabled;
     });
     return data;
 }
 
 function updateOrAddGOAAccount() {
-    var data = getAccountProviderServicesData();
-    var repeated = false;
-    var provider,
+    const data = getAccountProviderServicesData();
+    let repeated = false;
+    let provider,
         account_id;
     $.each(current_goa_accounts, function (account_id, account) {
         if (account.Provider === data.Provider) {
@@ -222,7 +217,7 @@ function initialize_goa(currentprofile, resp) {
         // Bind GOA related events
         $('#show-goa-accounts').click(function () {
             current_goa_accounts = currentprofile.settings['org.gnome.online-accounts'] || {};
-            var typestring = Object.prototype.toString.call({});
+            const typestring = Object.prototype.toString.call({});
             if (Object.prototype.toString.call(current_goa_accounts) !== typestring) {
                 current_goa_accounts = {};
             }
@@ -236,14 +231,14 @@ function initialize_goa(currentprofile, resp) {
         });
 
         $('#goa-accounts-modal').keypress(function (e) {
-            var code = e.keyCode || e.which;
+            const code = e.keyCode || e.which;
             if (code === 13) {
                 saveGOAAccounts(currentprofile);
             }
         });
 
         $('#goa-account-edit-modal').keypress(function (e) {
-            var code = e.keyCode || e.which;
+            const code = e.keyCode || e.which;
             if (code === 13) {
                 updateOrAddGOAAccount();
             }
