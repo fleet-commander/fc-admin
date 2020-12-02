@@ -54,7 +54,6 @@ function refreshHighlightedAppsList(currentprofile) {
     }
     try {
         const changes = currentprofile.settings["org.gnome.gsettings"];
-        /* jslint unparam: true */
         $.each(changes, function (ignoreIndex, e) {
             function addHighlightedAppWrap(ignoreIndexParm, app) {
                 addHighlightedApp(app);
@@ -84,7 +83,6 @@ function refreshHighlightedAppsList(currentprofile) {
                 }
             }
         });
-        /* jslint unparam: false */
     } catch (ignore) {}
 }
 
@@ -133,7 +131,6 @@ function saveHighlightedApps(currentprofile) {
     });
 
     if (currentprofile.settings["org.gnome.gsettings"] !== undefined) {
-        /* jslint unparam: true */
         $.each(currentprofile.settings["org.gnome.gsettings"], function (ignore, e) {
             for (const key in e) {
                 if (e[key] === "/org/gnome/software/popular-overrides") {
@@ -143,7 +140,6 @@ function saveHighlightedApps(currentprofile) {
                 }
             }
         });
-        /* jslint unparam: false */
         if (!changed) {
             currentprofile.settings["org.gnome.gsettings"].push({
                 key: '/org/gnome/software/popular-overrides',

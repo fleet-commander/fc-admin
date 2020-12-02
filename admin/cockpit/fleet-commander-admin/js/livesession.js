@@ -408,7 +408,6 @@ function removeSectionCheckbox(section) {
 }
 
 function populateSectionChanges(section, data, only_value) {
-    /* jslint unparam: true */
     $.each(data, function (unusedIndex, item) {
         const citem = $($('#change-item-template').html());
         let row;
@@ -424,7 +423,6 @@ function populateSectionChanges(section, data, only_value) {
         checkbox.attr('data-id', item[0]);
         citem.find('.changekey').html(row);
     });
-    /* jslint unparam: false */
     removeSectionCheckbox(section);
     if (data.length) {
         addSectionCheckbox(section);
@@ -512,7 +510,6 @@ function deployProfile() {
     const firefoxbookmarks = [];
     const networkmanager = [];
 
-    /* jslint unparam: true */
     $.each($('#gsettings-event-list input[data-id]:checked'), function (i, e) {
         gsettings.push($(this).attr('data-id'));
     });
@@ -540,7 +537,6 @@ function deployProfile() {
     $.each($('#networkmanager-event-list input[data-id]:checked'), function (i, e) {
         networkmanager.push($(this).attr('data-id'));
     });
-    /* jslint unparam: false */
 
     const changesets = {
         'org.gnome.gsettings':
