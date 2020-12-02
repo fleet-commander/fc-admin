@@ -24,7 +24,7 @@ import * as SpiceHtml5 from './spice-html5/src/main.js';
 
 const _ = cockpit.gettext;
 
-function FleetCommanderSpiceClient(details, error_cb, timeout) {
+function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
     var self = this;
 
     this.conn_timeout = timeout || 15000; // ms
@@ -72,46 +72,10 @@ function FleetCommanderSpiceClient(details, error_cb, timeout) {
         }
     };
 
-    this.spice_error = function (err) {
-        if (DEBUG > 0) {
-            console.log('FC: SPICE connection error:', err.message);
+    this.spice_error = err => {
+        if (spice_error_cb) {
+            spice_error_cb(err);
         }
-
-        fc.IsSessionActive('', function (resp) {
-            if (DEBUG > 0) {
-                console.log('FC: Current session active status:', resp);
-            }
-            if (resp) {
-                self.set_connection_timeout();
-                if (err.message === 'Unexpected close while ready' ||
-                        err.message === 'Connection timed out.' ||
-                        self.sc.state !== 'ready') {
-                    if (!self.noretry) {
-                        self.spinnerDialog.show(
-                            _('Connecting to virtual machine. Please wait...'),
-                            _('Reconnecting')
-                        );
-                        self.do_connection();
-                    }
-                    return;
-                }
-                self.messageDialog.show(
-                    _('Connection error to virtual machine'),
-                    _('Connection error')
-                );
-            } else {
-                self.messageDialog.show(
-                    _('Virtual machine has been stopped'),
-                    _('Connection error')
-                );
-            }
-
-            self.spinnerDialog.close();
-            if (self.connecting) {
-                clearTimeout(self.connecting);
-                self.connecting = null;
-            }
-        });
     };
 
     this.do_connection = function () {

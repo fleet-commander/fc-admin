@@ -18,11 +18,15 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
+import { MessageDialog, QuestionDialog } from './dialogs.js';
+
 const _ = cockpit.gettext;
 
 var current_goa_accounts = null;
 var current_goa_account_id = null;
 var GOA_PROVIDERS = null;
+var messageDialog = new MessageDialog();
+var questionDialog = new QuestionDialog();
 
 function sortGoaNamedEntries(data) {
     var entries = [];
@@ -203,7 +207,7 @@ function updateOrAddGOAAccount() {
     $('#goa-account-edit-modal').modal('hide');
 }
 
-function saveGOAAccounts() {
+function saveGOAAccounts(currentprofile) {
     currentprofile.settings['org.gnome.online-accounts'] = current_goa_accounts;
     $('#goa-accounts-modal').modal('hide');
     $('#profile-modal').modal('show');
@@ -212,49 +216,49 @@ function saveGOAAccounts() {
 /*******************************************************************************
  * Initialization
  ******************************************************************************/
-function initialize_goa(fc) {
-    fc.GetGOAProviders(function (resp) {
-        if (resp.status) {
-            GOA_PROVIDERS = resp.providers;
-            // Bind GOA related events
-            $('#show-goa-accounts').click(function () {
-                current_goa_accounts = currentprofile.settings['org.gnome.online-accounts'] || {};
-                var typestring = Object.prototype.toString.call({});
-                if (Object.prototype.toString.call(current_goa_accounts) !== typestring) {
-                    current_goa_accounts = {};
-                }
-                showGOAAccounts();
-            });
-            $('#show-goa-account-edit').click(showGOAAccountEdit);
-            $('#goa-provider').change(updateProviderServices);
-            $('#update-add-goa-account').click(updateOrAddGOAAccount);
-            $('#save-goa-accounts').click(saveGOAAccounts);
+function initialize_goa(currentprofile, resp) {
+    if (resp.status) {
+        GOA_PROVIDERS = resp.providers;
+        // Bind GOA related events
+        $('#show-goa-accounts').click(function () {
+            current_goa_accounts = currentprofile.settings['org.gnome.online-accounts'] || {};
+            var typestring = Object.prototype.toString.call({});
+            if (Object.prototype.toString.call(current_goa_accounts) !== typestring) {
+                current_goa_accounts = {};
+            }
+            showGOAAccounts();
+        });
+        $('#show-goa-account-edit').click(showGOAAccountEdit);
+        $('#goa-provider').change(updateProviderServices);
+        $('#update-add-goa-account').click(updateOrAddGOAAccount);
+        $('#save-goa-accounts').click(() => {
+            saveGOAAccounts(currentprofile);
+        });
 
-            $('#goa-accounts-modal').keypress(function (e) {
-                var code = e.keyCode || e.which;
-                if (code === 13) {
-                    saveGOAAccounts();
-                }
-            });
+        $('#goa-accounts-modal').keypress(function (e) {
+            var code = e.keyCode || e.which;
+            if (code === 13) {
+                saveGOAAccounts(currentprofile);
+            }
+        });
 
-            $('#goa-account-edit-modal').keypress(function (e) {
-                var code = e.keyCode || e.which;
-                if (code === 13) {
-                    updateOrAddGOAAccount();
-                }
-            });
+        $('#goa-account-edit-modal').keypress(function (e) {
+            var code = e.keyCode || e.which;
+            if (code === 13) {
+                updateOrAddGOAAccount();
+            }
+        });
 
-            $('#goa-account-edit-modal').on('hide.bs.modal', function () {
-                showGOAAccounts();
-            });
-        } else {
-            messageDialog.show(
-                _('Error loading GOA providers. GOA support will not be available'),
-                _('Error')
-            );
-            $('#show-goa-accounts').hide();
-        }
-    });
+        $('#goa-account-edit-modal').on('hide.bs.modal', function () {
+            showGOAAccounts();
+        });
+    } else {
+        messageDialog.show(
+            _('Error loading GOA providers. GOA support will not be available'),
+            _('Error')
+        );
+        $('#show-goa-accounts').hide();
+    }
 }
 
 export { initialize_goa };

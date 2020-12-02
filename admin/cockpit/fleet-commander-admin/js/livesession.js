@@ -32,8 +32,6 @@ const _ = cockpit.gettext;
 
 var fc = null;
 var fcsc = null;
-var spinnerDialog = null;
-var messageDialog = null;
 var console_details = null;
 var collectors = {
     'org.gnome.gsettings':
@@ -51,6 +49,8 @@ var collectors = {
     'org.freedesktop.NetworkManager':
         new NMCollector('org.freedesktop.NetworkManager')
 };
+var spinnerDialog = new SpinnerDialog();
+var messageDialog = new MessageDialog();
 
 window.alert = function (message) {
     if (DEBUG > 0) {
@@ -154,9 +154,7 @@ function startSpiceHtml5(conn_details) {
     };
 
     fcsc = new FleetCommanderSpiceClient(
-        details, function () {
-            stopLiveSession();
-        }
+        details, stopLiveSession, reconnectSpice
     );
     startHeartBeat();
 }
@@ -214,7 +212,9 @@ function parseFCMsg(str, msg) {
      * Protocol 1 assumes atomic data transmission
      * Protocol 2 process data in chunks
      */
-    logDebug('FC: Processing msg, length:%s', str.length);
+    if (DEBUG > 0) {
+        console.log('FC: Processing msg, length:%s', str.length);
+    }
     if (str === '') {
         // nothing to do
         return;
@@ -226,7 +226,9 @@ function parseFCMsg(str, msg) {
 
     if (msg.initial_msg === true) {
         // detecting protocol version
-        logDebug('FC: Initial message processing');
+        if (DEBUG > 0) {
+            console.log('FC: Initial message processing');
+        }
         // receive enough characters
         if (str.startsWith(':') && str.length < FC_PROTO_HEADER.length) {
             msg.buffer = str;
@@ -236,10 +238,12 @@ function parseFCMsg(str, msg) {
         const fc_proto_header = str.match(/^:FC_PR:/);
         if (fc_proto_header === null) {
             msg.fc_proto_version = FC_PROTO_DEFAULT;
-            logDebug('FC: old fc_proto detected', msg.fc_proto_version);
+            if (DEBUG > 0) {
+                console.log('FC: old fc_proto detected', msg.fc_proto_version);
+            }
             msg.buffer = '';
         } else {
-            fc_proto = str.match(/(^:FC_PR:(\d+):)/);
+            const fc_proto = str.match(/(^:FC_PR:(\d+):)/);
             if (fc_proto === null) {
                 // continue receving
                 msg.buffer = str;
@@ -249,15 +253,19 @@ function parseFCMsg(str, msg) {
             // cut off the proto header
             str = str.replace(/^:FC_PR:\d+:/, '');
         }
-        logInfo('FC protocol version', msg.fc_proto_version);
+        if (DEBUG > 0) {
+            console.log('FC protocol version', msg.fc_proto_version);
+        }
         msg.initial_msg = false;
     }
 
     if (msg.fc_proto_version > FC_PROTO_DEFAULT) {
-        last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
+        const last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
         if (last_delimiter === -1) {
             msg.buffer = str;
-            logDebug('FC: Waiting for FC_MSG_DELIM');
+            if (DEBUG > 0) {
+                console.log('FC: Waiting for FC_MSG_DELIM');
+            }
             return;
         }
         msg.buffer = str.substring(last_delimiter + FC_MSG_DELIM.length);
@@ -289,6 +297,48 @@ function stopLiveSession(cb) {
             cb();
         } else {
             location.href = 'index.html';
+        }
+    });
+}
+
+function reconnectSpice(err) {
+    if (DEBUG > 0) {
+        console.log('FC: SPICE connection error:', err.message);
+    }
+
+    fc.IsSessionActive('', function (resp) {
+        if (DEBUG > 0) {
+            console.log('FC: Current session active status:', resp);
+        }
+        if (resp) {
+            fcsc.set_connection_timeout();
+            if (err.message === 'Unexpected close while ready' ||
+                    err.message === 'Connection timed out.' ||
+                    fcsc.sc.state !== 'ready') {
+                if (!fcsc.noretry) {
+                    fcsc.spinnerDialog.show(
+                        _('Connecting to virtual machine. Please wait...'),
+                        _('Reconnecting')
+                    );
+                    fcsc.do_connection();
+                }
+                return;
+            }
+            fcsc.messageDialog.show(
+                _('Connection error to virtual machine'),
+                _('Connection error')
+            );
+        } else {
+            fcsc.messageDialog.show(
+                _('Virtual machine has been stopped'),
+                _('Connection error')
+            );
+        }
+
+        fcsc.spinnerDialog.close();
+        if (fcsc.connecting) {
+            clearTimeout(fcsc.connecting);
+            fcsc.connecting = null;
         }
     });
 }
@@ -547,9 +597,6 @@ $(document).ready(function () {
     $('#close-live-session').click(stopLiveSession);
     $('#review-changes').click(reviewAndSubmit);
     $('#deploy-profile').click(deployProfile);
-
-    spinnerDialog = new SpinnerDialog();
-    messageDialog = new MessageDialog();
 
     // Create a Fleet Commander dbus client instance
     fc = new FleetCommanderDbusClient(function () {
