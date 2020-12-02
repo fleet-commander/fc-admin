@@ -141,7 +141,7 @@ function saveHighlightedApps(currentprofile) {
             var key;
             for (key in e) {
                 if (e[key] === "/org/gnome/software/popular-overrides") {
-                    e.value = JSON.stringify(overrides).replace(/\"/g, "\'");
+                    e.value = JSON.stringify(overrides).replace(/"/g, "'");
                     changed = true;
                     break;
                 }
@@ -151,7 +151,7 @@ function saveHighlightedApps(currentprofile) {
         if (!changed) {
             currentprofile.settings["org.gnome.gsettings"].push({
                 key: '/org/gnome/software/popular-overrides',
-                value: JSON.stringify(overrides).replace(/\"/g, "\'"),
+                value: JSON.stringify(overrides).replace(/"/g, "'"),
                 signature: 'as'
             });
         }
@@ -159,7 +159,7 @@ function saveHighlightedApps(currentprofile) {
         currentprofile.settings["org.gnome.gsettings"] = [
             {
                 key: '/org/gnome/software/popular-overrides',
-                value: JSON.stringify(overrides).replace(/\"/g, "\'"),
+                value: JSON.stringify(overrides).replace(/"/g, "'"),
                 signature: 'as'
             }
         ];
