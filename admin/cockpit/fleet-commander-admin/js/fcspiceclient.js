@@ -19,7 +19,7 @@
  */
 
 import { DEBUG } from './base.js';
-import { SpinnerDialog, MessageDialog } from './dialogs.js';
+import { spinnerDialog, messageDialog } from './dialogs.js';
 import * as SpiceHtml5 from './spice-html5/src/main.js';
 
 const _ = cockpit.gettext;
@@ -31,8 +31,6 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
     // this.sc;
     this.connecting = null;
     this.noretry = false;
-    this.messageDialog = new MessageDialog();
-    this.spinnerDialog = new SpinnerDialog();
 
     this.stop = function () {
         if (self.sc) {
@@ -52,8 +50,8 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
                 if (DEBUG > 0) {
                     console.log('FC: Connection tries timed out');
                 }
-                self.spinnerDialog.close();
-                self.messageDialog.show(
+                spinnerDialog.close();
+                messageDialog.show(
                     _('Connection error to virtual machine.'),
                     _('Connection error')
                 );
@@ -65,7 +63,7 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
         if (DEBUG > 0) {
             console.log('FC: Connected to virtual machine using SPICE');
         }
-        self.spinnerDialog.close();
+        spinnerDialog.close();
         if (self.connecting) {
             clearTimeout(self.connecting);
             self.connecting = null;
@@ -132,7 +130,7 @@ function FleetCommanderSpiceClient(details, error_cb, spice_error_cb, timeout) {
     }
 
     this.reconnect = function () {
-        self.spinnerDialog.show(
+        spinnerDialog.show(
             _('Connecting to virtual machine. Please wait...'),
             _('Reconnecting')
         );

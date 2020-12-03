@@ -150,4 +150,8 @@ function showCurtain(message, title, icon, buttons) {
     $('#curtain').show();
 }
 
-export { MessageDialog, QuestionDialog, SpinnerDialog, showCurtain };
+const spinnerDialog = new SpinnerDialog();
+const questionDialog = new QuestionDialog();
+const messageDialog = new MessageDialog();
+
+export { spinnerDialog, questionDialog, messageDialog, showCurtain };

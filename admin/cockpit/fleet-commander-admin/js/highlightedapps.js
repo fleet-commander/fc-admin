@@ -17,147 +17,165 @@
 * Author: Oliver Gutiérrez <ogutierrez@redhat.com>
 */
 import { DEBUG, hasSuffix, clearModalFormErrors } from './base.js';
-import { MessageDialog } from './dialogs.js';
+import { messageDialog } from './dialogs.js';
 
 const _ = cockpit.gettext;
-const messageDialog = new MessageDialog();
 
-function deleteHighlightedApp(app) {
-    $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
-}
+class HighlightedApp {
+    constructor() {
+        this.currentprofile = null;
 
-function addHighlightedApp(app) {
-    if (typeof app !== "string") {
-        return;
+        this.add = this.add.bind(this);
+        this.addFromEntry = this.addFromEntry.bind(this);
+        this.initialize = this.initialize.bind(this);
+        this.refresh = this.refresh.bind(this);
+        this.remove = this.remove.bind(this);
+        this.save = this.save.bind(this);
+        this.show = this.show.bind(this);
     }
 
-    if (hasSuffix(app, ".desktop") === false) {
-        return;
+    remove(app) {
+        $('#highlighted-apps-list li[data-id="' + app + '"]').remove();
     }
 
-    const li = $(
-        '<li></li>',
-        { class: 'list-group-item', 'data-id': app, text: app }
-    );
-    const del = $(
-        '<button></button>',
-        { class: 'pull-right btn btn-danger', text: 'Delete' }
-    );
-    del.click(app, function () { deleteHighlightedApp(app) });
-    del.appendTo(li);
-    li.appendTo($('#highlighted-apps-list'));
-}
+    add(app) {
+        if (typeof app !== "string") {
+            return;
+        }
 
-function refreshHighlightedAppsList(currentprofile) {
-    if (DEBUG > 0) {
-        console.log('FC: Refreshing highlighted apps list');
+        if (hasSuffix(app, ".desktop") === false) {
+            return;
+        }
+
+        const li = $(
+            '<li></li>',
+            { class: 'list-group-item', 'data-id': app, text: app }
+        );
+        const del = $(
+            '<button></button>',
+            { class: 'pull-right btn btn-danger', text: 'Delete' }
+        );
+        del.click(app, () => { this.remove(app) });
+        del.appendTo(li);
+        li.appendTo($('#highlighted-apps-list'));
     }
-    try {
-        const changes = currentprofile.settings["org.gnome.gsettings"];
-        $.each(changes, function (ignoreIndex, e) {
-            function addHighlightedAppWrap(ignoreIndexParm, app) {
-                addHighlightedApp(app);
-            }
 
-            for (const key in e) {
-                if (e[key] === "/org/gnome/software/popular-overrides") {
-                    try {
-                        let overrides = e.value;
-                        if (Array.isArray(overrides) === false) {
-                            if (typeof overrides === 'string' && overrides.startsWith('[') && overrides.endsWith(']')) {
-                                const a = overrides.substring(1, overrides.length - 1);
-                                if (a.length > 0) {
-                                    overrides = a.substring(1, a.length - 1).split("','");
+    refresh() {
+        if (DEBUG > 0) {
+            console.log('FC: Refreshing highlighted apps list');
+        }
+        try {
+            const changes = this.currentprofile().settings["org.gnome.gsettings"];
+            $.each(changes, (ignoreIndex, e) => {
+                for (const key in e) {
+                    if (e[key] === "/org/gnome/software/popular-overrides") {
+                        try {
+                            let overrides = e.value;
+                            if (Array.isArray(overrides) === false) {
+                                if (typeof overrides === 'string' && overrides.startsWith('[') && overrides.endsWith(']')) {
+                                    const a = overrides.substring(1, overrides.length - 1);
+                                    if (a.length > 0) {
+                                        overrides = a.substring(1, a.length - 1).split("','");
+                                    } else {
+                                        overrides = null;
+                                    }
                                 } else {
                                     overrides = null;
                                 }
                             } else {
                                 overrides = null;
                             }
-                        } else {
-                            overrides = null;
-                        }
-                        $.each(overrides, addHighlightedAppWrap);
-                        return;
-                    } catch (ignore) {}
+                            $.each(overrides, (index, value) => {
+                                this.add(value);
+                            });
+                            return;
+                        } catch (ignore) {}
+                    }
                 }
-            }
-        });
-    } catch (ignore) {}
-}
-
-function showHighlightedApps(currentprofile) {
-    $('#highlighted-apps-list').html('');
-    $('#profile-modal').modal('hide');
-    $('#highlighted-apps-modal').modal('show');
-    refreshHighlightedAppsList(currentprofile);
-}
-
-function addHighlightedAppFromEntry() {
-    clearModalFormErrors('highlighted-apps-modal');
-
-    const app = $('#app-name').val();
-
-    if (hasSuffix(app, ".desktop") === false) {
-        messageDialog.show(
-            _('Application identifier must have .desktop extension'),
-            _('Invalid entry')
-        );
-        return;
-    }
-    if (app.indexOf('"') !== -1 || app.indexOf("'") !== -1) {
-        messageDialog.show(
-            _('Application identifier must not contain quotes'),
-            _('Invalid entry')
-        );
-        return;
-    }
-    if ($('#highlighted-apps-list li[data-id="' + app + '"]').length > 0) {
-        messageDialog.show(
-            _('Application identifier is already in favourites'),
-            _('Invalid entry')
-        );
-        return;
-    }
-    addHighlightedApp(app);
-    $('#app-name').val('');
-}
-
-function saveHighlightedApps(currentprofile) {
-    const overrides = [];
-    let changed = false;
-    $('#highlighted-apps-list li').each(function () {
-        overrides.push($(this).attr('data-id'));
-    });
-
-    if (currentprofile.settings["org.gnome.gsettings"] !== undefined) {
-        $.each(currentprofile.settings["org.gnome.gsettings"], function (ignore, e) {
-            for (const key in e) {
-                if (e[key] === "/org/gnome/software/popular-overrides") {
-                    e.value = JSON.stringify(overrides).replace(/"/g, "'");
-                    changed = true;
-                    break;
-                }
-            }
-        });
-        if (!changed) {
-            currentprofile.settings["org.gnome.gsettings"].push({
-                key: '/org/gnome/software/popular-overrides',
-                value: JSON.stringify(overrides).replace(/"/g, "'"),
-                signature: 'as'
             });
-        }
-    } else {
-        currentprofile.settings["org.gnome.gsettings"] = [
-            {
-                key: '/org/gnome/software/popular-overrides',
-                value: JSON.stringify(overrides).replace(/"/g, "'"),
-                signature: 'as'
-            }
-        ];
+        } catch (ignore) {}
     }
-    $('#highlighted-apps-modal').modal('hide');
-    $('#profile-modal').modal('show');
+
+    show() {
+        $('#highlighted-apps-list').html('');
+        $('#profile-modal').modal('hide');
+        $('#highlighted-apps-modal').modal('show');
+        this.refresh();
+    }
+
+    addFromEntry() {
+        clearModalFormErrors('highlighted-apps-modal');
+
+        const app = $('#app-name').val();
+
+        if (hasSuffix(app, ".desktop") === false) {
+            messageDialog.show(
+                _('Application identifier must have .desktop extension'),
+                _('Invalid entry')
+            );
+            return;
+        }
+        if (app.indexOf('"') !== -1 || app.indexOf("'") !== -1) {
+            messageDialog.show(
+                _('Application identifier must not contain quotes'),
+                _('Invalid entry')
+            );
+            return;
+        }
+        if ($('#highlighted-apps-list li[data-id="' + app + '"]').length > 0) {
+            messageDialog.show(
+                _('Application identifier is already in favourites'),
+                _('Invalid entry')
+            );
+            return;
+        }
+        this.add(app);
+        $('#app-name').val('');
+    }
+
+    save() {
+        const overrides = [];
+        let changed = false;
+        $('#highlighted-apps-list li').each(function () {
+            overrides.push($(this).attr('data-id'));
+        });
+
+        const currentprofile = this.currentprofile();
+        if (currentprofile.settings["org.gnome.gsettings"] !== undefined) {
+            $.each(currentprofile.settings["org.gnome.gsettings"], (ignore, e) => {
+                for (const key in e) {
+                    if (e[key] === "/org/gnome/software/popular-overrides") {
+                        e.value = JSON.stringify(overrides).replace(/"/g, "'");
+                        changed = true;
+                        break;
+                    }
+                }
+            });
+            if (!changed) {
+                currentprofile.settings["org.gnome.gsettings"].push({
+                    key: '/org/gnome/software/popular-overrides',
+                    value: JSON.stringify(overrides).replace(/"/g, "'"),
+                    signature: 'as'
+                });
+            }
+        } else {
+            currentprofile.settings["org.gnome.gsettings"] = [
+                {
+                    key: '/org/gnome/software/popular-overrides',
+                    value: JSON.stringify(overrides).replace(/"/g, "'"),
+                    signature: 'as'
+                }
+            ];
+        }
+        $('#highlighted-apps-modal').modal('hide');
+        $('#profile-modal').modal('show');
+    }
+
+    initialize(currentprofile_cb) {
+        this.currentprofile = currentprofile_cb;
+    }
 }
 
-export { addHighlightedAppFromEntry, saveHighlightedApps, showHighlightedApps };
+const highlightedApp = new HighlightedApp();
+
+export { highlightedApp };

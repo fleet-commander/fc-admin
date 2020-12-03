@@ -25,18 +25,14 @@ import {
     setDebugLevel
 } from './base.js';
 import {
-    SpinnerDialog,
-    QuestionDialog,
-    MessageDialog,
+    spinnerDialog,
+    questionDialog,
+    messageDialog,
     showCurtain
 } from './dialogs.js';
 import { FleetCommanderDbusClient } from './fcdbusclient.js';
-import { initialize_goa } from './goa.js';
-import {
-    addHighlightedAppFromEntry,
-    saveHighlightedApps,
-    showHighlightedApps
-} from './highlightedapps.js';
+import { goa } from './goa.js';
+import { highlightedApp } from './highlightedapps.js';
 
 const _ = cockpit.gettext;
 const state = {
@@ -45,9 +41,6 @@ const state = {
         profilepriority: 50
     }
 };
-const spinnerDialog = new SpinnerDialog();
-const questionDialog = new QuestionDialog();
-const messageDialog = new MessageDialog();
 
 let fc = null;
 let currentuid = null;
@@ -489,13 +482,18 @@ $(document).ready(function () {
     $('#save-fc-settings').click(saveFCSettings);
     $('#show-add-profile').click(showAddProfile);
     $('#save-new-profile').click(saveProfile);
+
+    highlightedApp.initialize(() => currentprofile);
     $('#show-highlighted-apps').click(() => {
-        showHighlightedApps(currentprofile);
+        highlightedApp.show();
     });
-    $('#add-highlighted-app').click(addHighlightedAppFromEntry);
+    $('#add-highlighted-app').click(() => {
+        highlightedApp.addFromEntry();
+    });
     $('#save-highlighted-apps').click(() => {
-        saveHighlightedApps(currentprofile);
+        highlightedApp.save();
     });
+
     $('#show-domain-selection').click(showDomainSelection);
     $('#show-pubkey-install').click(showPubkeyInstall);
     $('#cancel-pubkey-install').click(cancelPubkeyInstall);
@@ -533,7 +531,7 @@ $(document).ready(function () {
     $('#highlighted-apps-modal').keypress(function (e) {
         const code = e.keyCode || e.which;
         if (code === 13) {
-            saveHighlightedApps(currentprofile);
+            highlightedApp.save();
         }
     });
 
@@ -579,7 +577,7 @@ $(document).ready(function () {
                 if (resp.status) {
                     checkHypervisorConfig();
                     fc.GetGOAProviders(resp => {
-                        initialize_goa(currentprofile, resp);
+                        goa.initialize(resp, () => currentprofile);
                     });
                     refreshProfileList(function () {
                         $('#main-container').show();
