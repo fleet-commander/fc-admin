@@ -20,7 +20,7 @@
 
 import { DEBUG, setDebugLevel } from './base.js';
 import { BaseCollector, NMCollector, FirefoxBookmarksCollector } from './collectors.js';
-import { SpinnerDialog, MessageDialog, showCurtain } from './dialogs.js';
+import { spinnerDialog, messageDialog, showCurtain } from './dialogs.js';
 import { FleetCommanderDbusClient } from './fcdbusclient.js';
 import { FleetCommanderSpiceClient } from './fcspiceclient.js';
 import { arraybuffer_to_str } from './spice-html5/src/utils.js';
@@ -49,8 +49,6 @@ const collectors = {
     'org.freedesktop.NetworkManager':
         new NMCollector('org.freedesktop.NetworkManager')
 };
-const spinnerDialog = new SpinnerDialog();
-const messageDialog = new MessageDialog();
 
 window.alert = function (message) {
     if (DEBUG > 0) {
@@ -316,7 +314,7 @@ function reconnectSpice(err) {
                     err.message === 'Connection timed out.' ||
                     fcsc.sc.state !== 'ready') {
                 if (!fcsc.noretry) {
-                    fcsc.spinnerDialog.show(
+                    spinnerDialog.show(
                         _('Connecting to virtual machine. Please wait...'),
                         _('Reconnecting')
                     );
@@ -324,18 +322,18 @@ function reconnectSpice(err) {
                 }
                 return;
             }
-            fcsc.messageDialog.show(
+            messageDialog.show(
                 _('Connection error to virtual machine'),
                 _('Connection error')
             );
         } else {
-            fcsc.messageDialog.show(
+            messageDialog.show(
                 _('Virtual machine has been stopped'),
                 _('Connection error')
             );
         }
 
-        fcsc.spinnerDialog.close();
+        spinnerDialog.close();
         if (fcsc.connecting) {
             clearTimeout(fcsc.connecting);
             fcsc.connecting = null;
