@@ -241,7 +241,6 @@ class LibVirtController:
             [
                 "port",
                 "tls_port",
-                "listen",
                 "passwd",
             ],
         )
@@ -252,12 +251,9 @@ class LibVirtController:
             graphics = devs.find("graphics")
             try:
                 if graphics.get("type") == "spice":
-                    # listen attribute of graphics itself is deprecated
-                    listen = graphics.find("listen")
                     return spice_params(
                         port=graphics.get("port"),
                         tls_port=graphics.get("tlsPort"),
-                        listen=listen.get("address"),
                         passwd=graphics.get("passwd"),
                     )
             except Exception:
@@ -505,9 +501,7 @@ class LibVirtTlsSpice(LibVirtController):
             aliaselem.set("name", alias)
 
     def add_spice_listen(self, parent):
-        # listen_address = 'localhost'
-        self._connect()
-        listen_address = self.conn.getHostname()
+        listen_address = "0.0.0.0"
         listen = ET.SubElement(parent, "listen")
         listen.set("type", "address")
         listen.set("address", listen_address)
@@ -562,7 +556,7 @@ class LibVirtTlsSpice(LibVirtController):
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
         details = {
-            "host": spice_params.listen,
+            "host": self.conn.getHostname(),
             "viewer": self.viewer,
             "notify_socket": local_socket,
             "ca_cert": ca_cert,
@@ -666,7 +660,7 @@ class LibVirtTunnelSpice(LibVirtController):
         local_socket = os.path.join(local_runtime_dir, "fc-logger.socket")
         local_forward = "{local_socket}:{host}:{hostport}".format(
             local_socket=local_socket,
-            host=spice_params.listen,
+            host="localhost",
             hostport=spice_params.port,
         )
         self._open_ssh_tunnel(local_forward, StreamLocalBindUnlink="yes")
@@ -674,7 +668,7 @@ class LibVirtTunnelSpice(LibVirtController):
         # Make it transient inmediately after started it
         self._undefine_domain(self._last_started_domain)
         details = {
-            "host": spice_params.listen,
+            "host": "localhost",
             "path": local_socket,
             "viewer": self.viewer,
             "ticket": spice_ticket,
