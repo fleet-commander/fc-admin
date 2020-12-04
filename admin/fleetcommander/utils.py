@@ -97,6 +97,7 @@ def parse_config(config_file=None):
         ),
         "log_level": section.get("log_level", constants.DEFAULT_LOG_LEVEL),
         "log_format": section.get("log_format", constants.DEFAULT_LOG_FORMAT),
+        "debug_logger": section.get("debug_logger", constants.DEFAULT_DEBUG_LOGGER),
         "data_dir": section.get("data_dir", constants.DEFAULT_DATA_DIR),
         "tmp_session_destroy_timeout": section.get(
             "tmp_session_destroy_timeout", constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT

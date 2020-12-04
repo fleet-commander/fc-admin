@@ -641,7 +641,9 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         try:
             lvirtctrlr = self.get_libvirt_controller()
-            session_params = lvirtctrlr.session_start(domain_uuid)
+            session_params = lvirtctrlr.session_start(
+                domain_uuid, debug_logger=self.args["debug_logger"]
+            )
         except Exception as e:
             logger.error("Error starting session: %s", e)
             return json.dumps(

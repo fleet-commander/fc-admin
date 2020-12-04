@@ -46,7 +46,9 @@ EXTRA_DIST =                         \
 	data/test.gschema.xml            \
 	data/libvirt_domain-orig.xml     \
 	data/libvirt_domain-modified-html5.xml \
+	data/libvirt_domain-modified-html5-debug.xml \
 	data/libvirt_domain-modified-direct.xml \
+	data/libvirt_domain-modified-direct-debug.xml \
 	data/libvirt_domain-nospice.xml  \
 	data/fc_goa_providers_test.ini   \
 	data/fleet-commander-logger/fc-chromium-policies.json   \

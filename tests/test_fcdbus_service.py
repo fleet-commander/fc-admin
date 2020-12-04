@@ -92,7 +92,7 @@ class MockLibVirtController(libvirtcontroller.LibVirtTunnelSpice):
     def list_domains(self):
         return self.DOMAINS_LIST
 
-    def session_start(self, identifier):
+    def session_start(self, identifier, debug_logger=False):
         """Return abstract session cookie."""
         self.DOMAINS_LIST.append(
             {
@@ -125,6 +125,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
         args = {
             "log_level": "debug",
             "log_format": "\n[%(levelname)s] %(asctime)-15s %(message)s",
+            "debug_logger": False,
             "data_dir": test_directory,
             "tmp_session_destroy_timeout": 60,
             "auto_quit_timeout": 60,

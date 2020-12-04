@@ -1,1 +1,2 @@
 ATTR{name}=="org.freedesktop.FleetCommander.0", MODE="0666"
+ATTR{name}=="org.freedesktop.FleetCommander.1", MODE="0666"

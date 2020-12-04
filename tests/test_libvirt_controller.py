@@ -212,6 +212,33 @@ class TestLibVirtController:
             ),
         )
 
+    def test_remote_user_runtimedir(self):
+        ctrlr = self.get_controller(self.config)
+
+        remote_runtimedir = ctrlr._get_user_runtime_dir()
+        self.assertEqual(remote_runtimedir, "/run/user/1001")
+
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_REMOTE_COMMAND_PARMS.format(
+                command=ctrlr._XDG_RUNTIMEDIR_CMD,
+                username=self.config["username"],
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
 
 class TestLibVirtControllerSystem(TestLibVirtController):
     LIBVIRT_MODE = "system"
@@ -250,7 +277,19 @@ class TestLibVirtControllerSystem(TestLibVirtController):
                     "temporary": True,
                 },
                 {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
                     "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
                     "name": "Fedora - Fleet Commander temporary session",
                     "active": True,
                     "temporary": True,
@@ -322,7 +361,19 @@ class TestLibVirtControllerSession(TestLibVirtController):
                     "temporary": True,
                 },
                 {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
                     "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
+                    "name": "Fedora - Fleet Commander temporary session",
+                    "active": True,
+                    "temporary": True,
+                },
+                {
+                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
                     "name": "Fedora - Fleet Commander temporary session",
                     "active": True,
                     "temporary": True,
@@ -341,8 +392,8 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
     def test_session_start(self):
         ctrlr = self.get_controller(self.config)
 
-        runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
-        local_socket = os.path.join(runtimedir, "fc-logger.socket")
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
         ticket = "Secret123"
 
         # spice ticket is generated the only time
@@ -358,7 +409,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
             session_params.details,
             {
                 "host": "localhost",
-                "path": local_socket,
+                "notifier_path": local_socket,
                 "viewer": self.VIEWER,
                 "ticket": ticket,
             },
@@ -401,6 +452,82 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
             ),
         )
 
+    def test_session_start_debug(self):
+        ctrlr = self.get_controller(self.config)
+
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
+        logger_socket = os.path.join(local_runtimedir, "fc-logger.socket")
+        remote_runtimedir = "/run/user/1001"
+        ticket = "Secret123"
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(
+                libvirtmock.TEST_UUID_ORIGIN, debug_logger=True
+            )
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "notifier_path": local_socket,
+                "logger_path": logger_socket,
+                "viewer": self.VIEWER,
+                "ticket": ticket,
+            },
+        )
+
+        # Test new domain XML generation
+        new_domain = ctrlr._last_started_domain
+
+        self.assertEqual(
+            new_domain.XMLDesc(),
+            libvirtmock.XML_MODIF_HTML5_DEBUG.strip()
+            % {
+                "name-uuid": new_domain.UUIDString()[:8],
+                "uuid": new_domain.UUIDString(),
+                "runtimedir": remote_runtimedir,
+            },
+        )
+
+        # Test SSH tunnel opening
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        remote_socket_logger = os.path.join(
+            remote_runtimedir,
+            "fc-{}-logger.socket".format(new_domain.UUIDString()[:8]),
+        )
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=(
+                    f"{local_socket}:localhost:5900"
+                    f" -L {logger_socket}:{remote_socket_logger}"
+                ),
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
 
 class TestLibVirtControllerDirect(TestLibVirtController):
     VIEWER = "spice_remote_viewer"
@@ -410,7 +537,7 @@ class TestLibVirtControllerDirect(TestLibVirtController):
 
         ticket = "Secret123"
         local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
-        local_socket = os.path.join(local_runtimedir, "fc-logger.socket")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
         remote_runtimedir = "/run/user/1001"
 
         # spice ticket is generated the only time
@@ -428,7 +555,7 @@ class TestLibVirtControllerDirect(TestLibVirtController):
             {
                 "host": "localhost",
                 "viewer": self.VIEWER,
-                "notify_socket": local_socket,
+                "notifier_path": local_socket,
                 "ca_cert": "FAKE_CA_CERT",
                 "cert_subject": "CN=localhost",
                 "tls_port": "5900",
@@ -461,7 +588,92 @@ class TestLibVirtControllerDirect(TestLibVirtController):
         self.assertEqual(
             command,
             SSH_TUNNEL_OPEN_PARMS.format(
-                local_forward=(f"{local_socket}:{remote_socket}"),
+                local_forward=f"{local_socket}:{remote_socket}",
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+    def test_session_start_debug(self):
+        ctrlr = self.get_controller(self.config)
+
+        ticket = "Secret123"
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
+        remote_runtimedir = "/run/user/1001"
+        logger_socket = os.path.join(local_runtimedir, "fc-logger.socket")
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(
+                libvirtmock.TEST_UUID_ORIGIN, debug_logger=True
+            )
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "viewer": self.VIEWER,
+                "notifier_path": local_socket,
+                "logger_path": logger_socket,
+                "ca_cert": "FAKE_CA_CERT",
+                "cert_subject": "CN=localhost",
+                "tls_port": "5900",
+                "ticket": ticket,
+            },
+        )
+
+        new_domain = ctrlr._last_started_domain
+        remote_socket = os.path.join(
+            remote_runtimedir,
+            "fc-{}.socket".format(new_domain.UUIDString()[:8]),
+        )
+
+        # Test new domain XML generation
+        self.assertEqual(
+            new_domain.XMLDesc(),
+            libvirtmock.XML_MODIF_DIRECT_DEBUG.strip()
+            % {
+                "name-uuid": new_domain.UUIDString()[:8],
+                "uuid": new_domain.UUIDString(),
+                "runtimedir": remote_runtimedir,
+            },
+        )
+
+        # Test SSH tunnel opening
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        remote_socket_logger = os.path.join(
+            remote_runtimedir,
+            "fc-{}-logger.socket".format(new_domain.UUIDString()[:8]),
+        )
+
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=(
+                    f"{local_socket}:{remote_socket}"
+                    f" -L {logger_socket}:{remote_socket_logger}"
+                ),
                 username=self.config["username"],
                 user_home=os.path.expanduser("~"),
                 hostname=self.config["hostname"],
@@ -494,33 +706,6 @@ class TestLibVirtControllerDirect(TestLibVirtController):
                 command=ctrlr._SPICE_CA_CERT_CMD.format(
                     ca=ctrlr.SPICE_CA_CERT,
                 ),
-                username=self.config["username"],
-                hostname=self.config["hostname"],
-                port=ctrlr.ssh_port,
-                private_key_file=self.private_key_file,
-                optional_args=" ".join(
-                    [
-                        "-o",
-                        f"UserKnownHostsFile={self.known_hosts_file}",
-                    ]
-                ),
-            ),
-        )
-
-    def test_remote_user_runtimedir(self):
-        ctrlr = self.get_controller(self.config)
-
-        remote_runtimedir = ctrlr._get_user_runtime_dir()
-        self.assertEqual(remote_runtimedir, "/run/user/1001")
-
-        self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
-            command = fd.read().strip()
-
-        self.assertEqual(
-            command,
-            SSH_REMOTE_COMMAND_PARMS.format(
-                command=ctrlr._XDG_RUNTIMEDIR_CMD,
                 username=self.config["username"],
                 hostname=self.config["hostname"],
                 port=ctrlr.ssh_port,
