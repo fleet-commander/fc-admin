@@ -38,10 +38,7 @@ sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Get mainloop
 ml = GLib.MainLoop()
@@ -49,7 +46,7 @@ ml = GLib.MainLoop()
 
 # Test helpers
 def mainloop_quit_callback(*args, **kwargs):
-    logging.error("Timed out waiting for DBus call. Test probably failed")
+    logger.error("Timed out waiting for DBus call. Test probably failed")
     ml.quit()
 
 
@@ -103,7 +100,7 @@ class TestDconfLogger(unittest.TestCase):
         # We wait for the logger to catch the bus name
         def check_dbus_name():
             if glog.dconf_subscription_id != 0:
-                logging.debug(
+                logger.debug(
                     "Signal registered. Calling '%s' dbus method. Args: %s",
                     method,
                     args,
@@ -262,4 +259,5 @@ class TestDconfLogger(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

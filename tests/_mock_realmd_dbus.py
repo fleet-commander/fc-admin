@@ -7,10 +7,7 @@ import dbusmock
 import dbus.mainloop.glib
 from gi.repository import GLib
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 ml = GLib.MainLoop()
 
@@ -56,8 +53,8 @@ realm = dbusmock.mockobject.DBusMockObject(
 )
 
 
-logging.debug("Configured and running realmd dbus mock")
-
-ml.run()
-
-logging.debug("Quitting realmd dbus mock")
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    logging.debug("Configured and running realmd dbus mock")
+    ml.run()
+    logging.debug("Quitting realmd dbus mock")

@@ -38,6 +38,8 @@ from fleetcommander import fcdbus
 # Mock directory system
 from tests import directorymock
 
+logger = logging.getLogger(os.path.basename(__file__))
+
 fcdbus.fcfreeipa.FreeIPAConnector = directorymock.DirectoryConnector
 fcdbus.fcad.ADConnector = directorymock.DirectoryConnector
 
@@ -45,11 +47,6 @@ fcdbus.fcad.ADConnector = directorymock.DirectoryConnector
 fcdbus.DBUS_BUS_NAME = "org.freedesktop.FleetCommanderTest"
 fcdbus.DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderTest"
 
-
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
 
 # Mock libvirt controller
 def controller(viewer_type, data_path, username, hostname, mode):
@@ -161,4 +158,5 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     TestFleetCommanderDbusService(sys.argv[1]).run()

@@ -37,10 +37,7 @@ from fleetcommander import sshcontroller
 from test_fcdbus_service import MockLibVirtController
 from tests.fcdbusclient import FleetCommanderDbusClient
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 
 class TestDbusService(unittest.TestCase):
@@ -176,7 +173,6 @@ class TestDbusService(unittest.TestCase):
         )
 
     def test_00_get_initial_values(self):
-        logging.debug("TEST 00")
         state = {
             "debuglevel": "debug",
             "defaults": {
@@ -188,15 +184,12 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(json.loads(self.c.get_initial_values()), state)
 
     def test_01_do_domain_connection(self):
-        logging.debug("TEST 01")
         self.assertEqual(json.loads(self.c.do_domain_connection()), {"status": True})
 
     def test_02_get_public_key(self):
-        logging.debug("TEST 02")
         self.assertEqual(self.c.get_public_key(), "PUBLIC_KEY")
 
     def test_03_get_hypervisor_config(self):
-        logging.debug("TEST 03")
         self.assertEqual(
             self.c.get_hypervisor_config(),
             {
@@ -210,7 +203,6 @@ class TestDbusService(unittest.TestCase):
         )
 
     def test_04_check_hypervisor_config(self):
-        logging.debug("TEST 04")
         data = {
             "host": "localhost",
             "username": "valid_user",
@@ -259,7 +251,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp["errors"], {"viewer": "Unsupported libvirt viewer type"})
 
     def test_05_set_hypervisor_config(self):
-        logging.debug("TEST 05")
         data = {
             "host": "localhost",
             "username": "valid_user",
@@ -278,7 +269,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(self.c.get_hypervisor_config(), dataresp)
 
     def test_06_check_known_host(self):
-        logging.debug("TEST 06")
         # Check not known host
         resp = self.c.check_known_host("localhost")
         self.assertFalse(resp["status"])
@@ -295,7 +285,6 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp["status"])
 
     def test_07_add_known_host(self):
-        logging.debug("TEST 07")
         # Check not known host
         resp = self.c.check_known_host("localhost")
         self.assertFalse(resp["status"])
@@ -308,7 +297,6 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp["status"])
 
     def test_08_install_public_key(self):
-        logging.debug("TEST 08")
         # Test install with bad credentials
         resp = self.c.install_pubkey(
             "localhost",
@@ -326,7 +314,6 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(resp["status"])
 
     def test_09_save_profile(self):
-        logging.debug("TEST 09")
         # Create a new profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         self.assertTrue(resp["status"])
@@ -334,7 +321,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(data, self.DUMMY_PROFILE_DATA)
 
     def test_10_delete_profile(self):
-        logging.debug("TEST 10")
         # Delete unexistent profile
         resp = self.c.delete_profile("fakeuid")
         self.assertTrue(resp["status"])
@@ -349,7 +335,6 @@ class TestDbusService(unittest.TestCase):
         self.assertTrue(data is None)
 
     def test_11_list_domains(self):
-        logging.debug("TEST 11")
         # Try to get domains without configuring hypervisor
         resp = self.c.list_domains()
         self.assertFalse(resp["status"])
@@ -364,7 +349,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp["domains"], MockLibVirtController.DOMAINS_LIST)
 
     def test_12_session_start(self):
-        logging.debug("TEST 12")
         # Configure hypervisor
         self.configure_hypervisor()
         # Start session
@@ -384,7 +368,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp["error"], "Session already started")
 
     def test_13_session_stop(self):
-        logging.debug("TEST 13")
         # Configure hypervisor
         self.configure_hypervisor()
         # Stop without previous session start
@@ -401,7 +384,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp["error"], "There was no session started")
 
     def test_14_empty_session_save(self):
-        logging.debug("TEST 14")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
@@ -417,7 +399,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(data["settings"], {})
 
     def test_15_session_save(self):
-        logging.debug("TEST 15")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Configure hypervisor
@@ -446,7 +427,6 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(gsettings[0]["key"], "/foo/bar")
 
     def test_16_get_profiles(self):
-        logging.debug("TEST 16")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profiles data
@@ -465,7 +445,6 @@ class TestDbusService(unittest.TestCase):
         )
 
     def test_17_get_profile(self):
-        logging.debug("TEST 17")
         # Create a profile
         resp = self.c.save_profile(self.DUMMY_PROFILE_PAYLOAD)
         # Get profile data
@@ -476,13 +455,11 @@ class TestDbusService(unittest.TestCase):
         self.assertEqual(resp["data"], profile)
 
     def test_18_get_goa_providers(self):
-        logging.debug("TEST 18")
         resp = self.c.get_goa_providers()
         self.assertTrue(resp["status"])
         self.assertEqual(resp["providers"], self.DUMMY_GOA_PROVIDERS_DATA)
 
     def test_19_is_session_active(self):
-        logging.debug("TEST 19")
         # Configure hypervisor
         self.configure_hypervisor()
 
@@ -505,4 +482,5 @@ class TestDbusService(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

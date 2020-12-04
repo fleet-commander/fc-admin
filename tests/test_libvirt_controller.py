@@ -41,13 +41,10 @@ from tests import (
     SSH_REMOTE_COMMAND_PARMS,
 )
 
+logger = logging.getLogger(os.path.basename(__file__))
+
 # Mocking assignments
 libvirtcontroller.libvirt = libvirtmock.LibvirtModuleMocker
-
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
 
 
 class TestLibVirtControllerCommon(unittest.TestCase):
@@ -593,4 +590,5 @@ class TestLibVirtControllerSessionDirect(
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

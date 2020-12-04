@@ -38,10 +38,7 @@ sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Get mainloop
 ml = GLib.MainLoop()
@@ -51,9 +48,7 @@ ml = GLib.MainLoop()
 
 
 def mainloop_quit_callback(*args, **kwargs):
-    logging.error(
-        "Timed out waiting for file update notification. Test probably failed"
-    )
+    logger.error("Timed out waiting for file update notification. Test probably failed")
     ml.quit()
 
 
@@ -524,7 +519,6 @@ class TestChromiumLogger(unittest.TestCase):
         )
 
     def test_07_preferences_monitoring(self):
-        logging.info("Start test_07_preferences_monitoring")
         # Helper method to write prefs and simulate file modified notification
         def write_prefs(clogger, prefs, path):
             # Write a new supported setting to the preferences file 1
@@ -589,11 +583,7 @@ class TestChromiumLogger(unittest.TestCase):
         write_prefs(chromium_logger, prefs1, prefs1_path)
         self.assertEqual(len(mgr.log), 0)
 
-        logging.info("End test_07_preferences_monitoring")
-
     def test_08_bookmarks_monitoring(self):
-        logging.info("Start test_08_bookmarks_monitoring")
-
         # Helper method to write bookmarks and simulate a file modified notification
         def write_bmarks(clogger, bmarks, path):
             # Write a new supported setting to the preferences file 1
@@ -666,8 +656,7 @@ class TestChromiumLogger(unittest.TestCase):
             received,
         )
 
-        logging.info("Start test_08_bookmarks_monitoring")
-
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)
