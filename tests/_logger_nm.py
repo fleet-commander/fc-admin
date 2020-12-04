@@ -22,10 +22,9 @@
 
 # Python imports
 from __future__ import absolute_import
-import sys
-import os
 import json
 import logging
+import os
 import unittest
 
 # GObject Introspection imports
@@ -36,9 +35,6 @@ gi.require_version("Json", "1.0")
 from gi.repository import GLib
 from gi.repository import Gio
 from gi.repository import Json as gi_json
-
-PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "logger")
-sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 

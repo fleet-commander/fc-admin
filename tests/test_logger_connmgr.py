@@ -30,16 +30,12 @@ import logging
 import math
 import os
 import re
-import sys
 import unittest
 
 from unittest.mock import mock_open, patch
 
 # GObject Introspection imports
 from gi.repository import Gio
-
-PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "logger")
-sys.path.append(PYTHONPATH)
 
 from fleet_commander_logger import (
     FC_LOGGER_PROTO_CHUNK_SIZE,

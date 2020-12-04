@@ -7,6 +7,7 @@ TESTS_ENVIRONMENT = \
 	export XDG_DATA_DIRS=$(abs_top_srcdir)/tests/data/; \
 	export PYTHON=@PYTHON@; \
 	export PYTHONPATH=$(abs_top_srcdir):$(abs_top_srcdir)/admin; \
+	export PYTHONPATH=$${PYTHONPATH}:$(abs_top_srcdir)/logger; \
 	$(NULL)
 
 TESTS = \

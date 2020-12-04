@@ -21,15 +21,12 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
+import json
 import logging
 import os
-import sys
 import unittest
-import json
+
 from tests import freeipamock
-
-sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
-
 from fleetcommander import fcfreeipa
 
 logger = logging.getLogger(os.path.basename(__file__))

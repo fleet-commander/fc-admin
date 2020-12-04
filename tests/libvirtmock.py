@@ -21,14 +21,10 @@
 
 from __future__ import absolute_import
 import os
-import sys
 import pickle
 import xml.etree.ElementTree as ET
 
 import libvirt
-
-PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
-sys.path.append(PYTHONPATH)
 
 from fleetcommander.database import BaseDBManager, SQLiteDict
 

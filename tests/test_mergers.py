@@ -23,12 +23,8 @@
 # Python imports
 from __future__ import absolute_import
 import logging
-import sys
 import os
 import unittest
-
-PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
-sys.path.append(PYTHONPATH)
 
 from fleetcommander import mergers
 
