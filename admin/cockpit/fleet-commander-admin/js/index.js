@@ -22,6 +22,7 @@ import {
     DEBUG,
     addFormError,
     clearModalFormErrors,
+    hasForm,
     setDebugLevel
 } from './base.js';
 import {
@@ -131,7 +132,6 @@ function saveFCSettings(cb) {
         username: $('#username').val(),
         mode: $('#mode').val(),
         viewer: $('#viewer').val(),
-        domains: {}
     };
     const policy = parseInt($('#policy').val(), 10);
 
@@ -161,7 +161,14 @@ function saveFCSettings(cb) {
             checkKnownHost(data.host, saveSettingsFinal, data);
         } else {
             $.each(resp.errors, function (key, value) {
-                addFormError(key, value);
+                if (hasForm(key) === true) {
+                    addFormError(key, value);
+                } else {
+                    messageDialog.show(
+                        _(value),
+                        _('Error')
+                    );
+                }
             });
         }
     });

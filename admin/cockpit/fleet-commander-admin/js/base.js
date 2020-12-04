@@ -29,9 +29,22 @@ function clearModalFormErrors(modalId) {
     $('#' + modalId + ' div.form-group > .error-message').remove();
 }
 
+function hasForm(fieldId) {
+    const groupId = `#${fieldId}-group`;
+    if ($(groupId).length) {
+        return true;
+    }
+    return false;
+}
+
 function addFormError(fieldId, errorMessage) {
-    $('#' + fieldId + '-group').append('<div class="help-block error-message">' + errorMessage + '</div>');
-    $('#' + fieldId + '-group').addClass('has-error');
+    const groupId = `#${fieldId}-group`;
+    $(groupId).append(
+        '<div class="help-block error-message">' +
+        errorMessage +
+        '</div>'
+    );
+    $(groupId).addClass('has-error');
 }
 
 function hasSuffix(haystack, needle) {
@@ -59,4 +72,11 @@ function setDebugLevel(level) {
     }
 }
 
-export { DEBUG, addFormError, clearModalFormErrors, hasSuffix, setDebugLevel };
+export {
+    DEBUG,
+    addFormError,
+    clearModalFormErrors,
+    hasForm,
+    hasSuffix,
+    setDebugLevel
+};
