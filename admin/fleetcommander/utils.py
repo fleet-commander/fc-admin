@@ -34,6 +34,8 @@ except ImportError:
 
 from . import constants
 
+logger = logging.getLogger(__name__)
+
 
 def get_data_from_file(path):
     with open(path, "r") as fd:
@@ -75,12 +77,12 @@ def parse_config(config_file=None):
     try:
         config.read(config_file)
     except IOError:
-        logging.warning("Could not find configuration file %s", config_file)
+        logger.warning("Could not find configuration file %s", config_file)
     except ParsingError:
-        logging.error("There was an error parsing %s", config_file)
+        logger.error("There was an error parsing %s", config_file)
         sys.exit(1)
     except Exception as e:
-        logging.error("There was an unknown error parsing %s: %s", config_file, e)
+        logger.error("There was an unknown error parsing %s: %s", config_file, e)
         sys.exit(1)
 
     if config.has_section("admin"):

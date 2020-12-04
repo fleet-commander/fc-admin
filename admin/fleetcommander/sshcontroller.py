@@ -27,6 +27,8 @@ import logging
 import pexpect
 import six
 
+logger = logging.getLogger(__name__)
+
 
 class SSHControllerException(Exception):
     pass
@@ -299,9 +301,9 @@ class SSHController:
         Install a public key in a remote host
         """
         # Check that pub_key is a real public key by calculating fingerprint
-        logging.debug("Verifying public key")
+        logger.debug("Verifying public key")
         fp = self.get_fingerprint_from_key_data(pub_key)
-        logging.debug("Public key fingerprint: %s", fp)
+        logger.debug("Public key fingerprint: %s", fp)
         try:
             # Open connection to given host and simulate a session
             ssh = pexpect.spawn(
@@ -314,21 +316,21 @@ class SSHController:
             )
 
             def execute_command(command, final=False):
-                logging.debug('Executing command: "%s"', command)
+                logger.debug('Executing command: "%s"', command)
                 ssh.sendline(command)
                 if not final:
                     ssh.expect(command_prompt)
 
-            logging.debug("Waiting password prompt")
+            logger.debug("Waiting password prompt")
             prompts = [password_prompt, command_prompt]
             result = ssh.expect(prompts)
             if result == 0:
-                logging.debug("Sending password")
+                logger.debug("Sending password")
                 ssh.sendline(password)
                 result = ssh.expect(prompts)
                 if result == 0:
                     # Bad credentials
-                    logging.debug("Password prompted again. Invalid credentials.")
+                    logger.debug("Password prompted again. Invalid credentials.")
                     raise SSHControllerException("Invalid credentials")
 
             execute_command("mkdir -p ~/.ssh/")
@@ -341,5 +343,5 @@ class SSHController:
             execute_command("chmod 600 ~/.ssh/authorized_keys")
             execute_command("exit", final=True)
         except Exception as e:
-            logging.error("Error installing SSH public key: %s", e)
+            logger.error("Error installing SSH public key: %s", e)
             raise SSHControllerException("Error installing SSH public key: %s" % e)

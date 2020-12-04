@@ -23,6 +23,8 @@ from __future__ import absolute_import
 from six.moves.configparser import RawConfigParser, ParsingError
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class GOAProvidersLoader:
     """
@@ -39,13 +41,13 @@ class GOAProvidersLoader:
         try:
             self._configparser.read(providers_file)
         except IOError as e:
-            logging.error("Could not find GOA providers file %s", providers_file)
+            logger.error("Could not find GOA providers file %s", providers_file)
             raise e
         except ParsingError as e:
-            logging.error("There was an error parsing %s", providers_file)
+            logger.error("There was an error parsing %s", providers_file)
             raise e
         except Exception as e:
-            logging.error("There was an unknown error parsing %s", providers_file)
+            logger.error("There was an unknown error parsing %s", providers_file)
             raise e
         self.read_data()
 

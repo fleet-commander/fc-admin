@@ -35,6 +35,8 @@ import libvirt
 
 from . import sshcontroller
 
+logger = logging.getLogger(__name__)
+
 
 class LibVirtControllerException(Exception):
     pass
@@ -136,7 +138,7 @@ class LibVirtController:
     def _get_libvirt_socket(self):
         # Get Libvirt socket for session mode
         if self.mode == "session":
-            logging.debug("libvirtcontroller: " "Getting session mode libvirt socket.")
+            logger.debug("Getting session mode libvirt socket.")
 
             try:
                 out = self.ssh.execute_remote_command(
@@ -150,23 +152,17 @@ class LibVirtController:
                     UserKnownHostsFile=self.known_hosts_file,
                 )
                 self._libvirt_socket = out.decode().strip()
-                logging.debug(
-                    "libvirtcontroller: " "Session mode libvirt socket is %s",
-                    self._libvirt_socket,
-                )
+                logger.debug("Session mode libvirt socket is %s", self._libvirt_socket)
             except Exception as e:
                 raise LibVirtControllerException(
                     "Error connecting to libvirt host: %s" % e
                 )
         else:
-            logging.debug(
-                "libvirtcontroller: "
-                "Using system mode. No need to check for libvirt socket."
-            )
+            logger.debug("Using system mode. No need to check for libvirt socket.")
             self._libvirt_socket = ""
 
     def _get_libvirt_video_driver(self):
-        logging.debug("libvirtcontroller: " "Getting libvirt video driver.")
+        logger.debug("Getting libvirt video driver.")
 
         try:
             out = self.ssh.execute_remote_command(
@@ -178,9 +174,7 @@ class LibVirtController:
                 UserKnownHostsFile=self.known_hosts_file,
             )
             self._libvirt_video_driver = out.decode().strip()
-            logging.debug(
-                "libvirtcontroller: Using %s video driver.", self._libvirt_video_driver
-            )
+            logger.debug("Using %s video driver.", self._libvirt_video_driver)
         except Exception as e:
             raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
 
@@ -193,22 +187,22 @@ class LibVirtController:
         Libvirt connection using qemu+ssh requires socket path for session
         connections.
         """
-        logging.debug("libvirtcontroller: Checking remote environment.")
+        logger.debug("Checking remote environment.")
         self._get_libvirt_socket()
         self._get_libvirt_video_driver()
-        logging.debug("libvirtcontroller: Ended checking remote environment.")
+        logger.debug("Ended checking remote environment.")
 
     def _connect(self):
         """
         Makes a connection to a host using libvirt qemu+ssh
         """
-        logging.debug("libvirtcontroller: Connecting to libvirt")
+        logger.debug("Connecting to libvirt")
         if self.conn is None:
 
             # Prepare remote environment
             self._prepare_remote_env()
 
-            logging.debug("libvirtcontroller: Not connected yet. Prepare connection.")
+            logger.debug("Not connected yet. Prepare connection.")
 
             options = {
                 #'known_hosts': self.known_hosts_file,  # Custom known_hosts file to not alter the default one
@@ -232,9 +226,9 @@ class LibVirtController:
             except Exception as e:
                 raise LibVirtControllerException("Error connecting to host: %s" % e)
 
-            logging.debug("libvirtcontroller: Connected to libvirt host.")
+            logger.debug("Connected to libvirt host.")
         else:
-            logging.debug("libvirtcontroller: Already connected. Reusing connection.")
+            logger.debug("Already connected. Reusing connection.")
 
     def _get_spice_parms(self, domain):
         """
@@ -338,7 +332,7 @@ class LibVirtController:
         """
         Close SSH tunnel
         """
-        logging.debug("libvirtcontroller: Closing SSH tunnel")
+        logger.debug("Closing SSH tunnel")
 
         # Execute SSH and close tunnel
         try:
@@ -349,7 +343,7 @@ class LibVirtController:
                 self.ssh_port,
                 UserKnownHostsFile=self.known_hosts_file,
             )
-            logging.debug("libvirtcontroller: Tunnel closed")
+            logger.debug("Tunnel closed")
         except Exception as e:
             raise LibVirtControllerException("Error closing tunnel: %s" % e)
 
@@ -357,7 +351,7 @@ class LibVirtController:
         """
         Open SSH tunnel for spice port
         """
-        logging.debug("libvirtcontroller: Opening SSH tunnel")
+        logger.debug("Opening SSH tunnel")
         kwargs["UserKnownHostsFile"] = self.known_hosts_file
 
         # Execute SSH and bring up tunnel
@@ -370,10 +364,7 @@ class LibVirtController:
                 self.ssh_port,
                 **kwargs,
             )
-            logging.debug(
-                "libvirtcontroller: Tunnel opened:%s",
-                local_forward,
-            )
+            logger.debug("Tunnel opened:%s", local_forward)
         except Exception as e:
             raise LibVirtControllerException("Error opening tunnel: %s" % e)
 
@@ -404,9 +395,9 @@ class LibVirtController:
         """
         Returns a dict with uuid and domain name
         """
-        logging.debug("libvirtcontroller: Listing domains")
+        logger.debug("Listing domains")
         self._connect()
-        logging.debug("libvirtcontroller: Retrieving LibVirt domains")
+        logger.debug("Retrieving LibVirt domains")
         domains = self.conn.listAllDomains()
 
         def domain_name(dom):
@@ -425,7 +416,7 @@ class LibVirtController:
             }
             for domain in domains
         ]
-        logging.debug("libvirtcontroller: Domains list: %s", domainlist)
+        logger.debug("Domains list: %s", domainlist)
         return domainlist
 
     def session_start(self, identifier):
@@ -438,7 +429,7 @@ class LibVirtController:
         """
         Stops session in virtual machine
         """
-        logging.debug("libvirtcontroller: Stopping session")
+        logger.debug("Stopping session")
         # Kill ssh tunnel
         try:
             self._close_ssh_tunnel()
@@ -470,7 +461,7 @@ class LibVirtTlsSpice(LibVirtController):
         self.viewer = "spice_remote_viewer"
 
     def _get_user_runtime_dir(self):
-        logging.debug("libvirtcontroller: " "Getting user runtime directory.")
+        logger.debug("Getting user runtime directory.")
 
         try:
             out = self.ssh.execute_remote_command(
@@ -482,9 +473,7 @@ class LibVirtTlsSpice(LibVirtController):
                 UserKnownHostsFile=self.known_hosts_file,
             )
             runtimedir = out.decode().strip()
-            logging.debug(
-                "libvirtcontroller: " "Receive user runtime dir %s", runtimedir
-            )
+            logger.debug("Receive user runtime dir %s", runtimedir)
             if not runtimedir:
                 raise LibVirtControllerException(
                     "Variable XDG_RUNTIME_DIR is not set on libvirt host"
@@ -530,7 +519,7 @@ class LibVirtTlsSpice(LibVirtController):
         """
         Start session in virtual machine
         """
-        logging.debug("libvirtcontroller: Starting session")
+        logger.debug("Starting session")
         self._connect()
         # Get machine by its identifier
         origdomain = self.conn.lookupByUUIDString(identifier)
@@ -562,9 +551,7 @@ class LibVirtTlsSpice(LibVirtController):
         remote_socket = self._notify_socket_path.format(
             self._last_started_domain.name()
         )
-        logging.debug(
-            "libvirtcontroller: local user notify socket path: %s", local_socket
-        )
+        logger.debug("Local user notify socket path: %s", local_socket)
         local_forward = "{local_socket}:{remote_socket}".format(
             local_socket=local_socket,
             remote_socket=remote_socket,
@@ -590,9 +577,7 @@ class LibVirtTlsSpice(LibVirtController):
         )
 
     def _get_spice_ca_cert(self):
-        logging.debug(
-            "libvirtcontroller: " "Getting SPICE CA certificate for FC TLS session."
-        )
+        logger.debug("Getting SPICE CA certificate for FC TLS session.")
         try:
             out = self.ssh.execute_remote_command(
                 command=self._SPICE_CA_CERT_CMD.format(ca=self.SPICE_CA_CERT),
@@ -603,18 +588,13 @@ class LibVirtTlsSpice(LibVirtController):
                 UserKnownHostsFile=self.known_hosts_file,
             )
             spice_ca = out.decode().strip()
-            logging.debug(
-                "libvirtcontroller: " "Receive SPICE CA certificate %s", spice_ca
-            )
+            logger.debug("Receive SPICE CA certificate %s", spice_ca)
             return spice_ca
         except Exception as e:
             raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
 
     def _get_spice_cert_subject(self):
-        logging.debug(
-            "libvirtcontroller: "
-            "Getting SPICE certificate subject for FC TLS session."
-        )
+        logger.debug("Getting SPICE certificate subject for FC TLS session.")
 
         try:
             out = self.ssh.execute_remote_command(
@@ -626,9 +606,7 @@ class LibVirtTlsSpice(LibVirtController):
                 UserKnownHostsFile=self.known_hosts_file,
             )
             cert_subject = out.decode().strip()
-            logging.debug(
-                "libvirtcontroller: " "Receive SPICE CA certificate %s", cert_subject
-            )
+            logger.debug("Receive SPICE CA certificate %s", cert_subject)
             return cert_subject
         except Exception as e:
             raise LibVirtControllerException("Error connecting to libvirt host: %s" % e)
@@ -665,7 +643,7 @@ class LibVirtTunnelSpice(LibVirtController):
         """
         Start session in virtual machine
         """
-        logging.debug("libvirtcontroller: Starting session")
+        logger.debug("Starting session")
         self._connect()
         # Get machine by its identifier
         origdomain = self.conn.lookupByUUIDString(identifier)

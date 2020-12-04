@@ -43,6 +43,8 @@ from .goa import GOAProvidersLoader
 from . import fcfreeipa
 from . import fcad
 
+logger = logging.getLogger(os.path.basename(__file__))
+
 SYSTEM_USER_REGEX = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$")
 IPADDRESS_AND_PORT_REGEX = re.compile(
     r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\:[0-9]{1,5})*$"
@@ -96,7 +98,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.home_dir = os.path.expanduser("~")
 
         if not os.path.exists(self.home_dir):
-            logging.error(
+            logger.error(
                 "%s directory does not exist.\n"
                 "In order to have home directory automatically created you "
                 "have the following options:\n"
@@ -129,11 +131,11 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.realm_info = {"domain": domain, "server": server}
         if server == "active-directory":
             # Load Active Directory connector
-            logging.debug("Activating Active Directory domain support for %s", domain)
+            logger.debug("Activating Active Directory domain support for %s", domain)
             self.realm_connector = fcad.ADConnector(domain)
         else:
             # Load FreeIPA connector
-            logging.debug("Activating IPA domain support for %s", domain)
+            logger.debug("Activating IPA domain support for %s", domain)
             self.realm_connector = fcfreeipa.FreeIPAConnector()
 
         self.GOA_PROVIDERS_FILE = os.path.join(args["data_dir"], "fc-goa-providers.ini")
@@ -193,14 +195,14 @@ class FleetCommanderDbusService(dbus.service.Object):
         realms = sssd_provider.get_cached_property("Realms")
 
         if realms is None:
-            logging.error(
+            logger.error(
                 'It seems that "realmd" package is not installed.'
                 ' "realmd" is used for retreiving information about the Realm.'
             )
             sys.exit(1)
 
         if len(realms) > 0:
-            logging.debug("FC: realmd queried. Using realm object %s", realms[0])
+            logger.debug("FC: realmd queried. Using realm object %s", realms[0])
             realm = Gio.DBusProxy.new_for_bus_sync(
                 self.REALMD_BUS,
                 Gio.DBusProxyFlags.NONE,
@@ -213,7 +215,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             domain = str(realm.get_cached_property("Name")).replace("'", "")
             details = {str(k): str(v) for k, v in realm.get_cached_property("Details")}
             server = details.get("server-software", "ipa")
-            logging.debug("FC: Realm details: %s (%s)", domain, server)
+            logger.debug("FC: Realm details: %s (%s)", domain, server)
             return (domain, server)
         # Return unknown domain and use IPA as directory server
         return ("UNKNOWN", "ipa")
@@ -246,7 +248,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         return public_key
 
     def get_hypervisor_config(self):
-        logging.debug("Getting hypervisor configuration")
+        logger.debug("Getting hypervisor configuration")
         public_key = self.get_public_key()
         # Check hypervisor configuration
         data = {
@@ -271,18 +273,18 @@ class FleetCommanderDbusService(dbus.service.Object):
                 domains = self.get_libvirt_controller().list_domains()
                 if only_temporary:
                     domains = [d for d in domains if d["temporary"]]
-                logging.debug("Domains retrieved: %s", domains)
+                logger.debug("Domains retrieved: %s", domains)
                 return domains
             except Exception as e:
                 error = e
-                logging.debug("Getting domain try %s: %s", tries, error)
-        logging.error("Error retrieving domains %s", error)
+                logger.debug("Getting domain try %s: %s", tries, error)
+        logger.error("Error retrieving domains %s", error)
         return None
 
     def stop_current_session(self):
 
         if "uuid" not in self.db.config:
-            logging.error("There was no session started")
+            logger.error("There was no session started")
             return False, "There was no session started"
 
         domain_uuid = self.db.config["uuid"]
@@ -293,7 +295,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         try:
             self.get_libvirt_controller().session_stop(domain_uuid)
         except Exception as e:
-            logging.error("Error stopping session: %s", e)
+            logger.error("Error stopping session: %s", e)
             return False, "Error stopping session: %s" % e
 
         return True, None
@@ -302,7 +304,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         self._last_heartbeat = time.time()
         # Add callback for temporary sessions check
         GLib.timeout_add(1000, self.check_running_sessions)
-        logging.debug("Started session checking")
+        logger.debug("Started session checking")
 
     def parse_hypervisor_hostname(self, hostname):
         hostdata = hostname.split(":", maxsplit=1)
@@ -320,13 +322,13 @@ class FleetCommanderDbusService(dbus.service.Object):
         time_passed = time.time() - self._last_heartbeat
         if time_passed > self.tmp_session_destroy_timeout:
             domains = self.get_domains(only_temporary=True)
-            logging.debug("Currently active temporary sessions: %s", domains)
+            logger.debug("Currently active temporary sessions: %s", domains)
             if domains:
-                logging.info("Destroying stalled sessions")
+                logger.info("Destroying stalled sessions")
                 # Stop current session
                 current_uuid = self.db.config.get("uuid", False)
                 if current_uuid:
-                    logging.debug("Stopping current session: %s", current_uuid)
+                    logger.debug("Stopping current session: %s", current_uuid)
                     self.stop_current_session()
                 for domain in domains:
                     ctrlr = self.get_libvirt_controller()
@@ -335,17 +337,17 @@ class FleetCommanderDbusService(dbus.service.Object):
                         try:
                             ctrlr.session_stop(domain_uuid)
                         except Exception as e:
-                            logging.error(
+                            logger.error(
                                 "Error destroying session with UUID %s: %s",
                                 domain_uuid,
                                 e,
                             )
             if time.time() - self._last_call_time > self.auto_quit_timeout:
                 # Quit service
-                logging.debug("Closing Fleet Commander Admin service due to inactivity")
+                logger.debug("Closing Fleet Commander Admin service due to inactivity")
                 self._loop.quit()
             else:
-                logging.debug("Resetting timer for session check")
+                logger.debug("Resetting timer for session check")
                 self._last_heartbeat = time.time()
         return True
 
@@ -365,12 +367,12 @@ class FleetCommanderDbusService(dbus.service.Object):
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="", out_signature="s")
     def DoDomainConnection(self):
-        logging.debug("Connecting to domain server")
+        logger.debug("Connecting to domain server")
         try:
             self.realm_connector.connect()
             return json.dumps({"status": True})
         except Exception as e:
-            logging.debug("Domain server connection failed: %s", e)
+            logger.debug("Domain server connection failed: %s", e)
             return json.dumps(
                 {"status": False, "error": "Error connecting to domain server"}
             )
@@ -395,7 +397,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="s")
     def CheckHypervisorConfig(self, jsondata):
-        logging.debug("Checking hypervisor configuration")
+        logger.debug("Checking hypervisor configuration")
         errors = {}
         try:
             data = json.loads(jsondata)
@@ -464,7 +466,7 @@ class FleetCommanderDbusService(dbus.service.Object):
                     }
                 )
             except Exception as e:
-                logging.error("Error getting hypervisor fingerprint: %s", e)
+                logger.error("Error getting hypervisor fingerprint: %s", e)
                 return json.dumps(
                     {"status": False, "error": "Error connecting to SSH service."}
                 )
@@ -483,7 +485,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             try:
                 self.ssh.add_to_known_hosts(self.known_hosts_file, host, port)
             except Exception as e:
-                logging.error("Error adding host to known hosts: %s", e)
+                logger.error("Error adding host to known hosts: %s", e)
                 return json.dumps(
                     {"status": False, "error": "Error adding host to known hosts"}
                 )
@@ -499,31 +501,31 @@ class FleetCommanderDbusService(dbus.service.Object):
             self.ssh.install_pubkey(pubkey, user, passwd, host, port)
             return json.dumps({"status": True})
         except Exception as e:
-            logging.error("Error installing public key: %s", e)
+            logger.error("Error installing public key: %s", e)
             return json.dumps({"status": False, "error": "Error installing public key"})
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="", out_signature="s")
     def GetGlobalPolicy(self):
-        logging.debug("Getting global policy")
+        logger.debug("Getting global policy")
         try:
             policy = self.realm_connector.get_global_policy()
             return json.dumps({"status": True, "policy": policy})
         except Exception as e:
-            logging.error("Error getting global policy: %s", e)
+            logger.error("Error getting global policy: %s", e)
             return json.dumps({"status": False, "error": "Error getting global policy"})
 
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="q", out_signature="s")
     def SetGlobalPolicy(self, policy):
 
-        logging.debug("Setting policy to %s", policy)
+        logger.debug("Setting policy to %s", policy)
 
         try:
             self.realm_connector.set_global_policy(int(policy))
             return json.dumps({"status": True})
         except Exception as e:
-            logging.error("Error setting global policy to %s: %s", policy, e)
+            logger.error("Error setting global policy to %s: %s", policy, e)
             return json.dumps(
                 {"status": False, "error": "Error setting given global policy"}
             )
@@ -531,10 +533,10 @@ class FleetCommanderDbusService(dbus.service.Object):
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="s")
     def SaveProfile(self, profiledata):
-        logging.debug("Data received for saving profile: %s", profiledata)
+        logger.debug("Data received for saving profile: %s", profiledata)
 
         data = json.loads(profiledata)
-        logging.debug("Data after JSON decoding: %s", data)
+        logger.debug("Data after JSON decoding: %s", data)
 
         profile = {
             "cn": data["cn"],
@@ -558,26 +560,26 @@ class FleetCommanderDbusService(dbus.service.Object):
             ],
         }
 
-        logging.debug("Profile built to be saved: %s", profile)
+        logger.debug("Profile built to be saved: %s", profile)
 
         cn = profile["cn"]
         name = profile["name"]
 
         if "oldname" in data:
-            logging.debug(
+            logger.debug(
                 "Profile is being renamed from %s to %s", data["oldname"], name
             )
             profile["oldname"] = data["oldname"]
 
         try:
-            logging.debug("Saving profile into domain server")
+            logger.debug("Saving profile into domain server")
             self.realm_connector.save_profile(profile)
             return json.dumps({"status": True})
         except fcfreeipa.RenameToExistingException as e:
-            logging.error("Error saving profile %s (%s): %s", cn, name, e)
+            logger.error("Error saving profile %s (%s): %s", cn, name, e)
             return json.dumps({"status": False, "error": "%s" % e})
         except Exception as e:
-            logging.error("Error saving profile %s: (%s) %s", cn, name, e)
+            logger.error("Error saving profile %s: (%s) %s", cn, name, e)
             return json.dumps({"status": False, "error": "Can not save profile."})
 
     @set_last_call_time
@@ -585,10 +587,10 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetProfiles(self):
         try:
             profiles = self.realm_connector.get_profiles()
-            logging.debug("Profiles data fetched: %s", profiles)
+            logger.debug("Profiles data fetched: %s", profiles)
             return json.dumps({"status": True, "data": profiles})
         except Exception as e:
-            logging.error("Error reading profiles from domain server: %s", e)
+            logger.error("Error reading profiles from domain server: %s", e)
             return json.dumps(
                 {"status": False, "error": "Error reading profiles index"}
             )
@@ -598,10 +600,10 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetProfile(self, name):
         try:
             profile = self.realm_connector.get_profile(name)
-            logging.debug("Profile data fetched for %s: %s", name, profile)
+            logger.debug("Profile data fetched for %s: %s", name, profile)
             return json.dumps({"status": True, "data": profile})
         except Exception as e:
-            logging.error("Error reading profile %s from domain server: %s", name, e)
+            logger.error("Error reading profile %s from domain server: %s", name, e)
             return json.dumps(
                 {
                     "status": False,
@@ -612,12 +614,12 @@ class FleetCommanderDbusService(dbus.service.Object):
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="s")
     def DeleteProfile(self, name):
-        logging.debug("Deleting profile %s", name)
+        logger.debug("Deleting profile %s", name)
         try:
             self.realm_connector.del_profile(name)
             return json.dumps({"status": True})
         except Exception as e:
-            logging.error("Error removing profile %s: %s", name, e)
+            logger.error("Error removing profile %s: %s", name, e)
             return json.dumps({"status": False})
 
     @set_last_call_time
@@ -632,16 +634,16 @@ class FleetCommanderDbusService(dbus.service.Object):
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="s", out_signature="s")
     def SessionStart(self, domain_uuid):
 
-        logging.debug("Starting new session")
+        logger.debug("Starting new session")
         if self.db.config.get("uuid", None) is not None:
-            logging.error("Session already started")
+            logger.error("Session already started")
             return json.dumps({"status": False, "error": "Session already started"})
 
         try:
             lvirtctrlr = self.get_libvirt_controller()
             session_params = lvirtctrlr.session_start(domain_uuid)
         except Exception as e:
-            logging.error("Error starting session: %s", e)
+            logger.error("Error starting session: %s", e)
             return json.dumps(
                 {"status": False, "error": "Error starting session: {}".format(e)}
             )
@@ -664,30 +666,30 @@ class FleetCommanderDbusService(dbus.service.Object):
     @set_last_call_time
     @dbus.service.method(DBUS_INTERFACE_NAME, in_signature="ss", out_signature="s")
     def SessionSave(self, uid, data):
-        logging.debug("FC: Saving session")
+        logger.debug("FC: Saving session")
         try:
             profile = self.realm_connector.get_profile(uid)
         except Exception as e:
-            logging.debug("Could not parse profile %s: %s", uid, e)
+            logger.debug("Could not parse profile %s: %s", uid, e)
             return json.dumps(
                 {"status": False, "error": "Could not parse profile %s" % uid}
             )
 
-        logging.debug("FC: Loaded profile")
+        logger.debug("FC: Loaded profile")
 
         # Handle changesets
         try:
             changesets = json.loads(data)
         except Exception as e:
-            logging.debug("Could not parse changeset: %s. Data: %s", e, data)
+            logger.debug("Could not parse changeset: %s. Data: %s", e, data)
             return json.dumps(
                 {"status": False, "error": "Could not parse changesets: %s" % data}
             )
 
-        logging.debug("FC: Changesets loaded: %s", changesets)
+        logger.debug("FC: Changesets loaded: %s", changesets)
 
         if not isinstance(changesets, dict):
-            logging.debug("FC: Invalid changesets data")
+            logger.debug("FC: Invalid changesets data")
             return json.dumps(
                 {
                     "status": False,
@@ -697,30 +699,30 @@ class FleetCommanderDbusService(dbus.service.Object):
 
         # Save changes
         for ns, changeset in changesets.items():
-            logging.debug("FC: Processing %s changeset: %s", ns, changeset)
+            logger.debug("FC: Processing %s changeset: %s", ns, changeset)
             if not isinstance(changeset, list):
-                logging.debug("FC: Invalid changeset: %s", ns)
+                logger.debug("FC: Invalid changeset: %s", ns)
                 return json.dumps(
                     {"status": False, "error": "Changesets should be a change list"}
                 )
 
-            logging.debug("FC: Adding changes to profile")
+            logger.debug("FC: Adding changes to profile")
             if ns not in profile["settings"]:
-                logging.debug("FC: Adding new changeset into profile")
+                logger.debug("FC: Adding new changeset into profile")
                 profile["settings"][ns] = changeset
             else:
                 if ns in self.changemergers:
-                    logging.debug("FC: Merging changeset into profile")
+                    logger.debug("FC: Merging changeset into profile")
                     profile["settings"][ns] = self.changemergers[ns].merge(
                         profile["settings"][ns], changeset
                     )
                 else:
-                    logging.debug("FC: No merger found for %s. Replacing changes", ns)
+                    logger.debug("FC: No merger found for %s. Replacing changes", ns)
                     profile["settings"][ns] = changeset
 
-        logging.debug("FC: Saving profile")
+        logger.debug("FC: Saving profile")
         self.realm_connector.save_profile(profile)
-        logging.debug("FC: Saved profile")
+        logger.debug("FC: Saved profile")
 
         return json.dumps({"status": True})
 
@@ -730,20 +732,20 @@ class FleetCommanderDbusService(dbus.service.Object):
         if uuid == "":
             # Asking for current session
             if "uuid" in self.db.config:
-                logging.debug(
+                logger.debug(
                     "Checking for default session with uuid: %s", self.db.config["uuid"]
                 )
                 uuid = self.db.config["uuid"]
             else:
-                logging.debug("Default session not started")
+                logger.debug("Default session not started")
                 return False
 
         domains = self.get_domains()
         for domain in domains:
             if domain["uuid"] == uuid:
-                logging.debug("Session found: %s", domain)
+                logger.debug("Session found: %s", domain)
                 return domain["active"]
-        logging.debug("Given session uuid not found in domains")
+        logger.debug("Given session uuid not found in domains")
         return False
 
     @set_last_call_time
@@ -753,7 +755,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             loader = GOAProvidersLoader(self.GOA_PROVIDERS_FILE)
             return json.dumps({"status": True, "providers": loader.get_providers()})
         except Exception as e:
-            logging.error("Error getting GOA providers data: %s", e)
+            logger.error("Error getting GOA providers data: %s", e)
             return json.dumps(
                 {"status": False, "error": "Error getting GOA providers data"}
             )
