@@ -20,7 +20,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 DEFAULT_LOG_LEVEL = 'warning'
-DEFAULT_LOG_FORMAT = 'FC: [%(levelname)s] %(message)s'
+DEFAULT_LOG_FORMAT = '%(name)s: [%(levelname)s] %(message)s'
 DEFAULT_CONFIG_FILE = '@FCCONFIGFILE@'
 
 DEFAULT_DATA_DIR = '@FCADMINDIR@'

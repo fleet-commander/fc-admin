@@ -43,14 +43,12 @@ from samba.dcerpc import security
 from samba.ntacls import dsacl2fsacl
 from samba.samba3 import param as s3param
 
+logger = logging.getLogger(__name__)
+
 try:
     from samba.samba3 import libsmb
-
-    logging.debug("Using SAMBA 3 SMB connection")
 except ImportError:
     from samba.samba3 import libsmb_samba_internal as libsmb
-
-    logging.debug("Using SAMBA 3 SMB connection (Internal)")
 
 
 GPO_SMB_PATH = "\\\\%s\\SysVol\\%s\\Policies\\%s"
@@ -124,7 +122,7 @@ class ADConnector:
     CACHED_SERVER_NAME = None
 
     def __init__(self, domain):
-        logging.debug("Initializing domain %s AD connector", domain)
+        logger.debug("Initializing domain %s AD connector", domain)
         self.domain = domain
         dn = self._get_domain_dn().encode()
         self.GPO_BASE_ATTRIBUTES = {
@@ -142,14 +140,14 @@ class ADConnector:
         return self.CACHED_DOMAIN_DN
 
     def _get_server_name(self):
-        logging.debug("Getting LDAP service machine name")
+        logger.debug("Getting LDAP service machine name")
         # Resolve LDAP service machine
         if self.CACHED_SERVER_NAME is None:
             result = dns.resolver.query(
                 "_ldap._tcp.dc._msdcs.%s" % self.domain.lower(), "SRV"
             )
             self.CACHED_SERVER_NAME = str(result[0].target)[:-1]
-        logging.debug("LDAP server: %s", self.CACHED_SERVER_NAME)
+        logger.debug("LDAP server: %s", self.CACHED_SERVER_NAME)
         return self.CACHED_SERVER_NAME
 
     def _generate_gpo_uuid(self):
@@ -184,7 +182,7 @@ class ADConnector:
 
     def _prepare_gpo_data(self, profile):
         # Create GPO data locally in a temporary directory
-        logging.debug("Preparing GPO data locally")
+        logger.debug("Preparing GPO data locally")
         gpodir = tempfile.mkdtemp()
         # Machine and user directories
         os.mkdir(os.path.join(gpodir, "Machine"))
@@ -212,7 +210,7 @@ class ADConnector:
         """
         Copied from Samba netcmd GPO code
         """
-        logging.debug("Copying GPO from %s to %s", localdir, remotedir)
+        logger.debug("Copying GPO from %s to %s", localdir, remotedir)
         if not conn.chkpath(remotedir):
             conn.mkdir(remotedir)
         l_dirs = [localdir]
@@ -242,7 +240,7 @@ class ADConnector:
                     conn.savefile(r_name, data)
 
     def _save_smb_data(self, gpo_uuid, profile, sddl=None):
-        logging.debug("Saving profile settings in CIFs share")
+        logger.debug("Saving profile settings in CIFs share")
 
         # Prepare GPO data locally
         gpodir = self._prepare_gpo_data(profile)
@@ -251,7 +249,7 @@ class ADConnector:
 
         # Create remote directory
         duri = "%s\\Policies\\%s" % (self.domain, gpo_uuid)
-        logging.debug("Creating directory %s", duri)
+        logger.debug("Creating directory %s", duri)
         if not conn.chkpath(duri):
             conn.mkdir(duri)
         # Check if we need to set ACLs
@@ -261,7 +259,7 @@ class ADConnector:
         self._copy_directory_local_to_remote(conn, gpodir, duri, True)
 
     def _set_smb_permissions(self, conn, duri, sddl):
-        logging.debug("Setting CIFs permissions for %s", duri)
+        logger.debug("Setting CIFs permissions for %s", duri)
         # Generate secuity descriptor from SDDL
         dom_sid = self.get_domain_sid()
         fsacl = dsacl2fsacl(sddl, dom_sid)
@@ -276,7 +274,7 @@ class ADConnector:
         conn.set_acl(duri, fssd, sio)
 
     def _remove_smb_data(self, gpo_uuid):
-        logging.debug("Removing CIFs data for GPO %s", gpo_uuid)
+        logger.debug("Removing CIFs data for GPO %s", gpo_uuid)
         # Connect to SMB using kerberos
         conn = self._get_smb_connection()
         # Remove directory and its contents
@@ -284,7 +282,7 @@ class ADConnector:
         conn.deltree(duri)
 
     def _get_ldap_profile_data(self, s_filter, controls=None):
-        logging.debug("Getting data from AD LDAP. filter: %s", s_filter)
+        logger.debug("Getting data from AD LDAP. filter: %s", s_filter)
         base_dn = "CN=Policies,CN=System,%s" % self._get_domain_dn()
         attrs = ["cn", "displayName", "description", "nTSecurityDescriptor"]
         resultlist = self.connection.search_s(
@@ -296,7 +294,7 @@ class ADConnector:
 
     def _data_to_profile(self, data):
         cn = data["cn"][0].decode()
-        logging.debug("Converting LDAP data for %s to profile", cn)
+        logger.debug("Converting LDAP data for %s to profile", cn)
         name = data.get("displayName", (cn,))[0].decode()
         desc = data.get("description", (b"",))[0].decode()
         # Load settings and priority from samba file
@@ -310,7 +308,7 @@ class ADConnector:
         }
         # Load security descriptor, parse it and get applies data
         sdh = SecurityDescriptorHelper(data["nTSecurityDescriptor"][0], self)
-        logging.debug("Loaded security descriptor data: %s", sdh.to_sddl())
+        logger.debug("Loaded security descriptor data: %s", sdh.to_sddl())
         applies = sdh.get_fc_applies()
         profile.update(applies)
         return profile
@@ -328,7 +326,7 @@ class ADConnector:
                 gpo_aces += GPO_DACL_ACE % obj["sid"]
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj["sid"]
             else:
-                logging.warning("User %s does not exist. Ignoring.", user)
+                logger.warning("User %s does not exist. Ignoring.", user)
 
         for group in profile["groups"]:
             obj = self.get_group(group)
@@ -336,7 +334,7 @@ class ADConnector:
                 gpo_aces += GPO_DACL_ACE % obj["sid"]
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj["sid"]
             else:
-                logging.warning("Group %s does not exist. Ignoring.", group)
+                logger.warning("Group %s does not exist. Ignoring.", group)
 
         for host in profile["hosts"]:
             obj = self.get_host(host)
@@ -344,7 +342,7 @@ class ADConnector:
                 gpo_aces += GPO_DACL_ACE % obj["sid"]
                 gpo_access_aces += GPO_DACL_ACCESS_ACE % obj["sid"]
             else:
-                logging.warning("Host %s does not exist. Ignoring.", host)
+                logger.warning("Host %s does not exist. Ignoring.", host)
 
         shd = SecurityDescriptorHelper(
             DEFAULT_GPO_SECURITY_DESCRIPTOR
@@ -358,21 +356,21 @@ class ADConnector:
         Connect to AD server
         """
         # TODO: Check LDAP connection to avoid binding every time
-        logging.debug("Connecting to AD LDAP server")
+        logger.debug("Connecting to AD LDAP server")
         server_name = self._get_server_name()
         # Connect to LDAP using Kerberos
-        logging.debug("Initializing LDAP connection to %s", server_name)
+        logger.debug("Initializing LDAP connection to %s", server_name)
         self.connection = ldap.initialize("ldap://%s" % server_name)
         self.connection.set_option(ldap.OPT_REFERRALS, 0)
         sasl_auth = ldap.sasl.sasl({}, "GSSAPI")
         self.connection.protocol_version = 3
-        logging.debug("Binding LDAP connection")
+        logger.debug("Binding LDAP connection")
         self.connection.sasl_interactive_bind_s("", sasl_auth)
-        logging.debug("LDAP connection succesful")
+        logger.debug("LDAP connection succesful")
 
     @connection_required
     def get_global_policy(self):
-        logging.debug("Getting global policy from AD")
+        logger.debug("Getting global policy from AD")
         ldap_filter = "(displayName=%s)" % (
             FC_PROFILE_PREFIX % FC_GLOBAL_POLICY_PROFILE_NAME
         )
@@ -407,9 +405,9 @@ class ADConnector:
             if old_profile_data:
                 old_profile = self._data_to_profile(old_profile_data)
         if old_profile is not None:
-            logging.debug("Profile with cn %s already exists. Modifying", cn)
-            logging.debug("Old profile: %s", old_profile)
-            logging.debug("New profile: %s", profile)
+            logger.debug("Profile with cn %s already exists. Modifying", cn)
+            logger.debug("Old profile: %s", old_profile)
+            logger.debug("New profile: %s", profile)
             # Modify existing profile
             sd = self._security_descriptor_from_profile(profile)
             gpo_uuid = profile["cn"]
@@ -428,16 +426,16 @@ class ADConnector:
             else:
                 ldif.append((ldap.MOD_REPLACE, "description", None))
 
-            logging.debug("LDIF data to be sent to LDAP: %s", ldif)
+            logger.debug("LDIF data to be sent to LDAP: %s", ldif)
             dn = "CN=%s,CN=Policies,CN=System,%s" % (gpo_uuid, self._get_domain_dn())
-            logging.debug("Modifying profile under %s", dn)
+            logger.debug("Modifying profile under %s", dn)
             self.connection.modify_s(dn, ldif)
             self._save_smb_data(gpo_uuid, profile, sd.as_sddl())
         else:
-            logging.debug("Saving new profile")
+            logger.debug("Saving new profile")
             # Create new profile
             gpo_uuid = self._generate_gpo_uuid()
-            logging.debug("New profile UUID = %s", gpo_uuid)
+            logger.debug("New profile UUID = %s", gpo_uuid)
             attrs = self.GPO_BASE_ATTRIBUTES.copy()
             attrs["cn"] = gpo_uuid.encode()
             attrs["displayName"] = (FC_PROFILE_PREFIX % profile["name"]).encode()
@@ -445,14 +443,14 @@ class ADConnector:
             attrs["gPCFileSysPath"] = (
                 GPO_SMB_PATH % (self._get_server_name(), self.domain, gpo_uuid)
             ).encode()
-            logging.debug("Preparing security descriptor")
+            logger.debug("Preparing security descriptor")
             sd = self._security_descriptor_from_profile(profile)
             attrs["nTSecurityDescriptor"] = ndr_pack(sd)
-            logging.debug("Profile data to be sent to LDAP: %s", attrs)
+            logger.debug("Profile data to be sent to LDAP: %s", attrs)
             ldif = ldap.modlist.addModlist(attrs)
-            logging.debug("LDIF data to be sent to LDAP: %s", ldif)
+            logger.debug("LDIF data to be sent to LDAP: %s", ldif)
             dn = "CN=%s,CN=Policies,CN=System,%s" % (gpo_uuid, self._get_domain_dn())
-            logging.debug("Adding profile under %s", dn)
+            logger.debug("Adding profile under %s", dn)
             self.connection.add_s(dn, ldif)
             # Save SMB data
             self._save_smb_data(gpo_uuid, profile, sd.as_sddl())
@@ -464,7 +462,7 @@ class ADConnector:
         try:
             self.connection.delete_s(dn)
         except ldap.LDAPError as e:
-            logging.error("Error deleting %s: %s", name, e)
+            logger.error("Error deleting %s: %s", name, e)
         # Remove samba files
         self._remove_smb_data(name)
 
@@ -494,7 +492,7 @@ class ADConnector:
 
     @connection_required
     def get_profile(self, cn):
-        logging.debug("Getting profile %s from AD", cn)
+        logger.debug("Getting profile %s from AD", cn)
         ldap_filter = "(CN=%s)" % cn
         data = self._get_ldap_profile_data(ldap_filter)
         if data:
@@ -602,7 +600,7 @@ class SecurityDescriptorHelper:
         self.parse_sddl(sddl)
 
     def parse_sddl(self, sddl):
-        logging.debug("Parsing SDDL for security descriptor. Given SDDL: %s", sddl)
+        logger.debug("Parsing SDDL for security descriptor. Given SDDL: %s", sddl)
         # SACLs
         if "S:" in sddl:
             sacl_index = sddl.index("S:")
@@ -628,19 +626,19 @@ class SecurityDescriptorHelper:
         # Group
         g_index = sddl.index("G:")
         self.group_sid = sddl[g_index + 2 : dacl_index]
-        logging.debug("SDDL parse finished")
+        logger.debug("SDDL parse finished")
         # Owner
         self.owner_sid = sddl[2:g_index]
 
     def add_dacl_ace(self, ace):
-        logging.debug("Adding ACE to security descriptor: %s")
+        logger.debug("Adding ACE to security descriptor: %s")
         if ace not in self.dacls:
             self.dacls.append(ACEHelper(str(ace)))
         else:
-            logging.debug("ACE %s already exists for this security descriptor")
+            logger.debug("ACE %s already exists for this security descriptor")
 
     def get_fc_applies(self):
-        logging.debug("Getting applies from security descriptor ACEs")
+        logger.debug("Getting applies from security descriptor ACEs")
         users = set()
         groups = set()
         hosts = set()
@@ -663,7 +661,7 @@ class SecurityDescriptorHelper:
             "hosts": sorted(list(hosts)),
             "hostgroups": [],
         }
-        logging.debug("Retrieved applies: %s", applies)
+        logger.debug("Retrieved applies: %s", applies)
         return applies
 
     def to_sddl(self):
@@ -683,9 +681,9 @@ class SecurityDescriptorHelper:
         )
 
     def to_sd(self):
-        logging.debug("Generating security descriptor")
+        logger.debug("Generating security descriptor")
         sddl = self.to_sddl()
-        logging.debug("SDDL for security descriptor generation: %s", sddl)
+        logger.debug("SDDL for security descriptor generation: %s", sddl)
         domain_sid = self.connector.get_domain_sid()
         sd = security.descriptor.from_sddl(sddl, domain_sid)
         return sd

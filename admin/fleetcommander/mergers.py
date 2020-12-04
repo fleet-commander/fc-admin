@@ -23,6 +23,8 @@
 from __future__ import absolute_import
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class BaseChangeMerger:
     """
@@ -96,12 +98,12 @@ class ChromiumChangeMerger(BaseChangeMerger):
 
     def merge_bookmarks(self, a, b):
         for elem_b in b:
-            logging.debug("Processing %s", elem_b)
+            logger.debug("Processing %s", elem_b)
             if "children" in elem_b:
                 merged = False
                 for elem_a in a:
                     if elem_a["name"] == elem_b["name"] and "children" in elem_a:
-                        logging.debug("Processing children of %s", elem_b["name"])
+                        logger.debug("Processing children of %s", elem_b["name"])
                         elem_a["children"] = self.merge_bookmarks(
                             elem_a["children"], elem_b["children"]
                         )
@@ -112,7 +114,7 @@ class ChromiumChangeMerger(BaseChangeMerger):
             else:
                 if elem_b not in a:
                     a.append(elem_b)
-        logging.debug("Returning %s", a)
+        logger.debug("Returning %s", a)
         return a
 
 
