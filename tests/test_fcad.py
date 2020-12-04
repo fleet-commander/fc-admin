@@ -23,7 +23,6 @@
 # Python imports
 from __future__ import absolute_import
 import os
-import sys
 import unittest
 import tempfile
 import logging
@@ -40,8 +39,6 @@ from samba.dcerpc import security
 # Mocking imports
 from tests import ldapmock
 from tests import smbmock
-
-sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import fcad
 

@@ -19,18 +19,11 @@
 # Authors: Alberto Ruiz <aruiz@redhat.com>
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
-# Python imports
-# from __future__ import absolute_import
-# import os
-# import sys
 import time
 import json
 import logging
 
 import dbus
-
-# PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
-# sys.path.append(PYTHONPATH)
 
 logger = logging.getLogger(__name__)
 

@@ -23,15 +23,12 @@
 from __future__ import absolute_import
 from unittest.mock import patch
 import os
-import sys
 import tempfile
 import shutil
 import unittest
 import logging
 
 from tests import libvirtmock
-
-sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import libvirtcontroller
 from fleetcommander.libvirtcontroller import LibVirtControllerException

@@ -23,12 +23,9 @@
 from __future__ import absolute_import
 import os
 import logging
-import sys
 import tempfile
 import shutil
 import unittest
-
-sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import sshcontroller
 from tests import (
