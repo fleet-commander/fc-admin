@@ -22,10 +22,13 @@
 
 # Python imports
 from __future__ import absolute_import
+import logging
 import sys
 import os
 import json
 import unittest
+
+logger = logging.getLogger(os.path.basename(__file__))
 
 PYTHONPATH = os.path.join(os.environ["TOPSRCDIR"], "admin")
 sys.path.append(PYTHONPATH)
@@ -126,4 +129,5 @@ class TestDBManager(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

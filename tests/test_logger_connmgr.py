@@ -48,10 +48,7 @@ from fleet_commander_logger import (
 )
 import fleet_commander_logger as FleetCommander
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 
 def read_file(filename):
@@ -187,4 +184,5 @@ class TestConnMgr(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

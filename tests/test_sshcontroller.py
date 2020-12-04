@@ -22,6 +22,7 @@
 
 from __future__ import absolute_import
 import os
+import logging
 import sys
 import tempfile
 import shutil
@@ -35,6 +36,8 @@ from tests import (
     SSH_TUNNEL_CLOSE_PARMS,
     SSH_REMOTE_COMMAND_PARMS,
 )
+
+logger = logging.getLogger(os.path.basename(__file__))
 
 
 class TestSSHController(unittest.TestCase):
@@ -298,4 +301,5 @@ class TestSSHController(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

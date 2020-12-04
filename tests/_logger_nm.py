@@ -42,10 +42,7 @@ sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Get mainloop
 ml = GLib.MainLoop()
@@ -53,9 +50,7 @@ ml = GLib.MainLoop()
 
 # Test helpers
 def mainloop_quit_callback(*args, **kwargs):
-    logging.error(
-        "Timed out waiting for file update notification. Test probably failed"
-    )
+    logger.error("Timed out waiting for file update notification. Test probably failed")
     ml.quit()
 
 
@@ -306,4 +301,5 @@ class TestNMLogger(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

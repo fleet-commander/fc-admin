@@ -45,10 +45,7 @@ sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import fcad
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Mocking assignments
 fcad.ldap = ldapmock
@@ -280,7 +277,6 @@ class TestFCAD(unittest.TestCase):
             return data
 
     def setUp(self):
-        logging.debug("TESTS: Setting up test environment")
         self.ad = fcad.ADConnector(self.DOMAIN)
         self.ad.connect()
         # Reset domain data for each test
@@ -289,7 +285,6 @@ class TestFCAD(unittest.TestCase):
         smbmock.TEMP_DIR = tempfile.mkdtemp()
 
     def test_01_save_profile(self):
-        logging.debug("TEST: save_profile")
         cn = self.ad.save_profile(self.TEST_PROFILE)
         # Check saved ldap data is OK
         profile_dom_data = self._get_domain_profile(cn)
@@ -303,7 +298,6 @@ class TestFCAD(unittest.TestCase):
         self.assertEqual(data["settings"], self.TEST_PROFILE["settings"])
 
     def test_02_get_profiles(self):
-        logging.debug("TEST: get_profiles")
         profiles = self.ad.get_profiles()
         self.assertEqual(profiles, [])
         # Add some profile
@@ -315,14 +309,12 @@ class TestFCAD(unittest.TestCase):
         )
 
     def test_03_get_profile(self):
-        logging.debug("TEST: get_profile")
         cn = self.ad.save_profile(self.TEST_PROFILE)
         profile = self.ad.get_profile(cn)
         test_profile = self._get_test_profile(cn)
         self.assertEqual(profile, test_profile)
 
     def test_04_update_profile(self):
-        logging.debug("TEST: update_profile")
         cn = self.ad.save_profile(self.TEST_PROFILE)
         # Save a profile with same UID (overwrite)
         modified_profile = self._get_test_profile(cn, self.TEST_PROFILE_MOD)
@@ -331,7 +323,6 @@ class TestFCAD(unittest.TestCase):
         self.assertEqual(profile, modified_profile)
 
     def test_05_del_profile(self):
-        logging.debug("TEST: del_profile")
         # Save a profile
         cn = self.ad.save_profile(self.TEST_PROFILE)
         self.assertEqual(len(fcad.ldap.DOMAIN_DATA["profiles"].keys()), 1)
@@ -340,7 +331,6 @@ class TestFCAD(unittest.TestCase):
         self.assertEqual(fcad.ldap.DOMAIN_DATA["profiles"], {})
 
     def test_06_get_global_policy(self):
-        logging.debug("TEST: set_global_policy")
         # Getting global policy not previously set will return default
         policy = self.ad.get_global_policy()
         self.assertEqual(policy, fcad.FC_GLOBAL_POLICY_DEFAULT)
@@ -350,7 +340,6 @@ class TestFCAD(unittest.TestCase):
         self.assertEqual(policy, 24)
 
     def test_07_set_global_policy(self):
-        logging.debug("TEST: set_global_policy")
         # Setting global policy should return previously set value
         self.ad.set_global_policy(22)
         policy = self.ad.get_global_policy()
@@ -358,4 +347,5 @@ class TestFCAD(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

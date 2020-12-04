@@ -21,6 +21,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
+import logging
 import os
 import sys
 import unittest
@@ -30,6 +31,8 @@ from tests import freeipamock
 sys.path.append(os.path.join(os.environ["TOPSRCDIR"], "admin"))
 
 from fleetcommander import fcfreeipa
+
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Mocking assignments
 fcfreeipa.api = freeipamock.FreeIPAMock
@@ -316,4 +319,5 @@ class TestFreeIPA(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)

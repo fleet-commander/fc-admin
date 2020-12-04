@@ -25,10 +25,7 @@ import logging
 import json
 import six
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(__name__)
 
 
 class FreeIPAData:
@@ -63,21 +60,21 @@ class FreeIPAData:
             "profilerules": self.profilerules,
             "global_policy": self.global_policy,
         }
-        logging.debug("IPAMock data to export: %s", data)
+        logger.debug("IPAMock data to export: %s", data)
         jsondata = json.dumps(data)
-        logging.debug("IPAMock json data to export: %s", jsondata)
+        logger.debug("IPAMock json data to export: %s", jsondata)
         return jsondata
 
     def save_to_datadir(self, filename="freeipamock-data.json"):
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
-            logging.debug("IPAMock exporting data to %s", path)
+            logger.debug("IPAMock exporting data to %s", path)
             with open(path, "w") as fd:
                 fd.write(self.get_json())
                 fd.close()
-                logging.debug("FreeIPA mock data saved to %s", path)
+                logger.debug("FreeIPA mock data saved to %s", path)
         else:
-            logging.debug("IPAMock not exporting data (No datadir)")
+            logger.debug("IPAMock not exporting data (No datadir)")
 
     # Decorator for exporting data to file
     @classmethod
@@ -115,7 +112,7 @@ class FreeIPARPCClient:
 
     @staticmethod
     def connect():
-        logging.debug("Mocking IPA connection")
+        logger.debug("Mocking IPA connection")
 
 
 class FreeIPABackend:
@@ -206,7 +203,7 @@ class FreeIPACommand:
 
     @FreeIPAData.export_data
     def deskprofile_add(self, cn, description, ipadeskdata):
-        logging.debug(
+        logger.debug(
             "IPAMock: deskprofile_add(%s, %s, %s)", cn, description, ipadeskdata
         )
         if cn in self.data.profiles:
@@ -217,7 +214,7 @@ class FreeIPACommand:
             "description": (description,),
             "ipadeskdata": (ipadeskdata.decode(),),
         }
-        logging.debug("IPAMock: Stored data: %s", self.data.profiles[cn])
+        logger.debug("IPAMock: Stored data: %s", self.data.profiles[cn])
 
     @FreeIPAData.export_data
     def deskprofile_mod(self, cn, description, ipadeskdata):
@@ -234,7 +231,7 @@ class FreeIPACommand:
         if name in self.data.profilerules:
             raise FreeIPAErrors.DuplicateEntry()
 
-        logging.debug("IPAMock: profile rule for %s", name)
+        logger.debug("IPAMock: profile rule for %s", name)
         self.data.profilerules[name] = {
             "priority": ipadeskprofilepriority,
             "hostcategory": hostcategory,
@@ -246,11 +243,11 @@ class FreeIPACommand:
 
     @FreeIPAData.export_data
     def deskprofilerule_add_user(self, name, user, group):
-        logging.debug(
+        logger.debug(
             "IPAMock: Adding users and groups to rule %s, %s, %s", name, user, group
         )
         if name in self.data.profilerules:
-            logging.debug(
+            logger.debug(
                 "IPAMock: profile rule before user/group data for %s: %s",
                 name,
                 self.data.profilerules[name],
@@ -265,7 +262,7 @@ class FreeIPACommand:
             self.data.profilerules[name]["groups"] = sorted(
                 list(set(self.data.profilerules[name]["groups"]))
             )
-            logging.debug(
+            logger.debug(
                 "IPAMock: profile rule after user/group data for %s: %s",
                 name,
                 self.data.profilerules[name],
@@ -276,7 +273,7 @@ class FreeIPACommand:
     @FreeIPAData.export_data
     def deskprofilerule_add_host(self, name, host, hostgroup):
         if name in self.data.profilerules:
-            logging.debug(
+            logger.debug(
                 "IPAMock: Adding hosts and hostgroups to rule %s, %s, %s",
                 name,
                 host,

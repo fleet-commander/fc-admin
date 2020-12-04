@@ -7,10 +7,7 @@ import dbusmock
 import dbus.mainloop.glib
 from gi.repository import GLib
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 ml = GLib.MainLoop()
 
@@ -33,8 +30,8 @@ nm_bus = dbus.service.BusName(
     do_not_queue=True,
 )
 
-logging.debug("Configured and running NetworkManager dbus mock")
-
-ml.run()
-
-logging.debug("Quitting NetworkManager dbus mock")
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    logger.debug("Configured and running NetworkManager dbus mock")
+    ml.run()
+    logger.debug("Quitting NetworkManager dbus mock")

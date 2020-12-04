@@ -32,11 +32,7 @@ import dbus
 # PYTHONPATH = os.path.join(os.environ['TOPSRCDIR'], 'admin')
 # sys.path.append(PYTHONPATH)
 
-
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(__name__)
 
 DBUS_BUS_NAME = "org.freedesktop.FleetCommanderTest"
 DBUS_OBJECT_PATH = "/org/freedesktop/FleetCommanderTest"

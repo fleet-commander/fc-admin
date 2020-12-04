@@ -36,10 +36,7 @@ sys.path.append(PYTHONPATH)
 
 import fleet_commander_logger as FleetCommander
 
-# Set logging level to debug
-log = logging.getLogger()
-level = logging.getLevelName("DEBUG")
-log.setLevel(level)
+logger = logging.getLogger(os.path.basename(__file__))
 
 # Get mainloop
 ml = GLib.MainLoop()
@@ -49,9 +46,7 @@ ml = GLib.MainLoop()
 
 
 def mainloop_quit_callback(*args, **kwargs):
-    logging.error(
-        "Timed out waiting for file update notification. Test probably failed"
-    )
+    logger.error("Timed out waiting for file update notification. Test probably failed")
     ml.quit()
 
 
@@ -64,7 +59,7 @@ class MockConnectionManager:
         self.log = []
 
     def submit_change(self, namespace, data):
-        logging.debug("Change submitted: %s - %s", namespace, data)
+        logger.debug("Change submitted: %s - %s", namespace, data)
         self.log.append([namespace, data])
 
     def pop(self):
@@ -154,7 +149,7 @@ class TestFirefoxLogger(unittest.TestCase):
     def setup_test_directory(self, profinit=True, prefsinit=True):
         # Create a temporary directory for testing
         TMPDIR = GLib.dir_make_tmp("fc_logger_firefox_XXXXXX")
-        logging.debug("Testing data at dir %s", TMPDIR)
+        logger.debug("Testing data at dir %s", TMPDIR)
         # Create profiles file
         if profinit:
             self.file_set_contents(
@@ -174,8 +169,6 @@ class TestFirefoxLogger(unittest.TestCase):
         return TMPDIR
 
     def test_01_default_profile_path(self):
-        logging.info("Start test_01_default_profile_path")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, False)
 
@@ -194,11 +187,7 @@ class TestFirefoxLogger(unittest.TestCase):
         )
         self.assertEqual(None, firefox_logger.get_default_profile_path())
 
-        logging.info("End test_01_default_profile_path")
-
     def test_02_read_preferences(self):
-        logging.info("Start test_02_read_preferences")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, False)
         mgr = MockConnectionManager()
@@ -212,11 +201,7 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps(returned, sort_keys=True),
         )
 
-        logging.info("End test_02_read_preferences")
-
     def test_03_profiles_file_load(self):
-        logging.info("Start test_03_profiles_file_load")
-
         # Setup test directory with profile file
         TMPDIR = self.setup_test_directory(True, False)
         mgr = MockConnectionManager()
@@ -228,11 +213,7 @@ class TestFirefoxLogger(unittest.TestCase):
             os.path.join(TMPDIR, "/profiles.ini") in firefox_logger.file_monitors
         )
 
-        logging.info("End test_03_profiles_file_load")
-
     def test_04_profiles_file_monitoring(self):
-        logging.info("Start test_06_profiles_file_monitoring")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(False, False)
 
@@ -263,11 +244,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # Default profile preferences should be initialized at this point
         self.assertTrue(firefox_logger.default_profile_initialized)
 
-        logging.info("End test_06_profiles_file_monitoring")
-
     def test_05_preferences_file_monitoring_wrong(self):
-        logging.info("Start test_07_preferences_file_monitoring_wrong")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, False)
 
@@ -307,11 +284,7 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps(firefox_logger.monitored_preferences),
         )
 
-        logging.info("End test_07_preferences_file_monitoring_wrong")
-
     def test_06_preferences_file_monitoring(self):
-        logging.info("Start test_08_preferences_file_monitoring")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, False)
 
@@ -351,11 +324,7 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
         )
 
-        logging.info("End test_08_preferences_file_monitoring")
-
     def test_07_preferences_file_loading(self):
-        logging.info("Start test_09_preferences_file_loading")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, True)
 
@@ -375,11 +344,7 @@ class TestFirefoxLogger(unittest.TestCase):
             json.dumps(firefox_logger.monitored_preferences, sort_keys=True),
         )
 
-        logging.info("End test_09_preferences_file_loading")
-
     def test_08_preferences_update(self):
-        logging.info("Start test_10_preferences_update")
-
         # Setup test directory
         TMPDIR = self.setup_test_directory(True, True)
 
@@ -459,8 +424,7 @@ class TestFirefoxLogger(unittest.TestCase):
         # Changes queue length should be 0
         self.assertEqual(0, len(mgr.log))
 
-        logging.info("End test_10_preferences_update")
-
 
 if __name__ == "__main__":
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main(verbosity=2)
