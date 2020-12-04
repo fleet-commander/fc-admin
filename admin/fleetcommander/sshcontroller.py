@@ -203,7 +203,7 @@ class SSHController:
 
     def open_tunnel(
         self,
-        local_forward,
+        local_forwards,
         private_key_file,
         username,
         hostname,
@@ -239,8 +239,11 @@ class SSHController:
                 "{user}@{host}".format(user=username, host=hostname),
                 "-p",
                 six.text_type(port),
-                "-L",
-                local_forward,
+            ]
+        )
+        ssh_command.extend([v for lf in local_forwards for v in ("-L", lf)])
+        ssh_command.extend(
+            [
                 "-N",
                 "-f",
             ]
@@ -250,7 +253,7 @@ class SSHController:
         try:
             subprocess.run(ssh_command, check=True)
         except Exception as e:
-            raise SSHControllerException("Error opening tunnel: %s" % e)
+            raise SSHControllerException(e)
 
     def close_tunnel(
         self, private_key_file, username, hostname, port=DEFAULT_SSH_PORT, **kwargs

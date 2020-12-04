@@ -104,7 +104,48 @@ function ParseChange(data) {
     }
 }
 
+function startLogger(conn_details) {
+    const options = {
+        payload: 'stream',
+        protocol: 'binary',
+        batch: 2048,
+        unix: conn_details.logger_path,
+        binary: true,
+    };
+    const channel = cockpit.channel(options);
+
+    const msg = {
+        buffer: '',
+        initial_msg: true,
+        fc_proto_version: FC_PROTO_DEFAULT,
+    };
+
+    channel.addEventListener("ready", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit logger channel is open');
+        }
+    });
+
+    channel.addEventListener("message", function(event, data) {
+        const msg_text = arraybuffer_to_str(new Uint8Array(data));
+        if (DEBUG > 0) {
+            console.log('FC: Notifier data received in unix channel', msg_text);
+        }
+        parseFCMsg(msg_text, msg, (data) => { console.log("Logger: " + data) });
+    });
+
+    channel.addEventListener("close", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit logger channel is closed', options);
+        }
+        stopLiveSession();
+    });
+}
+
 function startSpiceHtml5(conn_details) {
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
     // SPICE port changes listeners
     const msg = {
         buffer: '',
@@ -116,11 +157,11 @@ function startSpiceHtml5(conn_details) {
             const msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
             if (DEBUG > 0) {
                 console.log(
-                    'FC: Logger data received in spice port',
+                    'FC: Notifier data received in spice port',
                     event.detail.channel.portName,
                 );
             }
-            parseFCMsg(msg_text, msg);
+            parseFCMsg(msg_text, msg, ParseChange);
         }
     });
 
@@ -128,11 +169,11 @@ function startSpiceHtml5(conn_details) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
             if (event.detail.spiceEvent[0] === 0) {
                 if (DEBUG > 0) {
-                    console.log('FC: Logger connected to SPICE channel');
+                    console.log('FC: Notifier connected to SPICE channel');
                 }
             } else if (event.detail.spiceEvent[0] === 1) {
                 if (DEBUG > 0) {
-                    console.log('FC: Logger disconnected from SPICE channel');
+                    console.log('FC: Notifier disconnected from SPICE channel');
                 }
                 stopLiveSession();
             } else {
@@ -147,7 +188,7 @@ function startSpiceHtml5(conn_details) {
     });
 
     const details = {
-        path: conn_details.path,
+        path: conn_details.notifier_path,
         ticket: conn_details.ticket,
     };
 
@@ -158,6 +199,9 @@ function startSpiceHtml5(conn_details) {
 }
 
 function startRemoteViewer(conn_details) {
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
     console_details = {
         type: 'spice',
         address: conn_details.host,
@@ -172,7 +216,7 @@ function startRemoteViewer(conn_details) {
         payload: 'stream',
         protocol: 'binary',
         batch: 2048,
-        unix: conn_details.notify_socket,
+        unix: conn_details.notifier_path,
         binary: true,
     };
     const channel = cockpit.channel(options);
@@ -185,19 +229,19 @@ function startRemoteViewer(conn_details) {
 
     channel.addEventListener("ready", function(event, options) {
         if (DEBUG > 0) {
-            console.log('FC: Cockpit changes channel is open');
+            console.log('FC: Cockpit notifier channel is open');
         }
     });
     channel.addEventListener("message", function(event, data) {
         const msg_text = arraybuffer_to_str(new Uint8Array(data));
         if (DEBUG > 0) {
-            console.log('FC: Logger data received in unix channel', data);
+            console.log('FC: Notifier data received in unix channel', msg_text);
         }
-        parseFCMsg(msg_text, msg);
+        parseFCMsg(msg_text, msg, ParseChange);
     });
     channel.addEventListener("close", function(event, options) {
         if (DEBUG > 0) {
-            console.log('FC: Cockpit changes channel is closed', options);
+            console.log('FC: Cockpit notifier channel is closed', options);
         }
         stopLiveSession();
     });
@@ -205,7 +249,7 @@ function startRemoteViewer(conn_details) {
     startHeartBeat();
 }
 
-function parseFCMsg(str, msg) {
+function parseFCMsg(str, msg, cb) {
     /*
      * Protocol 1 assumes atomic data transmission
      * Protocol 2 process data in chunks
@@ -272,11 +316,11 @@ function parseFCMsg(str, msg) {
         const lines = str.split(FC_MSG_DELIM);
         lines.forEach((line) => {
             if (line) {
-                ParseChange(line);
+                cb(line);
             }
         });
     } else if (msg.fc_proto_version === FC_PROTO_DEFAULT) {
-        ParseChange(str);
+        cb(str);
     }
 }
 

@@ -204,18 +204,19 @@ class TestSSHController(unittest.TestCase):
         local_port = "2000"
         tunnel_host = "192.168.0.2"
         tunnel_port = "2020"
-        local_forward = "{local_port}:{host}:{tunnel_port}".format(
-            local_port=local_port,
-            host=tunnel_host,
-            tunnel_port=tunnel_port,
-        )
+        local_forwards = [
+            "{local_port}:{host}:{tunnel_port}".format(
+                local_port=local_port,
+                host=tunnel_host,
+                tunnel_port=tunnel_port,
+            ),
+        ]
         username = "testuser"
         hostname = "localhost"
         port = "2022"
 
-        # Open tunnel without specifying a local host
         ssh.open_tunnel(
-            local_forward=local_forward,
+            local_forwards=local_forwards,
             private_key_file=self.private_key_file,
             username=username,
             hostname=hostname,
