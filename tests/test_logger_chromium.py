@@ -415,7 +415,6 @@ class TestChromiumLogger(unittest.TestCase):
         local_state_data["profile"]["last_active_profiles"] = ["Profile 1"]
         with open(os.path.join(TMPDIR, "Local State"), "w") as fd:
             fd.write(json.dumps(local_state_data, sort_keys=True))
-            fd.close()
 
         # Simulate a local state file modification
         simulate_filenotification(chromium_logger)
@@ -429,7 +428,6 @@ class TestChromiumLogger(unittest.TestCase):
         local_state_data["profile"]["last_active_profiles"] = ["Profile 1", "Profile 2"]
         with open(os.path.join(TMPDIR, "Local State"), "w") as fd:
             fd.write(json.dumps(local_state_data, sort_keys=True))
-            fd.close()
 
         # Simulate a local state file modification
         simulate_filenotification(chromium_logger)
@@ -520,7 +518,7 @@ class TestChromiumLogger(unittest.TestCase):
             # Write a new supported setting to the preferences file 1
             with open(path, "w") as fd:
                 fd.write(json.dumps(prefs, sort_keys=True))
-                fd.close()
+
             # Simulate a change in preferences file 1
             clogger._preferences_file_updated(
                 clogger.file_monitors[path],
@@ -585,7 +583,7 @@ class TestChromiumLogger(unittest.TestCase):
             # Write a new supported setting to the preferences file 1
             with open(path, "w") as fd:
                 fd.write(json.dumps(bmarks, sort_keys=True))
-                fd.close()
+
             # Simulate a change in preferences file 1
             clogger._bookmarks_file_updated(
                 clogger.file_monitors[path],

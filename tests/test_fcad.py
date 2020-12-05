@@ -270,8 +270,8 @@ class TestFCAD(unittest.TestCase):
         with open(path, "rb") as fd:
             jsondata = fd.read()
             data = json.loads(jsondata)
-            fd.close()
-            return data
+
+        return data
 
     def setUp(self):
         self.ad = fcad.ADConnector(self.DOMAIN)

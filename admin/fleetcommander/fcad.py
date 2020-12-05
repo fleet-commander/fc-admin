@@ -191,7 +191,7 @@ class ADConnector:
         gpt_contents = "[General]\r\nVersion=0\r\n"
         with open(os.path.join(gpodir, "GPT.INI"), "w") as fd:
             fd.write(gpt_contents)
-            fd.close()
+
         with open(os.path.join(gpodir, "fleet-commander.json"), "w") as fd:
             fd.write(
                 json.dumps(
@@ -201,7 +201,6 @@ class ADConnector:
                     }
                 )
             )
-            fd.close()
         return gpodir
 
     def _copy_directory_local_to_remote(
@@ -236,7 +235,7 @@ class ADConnector:
                 else:
                     with open(l_name, "rb") as fd:
                         data = fd.read()
-                        fd.close()
+
                     conn.savefile(r_name, data)
 
     def _save_smb_data(self, gpo_uuid, profile, sddl=None):

@@ -102,7 +102,6 @@ class SSHController:
             os.makedirs(directory)
         with open(known_hosts_file, "a") as fd:
             fd.write(key_data)
-            fd.close()
 
     def add_to_known_hosts(self, known_hosts_file, hostname, port=DEFAULT_SSH_PORT):
         key_data = self.scan_host_keys(hostname, port)
@@ -116,7 +115,7 @@ class SSHController:
             # Check if host exists in file
             with open(known_hosts_file) as fd:
                 lines = fd.readlines()
-                fd.close()
+
             for line in lines:
                 hosts, _keytype, _key = line.split()
                 if hostname in hosts.split(","):
@@ -130,7 +129,7 @@ class SSHController:
         tmpfile = tempfile.mktemp(prefix="fc-ssh-keydata")
         with open(tmpfile, "w") as fd:
             fd.write(key_data)
-            fd.close()
+
         prog = subprocess.Popen(
             [
                 self.SSH_KEYGEN_COMMAND,

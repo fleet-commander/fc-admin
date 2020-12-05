@@ -79,9 +79,8 @@ class TestSSHController(unittest.TestCase):
         ssh.generate_ssh_keypair(self.private_key_file)
         # Check parameters
         self.assertTrue(os.path.exists(self.ssh_keygen_parms_file))
-        with open(self.ssh_keygen_parms_file, "r") as fd:
+        with open(self.ssh_keygen_parms_file) as fd:
             parms = fd.read()
-            fd.close()
 
         self.assertEqual(parms, self.SSH_KEYGEN_PARMS % self.private_key_file)
 
@@ -95,9 +94,9 @@ class TestSSHController(unittest.TestCase):
         self.assertEqual(keys, self.SSH_KEYSCAN_OUTPUT % hostname)
         # Check parameters
         self.assertTrue(os.path.exists(self.ssh_keyscan_parms_file))
-        with open(self.ssh_keyscan_parms_file, "r") as fd:
+        with open(self.ssh_keyscan_parms_file) as fd:
             parms = fd.read()
-            fd.close()
+
         self.assertEqual(parms, self.SSH_KEYSCAN_PARMS % (port, hostname))
 
     def test_02_add_known_host(self):
@@ -109,16 +108,16 @@ class TestSSHController(unittest.TestCase):
         ssh.add_to_known_hosts(self.known_hosts_file, hostname, port)
         # Check known hosts file exists
         self.assertTrue(os.path.exists(self.known_hosts_file))
-        with open(self.known_hosts_file, "r") as fd:
+        with open(self.known_hosts_file) as fd:
             keys = fd.read()
-            fd.close()
+
         # Check keys data
         self.assertEqual(keys, self.SSH_KEYSCAN_OUTPUT % hostname)
         # Add another host
         ssh.add_to_known_hosts(self.known_hosts_file, hostname2, port2)
-        with open(self.known_hosts_file, "r") as fd:
+        with open(self.known_hosts_file) as fd:
             keys = fd.read()
-            fd.close()
+
         # Check keys data
         self.assertEqual(
             keys,

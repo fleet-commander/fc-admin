@@ -149,9 +149,9 @@ class TestDbusService(unittest.TestCase):
         """
         Reads JSON file contents
         """
-        with open(path, "r") as fd:
+        with open(path) as fd:
             data = fd.read()
-            fd.close()
+
         return json.loads(data)
 
     def get_profile_data(self, profile_name):

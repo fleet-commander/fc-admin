@@ -22,7 +22,6 @@
 
 # Python imports
 from __future__ import absolute_import
-import os
 import logging
 
 # Compat between Pyhon 2 and 3

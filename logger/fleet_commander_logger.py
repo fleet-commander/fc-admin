@@ -820,10 +820,10 @@ class ChromiumLogger:
                 dirpath, "fleet-commander-logger/fc-chromium-policies.json"
             )
             try:
-                with open(filepath, "r") as fd:
+                with open(filepath) as fd:
                     contents = fd.read()
                     policy_map = json.loads(contents)
-                    fd.close()
+
                 logger.debug("Loaded chromium policies file at %s", filepath)
                 break
             except Exception as e:
@@ -1178,9 +1178,9 @@ class FirefoxLogger:
             if fileobj.query_exists(None):
                 logger.debug("Preference file %s exists. Loading it", path)
                 # data = fileobj.load_contents(None)[1]
-                with open(path, "r") as fd:
+                with open(path) as fd:
                     data = fd.read()
-                    fd.close()
+
                 logger.debug("Preference file %s Loaded. Loading preferences.", path)
                 prefs = self.load_firefox_preferences(data)
                 if not path in self.monitored_preferences:
