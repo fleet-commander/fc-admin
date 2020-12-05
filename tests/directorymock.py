@@ -49,8 +49,8 @@ class DirectoryData:
             logging.debug("Directory mock exporting data to %s", path)
             with open(path, "w") as fd:
                 fd.write(self.get_json())
-                fd.close()
-                logging.debug("Directory mock data saved to %s", path)
+
+            logging.debug("Directory mock data saved to %s", path)
         else:
             logging.debug("Directory mock not exporting data (No datadir)")
 

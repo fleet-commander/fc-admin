@@ -140,7 +140,6 @@ class TestFirefoxLogger(unittest.TestCase):
     def file_set_contents(self, filename, contents):
         with open(filename, "w") as fd:
             fd.write(contents)
-            fd.close()
 
     def setup_test_directory(self, profinit=True, prefsinit=True):
         # Create a temporary directory for testing

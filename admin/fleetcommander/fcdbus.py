@@ -244,7 +244,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         )
         with open(ctrlr.public_key_file, "r") as fd:
             public_key = fd.read().strip()
-            fd.close()
+
         return public_key
 
     def get_hypervisor_config(self):

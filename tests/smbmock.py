@@ -45,7 +45,7 @@ class SMBMock:
         path = self._translate_path(furi)
         with open(path, "rb") as fd:
             data = fd.read()
-            fd.close()
+
         return data
 
     def savefile(self, furi, data):
@@ -53,7 +53,7 @@ class SMBMock:
         path = self._translate_path(furi)
         with open(path, "wb") as fd:
             fd.write(data)
-            fd.close()
+
         logging.debug("SMBMock: Written %s", path)
 
     def chkpath(self, duri):
@@ -80,7 +80,6 @@ class SMBMock:
         )
         with open(aclpath, "w") as fd:
             fd.write(acldata)
-            fd.close()
 
     def deltree(self, duri):
         logging.debug("SMBMock: DELTREE %s", duri)

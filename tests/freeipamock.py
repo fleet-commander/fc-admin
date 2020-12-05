@@ -71,8 +71,8 @@ class FreeIPAData:
             logger.debug("IPAMock exporting data to %s", path)
             with open(path, "w") as fd:
                 fd.write(self.get_json())
-                fd.close()
-                logger.debug("FreeIPA mock data saved to %s", path)
+
+            logger.debug("FreeIPA mock data saved to %s", path)
         else:
             logger.debug("IPAMock not exporting data (No datadir)")
 
