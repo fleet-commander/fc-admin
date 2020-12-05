@@ -36,26 +36,6 @@ from . import constants
 logger = logging.getLogger(__name__)
 
 
-def get_data_from_file(path):
-    with open(path, "r") as fd:
-        data = fd.read()
-        fd.close()
-        return data
-
-
-def test_and_create_file(path, content):
-    if os.path.isfile(path):
-        return
-    with open(path, "w+") as fd:
-        fd.write(content)
-
-
-def write_and_close(path, data):
-    f = open(path, "w+")
-    f.write(data)
-    f.close()
-
-
 def parse_config(config_file=None):
     if config_file is None:
         config_file = constants.DEFAULT_CONFIG_FILE
