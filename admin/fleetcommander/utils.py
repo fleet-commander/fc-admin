@@ -23,7 +23,6 @@
 # Python imports
 from __future__ import absolute_import
 import os
-import sys
 import logging
 
 # Compat between Pyhon 2 and 3
@@ -57,18 +56,6 @@ def write_and_close(path, data):
     f.close()
 
 
-def config_to_dict(config):
-    """
-    Convert a configuration object into a dictionary
-    """
-    res = {}
-    for g in config.sections():
-        res[g] = {}
-        for o in config.options(g):
-            res[g][o] = config.get(g, o)
-    return res
-
-
 def parse_config(config_file=None):
     if config_file is None:
         config_file = constants.DEFAULT_CONFIG_FILE
@@ -80,30 +67,28 @@ def parse_config(config_file=None):
         logger.warning("Could not find configuration file %s", config_file)
     except ParsingError:
         logger.error("There was an error parsing %s", config_file)
-        sys.exit(1)
+        raise
     except Exception as e:
         logger.error("There was an unknown error parsing %s: %s", config_file, e)
-        sys.exit(1)
+        raise e
 
-    if config.has_section("admin"):
-        config = config_to_dict(config)
-        section = config["admin"]
-    else:
-        section = {}
-
+    section = config["admin"]
     args = {
-        "default_profile_priority": section.get(
+        "default_profile_priority": section.getint(
             "default_profile_priority", constants.DEFAULT_PROFILE_PRIORITY
         ),
         "log_level": section.get("log_level", constants.DEFAULT_LOG_LEVEL),
         "log_format": section.get("log_format", constants.DEFAULT_LOG_FORMAT),
-        "debug_logger": section.get("debug_logger", constants.DEFAULT_DEBUG_LOGGER),
         "data_dir": section.get("data_dir", constants.DEFAULT_DATA_DIR),
-        "tmp_session_destroy_timeout": section.get(
-            "tmp_session_destroy_timeout", constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT
+        "tmp_session_destroy_timeout": section.getint(
+            "tmp_session_destroy_timeout",
+            constants.DEFAULT_TMP_SESSION_DESTROY_TIMEOUT,
         ),
-        "auto_quit_timeout": section.get(
+        "auto_quit_timeout": section.getint(
             "auto_quit_timeout", constants.DEFAULT_AUTO_QUIT_TIMEOUT
+        ),
+        "debug_logger": section.getboolean(
+            "debug_logger", constants.DEFAULT_DEBUG_LOGGER
         ),
     }
 

@@ -159,8 +159,8 @@ class FleetCommanderDbusService(dbus.service.Object):
         self.known_hosts_file = os.path.join(self.home_dir, ".ssh/known_hosts")
 
         # Timeout values
-        self.tmp_session_destroy_timeout = float(args["tmp_session_destroy_timeout"])
-        self.auto_quit_timeout = float(args["auto_quit_timeout"])
+        self.tmp_session_destroy_timeout = args["tmp_session_destroy_timeout"]
+        self.auto_quit_timeout = args["auto_quit_timeout"]
 
         # operational attributes
         self._loop = None
