@@ -1,5 +1,6 @@
 RPMBUILD ?= $(abs_builddir)/rpmbuild
 TARBALL = $(PACKAGE)-$(VERSION).tar.xz
+NULL =
 
 DISTCHECK_CONFIGURE_FLAGS = \
 			      --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
@@ -8,6 +9,10 @@ SUBDIRS = data logger admin tests
 EXTRA_DIST = \
  	$(wildcard LICENSE.*)                  \
  	$(wildcard COPYING.*)
+
+GENERATED_PYTHON_FILES = \
+	admin/fleetcommander/constants.py                  \
+	$(NULL)
 
 .PHONY: prep_src rpmroot rpmdistdir rpms
 
@@ -39,7 +44,7 @@ clean-local:
 	rm -f "$(top_builddir)"/$(PACKAGE)-*.tar.gz
 
 .PHONY: pylint
-pylint:
+pylint: $(GENERATED_PYTHON_FILES)
 	FILES=`find $(top_srcdir) \
 	      -type d -exec test -e '{}/__init__.py' \; -print -prune -o \
 	      -path './rpmbuild' -prune -o \
@@ -52,12 +57,12 @@ pylint:
 		$${FILES}
 
 .PHONY: black
-black:
+black: $(GENERATED_PYTHON_FILES)
 	$(PYTHON) -m black -v \
 	    $(top_srcdir)
 
 .PHONY: blackcheck
-blackcheck:
+blackcheck: $(GENERATED_PYTHON_FILES)
 	$(PYTHON) -m black -v --check --diff \
 	    $(top_srcdir)
 
