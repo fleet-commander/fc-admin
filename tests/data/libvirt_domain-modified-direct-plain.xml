@@ -1,0 +1,154 @@
+<domain xmlns:ns0="https://wiki.gnome.org/Apps/Boxes" xmlns:ns1="http://libvirt.org/schemas/domain/qemu/1.0" id="4" type="kvm">
+  <name>fc-%(name-uuid)s</name>
+  <uuid>%(uuid)s</uuid>
+  <title>Fedora - Fleet Commander temporary session</title>
+  <metadata>
+    <ns0:gnome-boxes>
+      <os-state>installed</os-state>
+      <os-id>http://fedoraproject.org/fedora/unknown</os-id>
+      <media-id>http://fedoraproject.org/fedora/unknown:3</media-id>
+      <media>/home/user/Downloads/Fedora-Live-Workstation-x86_64-23-10.iso</media>
+    </ns0:gnome-boxes>
+  </metadata>
+  <memory unit="KiB">2097152</memory>
+  <currentMemory unit="KiB">2097152</currentMemory>
+  <vcpu placement="static">4</vcpu>
+  <os>
+    <type arch="x86_64" machine="pc-i440fx-2.4">hvm</type>
+    <boot dev="hd" />
+  </os>
+  <features>
+    <acpi />
+    <apic />
+  </features>
+  <cpu match="exact" mode="custom">
+    <model fallback="allow">Broadwell</model>
+    <topology cores="2" sockets="1" threads="2" />
+  </cpu>
+  <clock offset="utc">
+    <timer name="rtc" tickpolicy="catchup" />
+    <timer name="pit" tickpolicy="delay" />
+    <timer name="hpet" present="no" />
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <pm>
+    <suspend-to-mem enabled="no" />
+    <suspend-to-disk enabled="no" />
+  </pm>
+  <devices>
+    <emulator>/usr/bin/qemu-kvm</emulator>
+    <disk device="disk" type="file">
+      <driver cache="writeback" name="qemu" type="qcow2" />
+      <source file="/home/user/.local/share/gnome-boxes/images/fedora-unkno" />
+      <backingStore />
+      <target bus="virtio" dev="vda" />
+      <alias name="virtio-disk0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x07" type="pci" />
+    </disk>
+    <disk device="cdrom" type="file">
+      <driver name="qemu" type="raw" />
+      <source startupPolicy="optional" />
+      <backingStore />
+      <target bus="ide" dev="hdc" />
+      <readonly />
+      <alias name="ide0-1-0" />
+      <address bus="1" controller="0" target="0" type="drive" unit="0" />
+    </disk>
+    <controller index="0" model="ich9-ehci1" type="usb">
+      <alias name="usb" />
+      <address bus="0x00" domain="0x0000" function="0x7" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci1" type="usb">
+      <alias name="usb" />
+      <master startport="0" />
+      <address bus="0x00" domain="0x0000" function="0x0" multifunction="on" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci2" type="usb">
+      <alias name="usb" />
+      <master startport="2" />
+      <address bus="0x00" domain="0x0000" function="0x1" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="ich9-uhci3" type="usb">
+      <alias name="usb" />
+      <master startport="4" />
+      <address bus="0x00" domain="0x0000" function="0x2" slot="0x06" type="pci" />
+    </controller>
+    <controller index="0" model="pci-root" type="pci">
+      <alias name="pci.0" />
+    </controller>
+    <controller index="0" type="ide">
+      <alias name="ide" />
+      <address bus="0x00" domain="0x0000" function="0x1" slot="0x01" type="pci" />
+    </controller>
+    <controller index="0" type="virtio-serial">
+      <alias name="virtio-serial0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x05" type="pci" />
+    </controller>
+    <controller index="0" type="ccid">
+      <alias name="ccid0" />
+    </controller>
+    <interface type="bridge">
+      <source bridge="virbr0" />
+      <target dev="tap0" />
+      <model type="virtio" />
+      <alias name="net0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x03" type="pci" />
+    </interface>
+    <smartcard mode="passthrough" type="spicevmc">
+      <alias name="smartcard0" />
+      <address controller="0" slot="0" type="ccid" />
+    </smartcard>
+    <serial type="pty">
+      <source path="/dev/pts/3" />
+      <target port="0" />
+      <alias name="serial0" />
+    </serial>
+    <console tty="/dev/pts/3" type="pty">
+      <source path="/dev/pts/3" />
+      <target port="0" type="serial" />
+      <alias name="serial0" />
+    </console>
+    <channel type="spicevmc">
+      <target name="com.redhat.spice.0" state="disconnected" type="virtio" />
+      <alias name="channel0" />
+      <address bus="0" controller="0" port="1" type="virtio-serial" />
+    </channel>
+    <input bus="usb" type="tablet">
+      <alias name="input0" />
+    </input>
+    <input bus="usb" type="mouse">
+      <alias name="input1" />
+    </input>
+    <input bus="usb" type="keyboard">
+      <alias name="input2" />
+    </input>
+    <input bus="ps2" type="mouse" />
+    <input bus="ps2" type="keyboard" />
+    <sound model="ac97">
+      <alias name="sound0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci" />
+    </sound>
+    <video>
+      <alias name="video0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x02" type="pci" />
+    <model heads="1" primary="yes" type="virtio" /></video>
+    <redirdev bus="usb" type="spicevmc">
+      <alias name="redir0" />
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+      <alias name="redir1" />
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+      <alias name="redir2" />
+    </redirdev>
+    <redirdev bus="usb" type="spicevmc">
+      <alias name="redir3" />
+    </redirdev>
+    <memballoon model="virtio">
+      <alias name="balloon0" />
+      <address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci" />
+    </memballoon>
+  <graphics autoport="yes" defaultMode="insecure" listen="0.0.0.0" passwd="Secret123" port="5900" type="spice"><listen address="0.0.0.0" type="address" /></graphics><channel type="unix"><source mode="bind" path="%(runtimedir)s/fc-%(name-uuid)s.socket" /><target name="org.freedesktop.FleetCommander.0" state="disconnected" type="virtio" /><alias name="fc0" /></channel></devices>
+<ns1:commandline><ns1:arg value="-snapshot" /></ns1:commandline><ns1:capabilities><ns1:del capability="blockdev" /></ns1:capabilities></domain>
