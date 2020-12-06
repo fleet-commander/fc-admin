@@ -78,16 +78,32 @@ XML_MODIF_DIRECT_DEBUG = _xmltree_to_string(
     )
 )
 
+XML_MODIF_DIRECT_PLAIN = _xmltree_to_string(
+    os.path.join(
+        os.environ["TOPSRCDIR"],
+        "tests/data/libvirt_domain-modified-direct-plain.xml",
+    )
+)
+
+XML_MODIF_DIRECT_PLAIN_DEBUG = _xmltree_to_string(
+    os.path.join(
+        os.environ["TOPSRCDIR"],
+        "tests/data/libvirt_domain-modified-direct-plain-debug.xml",
+    )
+)
+
 XML_NO_SPICE = _xmltree_to_string(
     os.path.join(os.environ["TOPSRCDIR"], "tests/data/libvirt_domain-nospice.xml")
 )
 
-TEST_UUID_ORIGIN = "e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81"
-TEST_UUID_NO_SPICE = "0999a0ee-a4c4-11e5-b3a5-68f728db19d3"
-TEST_UUID_TEMPORARY_SPICE_HTML5 = "11111111-722d-45d9-b66c-fefb33235a98"
-TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG = "111debug-722d-45d9-b66c-fefb33235a98"
-TEST_UUID_TEMPORARY_SPICE_DIRECT = "22222222-722d-45d9-b66c-fefb33235a98"
-TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG = "222debug-722d-45d9-b66c-fefb33235a98"
+UUID_ORIGIN = "e2e3ad2a-7c2d-45d9-b7bc-fefb33925a81"
+UUID_NO_SPICE = "0999a0ee-a4c4-11e5-b3a5-68f728db19d3"
+UUID_TEMPORARY_SPICE_HTML5 = "11111111-722d-45d9-b66c-fefb33235a98"
+UUID_TEMPORARY_SPICE_HTML5_DEBUG = "111debug-722d-45d9-b66c-fefb33235a98"
+UUID_TEMPORARY_SPICE_DIRECT = "22222222-722d-45d9-b66c-fefb33235a98"
+UUID_TEMPORARY_SPICE_DIRECT_DEBUG = "222debug-722d-45d9-b66c-fefb33235a98"
+UUID_TEMPORARY_SPICE_DIRECT_PLAIN = "33333333-722d-45d9-b66c-fefb33235a98"
+UUID_TEMPORARY_SPICE_DIRECT_PLAIN_DEBUG = "333debug-722d-45d9-b66c-fefb33235a98"
 
 
 class State(SQLiteDict):
@@ -129,31 +145,47 @@ class LibvirtConnectionMocker(libvirt.virConnect):
                     LibvirtDomainMocker(
                         XML_MODIF_HTML5
                         % {
-                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_HTML5[:8],
-                            "uuid": TEST_UUID_TEMPORARY_SPICE_HTML5,
+                            "name-uuid": UUID_TEMPORARY_SPICE_HTML5[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_HTML5,
                         }
                     ),
                     LibvirtDomainMocker(
                         XML_MODIF_HTML5_DEBUG
                         % {
-                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG[:8],
-                            "uuid": TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG,
+                            "name-uuid": UUID_TEMPORARY_SPICE_HTML5_DEBUG[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_HTML5_DEBUG,
                             "runtimedir": "/run/user/1001",
                         }
                     ),
                     LibvirtDomainMocker(
                         XML_MODIF_DIRECT
                         % {
-                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT[:8],
-                            "uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT,
+                            "name-uuid": UUID_TEMPORARY_SPICE_DIRECT[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_DIRECT,
                             "runtimedir": "/run/user/1001",
                         }
                     ),
                     LibvirtDomainMocker(
                         XML_MODIF_DIRECT_DEBUG
                         % {
-                            "name-uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG[:8],
-                            "uuid": TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
+                            "name-uuid": UUID_TEMPORARY_SPICE_DIRECT_DEBUG[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
+                            "runtimedir": "/run/user/1001",
+                        }
+                    ),
+                    LibvirtDomainMocker(
+                        XML_MODIF_DIRECT_PLAIN
+                        % {
+                            "name-uuid": UUID_TEMPORARY_SPICE_DIRECT_PLAIN[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_DIRECT_PLAIN,
+                            "runtimedir": "/run/user/1001",
+                        }
+                    ),
+                    LibvirtDomainMocker(
+                        XML_MODIF_DIRECT_PLAIN_DEBUG
+                        % {
+                            "name-uuid": UUID_TEMPORARY_SPICE_DIRECT_PLAIN_DEBUG[:8],
+                            "uuid": UUID_TEMPORARY_SPICE_DIRECT_PLAIN_DEBUG,
                             "runtimedir": "/run/user/1001",
                         }
                     ),

@@ -424,7 +424,7 @@ class FleetCommanderDbusService(dbus.service.Object):
         # Check libvirt mode
         if data["mode"] not in ("system", "session"):
             errors["mode"] = "Invalid session type"
-        if data["viewer"] not in ("spice_html5", "spice_remote_viewer"):
+        if data["viewer"] not in libvirtcontroller.VIEWERS:
             errors["viewer"] = "Unsupported libvirt viewer type"
 
         if errors:

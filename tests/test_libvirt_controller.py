@@ -43,6 +43,57 @@ logger = logging.getLogger(os.path.basename(__file__))
 # Mocking assignments
 libvirtcontroller.libvirt = libvirtmock.LibvirtModuleMocker
 
+EXPECTED_DOMAIN_LIST = [
+    {
+        "uuid": libvirtmock.UUID_ORIGIN,
+        "name": "Fedora",
+        "active": True,
+        "temporary": False,
+    },
+    {
+        "uuid": libvirtmock.UUID_NO_SPICE,
+        "name": "Fedora unspiced",
+        "active": True,
+        "temporary": False,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_HTML5,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_HTML5_DEBUG,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_DIRECT,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_DIRECT_PLAIN,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+    {
+        "uuid": libvirtmock.UUID_TEMPORARY_SPICE_DIRECT_PLAIN_DEBUG,
+        "name": "Fedora - Fleet Commander temporary session",
+        "active": True,
+        "temporary": True,
+    },
+]
+
 
 class TestLibVirtControllerCommon(unittest.TestCase):
     """Negative scenarios for common LibVirtController."""
@@ -180,7 +231,7 @@ class TestLibVirtController:
 
     def test_session_stop(self):
         ctrlr = self.get_controller(self.config)
-        session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
+        session_params = ctrlr.session_start(libvirtmock.UUID_ORIGIN)
 
         ctrlr.session_stop(session_params.domain)
 
@@ -255,47 +306,7 @@ class TestLibVirtControllerSystem(TestLibVirtController):
         ctrlr = self.get_controller(self.config)
 
         domains = ctrlr.list_domains()
-        self.assertListEqual(
-            domains,
-            [
-                {
-                    "uuid": libvirtmock.TEST_UUID_ORIGIN,
-                    "name": "Fedora",
-                    "active": True,
-                    "temporary": False,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_NO_SPICE,
-                    "name": "Fedora unspiced",
-                    "active": True,
-                    "temporary": False,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-            ],
-        )
+        self.assertListEqual(domains, EXPECTED_DOMAIN_LIST)
 
         # Check remote machine environment preparation
         # No command is executed
@@ -339,47 +350,7 @@ class TestLibVirtControllerSession(TestLibVirtController):
         ctrlr = self.get_controller(self.config)
 
         domains = ctrlr.list_domains()
-        self.assertListEqual(
-            domains,
-            [
-                {
-                    "uuid": libvirtmock.TEST_UUID_ORIGIN,
-                    "name": "Fedora",
-                    "active": True,
-                    "temporary": False,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_NO_SPICE,
-                    "name": "Fedora unspiced",
-                    "active": True,
-                    "temporary": False,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_HTML5_DEBUG,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-                {
-                    "uuid": libvirtmock.TEST_UUID_TEMPORARY_SPICE_DIRECT_DEBUG,
-                    "name": "Fedora - Fleet Commander temporary session",
-                    "active": True,
-                    "temporary": True,
-                },
-            ],
-        )
+        self.assertListEqual(domains, EXPECTED_DOMAIN_LIST)
 
         # Check remote machine environment preparation
         self.assertEqual(ctrlr._libvirt_socket, "/run/user/1000/libvirt/libvirt-sock")
@@ -402,7 +373,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
             "generate_spice_ticket",
             return_value=ticket,
         ):
-            session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
+            session_params = ctrlr.session_start(libvirtmock.UUID_ORIGIN)
 
         self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
         self.assertDictEqual(
@@ -468,7 +439,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
             return_value=ticket,
         ):
             session_params = ctrlr.session_start(
-                libvirtmock.TEST_UUID_ORIGIN, debug_logger=True
+                libvirtmock.UUID_ORIGIN, debug_logger=True
             )
 
         self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
@@ -529,7 +500,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
         )
 
 
-class TestLibVirtControllerDirect(TestLibVirtController):
+class TestLibVirtControllerDirectTLS(TestLibVirtController):
     VIEWER = "spice_remote_viewer"
 
     def test_session_start(self):
@@ -546,7 +517,7 @@ class TestLibVirtControllerDirect(TestLibVirtController):
             "generate_spice_ticket",
             return_value=ticket,
         ):
-            session_params = ctrlr.session_start(libvirtmock.TEST_UUID_ORIGIN)
+            session_params = ctrlr.session_start(libvirtmock.UUID_ORIGIN)
 
         self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
 
@@ -621,7 +592,7 @@ class TestLibVirtControllerDirect(TestLibVirtController):
             return_value=ticket,
         ):
             session_params = ctrlr.session_start(
-                libvirtmock.TEST_UUID_ORIGIN, debug_logger=True
+                libvirtmock.UUID_ORIGIN, debug_logger=True
             )
 
         self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
@@ -747,16 +718,180 @@ class TestLibVirtControllerDirect(TestLibVirtController):
         )
 
 
+class TestLibVirtControllerDirectPlain(TestLibVirtController):
+    VIEWER = "spice_plain_remote_viewer"
+
+    def test_session_start(self):
+        ctrlr = self.get_controller(self.config)
+
+        ticket = "Secret123"
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
+        remote_runtimedir = "/run/user/1001"
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(libvirtmock.UUID_ORIGIN)
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "viewer": self.VIEWER,
+                "notifier_path": local_socket,
+                "port": "5900",
+                "ticket": ticket,
+            },
+        )
+
+        new_domain = ctrlr._last_started_domain
+        remote_socket = os.path.join(
+            remote_runtimedir,
+            "fc-{}.socket".format(new_domain.UUIDString()[:8]),
+        )
+
+        # Test new domain XML generation
+        self.assertEqual(
+            new_domain.XMLDesc(),
+            libvirtmock.XML_MODIF_DIRECT_PLAIN.strip()
+            % {
+                "name-uuid": new_domain.UUIDString()[:8],
+                "uuid": new_domain.UUIDString(),
+                "runtimedir": remote_runtimedir,
+            },
+        )
+
+        # Test SSH tunnel opening
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=f"{local_socket}:{remote_socket}",
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+    def test_session_start_debug(self):
+        ctrlr = self.get_controller(self.config)
+
+        ticket = "Secret123"
+        local_runtimedir = os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/1000")
+        local_socket = os.path.join(local_runtimedir, "fc-notifier.socket")
+        remote_runtimedir = "/run/user/1001"
+        logger_socket = os.path.join(local_runtimedir, "fc-logger.socket")
+
+        # spice ticket is generated the only time
+        with patch.object(
+            libvirtcontroller.LibVirtController,
+            "generate_spice_ticket",
+            return_value=ticket,
+        ):
+            session_params = ctrlr.session_start(
+                libvirtmock.UUID_ORIGIN, debug_logger=True
+            )
+
+        self.assertEqual(session_params.domain, ctrlr._last_started_domain.UUIDString())
+
+        self.assertDictEqual(
+            session_params.details,
+            {
+                "host": "localhost",
+                "viewer": self.VIEWER,
+                "notifier_path": local_socket,
+                "logger_path": logger_socket,
+                "port": "5900",
+                "ticket": ticket,
+            },
+        )
+
+        new_domain = ctrlr._last_started_domain
+        remote_socket = os.path.join(
+            remote_runtimedir,
+            "fc-{}.socket".format(new_domain.UUIDString()[:8]),
+        )
+
+        # Test new domain XML generation
+        self.assertEqual(
+            new_domain.XMLDesc(),
+            libvirtmock.XML_MODIF_DIRECT_PLAIN_DEBUG.strip()
+            % {
+                "name-uuid": new_domain.UUIDString()[:8],
+                "uuid": new_domain.UUIDString(),
+                "runtimedir": remote_runtimedir,
+            },
+        )
+
+        # Test SSH tunnel opening
+        self.assertTrue(os.path.exists(self.ssh_parms_file))
+        with open(self.ssh_parms_file) as fd:
+            command = fd.read().strip()
+
+        remote_socket_logger = os.path.join(
+            remote_runtimedir,
+            "fc-{}-logger.socket".format(new_domain.UUIDString()[:8]),
+        )
+
+        self.assertEqual(
+            command,
+            SSH_TUNNEL_OPEN_PARMS.format(
+                local_forward=(
+                    f"{local_socket}:{remote_socket}"
+                    f" -L {logger_socket}:{remote_socket_logger}"
+                ),
+                username=self.config["username"],
+                user_home=os.path.expanduser("~"),
+                hostname=self.config["hostname"],
+                port=ctrlr.ssh_port,
+                private_key_file=self.private_key_file,
+                optional_args=" ".join(
+                    [
+                        "-o",
+                        "StreamLocalBindUnlink=yes",
+                        "-o",
+                        f"UserKnownHostsFile={self.known_hosts_file}",
+                    ]
+                ),
+            ),
+        )
+
+
 class TestLibVirtControllerSystemHTML5(
     TestLibVirtControllerSystem, TestLibVirtControllerHTML5, unittest.TestCase
 ):
     """Test LibVirtController with spice_html5 viewer at system mode."""
 
 
-class TestLibVirtControllerSystemDirect(
-    TestLibVirtControllerSystem, TestLibVirtControllerDirect, unittest.TestCase
+class TestLibVirtControllerSystemDirectTLS(
+    TestLibVirtControllerSystem, TestLibVirtControllerDirectTLS, unittest.TestCase
 ):
     """Test LibVirtController with spice_remote_viewer viewer at system mode."""
+
+
+class TestLibVirtControllerSystemDirectPlain(
+    TestLibVirtControllerSystem, TestLibVirtControllerDirectPlain, unittest.TestCase
+):
+    """Test LibVirtController with spice_plain_remote_viewer viewer at system mode."""
 
 
 class TestLibVirtControllerSessionHTML5(
@@ -765,10 +900,16 @@ class TestLibVirtControllerSessionHTML5(
     """Test LibVirtController with spice_html5 viewer at session mode."""
 
 
-class TestLibVirtControllerSessionDirect(
-    TestLibVirtControllerSession, TestLibVirtControllerDirect, unittest.TestCase
+class TestLibVirtControllerSessionDirectTLS(
+    TestLibVirtControllerSession, TestLibVirtControllerDirectTLS, unittest.TestCase
 ):
     """Test LibVirtController with spice_remote_viewer viewer at session mode."""
+
+
+class TestLibVirtControllerSessionDirectPlain(
+    TestLibVirtControllerSession, TestLibVirtControllerDirectPlain, unittest.TestCase
+):
+    """Test LibVirtController with spice_plain_remote_viewer viewer at session mode."""
 
 
 if __name__ == "__main__":

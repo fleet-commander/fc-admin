@@ -56,24 +56,15 @@ window.alert = function (message) {
     }
 };
 
-function downloadConnectionFile(console_details) {
-    console.log("Generate remote-viewer connection file: ", console_details);
-    const data = '[virt-viewer]\n' +
-        `type=${console_details.type}\n` +
-        `host=${console_details.address}\n` +
-        `tls-port=${console_details.tls_port}\n` +
-        `password=${console_details.ticket}\n` +
-        `ca=${console_details.ca_cert}\n` +
-        `host-subject=${console_details.cert_subject}\n` +
-        'delete-this-file=1\n' +
-        'secure-channels=all\n' +
-        'fullscreen=0\n';
+function downloadConnectionFile(details) {
+    console.log("Generated remote-viewer connection file: ", details);
+    console_details = details;
 
     const f = document.createElement('iframe');
     f.width = '1';
     f.height = '1';
     document.body.appendChild(f);
-    f.src = `data:application/x-virt-viewer,${encodeURIComponent(data)}`;
+    f.src = `data:application/x-virt-viewer,${encodeURIComponent(details)}`;
 }
 
 function ParseChange(data) {
@@ -198,19 +189,74 @@ function startSpiceHtml5(conn_details) {
     startHeartBeat();
 }
 
-function startRemoteViewer(conn_details) {
+function startSpiceTLSRemoteViewer(conn_details) {
     if ("logger_path" in conn_details) {
         startLogger(conn_details);
     }
-    console_details = {
-        type: 'spice',
-        address: conn_details.host,
-        tls_port: conn_details.tls_port,
-        ca_cert: conn_details.ca_cert.replace(/\n/g, "\\n"),
-        cert_subject: conn_details.cert_subject,
-        ticket: conn_details.ticket,
+    const details = '[virt-viewer]\n' +
+        'type=spice\n' +
+        `host=${conn_details.host}\n` +
+        `tls-port=${conn_details.tls_port}\n` +
+        `password=${conn_details.ticket}\n` +
+        `ca=${conn_details.ca_cert.replace(/\n/g, "\\n")}\n` +
+        `host-subject=${conn_details.cert_subject}\n` +
+        'delete-this-file=1\n' +
+        'secure-channels=all\n' +
+        'fullscreen=0\n';
+
+    downloadConnectionFile(details);
+
+    const options = {
+        payload: 'stream',
+        protocol: 'binary',
+        batch: 2048,
+        unix: conn_details.notifier_path,
+        binary: true,
     };
-    downloadConnectionFile(console_details);
+    const channel = cockpit.channel(options);
+
+    const msg = {
+        buffer: '',
+        initial_msg: true,
+        fc_proto_version: FC_PROTO_DEFAULT,
+    };
+
+    channel.addEventListener("ready", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit notifier channel is open');
+        }
+    });
+    channel.addEventListener("message", function(event, data) {
+        const msg_text = arraybuffer_to_str(new Uint8Array(data));
+        if (DEBUG > 0) {
+            console.log('FC: Notifier data received in unix channel', msg_text);
+        }
+        parseFCMsg(msg_text, msg, ParseChange);
+    });
+    channel.addEventListener("close", function(event, options) {
+        if (DEBUG > 0) {
+            console.log('FC: Cockpit notifier channel is closed', options);
+        }
+        stopLiveSession();
+    });
+
+    startHeartBeat();
+}
+
+function startSpicePlainRemoteViewer(conn_details) {
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
+
+    const details = '[virt-viewer]\n' +
+        'type=spice\n' +
+        `host=${conn_details.host}\n` +
+        `port=${conn_details.port}\n` +
+        `password=${conn_details.ticket}\n` +
+        'delete-this-file=1\n' +
+        'fullscreen=0\n';
+
+    downloadConnectionFile(details);
 
     const options = {
         payload: 'stream',
@@ -397,7 +443,8 @@ function startLiveSession() {
                 const conn_details = resp.connection_details;
                 const viewers = {
                     spice_html5: startSpiceHtml5,
-                    spice_remote_viewer: startRemoteViewer,
+                    spice_remote_viewer: startSpiceTLSRemoteViewer,
+                    spice_plain_remote_viewer: startSpicePlainRemoteViewer,
                 };
                 if (conn_details.viewer in viewers === false) {
                     messageDialog.show(
