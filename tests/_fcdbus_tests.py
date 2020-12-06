@@ -175,6 +175,7 @@ class TestDbusService(unittest.TestCase):
     def test_00_get_initial_values(self):
         state = {
             "debuglevel": "debug",
+            "debug_protocol": False,
             "defaults": {
                 "profilepriority": 50,
             },

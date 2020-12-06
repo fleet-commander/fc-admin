@@ -124,6 +124,7 @@ class TestFleetCommanderDbusService(fcdbus.FleetCommanderDbusService):
 
         args = {
             "log_level": "debug",
+            "debug_protocol": False,
             "log_format": "\n[%(levelname)s] %(asctime)-15s %(message)s",
             "debug_logger": False,
             "data_dir": test_directory,
