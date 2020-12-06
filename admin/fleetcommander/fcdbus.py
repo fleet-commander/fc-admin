@@ -356,6 +356,7 @@ class FleetCommanderDbusService(dbus.service.Object):
     def GetInitialValues(self):
         state = {
             "debuglevel": self.log_level,
+            "debug_protocol": self.args["debug_protocol"],
             "defaults": {
                 "profilepriority": self.default_profile_priority,
             },

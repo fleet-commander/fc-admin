@@ -23,6 +23,7 @@
 ******************************************************************************/
 
 let DEBUG = 0;
+let DEBUG_FC_PROTOCOL = 0;
 
 function clearModalFormErrors(modalId) {
     $('#' + modalId + ' div.form-group').removeClass('has-error');
@@ -51,7 +52,7 @@ function hasSuffix(haystack, needle) {
     return (haystack.length - needle.length) === haystack.lastIndexOf(needle);
 }
 
-function setDebugLevel(level) {
+function setDebugLevel(level, debug_protocol = false) {
     switch (level) {
     case 'debug':
         DEBUG = 3;
@@ -70,10 +71,20 @@ function setDebugLevel(level) {
     if (DEBUG > 0) {
         console.log('Debug level set to ' + DEBUG);
     }
+
+    if (debug_protocol === true) {
+        DEBUG_FC_PROTOCOL = 1;
+    } else {
+        DEBUG_FC_PROTOCOL = 0;
+    }
+    if (DEBUG > 0) {
+        console.log('Debug of FC Logger protocol', DEBUG_FC_PROTOCOL);
+    }
 }
 
 export {
     DEBUG,
+    DEBUG_FC_PROTOCOL,
     addFormError,
     clearModalFormErrors,
     hasForm,

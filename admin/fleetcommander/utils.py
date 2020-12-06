@@ -69,6 +69,9 @@ def parse_config(config_file=None):
         "debug_logger": section.getboolean(
             "debug_logger", constants.DEFAULT_DEBUG_LOGGER
         ),
+        "debug_protocol": section.getboolean(
+            "debug_protocol", constants.DEFAULT_DEBUG_PROTOCOL
+        ),
     }
 
     return args

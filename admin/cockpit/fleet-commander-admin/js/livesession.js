@@ -18,7 +18,7 @@
  *          Oliver Gutiérrez <ogutierrez@redhat.com>
  */
 
-import { DEBUG, setDebugLevel } from './base.js';
+import { DEBUG, DEBUG_FC_PROTOCOL, setDebugLevel } from './base.js';
 import { BaseCollector, NMCollector, FirefoxBookmarksCollector } from './collectors.js';
 import { spinnerDialog, messageDialog, showCurtain } from './dialogs.js';
 import { FleetCommanderDbusClient } from './fcdbusclient.js';
@@ -119,7 +119,7 @@ function startLogger(conn_details) {
 
     channel.addEventListener("message", function(event, data) {
         const msg_text = arraybuffer_to_str(new Uint8Array(data));
-        if (DEBUG > 0) {
+        if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Notifier data received in unix channel', msg_text);
         }
         parseFCMsg(msg_text, msg, (data) => { console.log("Logger: " + data) });
@@ -146,7 +146,7 @@ function startSpiceHtml5(conn_details) {
     window.addEventListener('spice-port-data', function (event) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
             const msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
-            if (DEBUG > 0) {
+            if (DEBUG_FC_PROTOCOL > 0) {
                 console.log(
                     'FC: Notifier data received in spice port',
                     event.detail.channel.portName,
@@ -228,7 +228,7 @@ function startSpiceTLSRemoteViewer(conn_details) {
     });
     channel.addEventListener("message", function(event, data) {
         const msg_text = arraybuffer_to_str(new Uint8Array(data));
-        if (DEBUG > 0) {
+        if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Notifier data received in unix channel', msg_text);
         }
         parseFCMsg(msg_text, msg, ParseChange);
@@ -280,7 +280,7 @@ function startSpicePlainRemoteViewer(conn_details) {
     });
     channel.addEventListener("message", function(event, data) {
         const msg_text = arraybuffer_to_str(new Uint8Array(data));
-        if (DEBUG > 0) {
+        if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Notifier data received in unix channel', msg_text);
         }
         parseFCMsg(msg_text, msg, ParseChange);
@@ -300,7 +300,7 @@ function parseFCMsg(str, msg, cb) {
      * Protocol 1 assumes atomic data transmission
      * Protocol 2 process data in chunks
      */
-    if (DEBUG > 0) {
+    if (DEBUG_FC_PROTOCOL > 0) {
         console.log('FC: Processing msg, length:%s', str.length);
     }
     if (str === '') {
@@ -314,7 +314,7 @@ function parseFCMsg(str, msg, cb) {
 
     if (msg.initial_msg === true) {
         // detecting protocol version
-        if (DEBUG > 0) {
+        if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Initial message processing');
         }
         // receive enough characters
@@ -326,7 +326,7 @@ function parseFCMsg(str, msg, cb) {
         const fc_proto_header = str.match(/^:FC_PR:/);
         if (fc_proto_header === null) {
             msg.fc_proto_version = FC_PROTO_DEFAULT;
-            if (DEBUG > 0) {
+            if (DEBUG_FC_PROTOCOL > 0) {
                 console.log('FC: old fc_proto detected', msg.fc_proto_version);
             }
             msg.buffer = '';
@@ -341,7 +341,7 @@ function parseFCMsg(str, msg, cb) {
             // cut off the proto header
             str = str.replace(/^:FC_PR:\d+:/, '');
         }
-        if (DEBUG > 0) {
+        if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC protocol version', msg.fc_proto_version);
         }
         msg.initial_msg = false;
@@ -351,7 +351,7 @@ function parseFCMsg(str, msg, cb) {
         const last_delimiter = str.lastIndexOf(FC_MSG_DELIM);
         if (last_delimiter === -1) {
             msg.buffer = str;
-            if (DEBUG > 0) {
+            if (DEBUG_FC_PROTOCOL > 0) {
                 console.log('FC: Waiting for FC_MSG_DELIM');
             }
             return;
@@ -684,7 +684,7 @@ $(document).ready(function () {
     // Create a Fleet Commander dbus client instance
     fc = new FleetCommanderDbusClient(function () {
         fc.GetInitialValues(function (resp) {
-            setDebugLevel(resp.debuglevel);
+            setDebugLevel(resp.debuglevel, resp.debug_protocol);
 
             // Try domain connection
             fc.DoDomainConnection(function (resp) {
