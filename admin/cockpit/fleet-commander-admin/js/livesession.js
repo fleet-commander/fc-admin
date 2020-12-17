@@ -56,6 +56,50 @@ window.alert = function (message) {
     }
 };
 
+function showConnectionDetails(details) {
+    const external_viewer_id = 'external_viewer';
+    const spice_screen_id = '#spice-screen';
+    const external_viewer = $('<div/>', {
+        id: external_viewer_id,
+        class: 'alert alert-success'
+    });
+
+    const title = _(
+        'Fleet Commander has started libvirt\'s domain, which is ready for ' +
+        'connection via external viewer'
+    );
+
+    /* remove existing message */
+    $(`#${external_viewer_id}`).remove();
+
+    external_viewer.append($('<span/>', { class: 'pficon pficon-ok' }));
+    external_viewer.append($('<h4/>', {
+        class: 'alert-heading',
+        text: title
+    }));
+    external_viewer.append($('<hr/>'));
+    external_viewer.append($('<br/>'));
+
+    const message_template = _(
+        '<strong>You can connect to this VM via remote-viewer program in the ' +
+        'following ways:</strong>' +
+        '<ol>' +
+        '<li>Execute the downloaded connection file</li>' +
+        '<li>Run command in your shell<code>{command}</code></li>' +
+        '</ol>'
+    );
+    let command = `echo -e '${details}' | remote-viewer -- -`;
+    /* escaping \n. first time for cert, second for connection file lines */
+    command = command.replace(/\\n/g, '\\\\n');
+    command = command.replace(/\n/g, '\\n');
+
+    const message = message_template.replace(/{command}/g, command);
+
+    external_viewer.append($(message));
+
+    $(spice_screen_id).append(external_viewer);
+}
+
 function downloadConnectionFile(details) {
     console.log("Generated remote-viewer connection file: ", details);
     console_details = details;
@@ -205,6 +249,7 @@ function startSpiceTLSRemoteViewer(conn_details) {
         'fullscreen=0\n';
 
     downloadConnectionFile(details);
+    showConnectionDetails(details);
 
     const options = {
         payload: 'stream',
@@ -257,6 +302,7 @@ function startSpicePlainRemoteViewer(conn_details) {
         'fullscreen=0\n';
 
     downloadConnectionFile(details);
+    showConnectionDetails(details);
 
     const options = {
         payload: 'stream',
