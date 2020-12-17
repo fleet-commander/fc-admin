@@ -29,10 +29,10 @@ const FC_MSG_DELIM = ':FC_MSG_END_DATA:';
 const FC_PROTO_HEADER = ':FC_PR:';
 const FC_PROTO_DEFAULT = 1;
 const _ = cockpit.gettext;
+const RECONNNECT_BUTTON_ID = '#reconnect-to-vm';
 
 let fc = null;
 let fcsc = null;
-let console_details = null;
 const collectors = {
     'org.gnome.gsettings':
         new BaseCollector('org.gnome.gsettings'),
@@ -55,6 +55,12 @@ window.alert = function (message) {
         console.log('FC: Alert message:' + message);
     }
 };
+
+function prepareReconnectButton(title, cb) {
+    $(RECONNNECT_BUTTON_ID).click(cb);
+    $(RECONNNECT_BUTTON_ID).text(title);
+    $(RECONNNECT_BUTTON_ID).show();
+}
 
 function showConnectionDetails(details) {
     const external_viewer_id = 'external_viewer';
@@ -102,7 +108,6 @@ function showConnectionDetails(details) {
 
 function downloadConnectionFile(details) {
     console.log("Generated remote-viewer connection file: ", details);
-    console_details = details;
 
     const f = document.createElement('iframe');
     f.width = '1';
@@ -178,15 +183,27 @@ function startLogger(conn_details) {
 }
 
 function startSpiceHtml5(conn_details) {
-    if ("logger_path" in conn_details) {
-        startLogger(conn_details);
-    }
-    // SPICE port changes listeners
+    const details = {
+        path: conn_details.notifier_path,
+        ticket: conn_details.ticket,
+    };
     const msg = {
         buffer: '',
         initial_msg: true,
         fc_proto_version: FC_PROTO_DEFAULT,
     };
+
+    prepareReconnectButton(_('Reconnect to VM'), () => {
+        if (fcsc) {
+            fcsc.reconnect();
+        }
+    });
+
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
+    //
+    // SPICE port changes listeners
     window.addEventListener('spice-port-data', function (event) {
         if (event.detail.channel.portName === 'org.freedesktop.FleetCommander.0') {
             const msg_text = arraybuffer_to_str(new Uint8Array(event.detail.data));
@@ -222,11 +239,6 @@ function startSpiceHtml5(conn_details) {
         }
     });
 
-    const details = {
-        path: conn_details.notifier_path,
-        ticket: conn_details.ticket,
-    };
-
     fcsc = new FleetCommanderSpiceClient(
         details, stopLiveSession, reconnectSpice
     );
@@ -234,9 +246,6 @@ function startSpiceHtml5(conn_details) {
 }
 
 function startSpiceTLSRemoteViewer(conn_details) {
-    if ("logger_path" in conn_details) {
-        startLogger(conn_details);
-    }
     const details = '[virt-viewer]\n' +
         'type=spice\n' +
         `host=${conn_details.host}\n` +
@@ -247,10 +256,6 @@ function startSpiceTLSRemoteViewer(conn_details) {
         'delete-this-file=1\n' +
         'secure-channels=all\n' +
         'fullscreen=0\n';
-
-    downloadConnectionFile(details);
-    showConnectionDetails(details);
-
     const options = {
         payload: 'stream',
         protocol: 'binary',
@@ -258,13 +263,24 @@ function startSpiceTLSRemoteViewer(conn_details) {
         unix: conn_details.notifier_path,
         binary: true,
     };
-    const channel = cockpit.channel(options);
-
     const msg = {
         buffer: '',
         initial_msg: true,
         fc_proto_version: FC_PROTO_DEFAULT,
     };
+
+    prepareReconnectButton(_('Re-download connection file'), () => {
+        downloadConnectionFile(details);
+    });
+
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
+
+    downloadConnectionFile(details);
+    showConnectionDetails(details);
+
+    const channel = cockpit.channel(options);
 
     channel.addEventListener("ready", function(event, options) {
         if (DEBUG > 0) {
@@ -289,10 +305,6 @@ function startSpiceTLSRemoteViewer(conn_details) {
 }
 
 function startSpicePlainRemoteViewer(conn_details) {
-    if ("logger_path" in conn_details) {
-        startLogger(conn_details);
-    }
-
     const details = '[virt-viewer]\n' +
         'type=spice\n' +
         `host=${conn_details.host}\n` +
@@ -300,10 +312,6 @@ function startSpicePlainRemoteViewer(conn_details) {
         `password=${conn_details.ticket}\n` +
         'delete-this-file=1\n' +
         'fullscreen=0\n';
-
-    downloadConnectionFile(details);
-    showConnectionDetails(details);
-
     const options = {
         payload: 'stream',
         protocol: 'binary',
@@ -311,13 +319,24 @@ function startSpicePlainRemoteViewer(conn_details) {
         unix: conn_details.notifier_path,
         binary: true,
     };
-    const channel = cockpit.channel(options);
-
     const msg = {
         buffer: '',
         initial_msg: true,
         fc_proto_version: FC_PROTO_DEFAULT,
     };
+
+    prepareReconnectButton(_('Re-download connection file'), () => {
+        downloadConnectionFile(details);
+    });
+
+    if ("logger_path" in conn_details) {
+        startLogger(conn_details);
+    }
+
+    downloadConnectionFile(details);
+    showConnectionDetails(details);
+
+    const channel = cockpit.channel(options);
 
     channel.addEventListener("ready", function(event, options) {
         if (DEBUG > 0) {
@@ -507,14 +526,6 @@ function startLiveSession() {
             }
         });
     });
-}
-
-function reconnectToVM() {
-    if (fcsc) {
-        fcsc.reconnect();
-    } else if (console_details) {
-        downloadConnectionFile(console_details);
-    }
 }
 
 function addSectionCheckbox(section) {
@@ -722,7 +733,7 @@ function deployProfile() {
 }
 
 $(document).ready(function () {
-    $('#reconnect-to-vm').click(reconnectToVM);
+    $(RECONNNECT_BUTTON_ID).hide();
     $('#close-live-session').click(stopLiveSession);
     $('#review-changes').click(reviewAndSubmit);
     $('#deploy-profile').click(deployProfile);
