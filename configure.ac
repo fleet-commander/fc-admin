@@ -7,7 +7,7 @@ AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_PATH_PROG([RUNUSER], [runuser])
+AC_PATH_PROG([RUNUSER], [runuser], [], [$PATH$PATH_SEPARATOR/sbin])
 #AC_PATH_PROG([SSH], [ssh])
 #AC_PATH_PROG([SSHKEYGEN], [ssh-keygen])
 #AC_PATH_PROG([SSHKEYSCAN], [ssh-keyscan])
