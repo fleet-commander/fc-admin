@@ -9,5 +9,5 @@
         }
     },
 
-    "content-security-policy": "default-src 'self' 'unsafe-inline'; media-src 'self' 'unsafe-inline' blob:; img-src 'self' 'unsafe-inline' data:; frame-src 'self' data:;"
+    "content-security-policy": "default-src 'self'; media-src 'self' blob:; img-src 'self' data:; frame-src 'self' data:;"
 }
