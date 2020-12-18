@@ -74,6 +74,15 @@ cockpitdir='${datarootdir}'/cockpit
 mozillaextensionsdir='${datarootdir}'/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 nativemessagingdir='${libdir}'/mozilla/native-messaging-hosts
 
+# default runtime configuration
+DEFAULT_PROFILE_PRIORITY='50'
+DEFAULT_LOG_LEVEL='warning'
+DEFAULT_LOG_FORMAT='%(name)s: [%(levelname)s] %(message)s'
+DEFAULT_TMP_SESSION_DESTROY_TIMEOUT='60'
+DEFAULT_AUTO_QUIT_TIMEOUT='60'
+DEFAULT_DEBUG_LOGGER='False'
+DEFAULT_DEBUG_PROTOCOL='False'
+
 AC_SUBST(privlibexecdir)
 AC_SUBST(xdgconfigdir)
 AC_SUBST(adminstatedir)
@@ -87,6 +96,13 @@ AC_SUBST(fcloggerpythondir)
 AC_SUBST(fcconfigfile)
 AC_SUBST(mozillaextensionsdir)
 AC_SUBST(nativemessagingdir)
+AC_SUBST(DEFAULT_PROFILE_PRIORITY)
+AC_SUBST(DEFAULT_LOG_LEVEL)
+AC_SUBST(DEFAULT_LOG_FORMAT)
+AC_SUBST(DEFAULT_TMP_SESSION_DESTROY_TIMEOUT)
+AC_SUBST(DEFAULT_AUTO_QUIT_TIMEOUT)
+AC_SUBST(DEFAULT_DEBUG_LOGGER)
+AC_SUBST(DEFAULT_DEBUG_PROTOCOL)
 
 AS_AC_EXPAND(XDGCONFIGDIR, "$xdgconfigdir")
 AS_AC_EXPAND(PRIVLIBEXECDIR, "$privlibexecdir")
