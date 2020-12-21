@@ -2,8 +2,6 @@ RPMBUILD ?= $(abs_builddir)/rpmbuild
 TARBALL = $(PACKAGE)-$(VERSION).tar.xz
 NULL =
 
-DISTCHECK_CONFIGURE_FLAGS = \
-			      --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 SUBDIRS = data logger admin tests
 
 EXTRA_DIST = \

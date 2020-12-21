@@ -109,7 +109,7 @@ desktop-file-validate %{buildroot}/%{_sysconfdir}/xdg/autostart/fleet-commander-
 
 %build
 export PYTHON=%{python_interpreter}
-%configure --with-systemdsystemunitdir=%{_unitdir}
+%configure
 %make_build
 
 %install
