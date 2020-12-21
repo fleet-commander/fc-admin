@@ -28,6 +28,18 @@ fi
 
 PKG_PROG_PKG_CONFIG
 
+dnl ------------------
+dnl - udev directories
+dnl ------------------
+
+PKG_CHECK_EXISTS([udev], [], [AC_MSG_ERROR([udev devel package not found])])
+AC_ARG_WITH([udevrulesdir],
+	    [AS_HELP_STRING([--with-udevrulesdir=DIR],
+		[Directory for udev rules])],
+	    [udevrulesdir=$with_udevrulesdir],
+	    [udevrulesdir=$($PKG_CONFIG --variable=udevdir udev)/rules.d])
+AC_SUBST([udevrulesdir])
+
 ################
 # Dependencies #
 ################
