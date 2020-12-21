@@ -18,6 +18,7 @@ Source0: https://github.com/fleet-commander/fc-admin/releases/download/%{version
 
 BuildRequires: dconf
 BuildRequires: desktop-file-utils
+BuildRequires: systemd-devel
 
 %if 0%{?rhel} && 0%{?rhel} < 8
 BuildRequires: python2-devel

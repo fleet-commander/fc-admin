@@ -2,6 +2,10 @@ RPMBUILD ?= $(abs_builddir)/rpmbuild
 TARBALL = $(PACKAGE)-$(VERSION).tar.xz
 NULL =
 
+AM_DISTCHECK_CONFIGURE_FLAGS = \
+    --with-udevrulesdir='$$(prefix)/$(udevrulesdir)' \
+    $(NULL)
+
 SUBDIRS = data logger admin tests
 
 EXTRA_DIST = \
