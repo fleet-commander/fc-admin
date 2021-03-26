@@ -18,6 +18,8 @@ jobs:
     - template: templates/${{ variables.CONFIGURE_TEMPLATE }}
     - script: |
         set -e
+        # local PATH for Python packages from PyPI
+        export PATH=${HOME}/.local/bin:${PATH}
         make pylint
       displayName: Pylint sources
     - script: |
