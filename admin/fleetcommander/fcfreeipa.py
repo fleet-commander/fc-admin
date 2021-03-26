@@ -435,6 +435,7 @@ class FreeIPAConnector:
             logger.error(
                 "FreeIPAConnector: Error getting profiles: %s - %s", e, e.__class__
             )
+            raise e
         else:
             resultlist = []
             for res in results["result"]:
