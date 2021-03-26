@@ -34,7 +34,7 @@ import logging
 from fleetcommander import sshcontroller
 
 # Tests imports
-from test_fcdbus_service import MockLibVirtController
+from tests.test_fcdbus_service import MockLibVirtController
 from tests.fcdbusclient import FleetCommanderDbusClient
 
 logger = logging.getLogger(os.path.basename(__file__))
