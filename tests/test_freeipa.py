@@ -137,9 +137,9 @@ class TestFreeIPA(unittest.TestCase):
     PROFILE_MOD_JSON_DATA = json.dumps(TEST_PROFILE_MOD["settings"])
 
     SAVED_PROFILE_DATA_MOD = {
-        u"cn": (TEST_PROFILE_MOD["name"],),
-        u"description": (TEST_PROFILE_MOD["description"],),
-        u"ipadeskdata": (PROFILE_MOD_JSON_DATA,),
+        "cn": (TEST_PROFILE_MOD["name"],),
+        "description": (TEST_PROFILE_MOD["description"],),
+        "ipadeskdata": (PROFILE_MOD_JSON_DATA,),
     }
 
     SAVED_PROFILERULE_DATA_MOD = {

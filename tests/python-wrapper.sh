@@ -1,2 +1,2 @@
-#!/bin/env bash
+#!/bin/bash
 exec "$PYTHON" "$@"

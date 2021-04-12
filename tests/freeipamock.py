@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import os
 import logging
 import json
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -148,12 +147,12 @@ class FreeIPACommand:
 
     def user_show(self, user):
         if user in self.data.users:
-            return {u"result": {}, u"value": six.text_type(user), u"summary": None}
+            return {"result": {}, "value": str(user), "summary": None}
         raise FreeIPAErrors.NotFound()
 
     def group_show(self, group):
         if group in self.data.groups:
-            return {u"result": {}, u"value": six.text_type(group), u"summary": None}
+            return {"result": {}, "value": str(group), "summary": None}
         raise FreeIPAErrors.NotFound()
 
     def host_find(self, sizelimit):
@@ -162,16 +161,16 @@ class FreeIPACommand:
         for host in self.data.hosts:
             result.append({"fqdn": (host,)})
         res = {
-            u"count": count,
-            u"summary": u"%s Hosts matched" % count,
-            u"result": tuple(result),
-            u"truncated": False,
+            "count": count,
+            "summary": "%s Hosts matched" % count,
+            "result": tuple(result),
+            "truncated": False,
         }
         return res
 
     def host_show(self, host):
         if host in self.data.hosts:
-            return {u"result": {}, u"value": six.text_type(host), u"summary": None}
+            return {"result": {}, "value": str(host), "summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add(self, hostgroup):
@@ -183,7 +182,7 @@ class FreeIPACommand:
 
     def hostgroup_show(self, hostgroup):
         if hostgroup in self.data.hostgroups:
-            return {u"result": {}, u"value": six.text_type(hostgroup), u"summary": None}
+            return {"result": {}, "value": str(hostgroup), "summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add_member(self, hostgroup, host):
@@ -329,10 +328,10 @@ class FreeIPACommand:
     def deskprofile_find(self, criteria, sizelimit, all):
         count = len(list(self.data.profiles.keys()))
         res = {
-            u"count": count,
-            u"summary": u"%s Desktop Profiles matched" % count,
-            u"result": tuple(self.data.profiles.values()),
-            u"truncated": False,
+            "count": count,
+            "summary": "%s Desktop Profiles matched" % count,
+            "result": tuple(self.data.profiles.values()),
+            "truncated": False,
         }
         return res
 

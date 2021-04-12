@@ -27,8 +27,8 @@ TESTS = \
 
 EXTRA_DIST =                         \
 	$(TESTS)                         \
-	__init__.py                      \
 	python-wrapper.sh                \
+	__init__.py                      \
 	freeipamock.py                   \
 	libvirtmock.py                   \
 	ldapmock.py                      \
