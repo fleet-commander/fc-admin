@@ -1,14 +1,9 @@
 Name:           fleet-commander-admin
-Version:        0.15.1
-Release:        2%{?dist}
+Version:        0.15.2
+Release:        1%{?dist}
 Summary:        Fleet Commander
 
-# We use python2 only for EPEL
-%if 0%{?rhel} && 0%{?rhel} < 8
-%global python_interpreter python2
-%else
 %global python_interpreter python3
-%endif
 
 BuildArch: noarch
 
@@ -20,20 +15,12 @@ BuildRequires: dconf
 BuildRequires: desktop-file-utils
 BuildRequires: systemd-devel
 
-%if 0%{?rhel} && 0%{?rhel} < 8
-BuildRequires: python2-devel
-BuildRequires: pexpect
-BuildRequires: pygobject3
-BuildRequires: dbus-python
-BuildRequires: libvirt-python
-%else
 BuildRequires: python3-devel
 BuildRequires: python3-pexpect
 BuildRequires: python3-gobject
 BuildRequires: python3-dbus
 BuildRequires: python3-libvirt
 BuildRequires: python3-samba
-%endif
 
 %if 0%{?with_check}
 BuildRequires: git
@@ -54,16 +41,6 @@ Requires: dconf
 Requires: cockpit
 Requires(preun): systemd
 
-%if 0%{?rhel} && 0%{?rhel} < 8
-Requires: pexpect
-Requires: pygobject3
-Requires: libvirt-python
-Requires: dbus-python
-Requires: python2
-Requires: python2-ipa-desktop-profile-client
-Requires: python2-ipalib >= 4.4.0
-Requires: python2-ipaclient >= 4.4.0
-%else
 Requires: python3
 Requires: python3-pexpect
 Requires: python3-dbus
@@ -75,7 +52,6 @@ Requires: python3-ipa-desktop-profile-client
 Requires: python3-dns
 Requires: python3-samba
 Requires: python3-ldap
-%endif
 
 Provides: bundled(spice-html5)
 
@@ -88,14 +64,10 @@ configuration of a large network of users and workstations/laptops.
 Summary: Logs configuration changes in a session
 License: GPLv2
 
-%if 0%{?rhel} && 0%{?rhel} < 8
-Requires: pygobject3
-Requires: dbus-python
-%else
+
 Requires: python3
 Requires: python3-gobject
 Requires: python3-dbus
-%endif
 
 %description -n fleet-commander-logger
 Logs changes for Fleet Commander virtual sessions. Fleet Commander is an
@@ -158,6 +130,9 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_datadir}/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/{c73e87a7-b5a1-4b6f-b10b-0bd70241a64d}.xpi
 
 %changelog
+* Mon Apr 12 2020 Oliver Gutierrez <ogutierrez@redhat.com> - 0.15.2-1
+- Deprecation of Python2
+
 * Mon Jul 27 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.15.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 
