@@ -1,4 +1,4 @@
-AC_INIT(fleet-commander-admin, 0.15.1, aruiz@redhat.com)
+AC_INIT(fleet-commander-admin, 0.15.2, aruiz@redhat.com)
 AC_COPYRIGHT([Copyright 2014,2015,2016,2017,2018 Red Hat, Inc.])
 
 AC_PREREQ(2.64)
@@ -44,7 +44,7 @@ AC_SUBST([udevrulesdir])
 # Dependencies #
 ################
 
-AM_PATH_PYTHON([2],, [:])
+AM_PATH_PYTHON([3],, [:])
 AC_PYTHON_MODULE([pexpect], [mandatory])
 AC_PYTHON_MODULE([dbus], [mandatory])
 AC_PYTHON_MODULE([gi], [mandatory])
