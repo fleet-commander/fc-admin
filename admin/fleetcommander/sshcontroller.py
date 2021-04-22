@@ -25,7 +25,6 @@ import subprocess
 import tempfile
 import logging
 import pexpect
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ class SSHController:
             [
                 self.SSH_KEYGEN_COMMAND,
                 "-b",
-                six.text_type(key_size),
+                str(key_size),
                 "-t",
                 "rsa",
                 "-f",
@@ -83,7 +82,7 @@ class SSHController:
             [
                 self.SSH_KEYSCAN_COMMAND,
                 "-p",
-                six.text_type(port),
+                str(port),
                 hostname,
             ],
             stdout=subprocess.PIPE,
@@ -174,7 +173,7 @@ class SSHController:
         ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+            ssh_command.extend(["-o", "%s=%s" % (k, str(v))])
 
         ssh_command.extend(
             [
@@ -186,7 +185,7 @@ class SSHController:
                 "PasswordAuthentication=no",
                 "{user}@{host}".format(user=username, host=hostname),
                 "-p",
-                six.text_type(port),
+                str(port),
                 command,
             ]
         )
@@ -219,7 +218,7 @@ class SSHController:
         ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+            ssh_command.extend(["-o", "%s=%s" % (k, str(v))])
 
         ssh_command.extend(
             [
@@ -237,7 +236,7 @@ class SSHController:
                 self.CONTROL_SOCKET,
                 "{user}@{host}".format(user=username, host=hostname),
                 "-p",
-                six.text_type(port),
+                str(port),
             ]
         )
         ssh_command.extend([v for lf in local_forwards for v in ("-L", lf)])
@@ -263,7 +262,7 @@ class SSHController:
         ssh_command = [self.SSH_COMMAND]
         # Options
         for k, v in kwargs.items():
-            ssh_command.extend(["-o", "%s=%s" % (k, six.text_type(v))])
+            ssh_command.extend(["-o", "%s=%s" % (k, str(v))])
 
         ssh_command.extend(
             [
@@ -275,7 +274,7 @@ class SSHController:
                 "PasswordAuthentication=no",
                 "{user}@{host}".format(user=username, host=hostname),
                 "-p",
-                six.text_type(port),
+                str(port),
                 "-S",
                 self.CONTROL_SOCKET,
                 "-O",

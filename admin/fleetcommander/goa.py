@@ -20,7 +20,7 @@
 #          Oliver Gutiérrez <ogutierrez@redhat.com>
 
 from __future__ import absolute_import
-from six.moves.configparser import RawConfigParser, ParsingError
+from configparser import RawConfigParser, ParsingError
 import logging
 
 logger = logging.getLogger(__name__)

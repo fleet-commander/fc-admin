@@ -28,7 +28,6 @@ BuildRequires: python3-dns
 BuildRequires: python3-ldap
 BuildRequires: python3-dbusmock
 BuildRequires: python3-ipalib
-BuildRequires: python3-six
 BuildRequires: NetworkManager-libnm
 BuildRequires: json-glib
 BuildRequires: procps

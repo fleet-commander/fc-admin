@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import os
 import logging
 import json
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -148,12 +147,12 @@ class FreeIPACommand:
 
     def user_show(self, user):
         if user in self.data.users:
-            return {u"result": {}, u"value": six.text_type(user), u"summary": None}
+            return {u"result": {}, u"value": str(user), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def group_show(self, group):
         if group in self.data.groups:
-            return {u"result": {}, u"value": six.text_type(group), u"summary": None}
+            return {u"result": {}, u"value": str(group), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def host_find(self, sizelimit):
@@ -171,7 +170,7 @@ class FreeIPACommand:
 
     def host_show(self, host):
         if host in self.data.hosts:
-            return {u"result": {}, u"value": six.text_type(host), u"summary": None}
+            return {u"result": {}, u"value": str(host), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add(self, hostgroup):
@@ -183,7 +182,7 @@ class FreeIPACommand:
 
     def hostgroup_show(self, hostgroup):
         if hostgroup in self.data.hostgroups:
-            return {u"result": {}, u"value": six.text_type(hostgroup), u"summary": None}
+            return {u"result": {}, u"value": str(hostgroup), u"summary": None}
         raise FreeIPAErrors.NotFound()
 
     def hostgroup_add_member(self, hostgroup, host):
