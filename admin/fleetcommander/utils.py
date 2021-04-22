@@ -24,11 +24,7 @@
 from __future__ import absolute_import
 import logging
 
-# Compat between Pyhon 2 and 3
-try:
-    from configparser import ConfigParser, ParsingError
-except ImportError:
-    from six.moves.configparser import ConfigParser, ParsingError
+from configparser import ConfigParser, ParsingError
 
 from . import constants
 

@@ -32,7 +32,6 @@ import dbus
 import dbus.service
 
 from dbus.mainloop.glib import DBusGMainLoop
-from six.moves import range
 
 logger = logging.getLogger(os.path.basename(__file__))
 
