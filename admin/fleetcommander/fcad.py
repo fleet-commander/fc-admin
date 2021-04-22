@@ -170,7 +170,10 @@ class ADConnector:
         creds.set_kerberos_state(MUST_USE_KERBEROS)
         # Create connection
         conn = libsmb.Conn(
-            self._get_server_name(), service, lp=parm, creds=creds, sign=False
+            self._get_server_name(),
+            service,
+            lp=parm,
+            creds=creds,  # sign=False
         )
         return conn
 
