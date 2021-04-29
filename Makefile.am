@@ -52,8 +52,8 @@ pylint: $(GENERATED_PYTHON_FILES)
 	      -path './rpmbuild' -prune -o \
 	      -name '*.py' -print`; \
 	echo -e "Pylinting files:\n$${FILES}\n"; \
-	pylint --version; \
-	PYTHONPATH=$(top_srcdir):$(top_srcdir)/admin pylint \
+	$(PYTHON) -m pylint --version; \
+	PYTHONPATH=$(top_srcdir):$(top_srcdir)/admin $(PYTHON) -m pylint \
 		--rcfile=$(top_srcdir)/pylintrc \
 		--load-plugins pylint_plugins \
 		$${FILES}
