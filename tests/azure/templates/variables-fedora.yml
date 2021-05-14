@@ -1,7 +1,7 @@
 variables:
   FC_PLATFORM: fedora
   # the Docker public image to build FC packages (rpms)
-  DOCKER_BUILD_IMAGE: 'fedora:32'
+  DOCKER_BUILD_IMAGE: 'fedora:34'
 
   # the template to install FC buildtime dependencies
   PREPARE_BUILD_TEMPLATE: ${{ format('prepare-build-{0}.yml', variables.FC_PLATFORM) }}
