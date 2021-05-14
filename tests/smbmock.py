@@ -29,7 +29,7 @@ TEMP_DIR = None
 
 
 class SMBMock:
-    def __init__(self, servername, service, lp, creds, sign=False):
+    def __init__(self, servername, service, lp, creds):
         logging.debug("SMBMock: Mocking SMB at \\\\%s\\%s", servername, service)
         self.tempdir = TEMP_DIR
         logging.debug("Using temporary directory at %s", self.tempdir)

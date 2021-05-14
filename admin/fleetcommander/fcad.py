@@ -169,9 +169,7 @@ class ADConnector:
         # Connect to SMB using kerberos
         creds.set_kerberos_state(MUST_USE_KERBEROS)
         # Create connection
-        conn = libsmb.Conn(
-            self._get_server_name(), service, lp=parm, creds=creds, sign=False
-        )
+        conn = libsmb.Conn(self._get_server_name(), service, lp=parm, creds=creds)
         return conn
 
     def _load_smb_data(self, gpo_uuid):
