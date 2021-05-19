@@ -1,5 +1,5 @@
 Name:           fleet-commander-admin
-Version:        0.15.2
+Version:        0.16.0
 Release:        1%{?dist}
 Summary:        Fleet Commander
 
@@ -129,7 +129,7 @@ install -m 755 -d %{buildroot}/%{_localstatedir}/lib/fleet-commander-admin/profi
 %{_datadir}/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/{c73e87a7-b5a1-4b6f-b10b-0bd70241a64d}.xpi
 
 %changelog
-* Mon Apr 12 2020 Oliver Gutierrez <ogutierrez@redhat.com> - 0.15.2-1
+* Wed May 19 2021 Oliver Gutierrez <ogutierrez@redhat.com> - 0.16.0-1
 - Deprecation of Python2
 
 * Mon Jul 27 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.15.1-2
