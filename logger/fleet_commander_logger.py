@@ -1009,7 +1009,7 @@ class ChromiumLogger:
         if leaf["type"] == "url":
             logger.debug("Parsing bookmarks leaf %s", leaf["name"])
             return [json.dumps([path, leaf["id"], leaf["url"], leaf["name"]])]
-        return list()
+        return []
 
     def get_modified_bookmarks(self, bmarks1, bmarks2):
         diff = bmarks2[:]
