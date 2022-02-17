@@ -249,7 +249,7 @@ class FreeIPAConnector:
             rule = self.get_profile_rule(name)
             applies = self._get_profile_applies_from_rule(rule)
             logger.debug("FreeIPAConnector: Applies after update: %s", applies)
-            if applies["hosts"] == [] and applies["hostgroups"] == []:
+            if not applies["hosts"] and not applies["hostgroups"]:
                 logger.debug("FreeIPAConnector: Setting hostcategory to all")
                 parms["hostcategory"] = "all"
                 try:
