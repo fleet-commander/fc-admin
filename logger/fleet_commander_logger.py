@@ -1159,9 +1159,7 @@ class FirefoxLogger:
             # Exit mainloop if we are testing
             if callable(self.test_profiles_file_updated_cb):
                 logger.debug("Exiting mainloop after testing")
-                # pylint: disable=not-callable
                 self.test_profiles_file_updated_cb()
-                # pylint: enable=not-callable
 
     def _preferences_file_updated(self, monitor, fileobj, otherfile, eventType):
         if eventType == Gio.FileMonitorEvent.CHANGES_DONE_HINT or eventType is None:
@@ -1218,9 +1216,7 @@ class FirefoxLogger:
                 logger.debug("Firefox Preferences file %s is not present (yet)", path)
             if callable(self.test_prefs_file_updated_cb):
                 logger.debug("Exiting mainloop after testing")
-                # pylint: disable=not-callable
                 self.test_prefs_file_updated_cb()
-                # pylint: enable=not-callable
 
     def get_default_profile_path(self):
         keyfile = GLib.KeyFile()
