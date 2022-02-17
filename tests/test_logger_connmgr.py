@@ -48,7 +48,7 @@ logger = logging.getLogger(os.path.basename(__file__))
 
 
 def read_file(filename):
-    with open(filename) as fd:
+    with open(filename, encoding="utf-8") as fd:
         return fd.read()
 
 

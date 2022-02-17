@@ -187,10 +187,12 @@ class ADConnector:
         os.mkdir(os.path.join(gpodir, "User"))
         # GPT file
         gpt_contents = "[General]\r\nVersion=0\r\n"
-        with open(os.path.join(gpodir, "GPT.INI"), "w") as fd:
+        with open(os.path.join(gpodir, "GPT.INI"), "w", encoding="utf-8") as fd:
             fd.write(gpt_contents)
 
-        with open(os.path.join(gpodir, "fleet-commander.json"), "w") as fd:
+        with open(
+            os.path.join(gpodir, "fleet-commander.json"), "w", encoding="utf-8"
+        ) as fd:
             fd.write(
                 json.dumps(
                     {

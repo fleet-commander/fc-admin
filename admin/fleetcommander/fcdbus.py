@@ -242,7 +242,7 @@ class FleetCommanderDbusService(dbus.service.Object):
             hostname=None,
             mode="system",
         )
-        with open(ctrlr.public_key_file, "r") as fd:
+        with open(ctrlr.public_key_file, "r", encoding="utf-8") as fd:
             public_key = fd.read().strip()
 
         return public_key

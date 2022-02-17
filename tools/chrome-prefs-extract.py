@@ -27,7 +27,7 @@ from __future__ import absolute_import
 import sys
 import json
 
-with open(sys.argv[1], "r") as f:
+with open(sys.argv[1], "r", encoding="utf-8") as f:
     data = json.loads(f.read())
 
 outdata = {}

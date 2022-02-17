@@ -149,7 +149,7 @@ class TestDbusService(unittest.TestCase):
         """
         Reads JSON file contents
         """
-        with open(path) as fd:
+        with open(path, encoding="utf-8") as fd:
             data = fd.read()
 
         return json.loads(data)

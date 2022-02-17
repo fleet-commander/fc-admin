@@ -367,16 +367,24 @@ class TestChromiumLogger(unittest.TestCase):
         # Create local state file
         local_state_data = DEFAULT_LOCAL_STATE_DATA
         local_state_data["profile"]["last_active_profiles"] = sessions
-        with open(os.path.join(TMPDIR, "Local State"), "w") as fd:
+        with open(os.path.join(TMPDIR, "Local State"), "w", encoding="utf-8") as fd:
             fd.write(json.dumps(local_state_data, sort_keys=True))
-        with open(os.path.join(TMPDIR, "Profile 1/Preferences"), "w") as fd:
+        with open(
+            os.path.join(TMPDIR, "Profile 1/Preferences"), "w", encoding="utf-8"
+        ) as fd:
             fd.write(json.dumps(profile1_prefs, sort_keys=True))
-        with open(os.path.join(TMPDIR, "Profile 2/Preferences"), "w") as fd:
+        with open(
+            os.path.join(TMPDIR, "Profile 2/Preferences"), "w", encoding="utf-8"
+        ) as fd:
             fd.write(json.dumps(profile2_prefs, sort_keys=True))
         # Bookmarks data
-        with open(os.path.join(TMPDIR, "Profile 1/Bookmarks"), "w") as fd:
+        with open(
+            os.path.join(TMPDIR, "Profile 1/Bookmarks"), "w", encoding="utf-8"
+        ) as fd:
             fd.write(json.dumps(DEFAULT_BOOKMARKS_DATA, sort_keys=True))
-        with open(os.path.join(TMPDIR, "Profile 2/Bookmarks"), "w") as fd:
+        with open(
+            os.path.join(TMPDIR, "Profile 2/Bookmarks"), "w", encoding="utf-8"
+        ) as fd:
             fd.write(json.dumps(DEFAULT_BOOKMARKS_DATA, sort_keys=True))
 
         return TMPDIR
@@ -413,7 +421,7 @@ class TestChromiumLogger(unittest.TestCase):
         # Add a new session to the Local State file
         local_state_data = DEFAULT_LOCAL_STATE_DATA
         local_state_data["profile"]["last_active_profiles"] = ["Profile 1"]
-        with open(os.path.join(TMPDIR, "Local State"), "w") as fd:
+        with open(os.path.join(TMPDIR, "Local State"), "w", encoding="utf-8") as fd:
             fd.write(json.dumps(local_state_data, sort_keys=True))
 
         # Simulate a local state file modification
@@ -426,7 +434,7 @@ class TestChromiumLogger(unittest.TestCase):
 
         # Add a new session to the Local State file
         local_state_data["profile"]["last_active_profiles"] = ["Profile 1", "Profile 2"]
-        with open(os.path.join(TMPDIR, "Local State"), "w") as fd:
+        with open(os.path.join(TMPDIR, "Local State"), "w", encoding="utf-8") as fd:
             fd.write(json.dumps(local_state_data, sort_keys=True))
 
         # Simulate a local state file modification
@@ -516,7 +524,7 @@ class TestChromiumLogger(unittest.TestCase):
         # Helper method to write prefs and simulate file modified notification
         def write_prefs(clogger, prefs, path):
             # Write a new supported setting to the preferences file 1
-            with open(path, "w") as fd:
+            with open(path, "w", encoding="utf-8") as fd:
                 fd.write(json.dumps(prefs, sort_keys=True))
 
             # Simulate a change in preferences file 1
@@ -581,7 +589,7 @@ class TestChromiumLogger(unittest.TestCase):
         # Helper method to write bookmarks and simulate a file modified notification
         def write_bmarks(clogger, bmarks, path):
             # Write a new supported setting to the preferences file 1
-            with open(path, "w") as fd:
+            with open(path, "w", encoding="utf-8") as fd:
                 fd.write(json.dumps(bmarks, sort_keys=True))
 
             # Simulate a change in preferences file 1

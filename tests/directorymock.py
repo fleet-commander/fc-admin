@@ -47,7 +47,7 @@ class DirectoryData:
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
             logging.debug("Directory mock exporting data to %s", path)
-            with open(path, "w") as fd:
+            with open(path, "w", encoding="utf-8") as fd:
                 fd.write(self.get_json())
 
             logging.debug("Directory mock data saved to %s", path)
