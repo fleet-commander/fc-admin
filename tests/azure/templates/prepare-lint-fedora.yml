@@ -7,8 +7,9 @@ steps:
 
     printf "Installing latest Python lint dependencies\n"
     pip install \
-        --user --force \
-        pylint \
+        --user \
+        --ignore-installed \
+        'pylint ~= 2.12.2' \
         black \
   displayName: Install latest Python lint dependencies
 
