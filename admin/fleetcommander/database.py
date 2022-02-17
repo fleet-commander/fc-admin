@@ -98,7 +98,7 @@ class SQLiteDict:
             self.__delitem__(key)
 
         valuetype = type(value).__name__
-        if valuetype not in list(self._SUPPORTED_TYPES.keys()):
+        if valuetype not in self._SUPPORTED_TYPES:
             raise ValueError("Type %s is not supported by SQLiteDict" % valuetype)
 
         if valuetype in self._SERIALIZED_TYPES:
