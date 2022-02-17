@@ -236,10 +236,8 @@ class TestLibVirtController:
         ctrlr.session_stop(session_params.domain)
 
         # Check domain has been stopped and has been set as transient
-        # pylint: disable=no-member
         self.assertFalse(ctrlr._last_stopped_domain.active)
         self.assertTrue(ctrlr._last_stopped_domain.transient)
-        # pylint: enable=no-member
 
         # Test SSH tunnel close
         self.assertTrue(os.path.exists(self.ssh_parms_file))
