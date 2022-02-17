@@ -1187,8 +1187,7 @@ class FirefoxLogger:
                     self.monitored_preferences[path] = prefs
                 else:
                     logger.debug("New preferences loaded. Checking for changes")
-                    for preference in prefs:
-                        value = prefs[preference]
+                    for preference, value in prefs.items():
                         if preference in self.monitored_preferences[path]:
                             prev = self.monitored_preferences[path][preference]
                             logger.debug(
