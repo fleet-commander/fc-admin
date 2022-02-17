@@ -84,7 +84,8 @@ class TestScreenSaverInhibitor(unittest.TestCase):
             inhibitor.screensavers["org.freedesktop.ScreenSaver"]["cookie"] == 9191
         )
         inhibitor.uninhibit()
-        self.assertTrue(inhibitor.screensavers == {})
+        self.assertIsInstance(inhibitor.screensavers, dict)
+        self.assertFalse(inhibitor.screensavers)
 
 
 class TestDconfLogger(unittest.TestCase):
