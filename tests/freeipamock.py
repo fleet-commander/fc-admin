@@ -68,7 +68,7 @@ class FreeIPAData:
         if self.datadir is not None:
             path = os.path.join(self.datadir, filename)
             logger.debug("IPAMock exporting data to %s", path)
-            with open(path, "w") as fd:
+            with open(path, "w", encoding="utf-8") as fd:
                 fd.write(self.get_json())
 
             logger.debug("FreeIPA mock data saved to %s", path)

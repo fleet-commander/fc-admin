@@ -138,7 +138,7 @@ class TestFirefoxLogger(unittest.TestCase):
         pass
 
     def file_set_contents(self, filename, contents):
-        with open(filename, "w") as fd:
+        with open(filename, "w", encoding="utf-8") as fd:
             fd.write(contents)
 
     def setup_test_directory(self, profinit=True, prefsinit=True):

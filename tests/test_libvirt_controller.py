@@ -178,7 +178,7 @@ class TestLibVirtController:
 
         # Check SSH command
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -208,7 +208,7 @@ class TestLibVirtController:
 
         # Check SSH command
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -243,7 +243,7 @@ class TestLibVirtController:
 
         # Test SSH tunnel close
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -270,7 +270,7 @@ class TestLibVirtController:
         self.assertEqual(remote_runtimedir, "/run/user/1001")
 
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -323,7 +323,7 @@ class TestLibVirtControllerSession(TestLibVirtController):
 
         # Check SSH command
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -400,7 +400,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -469,7 +469,7 @@ class TestLibVirtControllerHTML5(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         remote_socket_logger = os.path.join(
@@ -553,7 +553,7 @@ class TestLibVirtControllerDirectTLS(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -630,7 +630,7 @@ class TestLibVirtControllerDirectTLS(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         remote_socket_logger = os.path.join(
@@ -668,7 +668,7 @@ class TestLibVirtControllerDirectTLS(TestLibVirtController):
         self.assertEqual(ca_cert, "FAKE_CA_CERT")
 
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -697,7 +697,7 @@ class TestLibVirtControllerDirectTLS(TestLibVirtController):
         self.assertEqual(spice_cert_subject, "CN=localhost")
 
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -769,7 +769,7 @@ class TestLibVirtControllerDirectPlain(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         self.assertEqual(
@@ -844,7 +844,7 @@ class TestLibVirtControllerDirectPlain(TestLibVirtController):
 
         # Test SSH tunnel opening
         self.assertTrue(os.path.exists(self.ssh_parms_file))
-        with open(self.ssh_parms_file) as fd:
+        with open(self.ssh_parms_file, encoding="utf-8") as fd:
             command = fd.read().strip()
 
         remote_socket_logger = os.path.join(

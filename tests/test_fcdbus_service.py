@@ -78,7 +78,7 @@ class MockLibVirtController(libvirtcontroller.LibVirtTunnelSpice):
 
         self.public_key_file = os.path.join(self.data_dir, "id_rsa.pub")
 
-        with open(self.public_key_file, "w") as fd:
+        with open(self.public_key_file, "w", encoding="utf-8") as fd:
             fd.write("PUBLIC_KEY")
 
         self.session_params = namedtuple(

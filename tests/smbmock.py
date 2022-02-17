@@ -78,7 +78,7 @@ class SMBMock:
                 "fssd": fssd.as_sddl(),
             }
         )
-        with open(aclpath, "w") as fd:
+        with open(aclpath, "w", encoding="utf-8") as fd:
             fd.write(acldata)
 
     def deltree(self, duri):

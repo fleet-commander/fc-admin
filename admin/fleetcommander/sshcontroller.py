@@ -99,7 +99,7 @@ class SSHController:
         directory = os.path.dirname(known_hosts_file)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        with open(known_hosts_file, "a") as fd:
+        with open(known_hosts_file, "a", encoding="utf-8") as fd:
             fd.write(key_data)
 
     def add_to_known_hosts(self, known_hosts_file, hostname, port=DEFAULT_SSH_PORT):
@@ -112,7 +112,7 @@ class SSHController:
         """
         if os.path.exists(known_hosts_file):
             # Check if host exists in file
-            with open(known_hosts_file) as fd:
+            with open(known_hosts_file, encoding="utf-8") as fd:
                 lines = fd.readlines()
 
             for line in lines:
@@ -126,7 +126,7 @@ class SSHController:
         Get host SSH fingerprint
         """
         tmpfile = tempfile.mktemp(prefix="fc-ssh-keydata")
-        with open(tmpfile, "w") as fd:
+        with open(tmpfile, "w", encoding="utf-8") as fd:
             fd.write(key_data)
 
         prog = subprocess.Popen(
