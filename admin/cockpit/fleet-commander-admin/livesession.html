@@ -126,7 +126,10 @@
             <span class="pull-right">
               <button id="reconnect-to-vm" class="btn btn-secondary" translatable="yes">Reconnect to VM</button>
               <button id="close-live-session" class="btn btn-danger" translatable="yes">Close session</button>
-              <button id="review-changes" class="btn btn-primary" translatable="yes">Review and submit</button>
+              <button id="review-changes" class="btn btn-primary" translatable="yes" disabled>
+                <span class="review-changes-spinner"></span>
+                <span class="review-changes-label">Review and submit</span>
+              </button>
             </span>
           </div>
           <div class="panel-body">

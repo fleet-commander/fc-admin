@@ -30,6 +30,7 @@ const FC_PROTO_HEADER = ':FC_PR:';
 const FC_PROTO_DEFAULT = 1;
 const _ = cockpit.gettext;
 const RECONNNECT_BUTTON_ID = '#reconnect-to-vm';
+const REVIEW_CHANGES_BUTTON_ID = '#review-changes';
 
 let fc = null;
 let fcsc = null;
@@ -60,6 +61,29 @@ function prepareReconnectButton(title, cb) {
     $(RECONNNECT_BUTTON_ID).click(cb);
     $(RECONNNECT_BUTTON_ID).text(title);
     $(RECONNNECT_BUTTON_ID).show();
+}
+
+function enableReviewButton(enable = true) {
+    const review_spinner_cls = 'review-changes-spinner';
+    const review_label_cls = 'review-changes-label';
+    const spinner_classes = 'spinner spinner-xs spinner-inline';
+    if (enable === true) {
+        $(`.${review_label_cls}`).text(_('Review and submit'));
+        $(`.${review_spinner_cls}`).removeClass(spinner_classes);
+        $(REVIEW_CHANGES_BUTTON_ID).prop('disabled', false);
+        $(REVIEW_CHANGES_BUTTON_ID).prop('title', _('Review and submit changes'));
+    } else {
+        $(`.${review_label_cls}`).text(_('Waiting for notifier'));
+        $(REVIEW_CHANGES_BUTTON_ID).prop(
+            'title',
+            _(
+                'Wait for FC logger is ready on template or check if it is ' +
+                'installed'
+            )
+        );
+        $(REVIEW_CHANGES_BUTTON_ID).prop('disabled', true);
+        $(`.${review_spinner_cls}`).addClass(spinner_classes);
+    }
 }
 
 function showConnectionDetails(details) {
@@ -213,7 +237,7 @@ function startSpiceHtml5(conn_details) {
                     event.detail.channel.portName,
                 );
             }
-            parseFCMsg(msg_text, msg, ParseChange);
+            parseFCMsg(msg_text, msg, ParseChange, enableReviewButton);
         }
     });
 
@@ -292,7 +316,7 @@ function startSpiceTLSRemoteViewer(conn_details) {
         if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Notifier data received in unix channel', msg_text);
         }
-        parseFCMsg(msg_text, msg, ParseChange);
+        parseFCMsg(msg_text, msg, ParseChange, enableReviewButton);
     });
     channel.addEventListener("close", function(event, options) {
         if (DEBUG > 0) {
@@ -348,7 +372,7 @@ function startSpicePlainRemoteViewer(conn_details) {
         if (DEBUG_FC_PROTOCOL > 0) {
             console.log('FC: Notifier data received in unix channel', msg_text);
         }
-        parseFCMsg(msg_text, msg, ParseChange);
+        parseFCMsg(msg_text, msg, ParseChange, enableReviewButton);
     });
     channel.addEventListener("close", function(event, options) {
         if (DEBUG > 0) {
@@ -360,7 +384,7 @@ function startSpicePlainRemoteViewer(conn_details) {
     startHeartBeat();
 }
 
-function parseFCMsg(str, msg, cb) {
+function parseFCMsg(str, msg, cb, initial_cb) {
     /*
      * Protocol 1 assumes atomic data transmission
      * Protocol 2 process data in chunks
@@ -410,6 +434,10 @@ function parseFCMsg(str, msg, cb) {
             console.log('FC protocol version', msg.fc_proto_version);
         }
         msg.initial_msg = false;
+        /* optional callback for connected notifier */
+        if (initial_cb) {
+            initial_cb();
+        }
     }
 
     if (msg.fc_proto_version > FC_PROTO_DEFAULT) {
@@ -735,7 +763,8 @@ function deployProfile() {
 $(document).ready(function () {
     $(RECONNNECT_BUTTON_ID).hide();
     $('#close-live-session').click(stopLiveSession);
-    $('#review-changes').click(reviewAndSubmit);
+    enableReviewButton(false);
+    $(REVIEW_CHANGES_BUTTON_ID).click(reviewAndSubmit);
     $('#deploy-profile').click(deployProfile);
 
     // Create a Fleet Commander dbus client instance
