@@ -50,7 +50,7 @@ pylint: $(GENERATED_PYTHON_FILES)
 	FILES=`find $(top_srcdir) \
 	      -type d -exec test -e '{}/__init__.py' \; -print -prune -o \
 	      -path './rpmbuild' -prune -o \
-	      -name '*.py' -print`; \
+	      -name '*.py' -print | sort`; \
 	echo -e "Pylinting files:\n$${FILES}\n"; \
 	$(PYTHON) -m pylint --version; \
 	PYTHONPATH=$(top_srcdir):$(top_srcdir)/admin $(PYTHON) -m pylint \
