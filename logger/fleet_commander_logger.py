@@ -25,6 +25,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
+import sys
 import logging
 import argparse
 import json
@@ -76,9 +77,12 @@ class Notifier:
         self.header = FC_LOGGER_PROTO_HEADER
         try:
             self.fd = open(path, "wb", 0)
-        except FileNotFoundError as e:
-            logger.error("Can't open device file %s.", path)
-            raise e
+        except FileNotFoundError:
+            logger.error(
+                "Can't open device file %s. Maybe you are not running Fleet Commander Logger in a Fleet Commander template VM.",
+                path,
+            )
+            sys.exit(0)
 
         # send initial message
         self.fd.write(self.header.encode())
