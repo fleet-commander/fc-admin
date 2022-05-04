@@ -24,10 +24,13 @@
 # Python imports
 from __future__ import absolute_import
 from __future__ import print_function
+from pathlib import Path
 import os
 import logging
 import argparse
 import json
+import sys
+
 import dbus
 import dbus.service
 
@@ -37,6 +40,7 @@ logger = logging.getLogger(os.path.basename(__file__))
 
 LOGGING_FORMAT_STDOUT = "[%(asctime)s %(name)s] <%(levelname)s>: %(message)s"
 LOGGING_FORMAT_STANDARD_CONSOLE = "%(name)-12s: %(levelname)-8s %(message)s"
+LOGGING_FORMAT_DEFAULT_CONSOLE = "%(message)s"
 
 DBusGMainLoop(set_as_default=True)
 
@@ -65,6 +69,9 @@ FC_LOGGER_PROTO_VERSION = 2
 FC_LOGGER_PROTO_HEADER = f":FC_PR:{FC_LOGGER_PROTO_VERSION}:"
 FC_LOGGER_PROTO_SUFFIX = ":FC_MSG_END_DATA:"
 FC_LOGGER_PROTO_CHUNK_SIZE = 2048
+
+DEFAULT_SPICE_CHANNEL_DEV = "/dev/virtio-ports/org.freedesktop.FleetCommander.0"
+LOG_DEVICE = "/dev/virtio-ports/org.freedesktop.FleetCommander.1"
 
 
 class Notifier:
@@ -131,8 +138,6 @@ class SpicePortManager:
     """
     SPICE port manager class
     """
-
-    DEFAULT_SPICE_CHANNEL_DEV = "/dev/virtio-ports/org.freedesktop.FleetCommander.0"
 
     def __init__(self, path=DEFAULT_SPICE_CHANNEL_DEV, retry_interval=1000):
         logger.debug("Initializing SPICE port manager")
@@ -1354,34 +1359,61 @@ class FleetCommanderLogger(dbus.service.Object):
         self.firefox_bookmark_logger.remove(bookmark_id)
 
 
-if __name__ == "__main__":
-    # Argument parsing
-    parser = argparse.ArgumentParser()
+def main_parser(prog):
+    parser = argparse.ArgumentParser(prog=prog)
     parser.add_argument("-d", "--debug", action="store_true", help="Verbose output")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
         "-n",
         "--no-devfile",
         action="store_false",
         help="Don't use a device file for SPICE channel",
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    args = parser.parse_args()
+    return parser
 
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
 
-    log_device = "/dev/virtio-ports/org.freedesktop.FleetCommander.1"
-    if os.path.exists(log_device):
-        logger_handler = LoggerStreamHandler(log_device)
+def device_exists(path):
+    return Path(path).is_char_device()
+
+
+def setup_logging(verbose=False):
+    handlers = []
+    if device_exists(LOG_DEVICE):
+        logger_handler = LoggerStreamHandler(LOG_DEVICE)
         logger_handler.setLevel(logging.DEBUG)
         logger_handler.setFormatter(logging.Formatter(LOGGING_FORMAT_STDOUT))
-        root_logger.addHandler(logger_handler)
+        handlers.append(logger_handler)
 
-    if args.debug or args.verbose:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(logging.Formatter(LOGGING_FORMAT_STANDARD_CONSOLE))
-        root_logger.addHandler(console_handler)
+    if verbose:
+        console_log_level = logging.DEBUG
+        console_log_format = LOGGING_FORMAT_STANDARD_CONSOLE
+    else:
+        console_log_level = logging.WARNING
+        console_log_format = LOGGING_FORMAT_DEFAULT_CONSOLE
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(console_log_level)
+    console_handler.setFormatter(logging.Formatter(console_log_format))
+    handlers.append(console_handler)
+
+    logging.basicConfig(handlers=handlers, level=logging.DEBUG)
+
+
+def main(cli_args, prog=Path(__file__).name):
+    parser = main_parser(prog)
+    args = parser.parse_args(cli_args)
+    setup_logging(args.debug or args.verbose)
+
+    if args.no_devfile and not device_exists(DEFAULT_SPICE_CHANNEL_DEV):
+        # assume we are not in template VM, nothing to do
+        logger.error(
+            "Neither --no-devfile was specified nor device %s exists, exiting",
+            DEFAULT_SPICE_CHANNEL_DEV,
+        )
+        sys.exit(1)
 
     fcl = FleetCommanderLogger(use_device_file=args.no_devfile)
     fcl.run()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
