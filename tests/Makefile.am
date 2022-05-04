@@ -21,6 +21,7 @@ TESTS = \
 	test_logger_nm.sh \
 	test_logger_chromium.py \
 	test_logger_firefox.py \
+	test_logger_main.py \
 	test_libvirt_controller.py \
 	test_fcdbus.sh \
 	$(NULL)
